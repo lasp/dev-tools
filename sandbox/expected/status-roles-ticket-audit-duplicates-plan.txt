@@ -1,0 +1,6 @@
+# Status roles as data, ticket-audit-duplicates-plan: the reader and the skill read a status named by role from profile.py's jira.roles.
+lasp-dev:source-reader system:1: source-reader reads a status named by role from jira.roles, and stops a line on an error from it
+lasp-dev:source-reader skill:using-jira: The ticket workflow points at jira.roles in place of naming the roles, and the Status row drops "the implementation status"
+main skill:ticket-audit: ticket-audit reads jira.roles at Apply, stops a close on an error from it, and cites it in its sweeps
+main result:Read:*skills/using-jira/write-plan.md*: write-plan.md names each role's status from jira.roles and stops a Status item on an error from it
+main result:Read:*.review/audit/*-duplicates.md*: the sweep's own report, written this run; its findings vary with live Jira and the run, not with this change

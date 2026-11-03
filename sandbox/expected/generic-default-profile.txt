@@ -1,0 +1,7 @@
+# The default profile records no Jira workflow and no internal host; a repository no team serves
+# and no standard covers takes both only from a standard.
+team/defaults: the default profile's jira reads not yet recorded and its internal.domains is empty
+team/defaults.internal.domains: the default profile names no internal host
+team/defaults.jira.*: the default profile records no Jira workflow
+lib/next_phase(*: with no workflow recorded every status routes to ticket-draft, the reason naming it
+unknown/next_phase(*: with no workflow recorded every status routes to ticket-draft, the reason naming it

@@ -1,0 +1,20 @@
+{"type": "summary", "summary": "fixture"}
+{"type": "user", "timestamp": "2099-01-01T00:01:00.000Z", "uuid": "u1", "message": {"role": "user", "content": "x"}}
+{"type": "attachment", "timestamp": "2099-01-01T00:02:00.000Z", "uuid": "u2"}
+{"type": "user", "timestamp": "2099-01-01T00:03:00.000Z", "uuid": "u3", "message": {"role": "user", "content": "x"}}
+{"type": "attachment", "timestamp": "2099-01-01T00:04:00.000Z", "uuid": "u4"}
+{"type": "assistant", "timestamp": "2099-01-01T00:05:00.000Z", "uuid": "u5", "message": {"id": "msg_1", "role": "assistant", "usage": {"input_tokens": 100, "output_tokens": 10, "cache_read_input_tokens": 1000, "cache_creation_input_tokens": 5}}}
+{"type": "assistant", "timestamp": "2099-01-01T00:06:00.000Z", "uuid": "u6", "message": {"id": "msg_1", "role": "assistant", "usage": {"input_tokens": 100, "output_tokens": 10, "cache_read_input_tokens": 1000, "cache_creation_input_tokens": 5}}}
+{"type": "user", "timestamp": "2099-01-01T00:07:00.000Z", "uuid": "u7", "message": {"role": "user", "content": "x"}}
+{"type": "attachment", "timestamp": "2099-01-01T00:08:00.000Z", "uuid": "u8"}
+{"type": "user", "timestamp": "2099-01-01T00:09:00.000Z", "uuid": "u9", "message": {"role": "user", "content": "x"}}
+{"type": "attachment", "timestamp": "2099-01-01T00:10:00.000Z", "uuid": "u10"}
+{"type": "user", "timestamp": "2099-01-01T00:11:00.000Z", "uuid": "u11", "message": {"role": "user", "content": "x"}}
+{"type": "assistant", "timestamp": "2099-01-01T00:12:00.000Z", "uuid": "u12", "message": {"id": "msg_2", "role": "assistant", "usage": {"input_tokens": 50, "output_tokens": 5, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0}}}
+{"type": "user", "timestamp": "2099-01-01T00:13:00.000Z", "uuid": "u13", "message": {"role": "user", "content": "x"}}
+{"type": "attachment", "timestamp": "2099-01-01T00:14:00.000Z", "uuid": "u14"}
+{"type": "user", "timestamp": "2099-01-01T00:15:00.000Z", "uuid": "u15", "message": {"role": "user", "content": "x"}}
+{"type": "attachment", "timestamp": "2099-01-01T00:16:00.000Z", "uuid": "u16"}
+{"type": "user", "timestamp": "2099-01-01T00:17:00.000Z", "uuid": "u17", "message": {"role": "user", "content": "x"}}
+{"type": "attachment", "timestamp": "2099-01-01T00:18:00.000Z", "uuid": "u18"}
+{"type": "user", "timestamp": "2099-01-01T00:19:00.000Z", "uuid": "u19", "message": {"role": "user", "content": "x"}}

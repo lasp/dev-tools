@@ -1,0 +1,7 @@
+date: 2026-09-30
+ids: [R-003, D-004@widgets]
+kind: misread
+source: PR o/r#1, review thread PRRT_a · read 2026-09-30
+by: alice
+clause: the rule came from one test's fixture
+pull_requests: []

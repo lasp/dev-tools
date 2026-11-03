@@ -1,0 +1,5 @@
+# The generic pack's smoke set: the scenarios sandbox/smoke.py runs on both checkouts of a change
+# that could alter what a skill says offline. A project's own pack keeps its set in a coverage.yaml
+# beside its scenario file.
+
+smoke: [quickstart, no-standard, design-doc-controlled-notes, skill-feedback-log]

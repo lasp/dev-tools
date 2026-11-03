@@ -1,0 +1,7 @@
+date: 2026-10-20
+ids: [term/T-010]
+kind: misread
+source: PR o/r#2, review thread PRRT_b · read 2026-10-20
+by: alice
+clause: packet time is when the ICIE built the packet
+pull_requests: []

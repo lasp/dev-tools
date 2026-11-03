@@ -1,0 +1,10 @@
+{"review_threads": [
+  {"id": "PRRT_must", "comments": [
+    {"body": "**Must fix before merge** — the reader drops the last packet\n\nThe loop stops one short.\n\n<details><summary>Standard</summary>\n\nkey: `R-002/pkg/reader.py::read`\n</details>\n\n🤖 _AI-assisted comment, reviewed and approved by @alice before posting._", "path": "pkg/reader.py", "original_line": 42, "line": 42, "author": "alice", "created_at": "2026-09-30T16:09:00Z"},
+    {"body": "Agree.", "path": "pkg/reader.py", "original_line": 42, "line": 42, "author": "bob", "created_at": "2026-09-30T16:20:00Z"}
+  ]},
+  {"id": "PRRT_file", "comments": [
+    {"body": "**Suggestion** — name the module's units in its docstring\n\n<details><summary>Standard</summary>\n\nkey: `R-005/pkg/units.py`\n</details>\n\n🤖 _AI-assisted comment, reviewed and approved by @alice before posting._", "path": "pkg/units.py", "author": "alice", "created_at": "2026-09-30T16:09:30Z"},
+    {"body": "Agree, will add.", "path": "pkg/units.py", "author": "bob", "created_at": "2026-09-30T16:21:00Z"}
+  ]}
+]}

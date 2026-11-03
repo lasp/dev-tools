@@ -1,0 +1,7 @@
+date: 2026-09-30
+ids: [R-012]
+kind: misread
+source: the release process page, version 5; the versioning scheme page, version 10 · read 2026-09-30
+by: alice
+clause: R-012's prose stated the minor-versus-patch judgment without the two pages that define a minor release; the wording now names both
+pull_requests: [94]

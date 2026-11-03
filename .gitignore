@@ -1,0 +1,11 @@
+.claude/settings.local.json
+.review/
+.claude/current-plan.md
+__pycache__/
+.vscode/
+.idea/
+.claude/CLAUDE.local.md
+.env*
+.DS_Store
+.venv/
+uv.lock

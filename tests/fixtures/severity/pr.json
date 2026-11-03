@@ -1,0 +1,1 @@
+{"number": 7, "title": "PROJ-7: A change", "state": "closed", "draft": false, "merged": true, "user": {"login": "alice"}, "head": {"ref": "PROJ-7-a-change", "sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}, "base": {"ref": "main"}, "merged_at": "2026-10-01T18:00:00Z"}

@@ -1,0 +1,3 @@
+# Status roles as data, work and work-no-profile: only the reader that reads the ticket's status changes.
+lasp-dev:source-reader system:1: source-reader reads a status named by role from jira.roles, and stops a line on an error from it
+lasp-dev:source-reader skill:using-jira: The ticket workflow points at jira.roles in place of naming the roles, and the Status row drops "the implementation status"

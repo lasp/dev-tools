@@ -1,0 +1,23 @@
+{
+  "counts": {
+    "agents/github-pr-reviewer.md": 4,
+    "agents/implementation-planner.md": 3,
+    "skills/design-doc/SKILL.md": 1,
+    "skills/downstream/SKILL.md": 5,
+    "skills/pr-create/body.md": 1,
+    "skills/quickstart/SKILL.md": 2,
+    "skills/ticket-draft/SKILL.md": 1,
+    "skills/using-jira/SKILL.md": 1
+  },
+  "mission": {
+    "skills/using-curryer/": "the curryer constellation and its downstream map"
+  },
+  "patterns": {
+    "(?<![\\w.-])\\d{8,9}(?![\\w-]|\\.\\d)": "a Confluence page ID",
+    "(?i)(?<!lasp-dev@)\\blibera(?!-tools)(?:_\\w+)?\\b": "Libera, LASP-Libera, the LIBERA space and a libera_* repository, this one included; not the plugin's own name, lasp-dev, or its marketplace, lasp-dev@lasp-dev-tools, which change together when the plugin is renamed",
+    "(?i)\\bCSDS\\b": "CSDS",
+    "(?i)\\bLIBSDC\\b": "the Jira project",
+    "(?i)\\bcurryer\\b": "curryer",
+    "(?i)\\blasp\\.colorado\\.edu\\b": "the internal domain"
+  }
+}

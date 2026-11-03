@@ -1,0 +1,89 @@
+contract: 11
+pr: 42
+ticket: none
+stack: none
+claims: none
+branch: report-short-rows
+head: 49a6f0b
+date: 2026-09-20
+merged: 2026-10-03
+standards_sha: 9f01488
+profile: r
+adjudicated_by: alice
+build: "passed"
+plan: "approved by alice"
+inner:
+  gates: "lint 1 · types 0 · tests 6 · reviewer rounds 1 · wall clock 24 min"
+  tokens: "418902 in · 29114 out · 6120457 cached, main session plus 3 subagents"
+  depth: none
+  reopened: []
+  fired: ["R-002", "R-004", "R-006", "R-007", "R-009", "R-012", "R-013"]
+  declined: []
+  nominated: []
+  procedure: []
+  reproduced: none
+  ripple: none
+author: alice
+rework_rounds: []
+findings:
+  - key: "term/T-010/widgets/loader.py::_report_short_rows"
+    severity: should-fix
+    at: "widgets/loader.py:576"
+    thread: PRRT_synthetic001
+    verdict: agree
+    by: alice
+  - key: "R-012/pyproject.toml::version"
+    severity: should-fix
+    at: "pyproject.toml:3"
+    thread: PRRT_synthetic002
+    verdict: disagree
+    reason: "Nothing callers rely on changes here: `ROW_LIMIT` is informational and the warning fires only on files that were already malformed, so a patch release is right. 2.4.1 is reserved for the fix queued ahead of this one."
+    by: alice
+  - key: "D-008@r/widgets/loader.py::_report_short_rows"
+    severity: suggestion
+    at: "widgets/loader.py:592"
+    thread: PRRT_synthetic003
+    verdict: agree
+    by: alice
+  - key: "ticket/AC-2/tests/test_loader.py::test_report_short_rows_classifies_rows"
+    severity: suggestion
+    at: "tests/test_loader.py:328"
+    thread: PRRT_synthetic004
+    verdict: discuss
+  - key: "ticket/AC-5/widgets/loader.py::load_rows"
+    severity: suggestion
+    at: "widgets/loader.py:237"
+    thread: PRRT_synthetic005
+    verdict: agree
+    by: alice
+  - key: "R-004/widgets/loader.py::load_rows"
+    severity: suggestion
+    at: "widgets/loader.py:203"
+    thread: PRRT_synthetic006
+    verdict: agree
+    by: alice
+questions: []
+threads:
+  - thread: PRRT_synthetic007
+    by: review
+    authorship: ai-drafted
+    severity: question
+    at: "widgets/loader.py:568"
+    opened: 2026-09-20
+    resolved: false
+    outdated: false
+    replies: 1
+    verdict: answered
+    a: "Discuss. That depends on the export, not on us; I've asked its owners and will add a case once they reply."
+reviews: []
+comments:
+  - comment: 1000000202
+    by: bot
+    authorship: bot
+    posted: 2026-09-21
+    headline: "Coverage report: 91% of changed lines covered."
+  - comment: 1000000201
+    by: bob
+    authorship: human
+    posted: 2026-09-21
+    headline: "Could the short-row report go in its own pull request? The `ROW_LIMIT` check stands alone."

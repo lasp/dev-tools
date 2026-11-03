@@ -1,0 +1,4 @@
+# Status roles as data, ticket-draft scenarios: the skill names the filed and approved statuses by role, and its reader reads them from jira.roles.
+main skill:ticket-draft: ticket-draft names the filed and the approved status by role, read from jira.roles under Writes
+lasp-dev:source-reader system:1: source-reader reads a status named by role from jira.roles, and stops a line on an error from it
+lasp-dev:source-reader skill:using-jira: The ticket workflow points at jira.roles in place of naming the roles, and the Status row drops "the implementation status"

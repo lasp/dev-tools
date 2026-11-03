@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# One headless Claude Code turn in a sandbox, logged as stream-json.
+#
+#   sandbox/sbx-claude <sandbox> <repo> <log> [claude args, e.g. --resume <id>] -- "<prompt>"
+#
+# Runs in <sandbox>/repos/<repo> with the plugin loaded from SBX_PLUGIN_DIR (default
+# <sandbox>/repos/dev-tools), on SBX_MODEL (default sonnet), capped at SBX_BUDGET_USD
+# dollars (default 5), in dontAsk mode: Bash runs in the sandbox <sandbox>/settings.json sets,
+# other tools run only where its rules allow, and everything else is denied rather than asked.
+# Only the repository's settings load (--setting-sources project,local), and <sandbox>/settings.json
+# excludes every CLAUDE.md above the sandbox, so nothing of the person's installed plugin, skills,
+# hooks, allow rules or instructions rides along, and the MCP servers are
+# exactly those in <sandbox>/mcp.json, which sandbox.sh --mcp-from-user copies from the person's
+# configuration (--strict-mcp-config); README.md says why the other forms were dropped. <log> is the stream-json file, replaced unless --resume continues it, with
+# stderr beside it as <log>.stderr. Prints the final result, the session id and the denials.
+set -euo pipefail
+
+[ $# -ge 4 ] || { echo "usage: sbx-claude <sandbox> <repo> <log> [claude args] -- \"<prompt>\"" >&2; exit 2; }
+sandbox=$(cd "$1" && pwd) repo=$2 log=$(cd "$(dirname "$3")" && pwd)/$(basename "$3")
+shift 3
+extra=()
+while [ $# -gt 0 ] && [ "$1" != "--" ]; do extra+=("$1"); shift; done
+[ "${1:-}" = "--" ] || { echo "sbx-claude: no -- before the prompt" >&2; exit 2; }
+prompt=$2
+cwd="$sandbox/repos/$repo"
+[ -d "$cwd" ] || { echo "sbx-claude: no repository $cwd" >&2; exit 1; }
+[ -f "$sandbox/settings.json" ] || { echo "sbx-claude: no $sandbox/settings.json; run.py writes it" >&2; exit 1; }
+[ -f "$sandbox/mcp.json" ] || { echo "sbx-claude: no $sandbox/mcp.json; build the sandbox with sandbox.sh --mcp-from-user" >&2; exit 1; }
+
+resuming=0
+for a in "${extra[@]+"${extra[@]}"}"; do [ "$a" = "--resume" ] && resuming=1; done
+[ "$resuming" = 1 ] || : >"$log"
+
+# A package that reads units through udunits needs it found; on macOS Homebrew keeps the library out of the default path.
+if [ "$(uname)" = Darwin ] && command -v brew >/dev/null && udunits=$(brew --prefix udunits 2>/dev/null); then
+    export DYLD_LIBRARY_PATH="$udunits/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+fi
+
+# No git credential helper answers inside the session: the fetches a scenario makes read public
+# repositories, and the keychain would otherwise let a command push to a URL it names. A served
+# repository, below, is fetched from a local path and pushed to none.
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0= GIT_TERMINAL_PROMPT=0
+# A repository not on GitHub yet, such as a standard a scenario points at, is served from a bare
+# repository at <sandbox>/served/<owner>/<name>.git, in place of GitHub's in either form, for
+# fetches only: a push to it goes to a path that does not exist, so the served copy never changes.
+config() {
+    export "GIT_CONFIG_KEY_$GIT_CONFIG_COUNT=$1" "GIT_CONFIG_VALUE_$GIT_CONFIG_COUNT=$2"
+    GIT_CONFIG_COUNT=$((GIT_CONFIG_COUNT + 1))
+}
+for served in "$sandbox"/served/*/*.git; do
+    [ -d "$served" ] || continue
+    name=${served#"$sandbox/served/"} name=${name%.git}
+    for form in "https://github.com/$name" "git@github.com:$name"; do
+        for url in "$form.git" "$form"; do
+            config "url.file://$served.insteadOf" "$url"
+            config "url.file://$sandbox/served/no-push.pushInsteadOf" "$url"
+        done
+    done
+done
+
+args=(-p "$prompt" --plugin-dir "${SBX_PLUGIN_DIR:-$sandbox/repos/dev-tools}" --settings "$sandbox/settings.json"
+    --setting-sources project,local --mcp-config "$sandbox/mcp.json" --strict-mcp-config --permission-mode dontAsk
+    --model "${SBX_MODEL:-sonnet}" --output-format stream-json --verbose --max-budget-usd "${SBX_BUDGET_USD:-5}")
+(cd "$cwd" && claude "${args[@]}" "${extra[@]+"${extra[@]}"}" </dev/null >>"$log" 2>>"$log.stderr") || true
+
+python3 - "$log" <<'PY'
+import json, sys
+last = None
+for line in open(sys.argv[1]):
+    try:
+        event = json.loads(line)
+    except ValueError:
+        continue
+    if event.get("type") == "result":
+        last = event
+if last is None:
+    print("no result event; see the .stderr beside the log")
+    raise SystemExit(1)
+print(last.get("result") or "")
+print("---")
+print(f"session_id={last.get('session_id')} cost_usd={last.get('total_cost_usd')} turns={last.get('num_turns')} "
+      f"duration_s={round(last.get('duration_ms', 0) / 1000)} is_error={last.get('is_error')}")
+for d in last.get("permission_denials", []):
+    print("denied:", d.get("tool_name"), json.dumps(d.get("tool_input"))[:200])
+PY

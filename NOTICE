@@ -1,0 +1,11 @@
+lasp-dev
+Copyright (c) 2026 The Regents of the University of Colorado
+
+The planning, build and review skills and agents (implement-change, pr-create, pr-review, pr-fix
+and commit, with the agents they run) began from medley56/llm-tooling
+(https://github.com/medley56/llm-tooling) at the commit UPSTREAM records, by Gavin Medley, and
+have since been substantially rewritten; the rest of this project was written here.
+
+scripts/jira_markup.py contains code from mcp-atlassian 0.23.1
+(https://github.com/sooperset/mcp-atlassian), MIT License, Copyright (c) 2024 Hyeonsoo Lee; its
+notice is kept in the file.

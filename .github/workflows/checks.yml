@@ -1,0 +1,71 @@
+name: Checks
+
+# The plugin's tests and drift checks: the record and count scripts, the hooks, the
+# standard-file script, the static check of what the skills and agents name, American spelling,
+# and Claude Code's own validation of the marketplace and plugin manifests. None of them needs a
+# login or a secret.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Tests and drift checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.2.0
+
+      - name: Python environment
+        # The dev group in pyproject.toml: PyYAML for tests/test_sandbox.py, which skips without it,
+        # and codespell. The Python is the one in .python-version.
+        run: uv sync
+
+      - name: Atlassian server package
+        # Caches mcp-atlassian for tests/test_jira_markdown.py, which checks scripts/jira_markup.py,
+        # the copy of its converter, against it with `uvx --offline` and skips that check without it.
+        run: uvx --from mcp-atlassian@0.23.1 python -c pass
+
+      - name: Script tests
+        run: uv run python -m unittest discover -s tests
+
+      - name: Build hook
+        run: bash tests/test_build_record.sh
+
+      - name: Session-start line
+        run: bash tests/test_where.sh
+
+      - name: Standard file
+        run: bash tests/test_standard_file.sh
+
+      - name: Atlassian write gate
+        run: bash tests/test_atlassian_gate.sh
+
+      - name: What the skills and agents name exists
+        run: uv run python scripts/check_static.py
+
+      - name: Python 3.9, the README's floor
+        # A throwaway environment, so the 3.12 one in .venv is left as it is.
+        run: |
+          uv run --isolated --python 3.9 python -m unittest discover -s tests
+          uv run --isolated --python 3.9 python scripts/check_static.py
+
+      - name: American spelling
+        run: uv run codespell --builtin clear,rare,en-GB_to_en-US --skip "./.git,./tests/fixtures" .
+
+      - name: Plugin and marketplace manifests
+        # A fresh HOME, so validation never reads or writes the runner's real configuration.
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.283
+          HOME="$(mktemp -d)" claude plugin validate .

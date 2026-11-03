@@ -1,0 +1,40 @@
+{
+  "review_threads": [
+    {
+      "id": "PRRT_person",
+      "is_resolved": true,
+      "is_outdated": true,
+      "comments": [
+        {
+          "body": "The loop stops one short; is the last packet dropped?",
+          "path": "pkg/reader.py",
+          "original_line": 42,
+          "line": 42,
+          "author": "bob",
+          "created_at": "2026-09-30T16:09:00Z"
+        },
+        {
+          "body": "Yes, fixed in the next commit.",
+          "path": "pkg/reader.py",
+          "original_line": 42,
+          "line": 42,
+          "author": "alice",
+          "created_at": "2026-09-30T16:20:00Z"
+        }
+      ]
+    },
+    {
+      "id": "PRRT_file",
+      "is_resolved": false,
+      "is_outdated": false,
+      "comments": [
+        {
+          "body": "Units would read better in one module.",
+          "path": "pkg/units.py",
+          "author": "bob",
+          "created_at": "2026-09-30T16:11:00Z"
+        }
+      ]
+    }
+  ]
+}

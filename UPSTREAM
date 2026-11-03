@@ -1,0 +1,4 @@
+# Fork point of the general skills and agents (README "Changing the tooling"). Ported by hand; nothing syncs.
+upstream: https://github.com/medley56/llm-tooling.git
+commit: ed9cc81af207f8191f67fb4887e5f538cf7ea3d1
+reviewed: none

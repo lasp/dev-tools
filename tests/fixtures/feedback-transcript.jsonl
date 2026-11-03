@@ -1,0 +1,32 @@
+{"type": "permission-mode", "permissionMode": "default"}
+{"type": "assistant", "uuid": "a0", "message": {"role": "assistant", "content": [{"type": "text", "text": "Before any message from the person."}]}}
+{"type": "user", "uuid": "u1", "message": {"role": "user", "content": "First question from the person."}, "origin": {"kind": "human"}}
+{"type": "attachment", "attachment": {"type": "total_tokens_reminder", "content": "ATTACHMENT-BODY"}}
+{"type": "assistant", "uuid": "a1", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "THINKING-BODY"}]}}
+{"type": "assistant", "uuid": "a2", "message": {"role": "assistant", "content": [{"type": "text", "text": "First answer from Claude."}]}}
+{"type": "assistant", "uuid": "a3", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t", "name": "Bash", "input": {"command": "echo TOOL-INPUT-BODY"}}]}}
+{"type": "user", "uuid": "r1", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "content": "TOOL-RESULT-BODY"}]}}
+{"type": "assistant", "uuid": "a4", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t", "name": "Bash", "input": {"command": "ls"}}]}}
+{"type": "assistant", "uuid": "a5", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t", "name": "Read", "input": {"file_path": "/x"}}]}}
+{"type": "assistant", "uuid": "a6", "message": {"role": "assistant", "content": [{"type": "text", "text": "Done reading."}]}}
+{"type": "system", "subtype": "stop_hook_summary", "content": "HOOK-BODY"}
+{"type": "user", "uuid": "u2", "message": {"role": "user", "content": "<command-message>lasp-dev:work</command-message>\n<command-name>/lasp-dev:work</command-name>\n<command-args>PROJ-1</command-args>"}}
+{"type": "user", "uuid": "m2", "message": {"role": "user", "content": [{"type": "text", "text": "SKILL-BODY"}]}, "isMeta": true}
+{"type": "assistant", "uuid": "a7", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t", "name": "Agent", "input": {"subagent_type": "pr-reader", "prompt": "AGENT-PROMPT-BODY"}}]}}
+{"type": "user", "uuid": "p2", "message": {"role": "user", "content": "PEER-BODY"}, "isMeta": true, "origin": {"kind": "peer"}}
+{"type": "user", "uuid": "n2", "message": {"role": "user", "content": "<task-notification>TASK-BODY</task-notification>"}, "origin": {"kind": "task-notification"}}
+{"type": "assistant", "uuid": "a8", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t", "name": "Skill", "input": {"skill": "lasp-dev:commit"}}]}}
+{"type": "assistant", "uuid": "s1", "message": {"role": "assistant", "content": [{"type": "text", "text": "SIDECHAIN-BODY"}]}, "isSidechain": true}
+{"type": "attachment", "attachment": {"type": "queued_command", "commandMode": "prompt", "origin": {"kind": "human"}, "prompt": "Typed while Claude worked."}}
+{"type": "assistant", "uuid": "a9", "message": {"role": "assistant", "content": [{"type": "text", "text": "Noted."}]}}
+{"type": "user", "uuid": "u4", "message": {"role": "user", "content": "Third question.<system-reminder>REMINDER-BODY</system-reminder>"}, "origin": {"kind": "human"}}
+{"type": "assistant", "uuid": "a10", "message": {"role": "assistant", "content": [{"type": "text", "text": "Third answer."}]}}
+{"type": "assistant", "uuid": "a10b", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "q1", "name": "AskUserQuestion", "input": {"questions": [{"question": "Which way?", "header": "Way", "multiSelect": false, "options": [{"label": "The short way (Recommended)", "description": "OPTION-BODY"}]}, {"question": "Push now?", "header": "Push", "multiSelect": false, "options": [{"label": "Yes", "description": "OPTION-BODY"}]}]}}]}}
+{"type": "user", "uuid": "r4", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "q1", "content": "ANSWER-RESULT-BODY"}]}, "toolUseResult": {"questions": [], "answers": {"Which way?": "The short way (Recommended)", "Push now?": "Only after the token=hunter22 check"}, "annotations": {"Which way?": {"notes": "see https://jira.internal.example/browse/PROJ-9"}}}}
+{"type": "assistant", "uuid": "a10c", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "q2", "name": "AskUserQuestion", "input": {"questions": [{"question": "Proceed?", "options": []}]}}]}}
+{"type": "user", "uuid": "r5", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "q2", "is_error": true, "content": "DECLINE-RESULT-BODY"}]}, "toolUseResult": "User rejected tool use"}
+{"type": "user", "uuid": "b1", "message": {"role": "user", "content": "<bash-input>make check</bash-input>"}}
+{"type": "user", "uuid": "b2", "message": {"role": "user", "content": "<bash-stdout>BASH-STDOUT-BODY</bash-stdout><bash-stderr>BASH-STDERR-BODY</bash-stderr>"}}
+{"type": "user", "uuid": "u5", "message": {"role": "user", "content": "<command-message>lasp-dev:skill-feedback</command-message>\n<command-name>/lasp-dev:skill-feedback</command-name>\n<command-args>ticket-draft: too long</command-args>"}}
+{"type": "user", "uuid": "m5", "message": {"role": "user", "content": [{"type": "text", "text": "SKILL-BODY"}]}, "isMeta": true}
+{"type": "assistant", "uuid": "a11", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t", "name": "AskUserQuestion", "input": {"questions": [{"question": "Which skill?", "options": [{"label": "ticket-draft", "description": "OPTION-BODY"}]}]}}]}}

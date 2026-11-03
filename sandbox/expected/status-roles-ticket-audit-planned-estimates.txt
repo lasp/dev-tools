@@ -1,0 +1,4 @@
+# Status roles as data, ticket-audit-planned-estimates: the estimates sweep times a ticket from the implementation status to the finished one, both read from jira.roles.
+lasp-dev:source-reader system:1: source-reader reads a status named by role from jira.roles, and stops a line on an error from it
+lasp-dev:source-reader skill:using-jira: The ticket workflow points at jira.roles in place of naming the roles, and the Status row drops "the implementation status"
+main skill:ticket-audit: ticket-audit reads jira.roles at Apply, stops a close on an error from it, and cites it in its sweeps

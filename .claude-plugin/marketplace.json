@@ -1,0 +1,13 @@
+{
+  "name": "lasp-dev-tools",
+  "description": "Claude Code development tooling: the workflow from ticket to merged pull request, held to each repository's standard.",
+  "owner": {
+    "name": "LASP"
+  },
+  "plugins": [
+    {
+      "name": "lasp-dev",
+      "source": "./"
+    }
+  ]
+}

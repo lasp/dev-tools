@@ -1,0 +1,47 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/debian
+{
+	"name": "lasp-dev",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/base:trixie",
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// uv provides uvx, which runs stdio MCP servers, and manages the Python environment.
+	"features": {
+		"ghcr.io/va-h/devcontainers-features/uv:1": {}
+	},
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-vscode.live-server",
+				"anthropic.claude-code",
+				"dnut.rewrap-revived"
+			],
+			"settings": {
+				"dev.containers.copyGitConfig": true,
+				"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+				"[markdown]": {
+					"editor.rulers": [
+						120
+					]
+				},
+				"editor.formatOnSave": true
+			},
+			"workbench.trustedDomains": [
+				"https://claude.ai"
+			]
+		}
+	},
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
+	"remoteEnv": {
+		"CLAUDE_CONFIG_DIR": "/workspaces/.claude",
+		// The project venv first, so `python3` in a shell, a hook or a skill is the one `uv sync` built.
+		"PATH": "${containerWorkspaceFolder}/.venv/bin:${containerEnv:PATH}"
+	},
+	// Runs once, at container creation. The only lifecycle hook.
+	"postCreateCommand": "./.devcontainer/post-create.sh"
+}

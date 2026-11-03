@@ -1,0 +1,17 @@
+contract: 6
+head: 10858dbb410edcd7f3ec28e68403eb3851994a5c
+draft: true
+state: open
+author: alice
+ticket: none
+build: Build: passed
+findings review: 9000000001 reviewed: 49a6f0ba0c4d36c6d254c62dfe78dad21260d2d7
+threads: 7
+id | key, or opener | severity, or resolved | headline | path:line | verdict | contested | replies after | proposed, or outdated | after the verdict | judged
+PRRT_synthetic001 | term/T-010/widgets/loader.py::_report_short_rows | should-fix | short-row message counts file lines, which the parser has already joined | widgets/loader.py:576 | agree | no | 1 | none | The log should talk about parsed rows; a line number from the file sends people to the wrong place. | no
+PRRT_synthetic002 | R-012/pyproject.toml::version | should-fix | a new public constant and warning ship as a patch | pyproject.toml:3 | disagree | no | 0 | none | Nothing callers rely on changes here: `ROW_LIMIT` is informational and the warning fires only on files that were already malformed, so a patch release is right. 2.4.1 is reserved for the fix queued ahead of this one. | no
+PRRT_synthetic003 | D-008@r/widgets/loader.py::_report_short_rows | suggestion | long-row message says every long row is a delimiter error | widgets/loader.py:592 | agree | no | 1 | none | The count mixes several causes, and the message should list them instead of guessing one. | no
+PRRT_synthetic004 | ticket/AC-2/tests/test_loader.py::test_report_short_rows_classifies_rows | suggestion | no case for a short last row with no trailing newline | tests/test_loader.py:328 | discuss | no | 0 | none | I can add it, but has anyone seen a truncated final row from the export? If not, I'd spend the case on a failure we know about. | no
+PRRT_synthetic005 | ticket/AC-5/widgets/loader.py::load_rows | suggestion | nothing tests that `summary_only`/`verbose` reach the helper | widgets/loader.py:237 | agree | no | 1 | none | One parametrized case through `load_rows` is enough; these flags are for local debugging and don't need a matrix. | no
+PRRT_synthetic006 | R-004/widgets/loader.py::load_rows | suggestion | public docstring omits the new `KeyError` | widgets/loader.py:203 | agree | no | 1 | none | Worth adding to the docstring. | no
+PRRT_synthetic007 | - | question | can the upstream export write a blank row between sections? | widgets/loader.py:568 | answered | no | 0 | none |  | no

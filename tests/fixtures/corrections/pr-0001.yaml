@@ -1,0 +1,11 @@
+pr: 1
+date: 2026-09-25
+merged: 2026-09-26
+author: alice
+findings:
+  - key: R-003/x.py::f
+    verdict: agree
+  - key: D-004@widgets/y.py::g
+    verdict: disagree
+    reason: "not here"
+questions: []

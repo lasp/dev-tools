@@ -1,0 +1,50 @@
+# How the tools operate under every repository's standard: scripts/profile.py reads it below the
+# standard's settings and what is detected, and it sets every key. It holds what the tools choose, not what a
+# repository holds: a value only a repository can give reads `not yet recorded` or is empty here,
+# and profile.py takes it from the repository's own files and history where survey.py detects it.
+
+ticket:
+  pattern: not yet recorded
+  project: not yet recorded
+public: not yet recorded
+template: not yet recorded
+downstream: not yet recorded
+# Empty, so no test, coverage or lint command is passed to a reviewer, and no command counts as a
+# gate, until the repository's own files give one: which commands are its gates is its fact.
+tests:
+  command: ''
+coverage:
+  command: ''
+lint:
+  command: ''
+  regex: not yet recorded
+types:
+  regex: not yet recorded
+gates:
+  tests: not yet recorded
+github_server: ''
+# Plain, so a review posts no instructions about a workflow the repository has not taken up.
+posted_text: plain
+# The changelog, the README and docs/, so a skill, an agent file, CLAUDE.md, AGENTS.md or an
+# instruction file is never light by default.
+depth:
+  light:
+    - {glob: 'CHANGELOG.md', brief: documentation}
+    - {glob: 'README.md', brief: documentation}
+    - {glob: 'docs/**/*.md', brief: documentation}
+    - {glob: 'doc/**/*.md', brief: documentation}
+  deep: []
+
+# Set only by a standard's project settings and here, never in a repository's own profile in a
+# standard for several. No default describes a Jira workflow, so no status is moved or routed by until a
+# standard records one (`jira.roles` and `jira.pr_statuses` print `not yet recorded`); no host or
+# repository is internal until a standard names it.
+jira: not yet recorded
+internal:
+  domains: []
+  private_repositories: []
+# No wordings beyond the plugin's own attribution line mark a comment as drafted with AI.
+attribution:
+  phrases: []
+surface:
+  identifiers: []

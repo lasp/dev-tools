@@ -1,0 +1,4 @@
+# Each status the generic skills name by role carries that role, and --defaults prints the roles.
+team/defaults: the whole team output gains the role on five statuses and the five jira.roles lines
+team/defaults.jira.statuses: the five statuses with a role print it
+team/defaults.jira.roles: new; the base has no such field

@@ -1,0 +1,31 @@
+# A repository's profile, for its standard: its own standards/profile.yaml, or profiles/<repo>.yaml
+# in a standard for several repositories, whose profile.yaml holds the project keys (ticket,
+# posted_text, github_server). Copy this file, fill each value from the repository's own files,
+# and write `not yet recorded` for any value nobody has looked up. scripts/profile.py resolves
+# it; a key left out takes what is detected from the checkout, then the default profile's value.
+ticket:
+  pattern: '<ticket key regex, such as PROJ-\d+>' # where.sh, work, implement-change, pr-review, record.py: the key a branch, title or body carries
+  # A branch name's key is matched ignoring case, so case cannot tell a key from a word: a broad
+  # pattern such as [A-Z]+-\d+ would read a branch named python-3-upgrade as PYTHON-3.
+  project: <Jira project key> # ticket-draft, to source-reader's search: the Jira project
+public: <true or false> # using-jira, using-confluence: whether an internal link may be posted here
+template: <a directory of the standard's templates/> # pr-create, quickstart: which pull request template to expect
+downstream: [<repository>, <repository>] # ticket-draft, downstream: the repositories a change ripples into
+tests:
+  command: '<the command a pull request runs, or empty>' # the wave, to implementation-reviewer: the suite a pull request runs
+coverage:
+  command: '<the coverage command, or empty>' # the wave, to pytest-runner in coverage mode
+lint:
+  command: '<the linters, followed by the changed files>' # a light round, to implementation-reviewer: the linters on the changed files
+  regex: '<ERE matching the lint command>' # build-record.sh: a Bash command that counts as a lint gate
+types:
+  regex: '<ERE matching the type checker>' # build-record.sh: a Bash command that counts as a types gate
+gates:
+  tests: '<ERE matching the test command>' # build-record.sh: a Bash command that counts as a tests gate
+github_server: '<server name, or empty to pick by owner>' # using-github: the server's name, ending the search when set
+posted_text: <workflow or plain> # pr-review: workflow posts the instruction lines and the plugin's commands; plain drops them
+depth: # depth_floor.py: the paths that allow a light build, and the ones that force a deep one
+  light:
+    - {glob: '<path glob>', brief: <focused-reviewer brief>}
+    - {glob: '<path glob>', hunk: '<regex every changed hunk matches>', brief: <brief>}
+  deep: ['<path glob>', '<path glob>']
