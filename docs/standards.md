@@ -6,8 +6,8 @@ the plugin holds the tools and their defaults and nothing about any project. The
 in the plugin: would it change if a different project used the plugin? If so, it belongs in the
 project's standard.
 
-ROADMAP's "Neutral examples in generic skills" and "Libera content in the review contract" track
-what the plugin still carries of one project; "Status" below names what is built.
+ROADMAP's "Neutral examples in generic skills" tracks what the plugin still carries of one
+project; "Status" below names what is built.
 
 ## What the plugin holds
 
@@ -139,6 +139,29 @@ and `archive/` records the old number beside the new.
 Each rule cites the pull requests it fired on, `<repo>#<n>`, beside the ledger, and every count is
 derived from the distinct citations, so a harvest run twice counts nothing twice and no reviewer is
 named. This replaces the stored review records.
+
+## Example decision: fail loud
+
+The review contract treats a change that lets a forbidden condition pass silently as a finding,
+and leaves what is forbidden to the project. A project whose code turns defined inputs into a
+defined product, such as a science data pipeline, can adopt this decision into its
+`decisions.md`, numbered as its next `D-nnn`; a web service or a command-line tool, where a retry
+is often specified behavior, would not.
+
+```markdown
+### D-nnn · Fail loud: a defined product, or the run stops
+
+_<YYYY-MM> · **established** · source: <who decided, or the pull request>_
+
+This code turns defined inputs into a defined product, or stops. Where a diff lets a condition
+that invalidates the product pass, it raises: a broad `except` or a handler that logs and
+continues, a silent coercion (`nan_to_num`, `errors="coerce"`, clipping, zero-filling a gap), a
+default standing in for a required input, a `warnings.warn` where the output is unusable, a retry
+or a fallback to a cached product or another calibration. A review raises it as a should-fix, or
+a must-fix when the product would be wrong with no trace. The Proposed line is the raise and the
+test that asserts it, never logging, a retry or graceful degradation. Pre-existing code is in
+scope only where the diff makes it wrong.
+```
 
 ## Worked example: Libera
 

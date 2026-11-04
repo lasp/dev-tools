@@ -11,9 +11,8 @@ plan, build, review, pull request, and a standard that changes with what reviewe
 differs between teams is meant to live in each repository's standard, not in the plugin: the
 review rules and decisions, the Jira project and its workflow, the Confluence spaces, the pull
 request template, the test commands. It is not all there yet: Libera's names still appear in a
-number of skills and agents, and the review contract checks every repository's tickets against
-Libera's ticket headings. [`ROADMAP.md`](ROADMAP.md) tracks both, in "Neutral examples in generic
-skills" and "Libera content in the review contract". A repository keeps its standard in its own
+number of skills and agents, which [`ROADMAP.md`](ROADMAP.md) tracks in "Neutral examples in
+generic skills". A repository keeps its standard in its own
 `standards/`, or points at a project's shared standard in another repository. Tools for one
 domain, such as flight software or engineering, belong in plugins of their own installed beside
 this one.

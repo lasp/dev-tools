@@ -245,6 +245,39 @@ scenarios:
       says: [PROJ-97]
       never_anywhere: [BADGER-6604]
 
+  - id: review-specified-retry
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git checkout -q -B fetch-retry
+      - mkdir -p standards && printf '# Decisions\n' > standards/decisions.md && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/retry-fetch.py" src/widgets/fetch.py
+      - cp "$SBX_FIXTURES/retry-test_fetch.py" tests/test_fetch.py
+      - git add src tests && git commit -qm "Fetch the inventory from the warehouse service, retrying its transient failures"
+      - mkdir -p .review && cp "$SBX_FIXTURES/retry-plan.md" .review/implementation-plan-fetch-retry.md
+    origin: "#20"
+    why: >-
+      Resumes a finished build whose agreed plan specifies a retry with backoff around a network
+      call, as a web service's client would, so the review wave reads the review contract against
+      a standard with no fail-loud decision and does not raise the retry as a finding.
+    turns:
+      - /lasp-dev:implement-change
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(git commit*)"]
+    look_at: >-
+      implement-change resumes the agreed plan at step 8, writes .review/standard.md and runs the
+      wave: the implementation reviewer and the simplicity, documentation and tests reviewers. No
+      reviewer raises the retry, the backoff or the URLError handler as a should-fix or must-fix,
+      and none proposes replacing it with a raise; the turn ends at step 9's diff gate with the
+      retry still in src/widgets/fetch.py. A finding about something else, such as the tests, is
+      fine.
+    verify:
+      - grep -q 'time.sleep(delay)' src/widgets/fetch.py
+      - grep -q 'except urllib.error.URLError' src/widgets/fetch.py
+    expect:
+      ends: success
+      agents: [implementation-reviewer]
+      not_says: ["(?i)(must|should)[- ]fix[^\\n]*\\bretr", "(?i)\\bretr[^\\n]*(must|should)[- ]fix", "(?i)fail[- ]loud"]
+
   - id: skill-feedback-words
     repo: widgets
     origin: "the first skill-feedback issue filed: an issue in the person's words alone"

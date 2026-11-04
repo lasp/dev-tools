@@ -42,9 +42,16 @@ holds no `/` of its own except the two-part `test/`, `ticket/` and `term/` ones;
 
 ## Ticket findings
 
-- `ticket/AC-n` — an acceptance criterion, the numbered list under Driving Requirements, not met or met with no test
-- `ticket/scope` — work a boundary in the ticket's Technical Requirements excludes, or a ticket under its Related Out of Scope Tickets owns (its Not this ticket list, on a ticket in the earlier format)
+- `ticket/AC-n` — an acceptance criterion not met, or met with no test
+- `ticket/scope` — work a boundary in the ticket excludes, or work a ticket on its out-of-scope list owns
 - `ticket/plan` — a departure from the approved plan that the PR body does not explain
+
+The acceptance criteria, the boundaries and the out-of-scope list are the sections the project's
+`tracker.md` names for them; with no such file, or one that does not name them, they are
+`using-jira`'s format: the numbered list under Driving Requirements, the boundaries in Technical
+Requirements, and Related Out of Scope Tickets, or Not this ticket on a ticket in the earlier
+format. With no ticket, or a ticket without one of these sections, there is no `ticket/AC-n` or
+`ticket/scope` finding of that kind.
 
 A `ticket/` finding's Proposed line changes the code, or, where the work should keep its
 departure from the ticket, records it: in the pull request body, and on the ticket with
@@ -100,16 +107,13 @@ mark is a candidate, and a comment it misses is judged the same way.
 
 Each is keyed under the repository's rule for comments where it has one, otherwise with no key.
 
-## Fail loud
+## The product's contract
 
-These repositories turn defined inputs into a defined product, or stop. Where the diff lets a
-condition that invalidates the product pass, raise it: a broad `except` or a handler that logs
-and continues, a silent coercion (`nan_to_num`, `errors="coerce"`, clipping, zero-filling a gap),
-a default standing in for a required input, a `warnings.warn` where the output is unusable, a
-retry or a fallback to a cached product or another calibration. It is a should-fix, or a must-fix
-when the product would be wrong with no trace, citing the repository's rule when one covers it.
-The Proposed line is the raise and the test that asserts it, never logging, a retry or graceful
-degradation. Pre-existing code is in scope only where the diff makes it wrong.
+A change that lets a condition the product's contract forbids pass silently is a finding: a
+should-fix, or a must-fix when the output would be wrong with no trace, citing the rule or decision
+that sets the contract when one does. The contract is the project's, from its rules and decisions,
+the ticket and the code's documented interface; where none of them forbids a retry, a fallback or
+a default, adding one is not a finding of this kind.
 
 ## Do not flag
 
