@@ -225,6 +225,30 @@ scenarios:
       says: [PROJ-97]
       never_anywhere: [BADGER-6604]
 
+  - id: pr-create-new-flow
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git checkout -q -B feature/restock-run
+      - cp "$SBX_FIXTURES/restock/restock.py" src/widgets/restock.py
+      - cp "$SBX_FIXTURES/restock/test_restock.py" tests/test_restock.py
+      - 'git add -A && git commit -qm "Add the nightly restock run"'
+    origin: "#1: pull request prose uses GitHub's formatting, and a description a diagram where the change adds a flow"
+    why: >-
+      A branch that adds a four-stage pipeline built on inventory.by_part, with the why given in
+      the prompt, so the drafted description shows whether it uses GitHub's formatting and a
+      Mermaid diagram where a flow is new, and keeps prose where prose is enough.
+    turns:
+      - "/lasp-dev:pr-create Why: purchasing counts every warehouse by hand each night and orders late when a part runs low; this run merges the warehouse counts, orders each part below its minimum and writes the sheet they send to suppliers."
+    must_not_run: ["mcp__*", "Bash(gh *)", "Bash(git push*)"]
+    look_at: >-
+      The drafted description, shown before the gate, says why from the prompt and what the run
+      does. Read whether its structure fits the content: a Mermaid flowchart of load, merge, plan
+      and write, or a numbered list of the stages, where it reads faster than prose; prose for the
+      why; no formatting for its own sake. Nothing is pushed or opened.
+    expect:
+      ends: success
+
   - id: skill-feedback-words
     repo: widgets
     origin: "the first skill-feedback issue filed: an issue in the person's words alone"

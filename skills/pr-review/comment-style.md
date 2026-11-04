@@ -35,6 +35,11 @@ notification, next to the code. Write for that moment.
 
 - Use a bulleted or numbered list when a comment makes several related or
   sequential points; prose for a single point.
+- GitHub renders Markdown
+  ([syntax](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)).
+  Lists, tables and prose are chosen as `writing`'s "Structure" sets out; GitHub adds a collapsed
+  `<details>` section for what most readers skip, such as a log, and a fenced code block named
+  for its language. Use one where it reads faster than prose; none is required.
 - A code snippet either shows a prescriptive fix in place or points at the
   problem. It is never a sketch of a solution the author has not chosen.
 - Link external documentation when it is the evidence for the critique.
