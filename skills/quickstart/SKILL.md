@@ -32,7 +32,8 @@ which tools Claude Code has registered.
 ### 1. Look
 
 Run these from the repository's top level (`git rev-parse --show-toplevel`), and nothing else
-but the two `ToolSearch` lookups below. Each finding carries its fix.
+but the two `ToolSearch` lookups below, each command in a Bash call of its own, so a denied
+`claude` command stops none of the repository checks. Each finding carries its fix.
 
 - `claude plugin list`: the `Version:` line under `lasp-dev@lasp-dev-tools`, the installed commit. A
   `libera-tools@libera` entry, enabled, is the plugin this one replaced: every skill and agent
