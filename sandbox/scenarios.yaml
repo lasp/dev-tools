@@ -96,7 +96,8 @@ scenarios:
     expect:
       ends: success
       files: [".review/onboard/survey.md"]
-      files_absent: ["[!.]*"]
+      files_absent: ["[!.]*", ".[!r]*"]
+      says: ["In the repository", "\\?\\s*$"]
 
   - id: no-standard
     repo: widgets

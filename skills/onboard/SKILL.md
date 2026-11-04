@@ -15,7 +15,7 @@ description: >
 argument-hint: "[rules [Confluence page or Jira epic to add]]"
 metadata:
   author: lasp-dev
-  version: 0.6.0
+  version: 0.6.1
 ---
 
 # Onboard
@@ -247,8 +247,9 @@ the person confirms or trims it.
 
 At one point, in one widget, or as few widgets of four as the questions need
 (`${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`), each with what bears on it and a
-recommendation. A reply typed in chat answers as well, several at once included. When nothing is
-left to ask, say so in one line; step 5's question is then the next one.
+recommendation. A reply typed in chat answers as well, several at once included. When the survey
+and the standard leave no question to ask, say so in one line; step 5's question is then the next
+one.
 
 Each question opens with what the setting does in the plugin, in plain words rather than its key,
 and each option says what choosing it changes. Recording a value writes it into the standard, where
@@ -345,8 +346,8 @@ which is one file, that file whole with its difference from one already there, t
 which of these happens. Recommend writing the standard, with the repository edits for the commands
 whose sources disagree, and keeping it in `.review/onboard/` when the person skipped a question
 step 4 asked. This question is a gate that holds, as `decision-points.md` allows a skill to name
-one: it is asked even when step 4 asked none, the turn ends on it, and nothing outside
-`.review/onboard/` is written before a reply to it. No earlier reply stands in for it, "take the
+one: it is asked even when step 4 asked none, the turn ends on it, and none of the writes below
+is made before a reply to it. No earlier reply stands in for it, "take the
 recommended option for everything" included, since the person has not yet seen the values it
 would write. The recommendation says why, in
 what the next session changes: what the plugin would read from the standard that it does not read
