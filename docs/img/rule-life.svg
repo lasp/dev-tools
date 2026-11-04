@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="50 200 1820 715" width="910" height="357" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The life of a rule</title>
+  <desc id="desc">A rule starts as a candidate when a person asked for it, is admitted provisional after a merged pull request, becomes established when agreed in two pull requests, and is graduated when a check enforces it. An established rule under half agree with is reworded; a reworded rule still disputed, or a provisional rule unused, is retired. Every move is proposed at the monthly revision and decided by the group.</desc>
+  <defs><marker id="ah000000" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#000000"/></marker><marker id="ah1B51A5" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1B51A5"/></marker><marker id="ah565A5C" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#565A5C"/></marker></defs>
+  <rect x="50" y="200" width="1820" height="715" fill="#FFFFFF"/>
+  <rect x="72" y="230" width="400" height="200" fill="#FFFFFF" stroke="#000000" stroke-width="3"/>
+  <text x="94" y="282" font-size="32" fill="#1B51A5" font-weight="700">Candidate</text>
+  <text x="94" y="326" font-size="28" fill="#000000">a person asked for it</text>
+  <rect x="520" y="230" width="400" height="200" fill="#FFFFFF" stroke="#000000" stroke-width="3"/>
+  <text x="542" y="282" font-size="32" fill="#1B51A5" font-weight="700">Provisional</text>
+  <text x="542" y="326" font-size="28" fill="#000000">admitted after a merged PR</text>
+  <rect x="968" y="230" width="400" height="200" fill="#FFFFFF" stroke="#000000" stroke-width="3"/>
+  <text x="990" y="282" font-size="32" fill="#1B51A5" font-weight="700">Established</text>
+  <text x="990" y="326" font-size="28" fill="#000000">agreed in two PRs</text>
+  <rect x="1416" y="230" width="400" height="200" fill="#E8EEF8" stroke="#1B51A5" stroke-width="5"/>
+  <text x="1438" y="282" font-size="32" fill="#1B51A5" font-weight="700">Graduated</text>
+  <text x="1438" y="326" font-size="28" fill="#000000">a check enforces it</text>
+  <rect x="968" y="560" width="400" height="200" fill="#FFFFFF" stroke="#565A5C" stroke-width="3" stroke-dasharray="12 8"/>
+  <text x="990" y="612" font-size="32" fill="#1B51A5" font-weight="700">Reworded</text>
+  <text x="990" y="656" font-size="28" fill="#000000">under half agree</text>
+  <rect x="520" y="560" width="400" height="200" fill="#FFFFFF" stroke="#565A5C" stroke-width="3" stroke-dasharray="12 8"/>
+  <text x="542" y="612" font-size="32" fill="#1B51A5" font-weight="700">Retired</text>
+  <text x="542" y="656" font-size="28" fill="#000000">still disputed, or unused</text>
+  <path d="M472 330 L511.0 330.0" fill="none" stroke="#000000" stroke-width="3" marker-end="url(#ah000000)"/>
+  <path d="M920 330 L959.0 330.0" fill="none" stroke="#000000" stroke-width="3" marker-end="url(#ah000000)"/>
+  <path d="M1368 330 L1401.0 330.0" fill="none" stroke="#1B51A5" stroke-width="5" marker-end="url(#ah1B51A5)"/>
+  <path d="M1168 430 L1168.0 551.0" fill="none" stroke="#565A5C" stroke-width="3" stroke-dasharray="12 8" marker-end="url(#ah565A5C)"/>
+  <path d="M968 660 L929.0 660.0" fill="none" stroke="#565A5C" stroke-width="3" stroke-dasharray="12 8" marker-end="url(#ah565A5C)"/>
+  <path d="M720 430 L720.0 551.0" fill="none" stroke="#565A5C" stroke-width="3" stroke-dasharray="12 8" marker-end="url(#ah565A5C)"/>
+  <text x="72" y="840" font-size="30" fill="#000000">Every move is proposed at the monthly revision; the group decides.</text>
+  <text x="72" y="880" font-size="30" fill="#000000">Rule budget: 300 lines by default.</text>
+</svg>

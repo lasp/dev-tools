@@ -33,7 +33,7 @@ class RealPages(unittest.TestCase):
 
     def test_the_servers_pages_build_a_dump_record_py_reads(self):
         with tempfile.TemporaryDirectory() as tmp:
-            dump = Path(tmp)
+            dump = Path(tmp) / "pr-0007"
             shutil.copytree(ROOT / "tests/fixtures/thread-pages", dump / "pages")
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(thread_dump.main([str(dump)]), 0)
@@ -55,9 +55,9 @@ class Dump(unittest.TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        self.dump = Path(tmp.name)
+        self.dump = Path(tmp.name) / "pr-0007"
         self.pages = self.dump / "pages"
-        self.pages.mkdir()
+        self.pages.mkdir(parents=True)
         self.page("get.json", GET)
         self.page("get_reviews-1.json", [REVIEW])
         self.page("get_review_comments-1.json", {"pageInfo": {"hasNextPage": True, "endCursor": "x"}, "review_threads": [THREAD], "totalCount": 2})
@@ -80,6 +80,16 @@ class Dump(unittest.TestCase):
         self.assertEqual(json.loads((self.dump / "comments.json").read_text()), {"review_threads": [THREAD, {**THREAD, "id": "PRRT_b"}]})
         self.assertEqual(json.loads((self.dump / "issue-comments.json").read_text()), [ISSUE])
         self.assertEqual((self.dump / "body.md").read_text(), "Fix the loader.\n")
+
+    def test_a_dump_not_named_pr_and_four_digits_is_refused_and_nothing_is_written(self):
+        for name in ("pr-7", "pr-834", "pr-00834", "pr-0834.td", "834"):
+            renamed = self.dump.with_name(name)
+            self.dump.rename(renamed)
+            self.dump = renamed
+            self.assertEqual(self.run_it(), (1, f"thread_dump.py: {name} is not pr-NNNN, the number padded to four digits\n"))
+            self.assertFalse((renamed / "pr.json").exists())
+        self.dump = self.dump.rename(self.dump.with_name("pr-12345"))
+        self.assertEqual(self.run_it()[0], 0)
 
     def test_a_full_page_of_reviews_needs_the_next(self):
         self.page("get_reviews-1.json", [{**REVIEW, "id": n} for n in range(100)])

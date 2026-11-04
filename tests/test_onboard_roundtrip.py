@@ -418,6 +418,30 @@ class Detectors(unittest.TestCase):
         self.assertEqual(keys["downstream"]["seen"], [{"source": "clones (search)", "value": "user_a: 2 files"},
                                                       {"source": "clones (search)", "value": "user_b: 1 files"}])
 
+    def test_downstream_from_checkouts_that_import_the_names_the_layout_gives(self):
+        flat = {"pyproject.toml": "[project]\nname = 'lasp-curryer'\n", "curryer/__init__.py": "", "tests/__init__.py": ""}
+        src = {"pyproject.toml": "[project]\nname = 'lasp-kit'\n", "src/kit/__init__.py": ""}
+        spaced = {"pyproject.toml": "[project]\nname = 'lasp-kit'\n\n[tool.setuptools]\npackages = ['lasp.kit']\n",
+                  "src/lasp/kit/__init__.py": ""}
+        for files, imports in ((flat, "from curryer.spicierpy import ext\n"), (src, "import kit.io\n"),
+                               (spaced, "from lasp.kit import io\nimport lasp.kit\n")):
+            with self.subTest(package=files["pyproject.toml"]):
+                parent = scratch()
+                sibling(parent, "a", {"x.py": imports}, "git@github.com:example-org/user_a.git")
+                sibling(parent, "b", {"x.py": "import lasp_curryer\nimport lasp_kit\nimport tests\nimport lasp.other\n"},
+                        "git@github.com:example-org/user_b.git")
+                data, keys = values_of(make_repo(files, REMOTE), self.root, "--downstream-from", str(parent))
+                self.assertEqual(data["downstream"], ["user_a"])
+                self.assertEqual(keys["downstream"]["seen"], [{"source": "clones (search)", "value": "user_a: 1 files"}])
+
+    def test_downstream_from_checkouts_is_not_searched_when_the_import_names_conflict(self):
+        text = ("[project]\nname = 'lasp-curryer'\n\n[tool.setuptools]\npackages = ['curryer']\n\n"
+                "[tool.poetry]\npackages = [{ include = 'spice' }]\n")
+        parent = scratch()
+        sibling(parent, "a", {"x.py": "import curryer\n"}, "git@github.com:example-org/user_a.git")
+        data, keys = values_of(make_repo({"pyproject.toml": text}, REMOTE), self.root, "--downstream-from", str(parent))
+        self.assertEqual((data["downstream"], keys["downstream"]["source"]), (NR, None))
+
     def test_downstream_from_the_skills_search_and_a_bad_file_fails(self):
         found = scratch() / "downstream.json"
         found.write_text(json.dumps([{"repo": "beta", "evidence": 3}, {"repo": "alpha", "evidence": 9},

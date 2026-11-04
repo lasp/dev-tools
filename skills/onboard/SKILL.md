@@ -15,7 +15,7 @@ description: >
 argument-hint: "[rules [Confluence page or Jira epic to add]]"
 metadata:
   author: lasp-dev
-  version: 0.5.1
+  version: 0.6.1
 ---
 
 # Onboard
@@ -169,7 +169,11 @@ for the repositories that use it; for Jira, the statuses and fields; for Conflue
   again. The default branch it names replaces the survey's,
   which is only the checkout's local `origin/HEAD` and can be stale; when the two differ, say so.
   Then the repositories that use this one, when the survey's `package` row names a package
-  (`<module>` is its name with `-` as `_`). Run each of these `search_code` queries once, never
+  (`<module>` is each name its `import names` row gives, queries 1 and 2 run for each). When that
+  row reads `conflict`, or gives a dotted namespace name, search nothing yet: put the names to the
+  person, recommending the table, or the names, that a `src/<name>/__init__.py` or
+  `<name>/__init__.py` in the checkout matches, with those paths as the evidence, and search the
+  names they confirm. Run each of these `search_code` queries once, never
   joined with `OR`, which GitHub's code search undercounts, paging each (`perPage` 100) until its
   `total_count` is read:
   1. `"from <module>" org:<owner> language:python`
@@ -178,14 +182,14 @@ for the repositories that use it; for Jira, the statuses and fields; for Conflue
   4. `"<package>" org:<owner> filename:requirements.txt`
 
   Every repository the hits name, apart from this one, is a candidate, and its evidence is the
-  number of distinct files the four queries' pages hold for it. Code search also matches inside
+  number of distinct files the queries' pages hold for it. Code search also matches inside
   longer names (`rad` finds `radiometer_cal`), so read each
   candidate's hit files with `get_file_contents`, in turn, until one names the module or package
   whole: an import of `<module>` followed by `.`, a space or the line's end, or a dependency entry
   of `<package>` (`-` and `_` alike) followed by no further letter, digit, `-` or `_`. A candidate
   none of whose files does is dropped, and the table names it with the longer name it matched.
-  Code search allows few calls a minute, so beside step 1's search for the standard, run no other
-  query. Otherwise a candidate is never dropped: when a query's pages hold fewer hits than its
+  Code search allows few calls a minute, and N import names make 2N+2 queries before paging, so
+  beside step 1's search for the standard, run no other query. Otherwise a candidate is never dropped: when a query's pages hold fewer hits than its
   `total_count`, or a call is refused, the counts are lower bounds and the list may be
   incomplete, which the table says. Write them to `.review/onboard/downstream.json` with
   the Write tool, as a JSON list of `{"repo": "<name>", "evidence": <count>}`, the name bare with no owner, most first, or skip
@@ -247,8 +251,9 @@ the person confirms or trims it.
 
 At one point, in one widget, or as few widgets of four as the questions need
 (`${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`), each with what bears on it and a
-recommendation. A reply typed in chat answers as well, several at once included. When nothing is
-left to ask, say so in one line; step 5's question is then the next one.
+recommendation. A reply typed in chat answers as well, several at once included. When the survey
+and the standard leave no question to ask, say so in one line; step 5's question is then the next
+one.
 
 Each question opens with what the setting does in the plugin, in plain words rather than its key,
 and each option says what choosing it changes. Recording a value writes it into the standard, where
@@ -345,8 +350,8 @@ which is one file, that file whole with its difference from one already there, t
 which of these happens. Recommend writing the standard, with the repository edits for the commands
 whose sources disagree, and keeping it in `.review/onboard/` when the person skipped a question
 step 4 asked. This question is a gate that holds, as `decision-points.md` allows a skill to name
-one: it is asked even when step 4 asked none, the turn ends on it, and nothing outside
-`.review/onboard/` is written before a reply to it. No earlier reply stands in for it, "take the
+one: it is asked even when step 4 asked none, the turn ends on it, and none of the writes below
+is made before a reply to it. No earlier reply stands in for it, "take the
 recommended option for everything" included, since the person has not yet seen the values it
 would write. The recommendation says why, in
 what the next session changes: what the plugin would read from the standard that it does not read
@@ -425,30 +430,55 @@ step 7. For a standard elsewhere, the rules are drafted from this repository's t
 standard, as `first-rules.md`'s "A standard elsewhere" says, and only once the standard covers
 this repository, its `profiles/<this repo>.yaml` in the clone or the fetched standard, since each
 candidate's `repos:` tag is linted against it; until then, say so, name step 5's write as what
-covers it, and go on to step 7. Drafting them runs
-about one agent per merged pull request with review threads, up to thirty, so it starts only on
-the person's yes to this question.
+covers it, and go on to step 7. Drafting them reads every merged pull request in the range, then
+runs about one agent per merged pull request with review threads, up to thirty, so it starts only
+on the person's yes to this question.
 
 First count, before anything is spent, as `first-rules.md`'s "The sample" counts. When
 `.review/harvest/records/` already holds records, count those: the pull requests whose records
 name a thread, review body or conversation comment a person wrote, the author's own included. Otherwise, with GitHub connected, one `search_pull_requests` with `repo:<owner>/<repo>
 is:pr is:merged`, `perPage` 100: the merged pull requests, saying that which of them have review
-threads is known only after the harvest; with GitHub not connected or the search failing, say
-so as `servers.md` sets out, the count being what is lost, as no GitHub server, above, when step 2
-already said it.
+threads is known only after the harvest. When it finds more than 100, a second search adds
+`merged:>=<the date six months before today>`: the window's count. With GitHub not connected or
+the search failing, say so as `servers.md` sets out, the count being what is lost, as no GitHub
+server, above, when step 2 already said it.
+
+Then say what a yes spends, from the counts, for the whole history and, when it was counted, the
+window:
+
+- **Reads**: about four GitHub reads per merged pull request in the range; none when records
+  stand in. The four are `pr-reader`'s `get`, reviews, review comments and conversation comments,
+  more where a list pages: the basis for the count, not text for the person.
+- **Agents**: one thread analyst per pull request with review threads a person wrote, up to
+  thirty, then a rule probe for each example a candidate cites, often two per candidate.
+- **Cost**: the reads at about 4 cents per merged pull request, plus at most about 15 cents per
+  analyst, its share of the probes included, which at the cap of thirty is about $4 to $5. Say
+  that these rates were measured on one run in November 2026, the agents on Sonnet, and change
+  when the agents' model does.
+
 Then ask:
 
 - **Draft the first rules**: read `${CLAUDE_SKILL_DIR}/first-rules.md` and follow it, with any
-  Confluence pages or Jira epics the person names in the answer. Recommended when
-  records reach the sample's floor, five merged pull requests with review threads a person
-  wrote. With only the search, neither answer is recommended: say that the merged count is the
-  only evidence yet, that which pull requests have review threads a person wrote, not a bot, is
-  known only once they are read, and that drafting stops there, before any analyst runs, when
-  fewer than five do, so the most the yes can cost without rules to show is that read.
+  Confluence pages or Jira epics the person names in the answer. Recommended when records reach
+  the sample's floor, five merged pull requests with review threads a person wrote, or the search
+  finds five or more merged pull requests and the window is not recommended. With only the search,
+  say that which pull requests have review threads a person wrote, not a bot, is known only once
+  they are read, and that drafting stops there, before any analyst runs, when fewer than five do,
+  so a yes that finds too few costs the reads stated and no more.
+- **Draft from the last six months**, offered when the window was counted: the same, with the
+  window's first day as the harvest's first day. Recommended when the window holds thirty or more
+  merged pull requests, since the analysts stop at thirty and older history mostly changes which
+  thirty run. Say plainly that a window of thirty merged pull requests may yield fewer than thirty
+  analysts, since not every one has review threads a person wrote, and that the floor check after
+  the reads still stops the draft below five. Say that it can leave out the pull request from before the review bot that the
+  sample asks for; the sample report then says so.
 - **Not yet**: nothing is spent; rerunning onboard, or `/lasp-dev:onboard rules`, offers it
   again. Recommended below the floor, or below five merged pull requests from
   the search, since the rules would rest on too few pull requests, and when nothing could be counted.
 - **Let's discuss**.
+
+A date the person names through "Other" is the harvest's first day, its reads and agents stated
+again, and asked again, before it starts.
 
 When the harvest's sample falls short of what `first-rules.md`'s "The sample" requires, say how,
 and ask again: **Draft anyway, marked** (each candidate the shortfall affects is marked),

@@ -6,6 +6,8 @@ request against the repository's written standard, with a person approving each 
 post and write to Jira. [`GUIDE.md`](GUIDE.md) says how to use it, and its
 [glossary](GUIDE.md#glossary) defines the terms both documents use.
 
+![The ticket loop: design, plan, build loop, self-review, human review and merge in a ring around the project's standard, with a monthly revision that changes the standard; the build loop is agents' work and every other step a person's decision](docs/img/ticket-loop.svg)
+
 **What it is not tied to.** The workflow is the same for any team and any language: ticket,
 plan, build, review, pull request, and a standard that changes with what reviewers say. What
 differs between teams is meant to live in each repository's standard, not in the plugin: the
@@ -17,6 +19,8 @@ skills" and "Libera content in the review contract". A repository keeps its stan
 `standards/`, or points at a project's shared standard in another repository. Tools for one
 domain, such as flight software or engineering, belong in plugins of their own installed beside
 this one.
+
+![The lasp-dev plugin reads a project's standard of rules, decisions, terms and settings; each repository holds its own standard or a pointer to one](docs/img/plugin-standard-repos.svg)
 
 **What it does in your repository.** With no standard, every skill runs on what it finds in the
 repository and the default profile: it plans, builds, reviews and opens pull requests, and the
@@ -419,6 +423,8 @@ The skills a person types, in the order they meet them:
 - `implement-change`: takes one change to an agreed plan, code verified by a wave of reviewers, and
   an offered pull request.
 
+![Inside implement-change: a plan loop of up to three rounds, your approval of the plan, up to five review rounds with fresh agents, up to two simplify passes, then your review of the diff](docs/img/build-loop.svg)
+
 **Pull requests**
 - `pr-create`: writes a reviewer-focused description and opens the pull request as a draft.
 - `pr-review`: reviews the pull request against its ticket and the repository's standard, shows the
@@ -539,7 +545,9 @@ In this order:
 2. Run `/lasp-dev:onboard` and, at its last step, draft the first rules from the
    repository's merged pull request history (`/lasp-dev:onboard rules` goes straight there).
    It needs at least five merged pull requests on GitHub with review threads a person wrote, the
-   author's own included. It runs one agent per pull request with review threads, up to thirty.
+   author's own included. It reads every merged pull request in the whole history, or the last
+   six months it offers for a long history, and runs one agent per pull request with review
+   threads, up to thirty; onboard states those reads, agents and their rough cost before it asks.
 3. A person cuts the candidates in `.review/harvest/` down to the rules the team wants.
 4. Copy the PR template from the standard's `templates/<name>/`, the name the profile's `template` gives.
 5. Add `.review/` to `.gitignore`.
@@ -605,6 +613,8 @@ Who does what:
 
 How a rule is admitted, established and retired: `GUIDE.md` "How the rules change"; the
 thresholds are `standards/dials.md`.
+
+![A rule's life: candidate, provisional, established, graduated; an established rule under half agree with is reworded, and one still disputed, or a provisional rule left unused, is retired](docs/img/rule-life.svg)
 
 **Tiers.** A rule sits in one of three. `prose` is the instruction file only: the author is
 expected to know it and the reviewer does not check it, and it has no ledger entry. `reviewer` adds a ledger entry in
