@@ -223,6 +223,7 @@ scenarios:
     expect:
       ends: success
       says: [PROJ-97]
+      not_says: ["```mermaid", "<details>"]
       never_anywhere: [BADGER-6604]
 
   - id: pr-create-new-flow
@@ -244,10 +245,11 @@ scenarios:
     look_at: >-
       The drafted description, shown before the gate, says why from the prompt and what the run
       does. Read whether its structure fits the content: a Mermaid flowchart of load, merge, plan
-      and write, or a numbered list of the stages, where it reads faster than prose; prose for the
-      why; no formatting for its own sake. Nothing is pushed or opened.
+      and write, where it reads faster than prose; prose for the why; no formatting for its own
+      sake. Nothing is pushed or opened.
     expect:
       ends: success
+      says: ["(?m)^```mermaid"]
 
   - id: skill-feedback-words
     repo: widgets
