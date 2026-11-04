@@ -4,12 +4,14 @@ description: >
   Drafts or refines a Jira ticket in the team's format, placed among existing work, from a
   description, a ticket or a pull request with none; can brief you on the code first, fold in
   later answers, or reformat a ticket to the current format; writes to Jira only on your yes. Use when
-  asked to "write a ticket for", "refine this ticket", "is this ticket ready", "what is this
-  ticket missing" or "groom this ticket".
+  asked to "write a ticket for", "file a ticket", "create a Jira ticket", "log a bug in Jira",
+  "refine this ticket", "is this ticket ready", "what is this ticket missing" or "groom this
+  ticket". Not for a GitHub issue, which it neither drafts nor files, or a complaint about a
+  lasp-dev skill, which is skill-feedback's.
 argument-hint: "[investigate | settle | reformat] <ticket key | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
-  version: 1.10.13
+  version: 1.10.14
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.

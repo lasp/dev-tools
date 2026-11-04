@@ -74,6 +74,54 @@ ATLASSIAN_SERVER = {"command": "uvx", "args": ["mcp-atlassian@0.23.1", "--read-o
 
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
+class TriggerPack(unittest.TestCase):
+    """sandbox/triggers/: one plain-language request per skill a person types and the model may call."""
+
+    PACK = ROOT / "sandbox" / "triggers" / "scenarios.yaml"
+
+    def setUp(self):
+        patch = mock.patch.object(run, "SCENARIOS", self.PACK)
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.known = run.scenarios()
+
+    def test_every_scenario_is_well_formed_and_asks_in_words(self):
+        well_formed(self, self.known, {"widgets"})
+        for s in self.known.values():
+            self.assertTrue(s["id"].startswith(("trigger-", "notrigger-")), s["id"])
+            self.assertEqual(len(s["turns"]), 1, s["id"])
+            self.assertNotIn("/", s["turns"][0].split()[0], s["id"])
+            if s["id"].startswith("notrigger-"):
+                self.assertTrue(any(r.startswith("Skill(") for r in s["must_not_run"]), s["id"])
+
+    def test_each_skill_a_request_can_reach_has_one_trigger_scenario_and_the_set_holds_the_pack(self):
+        reachable = set()
+        for path in ROOT.glob("skills/*/SKILL.md"):
+            front = yaml.safe_load(path.read_text().split("---", 2)[1])
+            if front.get("user-invocable", True) and not front.get("disable-model-invocation", False):
+                reachable.add(front["name"])
+        triggers = {s["id"]: s for s in self.known.values() if s["id"].startswith("trigger-")}
+        for name in reachable:
+            with self.subTest(skill=name):
+                s = triggers.get(f"trigger-{name}")
+                self.assertIsNotNone(s)
+                self.assertEqual(s["expect"].get("skills"), [name])
+                self.assertNotIn(name, s["turns"][0].lower())
+        self.assertLessEqual({i.removeprefix("trigger-") for i in triggers}, reachable)
+        self.assertEqual(set(smoke.smoke_set(self.PACK)), set(self.known))
+
+    def test_the_pack_plants_no_credentials(self):
+        spec = importlib.util.spec_from_file_location("secret_scan_tests", ROOT / "tests" / "test_secret_scan.py")
+        scan = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(scan)
+        planted = scan.planted
+        pack = "sandbox/triggers/"
+        files = [str(p.relative_to(ROOT)) for p in (ROOT / pack).rglob("*") if p.is_file()]
+        self.assertTrue(files)
+        self.assertEqual(planted(files), {})
+
+
+@unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
 class Sandbox(unittest.TestCase):
     def setUp(self):
         self.sandbox = Path(tempfile.mkdtemp())
