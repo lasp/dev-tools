@@ -391,8 +391,8 @@ Fields: the first line of `work`'s reply in a repository with no `standards/revi
 for word: `no rules file here: the build, the pull request and a review run without rule
 citations`.
 
-Writers: `work` step 1. Readers: `quickstart`, which quotes it from `work` step 1 in its report;
-the `no-standard` scenario in `sandbox/scenarios.yaml`, whose `look_at` names it.
+Writers: `work` step 1. Readers: the `no-standard` scenario in `sandbox/scenarios.yaml`, whose
+`look_at` names it.
 
 Pinned by: tests/test_sandbox.py::test_the_no_standard_scenario_quotes_works_no_rules_file_line
 
