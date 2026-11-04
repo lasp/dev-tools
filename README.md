@@ -189,7 +189,7 @@ on `gh`, `pr-fix` stops at its start and `pr-review` posts only a pull request's
 | GitHub | `work`, `pr-create`, `pr-review`, `pr-fix`, `ticket-draft`, `ticket-audit`, `revise`, `skill-feedback`; `implement-change` when its source is a GitHub issue; `downstream`, for `ci <run>`; `onboard`, when connected, and its first rules; `rebase`, when connected, for the pull request's base |
 | Jira | `ticket-draft`, `design-doc`, `architecture-doc` and `process-doc` (only the tickets you or a page name), `ticket-audit`, `revise` (with `measures`, for an epic it adds or a context entry reads, or for an issue `correct` cites); `pr-review`, for the ticket when no context page holds it; `work`, for a ticket's status when it has no context page here; `implement-change` when its source is a ticket; `onboard`, when connected, and its first rules |
 | Confluence | `design-doc` (your notes, the area's pages, and the publish), `architecture-doc` (the system's page, the area's pages, and the publish), `process-doc` (your notes, the pages you point at, and the publish), `ticket-draft` (the year plan, and `investigate`), `revise` (the context refresh, or a page `correct` cites), `ticket-audit` (the year plan); `onboard`, when connected, and its first rules |
-| Neither | `commit`, `drawio`, `architecture-doc` and `process-doc` until they publish, `implement-change` from a file or a description, `test-suite-review`, `writing`, `quickstart`, `onboard` with no server connected, the repository alone |
+| Neither | `commit`, `rebase` with no GitHub server connected, `drawio`, `architecture-doc` and `process-doc` until they publish, `implement-change` from a file or a description, `test-suite-review`, `writing`, `quickstart`, `onboard` with no server connected, the repository alone |
 
 The hidden reference skills load when another skill needs them: `using-jira` and
 `using-confluence` by `source-reader`, `using-github` by every skill and agent that reaches
@@ -443,7 +443,7 @@ The skills a person types, in the order they meet them:
 **Supporting**
 - `commit`: chooses what belongs in a commit and writes the message; never pushes.
 - `rebase`: rebases the branch onto its target, resolving the clear conflicts and asking at the
-  rest; never pushes.
+  rest; pushes only on your yes.
 - `test-suite-review`: judges test changes for loosening, missed failure paths and factoring; reads
   only.
 - `downstream`: says which consuming repositories a change breaks, why a CI run went red, and which
@@ -469,7 +469,6 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `pr-review` | typed or asked | Review a pull request and present the findings at their lines, each citing a rule, decision, term, ticket criterion or test check when one applies, and no key otherwise; draft comments when asked, and post one review with the verdict you choose only on your yes. A posted review's threads are what the revision reads; a review kept local leaves it nothing |
 | | `pr-fix` | typed or asked | Assess every thread, your own comments included, take your agree, disagree or discuss on each (posting them is optional, and each run links the ones not yet on GitHub), offer a rebase when the branch is behind, then plan, implement and reply to the agreed feedback on a pull request, people's comments before AI findings |
 | Called by other skills, also typed | `commit` | typed or asked | Choose what belongs in a commit and write the message, Conventional Commits unless another style is asked for; never pushes |
-| | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts with one objectively clear resolution and stop at any where the two sides differ in intent or approach, showing both with a recommendation; never pushes, and offers `--force-with-lease` on your yes |
 | | `test-suite-review` | typed or asked | Judge test changes: loosening, failure paths, factoring, placement and lanes; run it directly on a colleague's test changes |
 | | `downstream` | typed or asked | Say which consuming repositories a change breaks, why a run went red, and which pins a release leaves behind |
 | Reference, hidden | `using-jira` | hidden | How a project's tickets are read and drafted: the format, the write plan and copy-paste markup, with the project's own fields, statuses and JQL read from its `tracker.md` |
@@ -484,6 +483,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `revise` | typed only | Monthly: prepare the revision report before the meeting, with `measures` adding tickets, escaped defects and build yield; a sweep of the window's merged diffs reports where they follow or break the rules and the documented practice; `apply` drafts what the group accepted; `correct`, between revisions, corrects something the shared standards got wrong, everywhere it is carried, while a disagreement with a rule goes through Disagree and the revision |
 | | `ticket-audit` | typed only | Sweeps across the project's Jira, written to `.review/audit/`, then the actions they propose applied in Jira through one write plan on your yes |
 | | `skill-feedback` | typed or asked | File a complaint about a skill or agent as a `skill-feedback` issue here, in your words, with the session's last turns attached when you choose, or a draft `revise` wrote for a procedure finding; you see the whole issue before your yes |
+| | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts with one objectively clear resolution and stop at any where the two sides differ in intent or approach, showing both with a recommendation; pushes only on your yes, with `--force-with-lease` pinned to the commit it fetched |
 
 `implement-change`, `commit`, `pr-create`, `pr-review` and `pr-fix` began from upstream and have
 since been rewritten; the rest were written here.

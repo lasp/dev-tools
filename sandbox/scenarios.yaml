@@ -327,7 +327,6 @@ scenarios:
     repo: widgets
     setup:
       - git config commit.gpgsign false
-      - git rebase --quit 2>/dev/null || true
       - git switch -q -C widgets-rename main~1
       - "perl -pi -e 's/sum\\(w\\.count for w in widgets\\)/sum(widget.count for widget in widgets)/' src/widgets/inventory.py"
       - git commit -qam "Name the loop variable in total"
@@ -337,7 +336,7 @@ scenarios:
       conflict with one clear resolution, so rebase resolves it and completes without asking.
     turns:
       - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline.
-    must_not_run: ["Bash(git push*)", "Bash(*git rebase --skip*)", "Bash(git stash*)", "mcp__*"]
+    must_not_run: ["Bash(git push*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
     verify:
       - test ! -d "$(git rev-parse --git-path rebase-merge)"
       - git merge-base --is-ancestor origin/main HEAD
@@ -348,8 +347,9 @@ scenarios:
     look_at: >-
       rebase replays the one commit onto origin/main, keeps both the renamed loop variable and
       main's by_part, and continues without a question. The report names the file, says what each
-      side did and how it was resolved, says the branch needs git push --force-with-lease, and asks
-      before any push, recommending to leave it local.
+      side did and how it was resolved, names the recovery point, and asks before any push,
+      recommending to leave it local; the branch has no upstream, so the push it names is git push
+      -u origin widgets-rename.
     expect:
       ends: success
 
@@ -357,7 +357,6 @@ scenarios:
     repo: widgets
     setup:
       - git config commit.gpgsign false
-      - git rebase --quit 2>/dev/null || true
       - git switch -q -C widgets-sum-duplicates main~1
       - cat "$SBX_FIXTURES/rebase-sums-inventory.txt" >> src/widgets/inventory.py
       - cat "$SBX_FIXTURES/rebase-sums-test.txt" >> tests/test_inventory.py
@@ -373,7 +372,7 @@ scenarios:
     verify:
       - test -d "$(git rev-parse --git-path rebase-merge)"
       - git ls-files -u | grep -q src/widgets/inventory.py
-      - git rebase --quit
+      - grep -q '^<<<<<<<' src/widgets/inventory.py
     look_at: >-
       rebase stops at src/widgets/inventory.py and its test, shows main's by_part raising
       ValueError for a part listed twice beside the branch's adding the counts, recommends one with

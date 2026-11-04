@@ -1214,6 +1214,26 @@ class Reuse(unittest.TestCase):
         run.reset(self.sandbox)
         self.assertEqual(git(repo, "remote", "get-url", "origin"), built)
 
+    def test_a_reset_leaves_no_rebase_a_run_left_paused(self):
+        repo = self.sandbox / "repos" / "gizmos"
+        commit = ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "commit", "-q", "-am"]
+        (repo / "f.txt").write_text("a\n")
+        git(repo, "add", "f.txt")
+        git(repo, *commit, "base")
+        git(repo, "switch", "-q", "-c", "side")
+        (repo / "f.txt").write_text("side\n")
+        git(repo, *commit, "side")
+        git(repo, "switch", "-q", "main")
+        (repo / "f.txt").write_text("main\n")
+        git(repo, *commit, "main")
+        git(repo, "switch", "-q", "side")
+        paused = subprocess.run(["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t", "rebase", "main"], capture_output=True)
+        self.assertNotEqual(paused.returncode, 0)
+        rebase_dir = repo / git(repo, "rev-parse", "--git-path", "rebase-merge")
+        self.assertTrue(rebase_dir.is_dir())
+        run.reset(self.sandbox)
+        self.assertFalse(rebase_dir.exists())
+
     def test_a_pinned_plugin_clone_a_run_left_untracked_files_in_is_keyed_after_its_reset(self):
         remote = self.sandbox / "remotes" / "dev-tools.git"
         subprocess.run(["git", "clone", "-q", "--bare", str(self.plugin), str(remote)], check=True)

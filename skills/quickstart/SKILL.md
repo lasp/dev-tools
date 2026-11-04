@@ -168,7 +168,7 @@ their bold label; part 1 has none.
    | | `/lasp-dev:drawio` | Draw a diagram as draw.io XML |
    | | `/lasp-dev:writing` | Review prose for structure and clarity |
    | Supporting | `/lasp-dev:commit` | Choose what to commit and write the message; never pushes |
-   | | `/lasp-dev:rebase` | Rebase onto the default branch, asking at conflicts of intent; never pushes |
+   | | `/lasp-dev:rebase` | Rebase onto the default branch, asking at conflicts of intent; pushes only on your yes |
    | | `/lasp-dev:test-suite-review` | Judge test changes; reads only |
    | | `/lasp-dev:downstream` | Say which consuming repositories a change breaks |
    | | `/lasp-dev:skill-feedback` | Report a problem with a skill; files on your yes |

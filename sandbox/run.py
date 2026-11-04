@@ -285,7 +285,7 @@ def holding(sandbox: Path, who: str, wait: bool):
 
 
 def reset(sandbox: Path) -> None:
-    """Both clones back to their pinned commits, with untracked and ignored files gone but .venv kept,
+    """Both clones back to their pinned commits, out of any rebase or merge a run left paused, with untracked and ignored files gone but .venv kept,
     origin fetching from the URL `sandbox.sh` gave it and kept as `sandbox.fetch`, and `main` and `origin/main` back at the `main`
     of the bare repository under remotes/, the source's `main` when the sandbox was built, which a
     scenario's setup may have moved."""
@@ -294,6 +294,8 @@ def reset(sandbox: Path) -> None:
         fetch = subprocess.run(["git", "-C", str(repo), "config", "--get", "sandbox.fetch"], capture_output=True, text=True).stdout.strip()
         if fetch:
             git(repo, "remote", "set-url", "origin", fetch)
+        for stop in (["rebase", "--quit"], ["merge", "--abort"]):
+            subprocess.run(["git", "-C", str(repo), *stop], capture_output=True)
         git(repo, "checkout", "-q", "-f", "-B", branch, sha)
         git(repo, "reset", "-q", "--hard", sha)
         git(repo, "clean", "-q", "-fdx", "-e", ".venv")
