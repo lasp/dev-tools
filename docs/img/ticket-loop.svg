@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="50 150 1820 920" width="910" height="460" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The ticket loop around the standard</title>
+  <desc id="desc">A ring of six steps around the standard: 1 Design, ticket-draft, you settle the open questions; 2 Plan, implement-change, you approve the plan; 3 Build loop, implement-change, agents iterate until clean; 4 Self-review, pr-create and pr-review, you answer each finding and read the diff; 5 Human review, pr-fix, a colleague reviews and you agree, disagree or discuss; 6 Merge, no skill, a person merges; then back to 1. Monthly, across many tickets, the revision (revise) has the group decide what the standard changes. Every step reads the standard. Step 3 is agents' work; every other step is a person's decision.</desc>
+  <defs><marker id="ah000000" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#000000"/></marker><marker id="ah1B51A5" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1B51A5"/></marker></defs>
+  <rect x="50" y="150" width="1820" height="920" fill="#FFFFFF"/>
+  <rect x="72" y="170" width="376" height="830" rx="28" fill="#FFFFFF" stroke="#1B51A5" stroke-width="3" stroke-dasharray="12 8"/>
+  <text x="96" y="218" font-size="28" fill="#1B51A5" font-weight="700">Monthly</text>
+  <text x="96" y="252" font-size="25" fill="#565A5C">across many tickets</text>
+  <path d="M820 265 L871.0 265.0" fill="none" stroke="#000000" stroke-width="3" marker-end="url(#ah000000)"/>
+  <path d="M1220 265 L1271.0 265.0" fill="none" stroke="#000000" stroke-width="3" marker-end="url(#ah000000)"/>
+  <path d="M1620 265 L1678 265 L1678.0 471.0" fill="none" stroke="#000000" stroke-width="3" marker-end="url(#ah000000)"/>
+  <path d="M1678 650 L1678 885 L1517.0 885.0" fill="none" stroke="#000000" stroke-width="3" marker-end="url(#ah000000)"/>
+  <path d="M1168 885 L1109.0 885.0" fill="none" stroke="#000000" stroke-width="3" marker-end="url(#ah000000)"/>
+  <path d="M760 885 L650 885 L650.0 359.0" fill="none" stroke="#000000" stroke-width="3" marker-end="url(#ah000000)"/>
+  <path d="M430 600 L708.0 600.0" fill="none" stroke="#1B51A5" stroke-width="4" stroke-dasharray="12 8" marker-end="url(#ah1B51A5)"/>
+  <rect x="480" y="180" width="340" height="170" rx="22" fill="#F3EBD3" stroke="#000000" stroke-width="3"/>
+  <text x="498" y="224" font-size="30" fill="#1B51A5" font-weight="700">1 Design</text>
+  <text x="498" y="260" font-size="24" fill="#000000" font-family="Menlo, Consolas, monospace">ticket-draft</text>
+  <text x="498" y="296" font-size="25" fill="#000000">You settle the open</text>
+  <text x="498" y="327" font-size="25" fill="#000000">questions</text>
+  <rect x="880" y="180" width="340" height="170" rx="22" fill="#F3EBD3" stroke="#000000" stroke-width="3"/>
+  <text x="898" y="224" font-size="30" fill="#1B51A5" font-weight="700">2 Plan</text>
+  <text x="898" y="260" font-size="24" fill="#000000" font-family="Menlo, Consolas, monospace">implement-change</text>
+  <text x="898" y="296" font-size="25" fill="#000000">You approve the plan</text>
+  <rect x="1280" y="180" width="340" height="170" rx="22" fill="#DCE5F3" stroke="#000000" stroke-width="3"/>
+  <text x="1298" y="224" font-size="30" fill="#1B51A5" font-weight="700">3 Build loop</text>
+  <text x="1298" y="260" font-size="24" fill="#000000" font-family="Menlo, Consolas, monospace">implement-change</text>
+  <text x="1298" y="296" font-size="25" fill="#565A5C">Agents iterate until</text>
+  <text x="1298" y="327" font-size="25" fill="#565A5C">clean</text>
+  <rect x="1508" y="480" width="340" height="170" rx="22" fill="#F3EBD3" stroke="#000000" stroke-width="3"/>
+  <text x="1526" y="524" font-size="30" fill="#1B51A5" font-weight="700">4 Self-review</text>
+  <text x="1526" y="560" font-size="24" fill="#000000" font-family="Menlo, Consolas, monospace">pr-create, pr-review</text>
+  <text x="1526" y="596" font-size="25" fill="#000000">You answer each finding</text>
+  <text x="1526" y="627" font-size="25" fill="#000000">and read the diff</text>
+  <rect x="1168" y="800" width="340" height="170" rx="22" fill="#F3EBD3" stroke="#000000" stroke-width="3"/>
+  <text x="1186" y="844" font-size="30" fill="#1B51A5" font-weight="700">5 Human review</text>
+  <text x="1186" y="880" font-size="24" fill="#000000" font-family="Menlo, Consolas, monospace">pr-fix</text>
+  <text x="1186" y="916" font-size="25" fill="#000000">A colleague reviews; you</text>
+  <text x="1186" y="947" font-size="25" fill="#000000">agree, disagree or discuss</text>
+  <rect x="760" y="800" width="340" height="170" rx="22" fill="#F3EBD3" stroke="#000000" stroke-width="3"/>
+  <text x="778" y="844" font-size="30" fill="#1B51A5" font-weight="700">6 Merge</text>
+  <text x="778" y="880" font-size="24" fill="#000000" font-family="Menlo, Consolas, monospace">no skill</text>
+  <text x="778" y="916" font-size="25" fill="#000000">A person merges</text>
+  <rect x="90" y="480" width="340" height="170" rx="22" fill="#F3EBD3" stroke="#000000" stroke-width="3"/>
+  <text x="108" y="524" font-size="30" fill="#1B51A5" font-weight="700">Monthly revision</text>
+  <text x="108" y="560" font-size="24" fill="#000000" font-family="Menlo, Consolas, monospace">revise</text>
+  <text x="108" y="596" font-size="25" fill="#000000">The group decides what</text>
+  <text x="108" y="627" font-size="25" fill="#000000">the standard changes</text>
+  <rect x="720" y="430" width="640" height="290" rx="28" fill="#FFFFFF" stroke="#1B51A5" stroke-width="5"/>
+  <g transform="translate(752 466) scale(3)" fill="none" stroke="#1B51A5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></g>
+  <text x="844" y="518" font-size="46" fill="#1B51A5" font-weight="700">The standard</text>
+  <text x="752" y="590" font-size="28" fill="#000000">What the team has agreed:</text>
+  <text x="752" y="626" font-size="28" fill="#000000">rules, decisions, terms.</text>
+  <text x="752" y="676" font-size="24" fill="#565A5C">Every step reads it.</text>
+  <rect x="1000" y="1020" width="44" height="36" fill="#F3EBD3" stroke="#000000" stroke-width="3"/>
+  <text x="1060" y="1048" font-size="24" fill="#000000">a person decides</text>
+  <rect x="1320" y="1020" width="44" height="36" fill="#DCE5F3" stroke="#000000" stroke-width="3"/>
+  <text x="1380" y="1048" font-size="24" fill="#000000">agents do the work</text>
+</svg>

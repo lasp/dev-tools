@@ -20,8 +20,12 @@ things read it:
 This repository holds two scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
 scenario runs offline in `widgets`, a made-up repository `fixture/make_widgets.sh` builds with the
 same commits every time, so it needs no server and no access to anyone's repositories. It holds
-`quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, `no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", the controlled-content gates of `design-doc`, `ticket-draft` and
-`pr-create`, `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test environment) with the TODO still in place, and the `skill-feedback` previews, whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says.
+`quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, 
+`no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", 
+the controlled-content gates of `design-doc`, `ticket-draft` and `pr-create`,
+`implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
+environment) with the TODO still in place, and the `skill-feedback` previews,
+whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says.
 The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
 skill, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
@@ -36,6 +40,7 @@ sandbox/smoke.py --scenarios sandbox/triggers/scenarios.yaml --base ../dev-tools
 ```
 
 A project's own pack, which replays its
+`pr-create`, and the `skill-feedback` previews, whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says. A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
 directory beside this file, given with `--scenarios`, with a README that lists its scenarios and
 what they need.
