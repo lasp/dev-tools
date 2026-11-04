@@ -3,7 +3,9 @@
 # rather than remembered.
 #
 #   build-record.sh guard     PreToolUse on Bash|Write|Edit: refuses, once, a call from a session
-#                             whose lock was taken; a write under .review/ keeps it ignored
+#                             whose lock was taken; refuses a Write or Edit in another repository
+#                             while this session holds the lock; a write under .review/ keeps it
+#                             ignored
 #   build-record.sh event     PostToolUse: classify one tool call, append it
 #   build-record.sh prompt    UserPromptSubmit: a typed /implement-change starts a build
 #   build-record.sh start     by hand: start or resume a build for this session, or `manual`;
@@ -27,7 +29,10 @@
 #
 # Every .review/ path is under the repository's top level, found from the payload's cwd, or the
 # working directory when the payload names none, so a call from a subdirectory reaches the same
-# record; outside a repository it is that directory itself.
+# record; outside a repository it is that directory itself. A session started in one repository
+# that changes another would measure that work here, so a Write or Edit whose file is in another
+# repository marks this session's open build `elsewhere`, and its summary then records its gates
+# and tokens as not recorded; while the session holds the lock, the call is refused too.
 # Events and summaries are inert until that directory has a .review/ directory; a phase
 # skill's start, or a write under it, creates it, and scripts/review_dir.sh keeps it out of git
 # where the repository's ignore rules do not. A build starts when implement-change is invoked,
@@ -240,6 +245,27 @@ resolved() {
   printf '%s%s' "$(cd "${p:-/}" && pwd -P)" "$rest"
 }
 
+# The top level of the repository a file is in, symlinks resolved, or empty outside one.
+repo_of() {
+  local d
+  d=$(resolved "$1")
+  d=${d%/*}
+  while [ -n "$d" ] && [ ! -d "$d" ]; do d=${d%/*}; done
+  d=$(git -C "${d:-/}" rev-parse --show-toplevel 2>/dev/null) && cd "$d" 2>/dev/null && pwd -P
+}
+
+# Session $1 is writing in repository $2, not this one: marks the open build it started here, once,
+# and, when it holds the lock, refuses the call. False, printing nothing, when it holds no lock.
+elsewhere() {
+  if [ -s "$log" ] && [ ! -e "$dir/outcome.md" ] && [ "$(start_field session)" = "$1" ] &&
+    ! grep -q '"kind":"elsewhere"' "$log"; then
+    append "$(jq -cn --arg t "$(now)" --arg r "$2" '{t:$t,kind:"elsewhere",repo:$r}')"
+  fi
+  [ "$(jq -r '.session // empty' .review/lock 2>/dev/null)" = "$1" ] || return 1
+  jq -cn --arg c "This session holds \`.review/lock\` in $top for $(jq -r .skill .review/lock), and records its build there, but this edit is in $2. The work would be measured in the wrong repository. Do not go on: ask the person in one AskUserQuestion whether to Stop and start a session in $2 (recommended), Go on unrecorded, or discuss it. On either Stop or Go on unrecorded, run: printf '{\"session_id\":\"$1\",\"cwd\":\"$top\"}' | bash \"$here/build-record.sh\" release" \
+    '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $c}}'
+}
+
 # A hook's payload; `start`, `release` and `take` run by hand may have none.
 payload=""
 [ -t 0 ] || payload=$(cat 2>/dev/null) || payload=""
@@ -253,10 +279,15 @@ fi
 
 if [ "$mode" = "guard" ]; then
   command -v jq >/dev/null 2>&1 || exit 0
-  tell_taken "$(printf '%s' "$payload" | jq -r '.session_id // empty' 2>/dev/null)" PreToolUse && exit 0
+  session=$(printf '%s' "$payload" | jq -r '.session_id // empty' 2>/dev/null)
+  tell_taken "$session" PreToolUse && exit 0
   file=$(printf '%s' "$payload" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
   [ -n "$file" ] || exit 0
   git rev-parse --git-dir >/dev/null 2>&1 || exit 0
+  there=$(repo_of "$file")
+  if [ -n "$session" ] && [ -n "$there" ] && [ "$there" != "$(pwd -P)" ]; then
+    elsewhere "$session" "$there" && exit 0
+  fi
   case "$(resolved "$file")" in
     "$(resolved "$top")"/.review/*) bash "$review_dir" ;;
   esac
@@ -466,8 +497,17 @@ if [ -f "$helper" ]; then
   fi
 fi
 
+gates="lint $lint · types $types · tests $tests · reviewer rounds $rounds · reviewers $reviewers · wall clock $mins min$patterns"
+# A build whose session also wrote in another repository may have its gates and tokens counted
+# here, so neither is a measurement of this build.
+other=$(jq -r 'select(.kind == "elsewhere") | .repo' "$log" 2>/dev/null | head -1)
+if [ -n "$other" ]; then
+  gates="not recorded, this session also edited $other while its build was recorded here"
+  tokens="not recorded"
+fi
+
 {
-  echo "Gates: lint $lint · types $types · tests $tests · reviewer rounds $rounds · reviewers $reviewers · wall clock $mins min$patterns"
+  echo "Gates: $gates"
   echo "Tokens since the build started: $tokens"
   echo
   echo "Measured by the plugin's hooks from $(wc -l <"$log" | tr -d ' ') recorded events. How the"

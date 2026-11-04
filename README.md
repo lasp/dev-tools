@@ -105,8 +105,10 @@ Which model the build and its reviewers run on is a session setting, not a plugi
 "Models" below.
 
 Start Claude Code in the repository you are changing. The build's lock and record go into the
-`.review/` of the session's working directory, so a session started in one repository and used
-to change another records the build in the wrong place.
+`.review/` of the session's working directory. While `implement-change` or `pr-fix` holds that
+lock, the build hook refuses a Write or Edit in another repository and says how to release it,
+and a build whose session edited another repository records its gates and tokens as `not
+recorded` rather than as counts.
 
 ### MCP servers
 

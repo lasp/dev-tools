@@ -455,6 +455,33 @@ bash_event "pytest"
 check "the build's own session on a detached HEAD moves it nowhere" \
   '! grep -q "\"kind\":\"move\"" .review/build/events.jsonl && [ "$(jq -r "select(.branch) | .branch" .review/build/events.jsonl | tail -1)" = PROJ-2-next ]'
 
+# A session started in repository a, building a change in repository b.
+a=$(scratch) && made+=("$a") && cd "$a" || exit 1
+b=$(scratch) && made+=("$b")
+b_top=$(cd "$b" && pwd -P)
+at_a() { jq -c --arg c "$a" '. + {cwd:$c}' | "$hook" "$@"; }
+write_in() { jq -cn --arg f "$1" --arg s "$2" '{tool_name:"Write", session_id:$s, tool_input:{file_path:$f}}' | at_a guard; }
+jq -cn '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1"}' | at_a prompt
+out=$(write_in "$a/src/x.py" s1)
+check "a write in the session's own repository is not refused or marked" \
+  '[ -z "$out" ] && ! grep -q "\"kind\":\"elsewhere\"" .review/build/events.jsonl'
+out=$(write_in "$b/src/new/x.py" s2)
+check "another session's write in another repository is not refused or marked" \
+  '[ -z "$out" ] && ! grep -q "\"kind\":\"elsewhere\"" .review/build/events.jsonl'
+out=$(write_in "$b/src/new/x.py" s1)
+check "a write in another repository while holding the lock is refused, naming it and the release" \
+  'printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\" and (.hookSpecificOutput.permissionDecisionReason | test(\"this edit is in '"$b_top"'\") and test(\"Stop\") and test(\"release\"))" >/dev/null'
+check "and marks the build here, writing no record in the other repository" \
+  '[ "$(jq -r "select(.kind == \"elsewhere\") | .repo" .review/build/events.jsonl)" = "$b_top" ] && [ ! -e "$b/.review/build" ] && [ ! -e "$b/.review/lock" ]'
+jq -cn '{tool_name:"Bash", session_id:"s1", tool_input:{command:"cd b && pytest"}}' | at_a event
+jq -cn '{session_id:"s1"}' | at_a summary
+check "so the build's block records its gates and tokens as not recorded, never as counts" \
+  'grep -qx "Gates: not recorded, this session also edited $b_top while its build was recorded here" .review/build/already-checked.md && grep -qx "Tokens since the build started: not recorded" .review/build/already-checked.md'
+eval "$(printf "%s" "$out" | jq -r .hookSpecificOutput.permissionDecisionReason | sed -n "s/.*run: //p")"
+out=$(write_in "$b/src/new/x.py" s1)
+check "the release the refusal names frees the lock, and the write is then allowed" \
+  '[ ! -e .review/lock ] && [ -z "$out" ] && [ "$(grep -c "\"kind\":\"elsewhere\"" .review/build/events.jsonl)" = 1 ]'
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures failed"
   exit 1
