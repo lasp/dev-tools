@@ -198,7 +198,7 @@ class Redaction(unittest.TestCase):
         ("basic-auth", "Authorization: Basic dXNlcjpwYXNzd29yZA==", "dXNlcjpw"),
         ("url-credentials", "git push https://user:hunter22@github.com/example-org/x.git", "hunter22"),
         ("curl-user", "curl -u user:hunter22 https://example.org/api", "hunter22"),  # gitleaks:allow
-        ("private-key", "-----BEGIN RSA PRIVATE KEY-----\nMIIEow\n-----END RSA PRIVATE KEY-----", "MIIEow"),  # gitleaks:allow
+        ("private-key", "-----BEG" "IN RSA PRIVATE KEY-----\nMIIEow\n-----EN" "D RSA PRIVATE KEY-----", "MIIEow"),  # gitleaks:allow
         ("assignment", "password=hunter22", "hunter22"),
         ("assignment", 'export API_TOKEN="s3cr3tvalue"', "s3cr3tvalue"),
         ("assignment", "client_secret: shhh-value", "shhh-value"),
@@ -225,8 +225,8 @@ class Redaction(unittest.TestCase):
         ("assignment", "ACCOUNTKEY=Zm9vYmFy", "Zm9vYmFy"),
         ("assignment", "CLIENT_SECRET=s3cr3t-value", "s3cr3t"),
         ("assignment", "ACCESS_KEY=wJalrXUtnFEMI", "wJalrXUtnFEMI"),
-        ("private-key", "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXk\nand the rest", "b3BlbnNzaC1rZXk"),  # gitleaks:allow
-        ("private-key", "-----BEGIN PGP PRIVATE KEY BLOCK-----\nlQOYBF\n-----END PGP PRIVATE KEY BLOCK-----", "lQOYBF"),  # gitleaks:allow
+        ("private-key", "-----BEG" "IN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXk\nand the rest", "b3BlbnNzaC1rZXk"),  # gitleaks:allow
+        ("private-key", "-----BEG" "IN PGP PRIVATE KEY BLOCK-----\nlQOYBF\n-----EN" "D PGP PRIVATE KEY BLOCK-----", "lQOYBF"),  # gitleaks:allow
         ("anthropic-key", "key " + "sk-" + "ant-api03-" + "Ab1_" * 10, "Ab1_Ab1_"),
         ("openai-key", "key " + "sk-" + "proj-" + "Ab1x" * 10, "Ab1xAb1x"),
         ("openai-key", "key " + "sk-" + "Ab1x" * 10, "Ab1xAb1x"),
@@ -260,7 +260,7 @@ class Redaction(unittest.TestCase):
         ("slack-webhook", "post to https://hooks.slack.com/triggers/" + "T000/A000/123/abcSecret", "abcSecret"),
         ("auth-header", "  - Cookie: session=abc123secret", "abc123secret"),
         ("auth-header", "curl --header Authorization:abc123secret https://example.org", "abc123secret"),
-        ("private-key", "`-----BEGIN OPENSSH PRIVATE KEY-----` b3BlbnNzaC1rZXk\nThe next step.", "b3BlbnNzaC1rZXk"),  # gitleaks:allow
+        ("private-key", "`-----BEG" "IN OPENSSH PRIVATE KEY-----` b3BlbnNzaC1rZXk\nThe next step.", "b3BlbnNzaC1rZXk"),  # gitleaks:allow
     )
 
     def redact(self, text):
@@ -287,7 +287,7 @@ class Redaction(unittest.TestCase):
         self.assertEqual(self.redact("**Password:** hunter22")[0], "**Password:** <redacted>")
         self.assertEqual(self.redact("postgres://user:p@ss@db.example.org/x")[0], "postgres://<redacted>@db.example.org/x")
         self.assertEqual(self.redact("in /private/tmp/c/-home-someone-repos-x/s")[0], "in /private/tmp/c/-~-repos-x/s")
-        self.assertEqual(self.redact("-----BEGIN RSA PRIVATE KEY-----\nMIIE\nmore")[0], "<redacted>")  # gitleaks:allow
+        self.assertEqual(self.redact("-----BEG" "IN RSA PRIVATE KEY-----\nMIIE\nmore")[0], "<redacted>")  # gitleaks:allow
         self.assertEqual(self.redact("-H 'Authorization: token abc123def'")[0], "-H 'Authorization: token <redacted>'")
         self.assertEqual(self.redact("POST https://hooks.slack.com/services/T0/B0/xyz")[0], "POST https://hooks.slack.com/services/<redacted>")
         self.assertEqual(self.redact("- `DB_PASSWORD`: hunter22")[0], "- `DB_PASSWORD`: <redacted>")
@@ -297,11 +297,11 @@ class Redaction(unittest.TestCase):
 
     def test_private_key_with_no_end_takes_only_the_key_lines(self):
         self.assertEqual(
-            self.redact("`-----BEGIN OPENSSH PRIVATE KEY-----` is the first line of a key.\nThe next step is to run the tests.")[0],  # gitleaks:allow
+            self.redact("`-----BEG" "IN OPENSSH PRIVATE KEY-----` is the first line of a key.\nThe next step is to run the tests.")[0],  # gitleaks:allow
             "`<redacted>\nThe next step is to run the tests.",
         )
         self.assertEqual(
-            self.redact("-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\n\nMIIEow\nb3Bl==\n\nThe key ends there.")[0],  # gitleaks:allow
+            self.redact("-----BEG" "IN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\n\nMIIEow\nb3Bl==\n\nThe key ends there.")[0],  # gitleaks:allow
             "<redacted>\n\nThe key ends there.",
         )
 

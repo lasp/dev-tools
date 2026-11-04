@@ -6,7 +6,7 @@ description: >
   "check downstream" or "why did main go red".
 argument-hint: "[check [branch | symbol] | ci <run> | release <version>]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.0.4
 ---
 
