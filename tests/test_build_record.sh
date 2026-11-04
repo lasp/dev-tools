@@ -472,33 +472,38 @@ nowhere=$(mktemp -d) && made+=("$nowhere")
 out=$(write_in "$nowhere/x.py" s1)$(write_in "$nowhere/not/yet/x.py" s1)
 check "a write outside any repository, in a directory that exists or not, is not refused or marked" \
   '[ -z "$out" ] && ! grep -q "\"kind\":\"elsewhere\"" .review/build/events.jsonl'
+bn=${b_top##*/}
 out=$(write_in "$b/src/new/x.py" s1)
 check "a write in another repository while holding the lock is refused, naming it and to make the edit again" \
-  'printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\" and (.hookSpecificOutput.permissionDecisionReason | test(\"this edit is in '"$b_top"'\") and test(\"Stop\") and test(\"make the edit again\") and (test(\"release\") | not))" >/dev/null'
-check "and marks the build here as refused, by the origin's owner/name, writing no record in the other repository" \
-  '[ "$(jq -c "select(.kind == \"elsewhere\") | [.repo, .refused]" .review/build/events.jsonl)" = "[\"someone/scratch\",true]" ] && [ ! -e "$b/.review/build" ] && [ ! -e "$b/.review/lock" ]'
+  'printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\" and (.hookSpecificOutput.permissionDecisionReason | test(\"this edit is in '"$b_top"'\") and test(\"Stop\") and test(\"make this same edit again\") and (test(\"release\") | not))" >/dev/null'
+want=$(jq -cn --arg r "$bn" --arg p "$b_top" --arg f "$b_top/src/new/x.py" '[$r, $p, $f, true]')
+check "and marks the build here as refused, with the repository's name, top level and the file, writing no record in the other repository" \
+  '[ "$(jq -c "select(.kind == \"elsewhere\") | [.repo, .top, .file, .refused]" .review/build/events.jsonl)" = "$want" ] && [ ! -e "$b/.review/build" ] && [ ! -e "$b/.review/lock" ]'
 jq -cn '{tool_name:"Bash", session_id:"s1", tool_input:{command:"cd b && pytest"}}' | at_a event
 jq -cn '{session_id:"s1"}' | at_a summary
 check "so the build's block records its gates and tokens as not recorded, naming the refused edit as tried" \
-  'grep -qx "Gates: not recorded, this session also tried to edit someone/scratch while its build was recorded here" .review/build/already-checked.md && grep -qx "Tokens since the build started: not recorded" .review/build/already-checked.md'
+  'grep -qx "Gates: not recorded, this session also tried to edit $bn while its build was recorded here" .review/build/already-checked.md && grep -qx "Tokens since the build started: not recorded" .review/build/already-checked.md'
 check "and the block holds no local path of the other repository" '! grep -qF "$b_top" .review/build/already-checked.md'
-out=$(write_in "$b/src/new/x.py" s1)
-check "the same edit made again is allowed, keeping the lock, and marks the build once more as made" \
-  '[ -z "$out" ] && [ "$(jq -r .session .review/lock)" = s1 ] && [ "$(jq -c "select(.kind == \"elsewhere\") | .refused" .review/build/events.jsonl | tr "\n" " ")" = "true null " ]'
 out=$(write_in "$b/src/y.py" s1)
-check "a later edit there is allowed and marks nothing more" \
-  '[ -z "$out" ] && [ "$(grep -c "\"kind\":\"elsewhere\"" .review/build/events.jsonl)" = 2 ]'
+check "another file there, written before the refused edit is made again, is refused too" \
+  'printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\"" >/dev/null && [ "$(grep -c "\"kind\":\"elsewhere\"" .review/build/events.jsonl)" = 2 ]'
+out=$(write_in "$b/src/new/x.py" s1)
+check "the refused edit made again is allowed, keeping the lock, and marks the build once more as made" \
+  '[ -z "$out" ] && [ "$(jq -r .session .review/lock)" = s1 ] && [ "$(jq -c "select(.kind == \"elsewhere\") | .refused" .review/build/events.jsonl | tr "\n" " ")" = "true true null " ]'
+out=$(write_in "$b/src/z.py" s1)
+check "then a later edit of another file there is allowed and marks nothing more" \
+  '[ -z "$out" ] && [ "$(grep -c "\"kind\":\"elsewhere\"" .review/build/events.jsonl)" = 3 ]'
 out=$(jq -cn '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s2"}' | at_a prompt)
 check "so another session's implement-change is still told the lock is held, appending nothing" \
   '[ "$(jq -r .session .review/lock)" = s1 ] && printf "%s" "$out" | grep -q "held by implement-change" && [ "$(tail -1 .review/build/events.jsonl | jq -r .kind)" = elsewhere ]'
 jq -cn '{session_id:"s1"}' | at_a summary
 check "and the block then names the edit as made" \
-  'grep -qx "Gates: not recorded, this session also edited someone/scratch while its build was recorded here" .review/build/already-checked.md'
+  'grep -qx "Gates: not recorded, this session also edited $bn while its build was recorded here" .review/build/already-checked.md'
 check "the guard runs on NotebookEdit calls" \
   'jq -e "[.hooks.PreToolUse[] | select(.hooks[].command | test(\"build-record.sh.* guard\")) | .matcher | split(\"|\") | index(\"NotebookEdit\")] | .[0] != null" "$root/hooks/hooks.json" >/dev/null'
-nb=$(scratch) && made+=("$nb") && git -C "$nb" remote remove origin
+nb=$(scratch) && made+=("$nb")
 out=$(jq -cn --arg f "$nb/n.ipynb" '{tool_name:"NotebookEdit", session_id:"s1", tool_input:{notebook_path:$f}}' | at_a guard)
-check "a NotebookEdit in a repository with no origin is refused, and marks it by its directory's name" \
+check "a NotebookEdit in another repository is refused, and marks it by its directory's name" \
   'printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\"" >/dev/null && [ "$(jq -r "select(.kind == \"elsewhere\") | .repo" .review/build/events.jsonl | tail -1)" = "${nb##*/}" ]'
 
 f=$(scratch) && made+=("$f")
@@ -536,7 +541,7 @@ jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1
 jq -cn --arg c "$e" '{session_id:"s1", cwd:$c}' | "$hook" release
 out=$(write_at "$e" "$b/x.py")
 check "with the lock released, a write in another repository is allowed but still marks the open build" \
-  '[ -z "$out" ] && [ "$(jq -r "select(.kind == \"elsewhere\") | .repo" .review/build/events.jsonl)" = someone/scratch ]'
+  '[ -z "$out" ] && [ "$(jq -r "select(.kind == \"elsewhere\") | .repo" .review/build/events.jsonl)" = "$bn" ]'
 
 e=$(scratch) && made+=("$e") && cd "$e" || exit 1
 jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
@@ -570,6 +575,53 @@ out=$(jq -cn --arg c "$e" --arg f "$b/x.py" '{tool_name:"Write", session_id:"s2"
 jq -cn --arg c "$e" '{session_id:"s2", cwd:$c}' | "$hook" summary
 check "a second session that resumed the build is refused in another repository, and the build reads not recorded" \
   '[ "$(tail -2 .review/build/events.jsonl | head -1 | jq -r ".kind + \" \" + .session")" = "resume s2" ] && printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\"" >/dev/null && grep -q "^Gates: not recorded" .review/build/already-checked.md'
+
+# A build's repository names, from remotes that carry a credential, a user name or a local path.
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+tops=""
+for u in "https://user:ghp_SECRET@github.com/owner/name/" "https://github.com/owner/name.git/" \
+  "https://user:tok@host/name.git" "alicex9@host:name.git" "file:///Users/ownerlogin/foo.git"; do
+  r=$(scratch) && made+=("$r") && git -C "$r" remote set-url origin "$u"
+  write_at "$e" "$r/x.py" >/dev/null
+  tops="$tops$(cd "$r" && pwd -P)
+"
+done
+jq -cn --arg c "$e" '{session_id:"s1", cwd:$c}' | "$hook" summary
+check "a repository is named by its directory alone, never a remote's credential, user name or a local path" \
+  '! grep -qE "ghp_SECRET|tok@|alicex9|ownerlogin|owner/name|github" .review/build/already-checked.md && ! printf "%s" "$tops" | grep -F -f - .review/build/already-checked.md >/dev/null && printf "%s" "$tops" | while read -r t; do grep -qF "tried to edit ${t##*/}" .review/build/already-checked.md || exit 1; done'
+
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+q=$(mktemp -d) && made+=("$q") && git init -q "$q/one/same" && git init -q "$q/two/same"
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+write_at "$e" "$q/one/same/x.py" >/dev/null
+out=$(write_at "$e" "$q/one/same/x.py")$(write_at "$e" "$q/two/same/x.py")
+check "a refusal made good in one repository lets nothing through in another with the same name" \
+  'printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\"" >/dev/null'
+
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+chmod 444 .review/build/events.jsonl
+out=$(write_at "$e" "$b/x.py" 2>/dev/null)$(write_at "$e" "$b/x.py" 2>/dev/null)
+chmod 644 .review/build/events.jsonl
+check "with a log that cannot be written, a write in another repository is allowed, never refused unrecorded" '[ -z "$out" ]'
+
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+printf '{"t":\n' >>.review/build/events.jsonl
+out=$(write_at "$e" "$b/x.py")
+out2=$(write_at "$e" "$b/x.py")
+jq -cn --arg c "$e" '{session_id:"s1", cwd:$c}' | "$hook" summary
+check "a line that is not JSON hides no later mark: the refused edit made again is allowed, and the block reads it" \
+  'printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\"" >/dev/null && [ -z "$out2" ] && grep -q "^Gates: not recorded, this session also edited $bn " .review/build/already-checked.md'
+
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+printf '{"t":' >>.review/build/events.jsonl
+out=$(write_at "$e" "$b/x.py")
+jq -cn --arg c "$e" '{session_id:"s1", cwd:$c}' | "$hook" summary
+check "a refusal whose mark cannot be read back is not printed, and the write is marked as made" \
+  '[ -z "$out" ] && grep -q "^Gates: not recorded, this session also edited $bn " .review/build/already-checked.md'
 
 # The take-over and release lines run as given from a plugin and a repository whose paths hold a
 # space and a quote.
