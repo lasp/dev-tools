@@ -62,8 +62,12 @@ scenarios:
       - cp "$SBX_FIXTURES/standard-review-rules.md" standards/review-rules.md
       - cp "$SBX_FIXTURES/standard-decisions.md" standards/decisions.md
       - cp "$SBX_FIXTURES/standard-terminology.md" standards/terminology.md
+      - "mkdir -p standards/context && printf '# A topic\\n\\nText.\\n' > standards/context/a-topic.md"
     origin: "the transparent-standard plan of 2026-11-02: a person can see what the plugin enforces in their repository, where each rule lives, and whether it is current"
-    why: Asks quickstart what applies in a repository with its own standard, so the reply lists each rule and decision with its number, title and status under the file it came from.
+    why: >-
+      Asks quickstart what applies in a repository with its own standard, so the reply lists each
+      rule and decision with its number, title and status under the file it came from, and each
+      term and context entry as one line, not a table (#6).
     turns:
       - /lasp-dev:quickstart what applies here?
     must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)", "mcp__*", "Bash(claude *)"]
@@ -71,12 +75,14 @@ scenarios:
       quickstart writes the standard with standard_file.sh, lists it with standard_index.py and
       shows the listing: R-001
       established and R-002 provisional, both reviewer-tier, under standards/review-rules.md;
-      D-001 established under standards/decisions.md; T-001 under standards/terminology.md; and
-      no context entries. One line says each changes by a pull request to this repository, as
+      D-001 established under standards/decisions.md; T-001 with what it is also called under
+      standards/terminology.md; and a-topic.md under standards/context, each one line, with no
+      table. One line says each changes by a pull request to this repository, as
       README "How the corpus grows" says. No file outside .review/ is written.
     expect:
       ends: success
-      says: ['Rules, from standards/review-rules\.md', 'R-001 · [^\n]* · established · reviewer', 'R-002 · [^\n]* · provisional · reviewer', 'D-001 · [^\n]* · established']
+      says: ['Rules, from standards/review-rules\.md', 'R-001 · [^\n]* · established · reviewer', 'R-002 · [^\n]* · provisional · reviewer', 'D-001 · [^\n]* · established', 'T-001 · `row`: record, line', 'a-topic\.md · A topic']
+      not_says: ['^\s*\|.*\|\s*$']
 
   - id: onboard-blanket-answer
     repo: widgets
