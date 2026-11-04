@@ -22,7 +22,9 @@ scenario runs offline in `widgets`, a made-up repository `fixture/make_widgets.s
 same commits every time, so it needs no server and no access to anyone's repositories. It holds
 `quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, 
 `no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", 
-the controlled-content gates of `design-doc`, `ticket-draft` and `pr-create`, and the `skill-feedback` previews,
+the controlled-content gates of `design-doc`, `ticket-draft` and `pr-create`,
+`implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
+environment) with the TODO still in place, and the `skill-feedback` previews,
 whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says.
 The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
