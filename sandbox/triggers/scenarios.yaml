@@ -25,6 +25,8 @@ scenarios:
     turns:
       - Go ahead and save what I've changed to git.
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)"]
+    verify:
+      - test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
     look_at: The request reaches commit, which finds the README edit on main and asks before committing to the default branch, offering a branch.
     expect:
       ends: success
@@ -63,8 +65,8 @@ scenarios:
   - id: trigger-implement-change
     repo: widgets
     turns:
-      - by_part should add the counts together when a part is listed twice instead of raising. Can you make that change?
-    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)"]
+      - I want by_part to add the counts together when a part is listed twice instead of raising. Work out the approach with me first, then build it and get it ready for review.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
     look_at: The request reaches implement-change, which restates it as a brief and asks whether to plan it or build it now.
     expect:
       ends: success
@@ -73,8 +75,8 @@ scenarios:
   - id: trigger-onboard
     repo: widgets
     turns:
-      - We're starting to use this plugin on this repo. Look around and work out how we do things here, our test command, templates and conventions, so it fits.
-    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+      - We're starting to use this plugin here. Have a look at how this repo works so it fits in.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Edit", "Write(*/repos/widgets/[!.]*)"]
     look_at: The request reaches onboard, which first asks where the repository's rules live.
     expect:
       ends: success
@@ -117,7 +119,7 @@ scenarios:
   - id: trigger-process-doc
     repo: widgets
     turns:
-      - Write a how-to for new people on our team covering how to add a widget part and run the tests.
+      - New people on the team keep asking how to add a widget part and run the tests. Can you write that down for them?
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
     look_at: The request reaches process-doc, which says the topic, the kind and the readers, then stops at its first question.
     expect:
@@ -184,8 +186,19 @@ scenarios:
     repo: widgets
     turns:
       - Read through README.md and make it easier to follow.
-    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Edit", "Write(*/repos/widgets/[!.]*)"]
     look_at: The request reaches writing, which shows its planned changes to the README and asks before applying them.
     expect:
       ends: success
       skills: [writing]
+
+  - id: notrigger-ticket-draft-github-issue
+    repo: widgets
+    origin: "lasp/dev-tools#23: a GitHub issue request must not reach the Jira-only ticket-draft"
+    why: Asks for a GitHub issue in plain words, so a run shows the request does not reach ticket-draft, which drafts and files only Jira tickets.
+    turns:
+      - Open a GitHub issue on this repo for the blank-count crash in the CSV loader.
+    must_not_run: ["Skill(*ticket-draft)", "mcp__*", "Bash(gh *)", "Bash(git push*)"]
+    look_at: The request does not reach ticket-draft; the session says GitHub is not connected or drafts the issue text for the person, and files nothing.
+    expect:
+      ends: success

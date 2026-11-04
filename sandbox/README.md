@@ -24,7 +24,9 @@ same commits every time, so it needs no server and no access to anyone's reposit
 `pr-create`, and the `skill-feedback` previews, whose planted credentials carry `gitleaks:allow`.
 The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
-skill, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`.
+skill, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
+`notrigger-` scenario holds the other side, a request that must not reach a skill, named in its
+`must_not_run` as `Skill(...)`: a GitHub issue is not `ticket-draft`'s.
 `revise` and `ticket-audit` are not in it, since `disable-model-invocation` keeps them to their
 slash commands. Its `coverage.yaml` names the whole pack as its set, so `smoke.py` runs it on two
 checkouts, after a change to a skill's `description:`:

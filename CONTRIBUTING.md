@@ -36,7 +36,10 @@ standard at run time, never written into the skill. Each step names where its ru
    above it. No check catches a missing row.
 7. **Run the checks** in "Before a pull request" above, one after another.
 8. **Try it in the sandbox** before review: a scenario in `sandbox/`, run beside the current
-   plugin ([`sandbox/README.md`](sandbox/README.md)).
+   plugin ([`sandbox/README.md`](sandbox/README.md)). A skill a person types needs a
+   `trigger-<name>` scenario in `sandbox/triggers/scenarios.yaml`, a request in plain words, and
+   its id in `sandbox/triggers/coverage.yaml`, or `TriggerPack` in `tests/test_sandbox.py` fails;
+   a skill with `user-invocable: false` or `disable-model-invocation: true` needs none.
 9. **Fill the pull request's `Origin:`, `Sandbox:` and `Canary:` lines**, as README "Changing the
    tooling" says, and set the skill's `metadata.version`.
 
