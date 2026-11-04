@@ -8,7 +8,7 @@ description: >
   is ticket-draft's.
 argument-hint: "[revise] <page ID | URL | file | text> [change]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.1.0
 ---
 
