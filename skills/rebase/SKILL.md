@@ -35,8 +35,12 @@ The person's words override each default, at invocation or at any stop.
 rebase-apply` name directories that exist only during one. In it, `head-name` holds the branch,
 `orig-head` the recovery point and `onto` the target. Say so and ask: carry it on (Recommended,
 since the conflicts already resolved in it are kept), abort it, or stop. To carry it on, take the
-branch, recovery point and target from those files, run step 2's upstream check against
-`<branch>@{u}` and step 3, then go to step 4's conflict handling at the current stop.
+branch, recovery point and target from those files. HEAD is detached and holds only part of the
+branch, so step 2's upstream check names both: `git log --oneline --cherry-pick --right-only
+<recovery point>...<branch>@{u}`, and the lease is `git rev-parse <branch>@{u}`. Then step 3, then
+step 4 at the current stop. A stop with no conflicted file is an edit, a break or a failed exec,
+which the last line of `done` in that directory names: say which, and ask rather than continue.
+Never `git rebase --continue` over staged or unstaged changes this skill did not make.
 
 Otherwise `git status -sb`, and stop, saying why and what the person can run, when:
 
@@ -71,11 +75,14 @@ the person says not to fetch or the target is local. When a local target differs
 When the fetch fails, show the error and ask whether to go on against `<remote>/<branch>` as last
 fetched, naming its commit and date, or stop.
 
-**The upstream check.** When the current branch has an upstream (`git rev-parse --abbrev-ref
---symbolic-full-name @{u}`), fetch it too, unless the person said not to fetch, then `git log
---oneline --cherry-pick --right-only HEAD...@{u}`. Any commit it lists is on the remote and not on
-this branch, which a rebase and a forced push would lose: stop and name them. Otherwise record
-`git rev-parse @{u}` for step 6.
+**The upstream check.** Read the branch's upstream with `git rev-parse --abbrev-ref
+--symbolic-full-name @{u}`. An upstream that is the target, any remote's default branch, or a local
+branch (`git config branch.<branch>.remote` is `.`) is where the branch started, not where it is
+published; `git switch -c <branch> origin/main` sets one by default. Say so, and treat the branch
+as having no upstream, here and in step 6. When the branch has another upstream, fetch it too,
+unless the person said not to fetch, then `git log --oneline --cherry-pick --right-only
+HEAD...@{u}`. Any commit it lists is on the remote and not on this branch, which a rebase and a
+forced push would lose: stop and name them. Otherwise record `git rev-parse @{u}` for step 6.
 
 Say the target, how far behind it the branch is (`git rev-list --count HEAD..<target>`), and
 how many of the branch's commits will be replayed. When the branch is not behind, say so and
@@ -87,7 +94,7 @@ the rebase replaces what they did. When any merges another branch, recommend kee
 
 ## 3. Read the Test Command
 
-Where `git remote get-url origin` names a repository,
+Where `git remote get-url <remote>`, for the remote the target comes from, names a repository,
 `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" <owner/repo> --field tests.command` prints the
 suite. An empty value, `not yet recorded`, or an exit 1 is no command; say so, and go on
 without it.
@@ -112,27 +119,31 @@ the other:
 - a change of whitespace only, on one side. Indentation that changes block structure, as in
   Python, YAML or a Makefile, is not whitespace;
 - a change of import order only, on one side, where no import moved has side effects;
-- the same change on both sides, up to whitespace.
+- the same change on both sides, up to whitespace that changes no structure.
 
 Both sides adding code at the same place is clear only when the additions are independent. Two
 versions of the same function, test, setting or document section are not.
 
 **Every other conflict is the person's**: the sides change the same behavior differently, take
 different approaches to one problem, or one side removes what the other relies on. So is any
-conflict you are unsure of, and always a binary file, a file one side modified and the other
-deleted, and a file both sides added. Resolve the clear hunks in a file first, then ask about the
-rest of that file in one question: per conflict, the file and lines, both sides as short
-excerpts, what each side's commit set out to do in its own words, and a recommendation with its
-evidence, or none and why. For a binary, modify/delete or add/add file, show each side's commit
+conflict you are unsure of, and always a binary file, a lockfile (`uv.lock`, `poetry.lock`,
+`package-lock.json`, `Cargo.lock` and the like) or other generated file, which is regenerated
+rather than merged, a file one side modified and the other deleted, and a file both sides added.
+Resolve the clear hunks in a file first, then ask about the rest of that file in one question:
+per conflict, the file and lines, both sides as short excerpts, what each side's commit set out
+to do in its own words, and a recommendation with its evidence, or none and why. For a binary, modify/delete or add/add file, show each side's commit
 summary and each side's size or hash in place of excerpts. Offer: the recommended resolution,
 the other side's, `Abort the rebase`, and `Let's discuss`; a combination comes through "Other".
 Leave the rebase paused while the person decides; the conflict markers stay until they answer.
 
-Take a whole file from one side by naming its commit: `git checkout REBASE_HEAD -- <file>` for
-the branch's, `git checkout <target> -- <file>` for the target's; never `--ours` or `--theirs`.
-Run nothing that rewrites files while the rebase is in progress: no formatter, linter fix or
-hook. After resolving a file, check that no conflict markers remain, then `git add <file>`,
-naming it.
+Resolve a conflicted text file hunk by hunk. Take a whole file from one side only for a binary,
+modify/delete or add/add conflict, or when the person says to, by naming its commit: `git checkout
+REBASE_HEAD -- <file>` for the branch's commit being replayed, `git checkout HEAD -- <file>` for
+the target's side, and `git rm <file>` for the side that deleted it; never `--ours` or `--theirs`.
+During a rebase HEAD is the target plus the branch's commits replayed so far, so it keeps their
+changes to the file, which `<target>` would drop. Run nothing that rewrites files while the
+rebase is in progress: no formatter, linter fix or hook. After resolving a file, check that no
+conflict markers remain, then `git add <file>`, naming it.
 
 When every conflict at a stop is resolved, `git rebase --continue`, with `GIT_EDITOR=true` so
 the commit keeps its message. **Never `git rebase --skip`** unless the person says to skip that
@@ -159,7 +170,17 @@ rebase met no conflict; otherwise ask once, here, naming the command and each co
 resolved: `Leave it local` (Recommended), the person reviewing the result first; `Push with git
 push --force-with-lease=<upstream branch>:<recorded sha> <remote> HEAD:<upstream branch>`, which
 refuses when the remote branch is no longer at the commit step 2 recorded; or `Let's discuss`.
-Never plain `--force` or a bare `--force-with-lease`, and never push the target. A branch with no
-upstream pushes with `git push -u origin <branch>`, asked the same way. Where the repository's
-instructions forbid an agent's push, print the command instead, as `using-github`'s "Pushing"
-says.
+Never plain `--force` or a bare `--force-with-lease`. A branch with no upstream, or one step 2 set
+aside, pushes with `git push -u origin <branch>`, the local branch's own name, asked the same way.
+Where the repository's instructions forbid an agent's push, print the command instead, as
+`using-github`'s "Pushing" says.
+
+**Before any push, or printing one, check where it lands**: the branch after `HEAD:`, or
+`<branch>` itself. When that is the target's branch or any remote's default branch, stop and push
+nothing, whatever the person said at invocation, and say why.
+
+When the push is refused, because the lease no longer holds or, with no upstream,
+`<remote>/<branch>` already holds commits this branch lacks, someone pushed there since. Stop:
+fetch that branch, show the commits it holds that the branch did not (`git log --oneline
+<recovery point>..<remote>/<branch>`; against HEAD, the rebased commits would show too), and let
+the person choose how to reconcile. Never record a new lease, retry, or force on your own.
