@@ -6,7 +6,7 @@ description: >
   "review the test changes".
 argument-hint: "[diff | branch | suite]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.1.5
 ---
 
