@@ -17,11 +17,23 @@ things read it:
 - **`compare`**, for tuning: every variant's runs, each metric as mean and range, the messages side by side.
 - **`--check`**, for testing: each summary against the scenario's `expect` block, `must_not_run` and `verify`.
 
-There are two scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
+This repository holds two scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
 scenario runs offline in `widgets`, a made-up repository `fixture/make_widgets.sh` builds with the
 same commits every time, so it needs no server and no access to anyone's repositories. It holds
 `quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, `no-standard`, the controlled-content gates of `design-doc`, `ticket-draft` and
-`pr-create`, and the `skill-feedback` previews, whose planted credentials carry `gitleaks:allow`. A project's own pack, which replays its
+`pr-create`, and the `skill-feedback` previews, whose planted credentials carry `gitleaks:allow`.
+The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
+skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
+skill, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`.
+`revise` and `ticket-audit` are not in it, since `disable-model-invocation` keeps them to their
+slash commands. Its `coverage.yaml` names the whole pack as its set, so `smoke.py` runs it on two
+checkouts, after a change to a skill's `description:`:
+
+```bash
+sandbox/smoke.py --scenarios sandbox/triggers/scenarios.yaml --base ../dev-tools-main --head . --sandbox ~/sbx/1002 --repeat 3
+```
+
+A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
 directory beside this file, given with `--scenarios`, with a README that lists its scenarios and
 what they need.

@@ -70,6 +70,44 @@ def well_formed(case: unittest.TestCase, known: dict, repos: set) -> None:
 
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
+class TriggerPack(unittest.TestCase):
+    """sandbox/triggers/: one plain-language request per skill a person types and the model may call."""
+
+    PACK = ROOT / "sandbox" / "triggers" / "scenarios.yaml"
+
+    def setUp(self):
+        patch = mock.patch.object(run, "SCENARIOS", self.PACK)
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.known = run.scenarios()
+
+    def test_every_trigger_scenario_is_well_formed_and_asks_in_words(self):
+        well_formed(self, self.known, {"widgets"})
+        for s in self.known.values():
+            self.assertTrue(s["id"].startswith("trigger-"), s["id"])
+            self.assertEqual(len(s["turns"]), 1, s["id"])
+            self.assertNotIn("/", s["turns"][0].split()[0], s["id"])
+
+    def test_each_skill_a_request_can_reach_has_one_scenario_and_the_set_holds_them_all(self):
+        reachable = set()
+        for path in ROOT.glob("skills/*/SKILL.md"):
+            front = yaml.safe_load(path.read_text().split("---")[1])
+            if front.get("user-invocable", True) and not front.get("disable-model-invocation", False):
+                reachable.add(front["name"])
+        expected = sorted(s["expect"]["skills"][0] for s in self.known.values())
+        self.assertEqual(expected, sorted(reachable))
+        self.assertEqual({s["id"] for s in self.known.values()}, {f"trigger-{n}" for n in reachable})
+        self.assertEqual(set(smoke.smoke_set(self.PACK)), set(self.known))
+
+    def test_the_pack_plants_no_credentials(self):
+        from test_secret_scan import planted
+        pack = "sandbox/triggers/"
+        files = [str(p.relative_to(ROOT)) for p in (ROOT / pack).rglob("*") if p.is_file()]
+        self.assertTrue(files)
+        self.assertEqual(planted(files), {})
+
+
+@unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
 class Sandbox(unittest.TestCase):
     def setUp(self):
         self.sandbox = Path(tempfile.mkdtemp())
