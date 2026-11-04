@@ -110,9 +110,10 @@ with the reason, and the repository checks go on.
 
 ### 2. Say
 
-In this order, and nothing else, each part under its bold label, short enough to read at a glance:
+In this order, and nothing else, short enough to read at a glance. Parts 2 to 6 each open with
+their bold label; part 1 has none.
 
-1. **This line, as it is**: lasp-dev takes a ticket to a merged pull request: it drafts the
+1. **The opening line**, word for word and with no label: lasp-dev takes a ticket to a merged pull request: it drafts the
    ticket, plans and builds the change, and reviews the pull request against the repository's
    standard where it has one, stopping for your yes before anything posts, pushes or writes to
    Jira or Confluence.
@@ -127,8 +128,8 @@ In this order, and nothing else, each part under its bold label, short enough to
    - `Profile:` step 1's `profile:` report.
    - `.review/ ignored:` `yes`, `locally only` or `no`.
    - `PR template:` `matches`, `missing`, `differs` or `not yet recorded`; `not checked` when the
-     profile is refused; left out with no standard.
-   - `Last revision:` `<YYYY-MM>` or `none`, left out with no standard.
+     profile is refused. With no standard, print no `PR template:` bullet.
+   - `Last revision:` `<YYYY-MM>` or `none`. With no standard, print no `Last revision:` bullet.
 4. **Fix first**, only when step 1 found a problem: a numbered list, each problem in a few words
    with the fix step 1 gives, a refused profile and a `profile:` report that carries a fix among
    them. Add no fix of your own.
