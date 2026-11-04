@@ -836,7 +836,8 @@ CI (`.github/workflows/checks.yml`) runs, on every pull request:
 - `bash tests/test_where.sh`: `hooks/where.sh`, the start-of-session line.
 - `bash tests/test_standard_file.sh`: `scripts/standard_file.sh`, `scripts/standard.sh`, which it fetches through, and `hooks/rules.sh`, the rules loaded at session start.
 - `bash tests/test_atlassian_gate.sh`: `hooks/atlassian-gate.sh`, against every tool of mcp-atlassian 0.23.1.
-- `uv run python scripts/check_static.py`: what the skills and agents name exists, and no
+- `uv run python scripts/check_static.py`: what the skills and agents name exists, each has its
+  Copilot link and each skill its row in "What is included", and no
   shipped file gains a mention of Libera (`scripts/coupling.json`; after removing mentions,
   `--update-coupling` lowers the baseline).
 - The tests and `check_static.py` again on Python 3.9, the floor "Install" names, with
