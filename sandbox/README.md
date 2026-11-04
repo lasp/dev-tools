@@ -23,8 +23,11 @@ same commits every time, so it needs no server and no access to anyone's reposit
 `quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, 
 `no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", 
 the controlled-content gates of `design-doc`, `ticket-draft` and `pr-create`,
-`rebase-clear-conflict`, `rebase-intent-conflict` and `rebase-remote-ahead`, which resolve a clear
-conflict, stop at one of intent, and stop before rebasing over commits only the remote holds,
+`rebase-clear-conflict`, `rebase-intent-conflict`, `rebase-remote-ahead`,
+`rebase-tracks-main-push-it` and `rebase-later-stop-takes-target`, which resolve a clear
+conflict, stop at one of intent, stop before rebasing over commits only the remote holds, push a
+branch that tracks main under its own name and never to main, and take the target's side of a
+file at a later stop without dropping a commit already replayed,
 `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
 environment) with the TODO still in place, the `skill-feedback` previews,
 whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,

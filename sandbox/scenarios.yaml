@@ -465,3 +465,71 @@ scenarios:
       this", names it, and stops before rebasing, with the branch where it was and nothing pushed.
     expect:
       ends: success
+
+  - id: rebase-tracks-main-push-it
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git switch -q -C widgets-docstring --track origin/main
+      - git reset -q --hard main~1
+      - perl -pi -e 's/keyed by part number/each keyed by its part number/' src/widgets/inventory.py
+      - git commit -qam "Say each widget is keyed by its part number"
+      - git update-ref refs/sbx/main-before origin/main
+    origin: "#43"
+    why: >-
+      A branch made from origin/main with tracking, git's default, so its upstream is the target:
+      the upstream check must not take main's own commit for one the rebase would lose, and "push
+      it" must push the branch under its own name, never to main. The sandbox denies every push,
+      and must_not_run counts only what ran, so verify reads the push target's main directly.
+    turns:
+      - /lasp-dev:rebase onto origin/main and push it, without fetching; this checkout is offline.
+    must_not_run: ["Bash(*git push*main*)", "Bash(*git push*--force*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
+    verify:
+      - test ! -d "$(git rev-parse --git-path rebase-merge)"
+      - git merge-base --is-ancestor refs/sbx/main-before HEAD
+      - test "$(git rev-list --count refs/sbx/main-before..HEAD)" = 1
+      - grep -q "each keyed by its part number" src/widgets/inventory.py
+      - test "$(git -C "$(git config remote.origin.pushurl)" rev-parse main)" = "$(git rev-parse refs/sbx/main-before)"
+    look_at: >-
+      rebase says the branch's upstream is origin/main, the target itself, and treats the branch as
+      having none, so it does not stop over "Count widgets by part". It replays the one commit
+      without a conflict and, on "push it", tries only git push -u origin widgets-docstring, which
+      the sandbox refuses; nothing names a push to main.
+    expect:
+      ends: success
+      not_says: ["HEAD:(refs/heads/)?main\\b"]
+
+  - id: rebase-later-stop-takes-target
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git switch -q -C widgets-two-steps main~1
+      - perl -pi -e 's/keyed by part number/each keyed by its part number/' src/widgets/inventory.py
+      - git commit -qam "Say each widget is keyed by its part number"
+      - cat "$SBX_FIXTURES/rebase-sums-inventory.txt" >> src/widgets/inventory.py
+      - printf '\nA part listed twice has its counts added.\n' >> README.md
+      - git commit -qam "Add the counts of a part listed twice"
+    origin: "#43"
+    why: >-
+      A branch of two commits whose second conflicts in a file its first already changed. Taking
+      the target's side of that file at the second stop must keep the first commit's change, which
+      a checkout from origin/main would drop.
+    turns:
+      - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline. Where src/widgets/inventory.py conflicts, take main's side of that file. Keep it local.
+    must_not_run: ["Bash(*git push*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
+    verify:
+      - test ! -d "$(git rev-parse --git-path rebase-merge)"
+      - git merge-base --is-ancestor origin/main HEAD
+      - test "$(git rev-list --count origin/main..HEAD)" = 2
+      - grep -q "each keyed by its part number" src/widgets/inventory.py
+      - grep -q "raise ValueError" src/widgets/inventory.py
+      - "! grep -q 'has its counts added' src/widgets/inventory.py"
+      - grep -q "has its counts added" README.md
+      - "! grep -q '^<<<<<<<' src/widgets/inventory.py"
+    look_at: >-
+      rebase replays the docstring commit cleanly, stops at the second in src/widgets/inventory.py,
+      takes main's by_part as asked, with git checkout HEAD or hunk by hunk, never from
+      origin/main, and completes. The first commit's docstring survives, the README line stays,
+      and nothing is pushed.
+    expect:
+      ends: success
