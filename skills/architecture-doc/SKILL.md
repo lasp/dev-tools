@@ -9,7 +9,7 @@ description: >
   which is design-doc's.
 argument-hint: "[revise] <repository | page ID | URL | file | text>"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.1.2
 ---
 

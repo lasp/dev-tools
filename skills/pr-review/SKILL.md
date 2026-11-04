@@ -7,7 +7,7 @@ description: >
   answering a review (pr-fix) or a diff with no pull request (/code-review).
 argument-hint: "[PR number or URL] [focus area]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 6.11.0
 ---
 

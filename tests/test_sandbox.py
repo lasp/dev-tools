@@ -69,12 +69,65 @@ def well_formed(case: unittest.TestCase, known: dict, repos: set) -> None:
             case.assertTrue(s.get("why"), s["id"])
 
 
+GITHUB_SERVER = {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}
+ATLASSIAN_SERVER = {"command": "uvx", "args": ["mcp-atlassian@0.23.1", "--read-only"], "env": {"READ_ONLY_MODE": "true"}}
+
+
+@unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
+class TriggerPack(unittest.TestCase):
+    """sandbox/triggers/: one plain-language request per skill a person types and the model may call."""
+
+    PACK = ROOT / "sandbox" / "triggers" / "scenarios.yaml"
+
+    def setUp(self):
+        patch = mock.patch.object(run, "SCENARIOS", self.PACK)
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.known = run.scenarios()
+
+    def test_every_scenario_is_well_formed_and_asks_in_words(self):
+        well_formed(self, self.known, {"widgets"})
+        for s in self.known.values():
+            self.assertTrue(s["id"].startswith(("trigger-", "notrigger-")), s["id"])
+            self.assertEqual(len(s["turns"]), 1, s["id"])
+            self.assertNotIn("/", s["turns"][0].split()[0], s["id"])
+            if s["id"].startswith("notrigger-"):
+                self.assertTrue(any(r.startswith("Skill(") for r in s["must_not_run"]), s["id"])
+
+    def test_each_skill_a_request_can_reach_has_one_trigger_scenario_and_the_set_holds_the_pack(self):
+        reachable = set()
+        for path in ROOT.glob("skills/*/SKILL.md"):
+            front = yaml.safe_load(path.read_text().split("---", 2)[1])
+            if front.get("user-invocable", True) and not front.get("disable-model-invocation", False):
+                reachable.add(front["name"])
+        triggers = {s["id"]: s for s in self.known.values() if s["id"].startswith("trigger-")}
+        for name in reachable:
+            with self.subTest(skill=name):
+                s = triggers.get(f"trigger-{name}")
+                self.assertIsNotNone(s)
+                self.assertEqual(s["expect"].get("skills"), [name])
+                self.assertNotIn(name, s["turns"][0].lower())
+        self.assertLessEqual({i.removeprefix("trigger-") for i in triggers}, reachable)
+        self.assertEqual(set(smoke.smoke_set(self.PACK)), set(self.known))
+
+    def test_the_pack_plants_no_credentials(self):
+        spec = importlib.util.spec_from_file_location("secret_scan_tests", ROOT / "tests" / "test_secret_scan.py")
+        scan = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(scan)
+        planted = scan.planted
+        pack = "sandbox/triggers/"
+        files = [str(p.relative_to(ROOT)) for p in (ROOT / pack).rglob("*") if p.is_file()]
+        self.assertTrue(files)
+        self.assertEqual(planted(files), {})
+
+
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
 class Sandbox(unittest.TestCase):
     def setUp(self):
         self.sandbox = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.sandbox)
-        (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"github-example": {}, "github": {}, "atlassian": {}}}))
+        servers = {"github-example": GITHUB_SERVER, "github": GITHUB_SERVER, "atlassian": ATLASSIAN_SERVER}
+        (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": servers}))
         self.quickstart = run.scenarios()["quickstart"]
 
     def test_a_line_separator_inside_a_string_is_not_a_line_break(self):
@@ -86,7 +139,7 @@ class Sandbox(unittest.TestCase):
 
     def test_every_generic_scenario_is_well_formed_and_runs_in_the_fixture(self):
         known = run.scenarios()
-        self.assertEqual(len(known), 13)
+        self.assertEqual(len(known), 14)
         well_formed(self, known, {"widgets"})
 
     def test_every_fixture_a_scenario_copies_is_in_the_pack(self):
@@ -277,6 +330,34 @@ class Sandbox(unittest.TestCase):
         self.assertNotIn("mcp__atlassian__pull_request_read", perms["allow"])
         self.assertFalse([r for r in perms["allow"] + perms["deny"] if "{" in r])
 
+    def test_settings_tell_a_servers_kind_by_what_it_is_not_its_name(self):
+        servers = {"code-host": GITHUB_SERVER,
+                   "local-code": {"command": "docker", "args": ["run", "-i", "--rm", "ghcr.io/github/github-mcp-server"]},
+                   "code-binary": {"command": "/usr/local/bin/github-mcp-server", "args": ["stdio"]},
+                   "issue-tracker": {"command": "docker", "args": ["run", "ghcr.io/sooperset/mcp-atlassian:0.23.1", "--read-only"],
+                                     "env": {"READ_ONLY_MODE": "true"}},
+                   "github-docs": {"type": "http", "url": "https://example.org/api.githubcopilot.com/mcp/"},
+                   "atlassian-notes": {"command": "uvx", "args": ["notes-server"]}}
+        (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": servers}))
+        run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
+        perms = json.loads((self.sandbox / "settings.json").read_text())["permissions"]
+        for name in ("code-host", "local-code", "code-binary"):
+            self.assertIn(f"mcp__{name}__add_issue_comment", perms["deny"])
+            self.assertIn(f"mcp__{name}__pull_request_read", perms["allow"])
+        self.assertIn("mcp__issue-tracker__jira_update_issue", perms["deny"])
+        self.assertIn("mcp__issue-tracker", perms["allow"])
+        for name in ("github-docs", "atlassian-notes"):
+            self.assertFalse([r for r in perms["allow"] + perms["deny"] if f"mcp__{name}" in r], name)
+
+    def test_settings_refuse_an_atlassian_server_that_is_not_read_only(self):
+        for server in ({"command": "uvx", "args": ["mcp-atlassian@0.23.1"], "env": {"READ_ONLY_MODE": "true"}},
+                       {"command": "uvx", "args": ["mcp-atlassian@0.23.1", "--read-only"]}):
+            (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"issue-tracker": server}}))
+            with self.assertRaises(SystemExit) as raised:
+                run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
+            self.assertIn("issue-tracker", str(raised.exception))
+            self.assertFalse((self.sandbox / "settings.json").exists())
+
     def test_settings_run_bash_in_the_sandbox_with_no_fallback_reaching_a_fixed_list(self):
         run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
         box = json.loads((self.sandbox / "settings.json").read_text())["sandbox"]
@@ -290,8 +371,8 @@ class Sandbox(unittest.TestCase):
         self.assertEqual(box["filesystem"]["allowWrite"], ["/tmp", "/private/tmp"])
 
     def test_settings_keep_credentials_and_the_settings_files_from_sandboxed_commands(self):
-        servers = {"github-example": {"headers": {"Authorization": "Bearer ${GITHUB_MCP_PAT_EXAMPLE}"}},
-                   "atlassian": {"env": {"JIRA_PERSONAL_TOKEN": "${JIRA_TOKEN}"}}}
+        servers = {"github-example": {**GITHUB_SERVER, "headers": {"Authorization": "Bearer ${GITHUB_MCP_PAT_EXAMPLE}"}},
+                   "atlassian": {**ATLASSIAN_SERVER, "env": {**ATLASSIAN_SERVER["env"], "JIRA_PERSONAL_TOKEN": "${JIRA_TOKEN}"}}}
         (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": servers}))
         run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
         text = (self.sandbox / "settings.json").read_text()
@@ -407,6 +488,28 @@ class Sandbox(unittest.TestCase):
         self.assertEqual(renamed["expect"], {"ends": "success", "says": ["/acme-dev:onboard"], "skills": ["work"]})
         self.assertIs(renamed["repeat_safe"], True)
         self.assertEqual(run.for_plugin(scenario, "lasp-dev"), scenario)
+
+    def test_planted_fakes_are_whole_in_the_scenario_and_absent_from_the_file(self):
+        token = "gh" + "p_SandboxFakeToken0123456789abcdefABCDEF"
+        key = "sk-" + "ant-api03-SandboxFakeKey0123456789abcdefABCDEF"
+        text = run.scenario_file().read_text()
+        self.assertNotIn(token, text)
+        self.assertNotIn(key, text)
+        known = run.scenarios()
+        self.assertIn(f"the test token is {token}, the API key is {key},", known["skill-feedback-log"]["turns"][0])
+        self.assertIn(f"pasted {token} and", known["skill-feedback-draft"]["setup"][-1])
+        self.assertNotIn("{fake_", json.dumps(known))
+        for s in ("skill-feedback-log", "skill-feedback-draft"):
+            self.assertTrue(any(re.search(r, token) for r in known[s]["expect"]["not_says"]), s)
+        self.assertTrue(any(re.search(r, key) for r in known["skill-feedback-log"]["expect"]["not_says"]))
+
+    def test_a_pack_naming_an_unknown_fake_stops_run_py(self):
+        pack = self.sandbox / "scenarios.yaml"
+        pack.write_text('scenarios:\n  - {id: x, turns: ["the token is {fake_nope}"]}\n')
+        with mock.patch.object(run, "SCENARIOS", pack), self.assertRaises(SystemExit) as stop:
+            run.scenarios()
+        self.assertIn("{fake_nope}", str(stop.exception.code))
+        self.assertIn(str(pack), str(stop.exception.code))
 
     def test_a_variant_runs_the_scenario_renamed_for_its_plugins_name(self):
         (self.sandbox / "pins").write_text("")
