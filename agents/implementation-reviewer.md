@@ -52,7 +52,7 @@ Implementation always teaches something the plan could not know, so expect small
   <worktree> apply`), copy in the change's untracked test files (`git ls-files --others
   --exclude-standard -- <test paths>`), which the diff does not carry, and run it there. A test that passes at the base reproduces nothing, and a
   collection or import error is not a failure of the behavior: both are blocking.
-- **Nothing outside the scope got in**: refactors of code the change did not need, unrequested options or features, cleanup of unrelated files, speculative generality, a TODO removed that the change does not complete and the plan does not drop. Blocking even when the code is good — nobody agreed to it.
+- **Nothing outside the scope got in**: refactors of code the change did not need, unrequested options or features, cleanup of unrelated files, speculative generality, a TODO removed that the change does not complete and neither the plan's steps nor its `## Corrections` drop. Blocking even when the code is good — nobody agreed to it.
 
 ## Step 5: Hold It to the Repo's Style
 

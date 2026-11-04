@@ -285,9 +285,9 @@ code works this way, but not how it got there: no mention of this session, the p
 rejected, or what the code used to do.
 
 **A TODO the change does not address stays**, wherever the build rewrites or moves its code,
-honing included. One the change completes goes, and step 9 names it with its tracking reference.
-One that looks obsolete is kept and raised with the person as a tangent, with the reason, and
-removed only on their word.
+honing included. One the change completes goes, and step 9 names it with its key, where it has
+one. One that looks obsolete is kept and raised at step 9's gate, with the reason; removing it is
+a diff-gate correction.
 
 Build what the plan says. A discovery that invalidates a step (the interface is not what it
 looked like, the change is twice the size, a dependency is missing) goes back to the person with

@@ -307,24 +307,25 @@ scenarios:
     repo: widgets
     setup:
       - git config commit.gpgsign false
-      - "python3 -c \"import pathlib; p = pathlib.Path('src/widgets/inventory.py'); s = p.read_text(); p.write_text(s.replace('    counts: dict[str, int] = {}\\n', '    # TODO[PROJ-51]: refuse a negative count once the loader checks its rows.\\n    counts: dict[str, int] = {}\\n'))\""
+      - "python3 -c \"import pathlib; p = pathlib.Path('src/widgets/inventory.py'); s = p.read_text(); p.write_text(s.replace('        if w.part in counts:\\n', '        # TODO[PROJ-51]: give the CSV row of a repeated part once the loader passes rows.\\n        if w.part in counts:\\n'))\""
       - grep -qF 'TODO[PROJ-51]' src/widgets/inventory.py
-      - git commit -qam "Note the negative-count check for later"
+      - git commit -qam "Note the CSV row for a repeated part"
     origin: "lasp/dev-tools#3: a rewrite can drop a TODO the change has not addressed"
     why: >-
-      Asks implement-change to rewrite by_part, whose body carries an unrelated TODO, and takes it
-      to the diff gate, so the rewritten function still holds the TODO.
+      Asks implement-change to rewrite by_part, whose duplicate check carries a TODO the change
+      does not complete, so the rewritten function still holds the TODO.
     turns:
       - /lasp-dev:implement-change Rewrite by_part in src/widgets/inventory.py to find duplicated parts with collections.Counter before building the dict, and name every duplicated part in the ValueError.
       - Build it now.
       - "Approve the plan. Lowered to light because it is one function and its test."
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(git commit*)"]
     look_at: >-
-      The build rewrites by_part with Counter and stops at the diff gate, uncommitted. The TODO
-      line, TODO[PROJ-51], is still in by_part; the change does not implement it, and if the run
-      thinks it obsolete it says so and asks rather than deleting it.
+      The build rewrites by_part with Counter and stops at verification (widgets has no test
+      environment) with the TODO still in place: TODO[PROJ-51] sits on the duplicate check the
+      rewrite replaces, and the change does not implement it. A run that thinks it obsolete says
+      so rather than deleting it.
     verify:
       - "! git diff --quiet HEAD -- src/widgets/inventory.py"
-      - "grep -qF 'TODO[PROJ-51]: refuse a negative count' src/widgets/inventory.py"
+      - grep -qF 'TODO[PROJ-51]' src/widgets/inventory.py
     expect:
       ends: success

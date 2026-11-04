@@ -21,7 +21,7 @@ There are two scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s d
 scenario runs offline in `widgets`, a made-up repository `fixture/make_widgets.sh` builds with the
 same commits every time, so it needs no server and no access to anyone's repositories. It holds
 `quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, `no-standard`, the controlled-content gates of `design-doc`, `ticket-draft` and
-`pr-create`, `implement-change-keeps-todo`, which builds to the diff gate and holds that an unrelated TODO survives, and the `skill-feedback` previews, whose planted credentials carry `gitleaks:allow`. A project's own pack, which replays its
+`pr-create`, `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test environment) with the TODO still in place, and the `skill-feedback` previews, whose planted credentials carry `gitleaks:allow`. A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
 directory beside this file, given with `--scenarios`, with a README that lists its scenarios and
 what they need.
