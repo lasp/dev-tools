@@ -46,12 +46,11 @@ holds no `/` of its own except the two-part `test/`, `ticket/` and `term/` ones;
 - `ticket/scope` — work a boundary in the ticket excludes, or work a ticket on its out-of-scope list owns
 - `ticket/plan` — a departure from the approved plan that the PR body does not explain
 
-The acceptance criteria, the boundaries and the out-of-scope list are the sections the project's
-`tracker.md` names for them; with no such file, or one that does not name them, they are
-`using-jira`'s format: the numbered list under Driving Requirements, the boundaries in Technical
-Requirements, and Related Out of Scope Tickets, or Not this ticket on a ticket in the earlier
-format. With no ticket, or a ticket without one of these sections, there is no `ticket/AC-n` or
-`ticket/scope` finding of that kind.
+The acceptance criteria, the boundaries and the out-of-scope list are the ticket's own, under
+whatever headings it uses; in `using-jira`'s format they are the numbered list under Driving
+Requirements, the boundaries in Technical Requirements, and Related Out of Scope Tickets, or Not
+this ticket on a ticket in the earlier format. With no ticket, or a ticket that has none of one
+of them, there is no `ticket/AC-n` or `ticket/scope` finding of that kind.
 
 A `ticket/` finding's Proposed line changes the code, or, where the work should keep its
 departure from the ticket, records it: in the pull request body, and on the ticket with
@@ -109,11 +108,15 @@ Each is keyed under the repository's rule for comments where it has one, otherwi
 
 ## The product's contract
 
-A change that lets a condition the product's contract forbids pass silently is a finding: a
-should-fix, or a must-fix when the output would be wrong with no trace, citing the rule or decision
-that sets the contract when one does. The contract is the project's, from its rules and decisions,
-the ticket and the code's documented interface; where none of them forbids a retry, a fallback or
-a default, adding one is not a finding of this kind.
+Whatever the product, a change that hides a failure from every caller is a finding: a handler
+that swallows an exception, or logs and continues, where the result is then wrong or missing; a
+coercion that turns invalid input into a valid-looking value (`errors="coerce"`, `nan_to_num`, a
+cast of unvalidated input, zero-filling a gap); a default standing in for an input whose absence
+means the input is malformed. Behavior the ticket, the plan or the documented interface specifies
+is not one: a retry of the transient failures it names, a fallback it states. Beyond that, what the
+product forbids is the project's, from its rules and decisions; a change that lets such a
+condition pass silently is a finding too. Each is a should-fix, or a must-fix when the output
+would be wrong with no trace, citing the rule or decision when one sets it.
 
 ## Do not flag
 

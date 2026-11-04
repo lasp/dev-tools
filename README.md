@@ -12,10 +12,9 @@ differs between teams is meant to live in each repository's standard, not in the
 review rules and decisions, the Jira project and its workflow, the Confluence spaces, the pull
 request template, the test commands. It is not all there yet: Libera's names still appear in a
 number of skills and agents, which [`ROADMAP.md`](ROADMAP.md) tracks in "Neutral examples in
-generic skills". A repository keeps its standard in its own
-`standards/`, or points at a project's shared standard in another repository. Tools for one
-domain, such as flight software or engineering, belong in plugins of their own installed beside
-this one.
+generic skills". A repository keeps its standard in its own `standards/`, or points at a
+project's shared standard in another repository. Tools for one domain, such as flight software or
+engineering, belong in plugins of their own installed beside this one.
 
 **What it does in your repository.** With no standard, every skill runs on what it finds in the
 repository and the default profile: it plans, builds, reviews and opens pull requests, and the
@@ -517,7 +516,7 @@ Once per repository. It needs:
 | File | Where it comes from |
 | --- | --- |
 | `standards/review-rules.md`, the ledger, each entry holding its rule's wording as `> ` lines | `onboard`'s step 6 drafts it into `.review/harvest/`; people cut and commit |
-| `standards/decisions.md`, optional | written by hand |
+| `standards/decisions.md`, optional | written by hand; a pipeline that produces a defined product adopts the fail-loud decision in `docs/standards.md`, "Example decision: fail loud" |
 | `.github/PULL_REQUEST_TEMPLATE.md` | copied byte for byte from the standard's `templates/<name>/`, in the directory `scripts/profile.py --standard` prints; `/lasp-dev:quickstart` reports drift |
 | `.review/` in `.gitignore` | the skills and hooks write their working files there |
 

@@ -11,8 +11,9 @@ The focus: code that is larger, more defensive or more roundabout than the chang
 - A comment the review contract's "Comments" section raises, starting from the `comment_scan.py`
   marks the caller's `Notes:` line carries.
 - Dead code.
-- A defensive check nobody asked for, and an over-broad `except`. A check the product's contract
-  asks for, as the review contract's "The product's contract" section says, is not one.
+- A defensive check nobody asked for, and an over-broad `except`. Validation where data enters,
+  and a check the product's contract asks for, as the review contract's "The product's contract"
+  says, is not one.
 
 ## Leave to others
 

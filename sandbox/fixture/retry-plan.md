@@ -10,9 +10,10 @@ Source: prompt: Fetch an inventory CSV from the warehouse service, retrying the 
 - **Constraints**: the standard library only.
 - **Design choices**: the warehouse service drops connections and answers 502, 503 or 504 during its nightly restart, and its API guide asks every client to retry those with exponential backoff (the person, 2026-10-30).
 - **Acceptance criteria**:
-  1. A dropped connection or a 502, 503 or 504 is retried, three tries in all, waiting 0.5 s and then 1 s.
+  1. A connection dropped before or during the response, or a 502, 503 or 504, is retried, three tries in all, waiting 0.5 s and then 1 s.
   2. When the last try fails, its error is raised.
   3. Any other HTTP error is raised at once, with no retry.
+  4. Fewer than one attempt raises ValueError.
 - **Assumptions**: none.
 
 ## Steps

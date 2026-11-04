@@ -266,17 +266,74 @@ scenarios:
     look_at: >-
       implement-change resumes the agreed plan at step 8, writes .review/standard.md and runs the
       wave: the implementation reviewer and the simplicity, documentation and tests reviewers. No
-      reviewer raises the retry, the backoff or the URLError handler as a should-fix or must-fix,
-      and none proposes replacing it with a raise; the turn ends at step 9's diff gate with the
-      retry still in src/widgets/fetch.py. A finding about something else, such as the tests, is
-      fine.
+      reviewer raises the retry, the backoff or the dropped-connection handler as a should-fix or
+      must-fix, and none proposes replacing it with a raise; the turn ends at step 9's diff gate
+      with the retry still in src/widgets/fetch.py. A finding about something else, such as the
+      tests, is fine.
     verify:
       - grep -q 'time.sleep(delay)' src/widgets/fetch.py
-      - grep -q 'except urllib.error.URLError' src/widgets/fetch.py
+      - grep -q 'except DROPPED' src/widgets/fetch.py
     expect:
       ends: success
       agents: [implementation-reviewer]
-      not_says: ["(?i)(must|should)[- ]fix[^\\n]*\\bretr", "(?i)\\bretr[^\\n]*(must|should)[- ]fix", "(?i)fail[- ]loud"]
+      not_says: ["(?i)(remove|drop|replace)[^\\n]*\\bretr", "(?i)\\bretr[^\\n]*\\b(with|by) a raise"]
+
+  - id: review-fail-loud-decision
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git checkout -q -B fetch-inventory
+      - mkdir -p standards && cp "$SBX_FIXTURES/fail-loud-decisions.md" standards/decisions.md && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/cached-fetch.py" src/widgets/fetch.py
+      - cp "$SBX_FIXTURES/cached-test_fetch.py" tests/test_fetch.py
+      - git add src tests && git commit -qm "Fetch the inventory from the warehouse service"
+      - mkdir -p .review && cp "$SBX_FIXTURES/cached-plan.md" .review/implementation-plan-fetch-inventory.md
+    origin: "#20"
+    why: >-
+      Resumes a finished build whose fetch falls back silently to a cached file on any error, in a
+      repository whose standard adopts docs/standards.md's fail-loud decision as D-001, so the
+      review wave raises the fallback under that decision now that the contract leaves it to the
+      project.
+    turns:
+      - /lasp-dev:implement-change
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(git commit*)"]
+    look_at: >-
+      implement-change resumes at step 8, writes .review/standard.md with D-001 in it and runs the
+      wave. A reviewer raises the `except Exception` that returns the cached file as a should-fix
+      or must-fix citing D-001, proposing a raise and a test for it; the wave's loop may fix it
+      before step 9's gate, and the reply says so.
+    expect:
+      ends: success
+      agents: [implementation-reviewer]
+      says: ["D-\\d+|(?i:fall ?back|cached)"]
+
+  - id: review-swallowed-exception
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git checkout -q -B inventory-total
+      - mkdir -p standards && printf '# Decisions\n' > standards/decisions.md && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/swallow-total.py" src/widgets/total.py
+      - cp "$SBX_FIXTURES/swallow-test_total.py" tests/test_total.py
+      - git add src tests && git commit -qm "Total an inventory CSV"
+      - mkdir -p .review && cp "$SBX_FIXTURES/swallow-plan.md" .review/implementation-plan-inventory-total.md
+    origin: "#20"
+    why: >-
+      Resumes a finished build whose total skips any row whose count does not parse, through
+      `except Exception: pass`, in a repository with no fail-loud decision, so the review wave
+      raises it under the floor in the contract's "The product's contract" alone.
+    turns:
+      - /lasp-dev:implement-change
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(git commit*)"]
+    look_at: >-
+      implement-change resumes at step 8 and runs the wave. A reviewer raises the swallowed
+      exception, which leaves a wrong total with no trace, as a should-fix or must-fix, proposing a
+      raise naming the row and a test for it; the wave's loop may fix it before step 9's gate, and
+      the reply says so.
+    expect:
+      ends: success
+      agents: [implementation-reviewer]
+      says: ["(?i)swallow|except Exception|silently|broad except|skip"]
 
   - id: skill-feedback-words
     repo: widgets
