@@ -395,6 +395,62 @@ not hold a full build on Opus.
 
 ## What is included
 
+The skills a person types, in the order they meet them:
+
+**Start here**
+- `quickstart`: checks this machine and repository, says what to type next, and answers questions
+  about the plugin; changes no tracked file.
+- `onboard`: surveys a repository for the facts the plugin works from, asks only what it cannot
+  detect, and writes the settings on your yes; on a second yes, drafts first review rules from
+  merged review threads.
+
+**Tickets and design**
+- `ticket-draft`: drafts or refines a Jira ticket in the team's format, placed among existing work,
+  and writes it to Jira only on your yes.
+- `design-doc`: turns your notes into a design doc for work that spans several tickets, settling the
+  problem and goals with you first, and publishes on your yes.
+- `ticket-audit`: sweeps the Jira project for gaps, duplicates, stale tickets and links, and applies
+  the actions you approve in one write plan.
+
+**Build**
+- `work`: works out where a ticket or its pull request stands and runs the next phase; each phase
+  keeps its own approvals.
+- `implement-change`: takes one change to an agreed plan, code verified by a wave of reviewers, and
+  an offered pull request.
+
+**Pull requests**
+- `pr-create`: writes a reviewer-focused description and opens the pull request as a draft.
+- `pr-review`: reviews the pull request against its ticket and the repository's standard, shows the
+  findings at their lines, and posts one review only on your yes.
+- `pr-fix`: takes each review thread to a verdict, implements the agreed fixes and drafts the
+  replies, and asks before it pushes or posts.
+
+**The standard**
+- `revise`: prepares the monthly revision from how reviews were answered, proposing rules to add,
+  reword or retire; `apply` drafts what the group accepted, and `correct` fixes a misreading between
+  revisions.
+
+**Docs**
+- `architecture-doc`: writes a Confluence page on a system as it stands, from the code and your
+  description, and publishes on your yes.
+- `process-doc`: writes a Confluence page on how something is done, a process, a how-to or a user
+  guide, and publishes on your yes.
+- `drawio`: draws a context, component, flow or deployment diagram as draw.io XML, checked before it
+  is handed over.
+- `writing`: reviews or rewrites prose for structure and clarity without changing a fact.
+
+**Supporting**
+- `commit`: chooses what belongs in a commit and writes the message; never pushes.
+- `test-suite-review`: judges test changes for loosening, missed failure paths and factoring; reads
+  only.
+- `downstream`: says which consuming repositories a change breaks, why a CI run went red, and which
+  pins a release leaves behind.
+- `skill-feedback`: files a complaint about a skill as an issue here, shown to you whole before your
+  yes.
+
+The `using-*` skills are not typed: they load when another skill reads GitHub, Jira, Confluence or a
+shared library. The table below is the reference.
+
 Most days need one command, `work`. Started, in the skills table: `typed only` runs only as a
 `/lasp-dev:` command; `hidden` is not in the `/` menu and loads when a skill needs it;
 `typed or asked` also runs when you ask in words or another skill calls it.
@@ -477,10 +533,12 @@ In this order:
    profile first: the review wave passes the command to the implementation reviewer, and the
    build's gate counts come from the patterns. Until the file exists, the repository runs on what
    `profile.py` detects in its own files and the default profile (`docs/contracts.md`, "The profile").
+   With no GitHub server connected, onboard cannot search for a shared standard and recommends
+   neither answer to where the rules live (`onboard`'s "Where the rules live, then the survey").
 2. Run `/lasp-dev:onboard` and, at its last step, draft the first rules from the
    repository's merged pull request history (`/lasp-dev:onboard rules` goes straight there).
-   It needs at least five merged pull requests with review threads a person wrote, the author's own
-   included.
+   It needs at least five merged pull requests on GitHub with review threads a person wrote, the
+   author's own included. It runs one agent per pull request with review threads, up to thirty.
 3. A person cuts the candidates in `.review/harvest/` down to the rules the team wants.
 4. Copy the PR template from the standard's `templates/<name>/`, the name the profile's `template` gives.
 5. Add `.review/` to `.gitignore`.
