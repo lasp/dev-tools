@@ -4,8 +4,9 @@ description: >
   Drafts or refines a Jira ticket in the team's format, placed among existing work, from a
   description, a ticket or a pull request with none; can brief you on the code first, fold in
   later answers, or reformat a ticket to the current format; writes to Jira only on your yes. Use when
-  asked to "write a ticket for", "refine this ticket", "is this ticket ready", "what is this
-  ticket missing" or "groom this ticket".
+  asked to "write a ticket for", "file a ticket", "create a Jira ticket", "log a bug", "open an
+  issue for", "refine this ticket", "is this ticket ready", "what is this ticket missing" or
+  "groom this ticket". Not for a GitHub issue about a lasp-dev skill, which is skill-feedback's.
 argument-hint: "[investigate | settle | reformat] <ticket key | description | pull request> [thread id]"
 metadata:
   author: dev-tools
