@@ -103,7 +103,8 @@ directory or, when such files sit in two directories or more, anywhere. With `--
 `downstream` proposes the repositories that use the package, never the repository itself by name:
 from the onboarding skill's code search, a JSON list of `{"repo", "evidence"}` (`GitHub (search)`),
 or from a directory of checkouts, each searched at its `origin/HEAD` for a Python file importing
-the package or a dependency file naming it (`clones (search)`). For each file named, how a fact from it reaches the model and its size in characters; and
+a name the `import names` row gives or a dependency file naming the package (`clones (search)`);
+that row, from the package's layout (`import_names`), reading `conflict` searches no checkout. For each file named, how a fact from it reaches the model and its size in characters; and
 the files every session loads at its start, with their total: `CLAUDE.md`, `.claude/CLAUDE.md`,
 each `.claude/rules/*.md` with no `paths:` in its frontmatter, and what any of them imports with
 `@path`, a scoped rule's imports included, five hops deep (`docs/contracts.md`, "The survey"). A
@@ -912,6 +913,8 @@ def survey(top: Path, root: Path, ref: str = "HEAD", raws: list | None = None) -
     text = tree.read("pyproject.toml") if tree.has("pyproject.toml") else ""
     name = re.search(r"""^name\s*=\s*["']([^"']+)["']""", section(text, "project") or section(text, "tool.poetry"), re.M)
     add("package", "pyproject.toml" if name else "none", name.group(1) if name else "")
+    found_in, modules, clash = import_names(tree, text, name.group(1)) if name else ("none", [], False)
+    add("import names", found_in, ", ".join(modules), conflict=clash)
     ini = section(text, "tool.pytest.ini_options")
     listed = re.search(r"^markers\s*=\s*\[(.*?)\]", ini, re.M | re.S)
     markers = re.findall(r"""["']([\w-]+)\s*:""", listed.group(1)) if listed else []
@@ -1234,13 +1237,51 @@ def grep(clone: Path, pattern: str, ref: str, *paths: str, case: bool = True) ->
     return set(out.stdout.splitlines())
 
 
-def downstream_from(path: Path, repo: str, package: str) -> tuple[list[tuple[str, int]], str]:
+def import_names(tree: Tree, text: str, package: str) -> tuple[str, list[str], bool]:
+    """Where the top-level names distribution `package` imports as were read, the names, and
+    whether its sources disagree. `text` is `pyproject.toml`. The names come from the arrays
+    `[tool.setuptools] packages` and `[tool.poetry] packages` (`include`, its path up to a glob),
+    `pyproject.toml`, each name cut to its shortest dotted prefix with an `__init__.py` at the top
+    or under `src/`, or kept whole when no prefix has one, and dropped under another listed name;
+    a `packages` that is no array, such as `{find = ...}`, names none. Else each `src/<name>/__init__.py`, else each `<name>/__init__.py`,
+    outside a test, doc or example directory, `git (inferred)`, only the one that is `package` with
+    `-` as `_` or its last `-` part when one is, and several, none of them that, disagree. Else
+    `package` with `-` as `_`, `pyproject.toml (inferred)`. Two tables that list different names
+    disagree, and both tables' names are given. A namespace package's name stays dotted
+    (`org.pkg`), so an import of its namespace alone (`from org import pkg`) is not one."""
+    def prefix(name: str) -> str:
+        parts = name.split(".")
+        return next((".".join(parts[:i]) for i in range(1, len(parts) + 1)
+                     if tree.has(f"{'/'.join(parts[:i])}/__init__.py") or tree.has(f"src/{'/'.join(parts[:i])}/__init__.py")),
+                    name)
+
+    tables = []
+    for table, item in (("tool.setuptools", r"""["']([^"']+)["']"""), ("tool.poetry", r"""include\s*=\s*["']([^"']+)["']""")):
+        listed = re.search(r"^packages\s*=\s*(\[.*?)(?=^[\w-]+\s*=|\Z)", section(text, table), re.M | re.S)
+        found = (re.split(r"/[^/]*[*?[]", n, maxsplit=1)[0].replace("/", ".") for n in re.findall(item, listed.group(1))) if listed else ()
+        names = sorted({prefix(n) for n in found if all(p.isidentifier() for p in n.split("."))})
+        names = [n for n in names if not any(n.startswith(f"{m}.") for m in names)]
+        if names:
+            tables.append(names)
+    if tables:
+        return "pyproject.toml", sorted(set().union(*tables)), any(t != tables[0] for t in tables)
+    layout = [sorted(n.split("/")[-2] for n in tree.names if re.fullmatch(rf"{root}[^/]+/__init__\.py", n)
+                     and n.split("/")[-2].lower() not in ASIDE) for root in ("src/", "")]
+    layout = layout[0] or layout[1]
+    if layout:
+        own = [n for n in layout if n.lower() in (package.replace("-", "_").lower(), package.rsplit("-", 1)[-1].lower())]
+        return "git (inferred)", own or layout, not own and len(layout) > 1
+    return "pyproject.toml (inferred)", [package.replace("-", "_")], False
+
+
+def downstream_from(path: Path, repo: str, package: str, modules: list[str]) -> tuple[list[tuple[str, int]], str]:
     """The repositories that use `package`, with the number of files showing it, most first, and
     the source to name: from a JSON list of `{"repo", "evidence"}` the onboarding skill writes from
     its code search (`GitHub (search)`), or, for a directory, from the committed files of each git
     checkout directly in it, at its `origin/HEAD` or else `HEAD` (`clones (search)`): a Python file
-    that imports the package, or a dependency file that names it. A checkout of `repo` itself is
-    passed over, by its name whatever the owner, so a fork's checkout is too, and one repository's
+    that imports one of `modules`, the package's top-level import names, or a dependency file that
+    names `package`. With no `package` or no `modules`, a directory finds none. A checkout of `repo`
+    itself is passed over, by its name whatever the owner, so a fork's checkout is too, and one repository's
     several checkouts count once, by their largest count. A search git cannot run stops it."""
     own = repo.split("/", 1)[-1].lower()
     if path.is_file():
@@ -1256,9 +1297,9 @@ def downstream_from(path: Path, repo: str, package: str) -> tuple[list[tuple[str
         found = {x["repo"]: x["evidence"] for x in data if x["repo"].lower() != own}
         source = "GitHub (search)"
     elif path.is_dir():
-        if not package:
+        if not package or not modules:
             return [], ""
-        module = re.escape(package.replace("-", "_"))
+        module = "(" + "|".join(re.escape(m) for m in modules) + ")"
         named = "[-_]".join(re.escape(part) for part in re.split(r"[-_]", package))
         found = {}
         for clone in sorted(p for p in path.iterdir() if (p / ".git").exists()):
@@ -1342,8 +1383,9 @@ def candidate(top: Path, ref: str, root: Path, repo: str, rows: list[dict], raws
     if deep:
         values["depth.deep"], sources["depth.deep"]["source"] = deep, "git (inferred)"
     if downstream is not None:
-        package = by_family["package"]["value"]
-        users, source = downstream_from(downstream, repo, "" if package == "-" else package)
+        package, imports = by_family["package"]["value"], by_family["import names"]
+        modules = [] if imports["value"] == "-" or imports["conflict"] else imports["value"].split(", ")
+        users, source = downstream_from(downstream, repo, "" if package == "-" else package, modules)
         if users:
             values["downstream"] = [name for name, _ in users]
             sources["downstream"]["source"] = source

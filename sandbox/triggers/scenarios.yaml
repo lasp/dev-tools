@@ -1,0 +1,204 @@
+# The trigger pack: one plain-language request per skill a person types, in the words a person
+# would use rather than the skill's name or its description's phrases, so a run shows whether the
+# request reaches the skill. Each runs in `widgets`, as the generic pack does, with the same
+# sandbox and an mcp.json of `{"mcpServers": {}}`. The fields are the generic pack's, in
+# ../scenarios.yaml. Each expects only its skill's Skill call and a turn that ends in success:
+# dontAsk mode ends the turn at the skill's first question, and with no server connected nothing
+# is posted or written to a tracker. revise and ticket-audit are left out, since
+# `disable-model-invocation` keeps them to their slash commands.
+
+scenarios:
+  - id: trigger-architecture-doc
+    repo: widgets
+    turns:
+      - Could you write up a wiki page explaining how the widgets package is put together, for people new to it?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches architecture-doc, which says what the page will describe and for whom, then stops at its first question.
+    expect:
+      ends: success
+      skills: [architecture-doc]
+
+  - id: trigger-commit
+    repo: widgets
+    setup:
+      - printf '\nInventories are CSV files with the columns part and count.\n' >> README.md
+    turns:
+      - Go ahead and save what I've changed to git.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)"]
+    verify:
+      - test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+    look_at: The request reaches commit, which finds the README edit on main and asks before committing to the default branch, offering a branch.
+    expect:
+      ends: success
+      skills: [commit]
+
+  - id: trigger-design-doc
+    repo: widgets
+    turns:
+      - Before we split CSV export and import into tickets, I want to think the whole thing through on paper. Help me write that up.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches design-doc, which asks about the problem and goals before drafting.
+    expect:
+      ends: success
+      skills: [design-doc]
+
+  - id: trigger-downstream
+    repo: widgets
+    turns:
+      - If I change the fields on the Widget dataclass, which other repos that use this package would break?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches downstream, which says what it knows of widgets' consumers, none being configured.
+    expect:
+      ends: success
+      skills: [downstream]
+
+  - id: trigger-drawio
+    repo: widgets
+    turns:
+      - Sketch me a picture of how a CSV file turns into widget counts, something I can drop into a Confluence page.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches drawio, which draws a flow from loader.py to by_part and total, or asks which question the diagram answers.
+    expect:
+      ends: success
+      skills: [drawio]
+
+  - id: trigger-implement-change
+    repo: widgets
+    turns:
+      - I want by_part to add the counts together when a part is listed twice instead of raising. Work out the approach with me first, then build it and get it ready for review.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: The request reaches implement-change, which restates it as a brief and asks whether to plan it or build it now.
+    expect:
+      ends: success
+      skills: [implement-change]
+
+  - id: trigger-onboard
+    repo: widgets
+    turns:
+      - We're starting to use this plugin here. Have a look at how this repo works so it fits in.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: The request reaches onboard, which first asks where the repository's rules live.
+    expect:
+      ends: success
+      skills: [onboard]
+
+  - id: trigger-pr-create
+    repo: widgets
+    setup:
+      - git switch -q PROJ-42-csv-loader
+    turns:
+      - This branch is done. Get it up on GitHub so someone can look at it.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches pr-create, which drafts the description and asks before pushing or opening anything.
+    expect:
+      ends: success
+      skills: [pr-create]
+
+  - id: trigger-pr-fix
+    repo: widgets
+    setup:
+      - git switch -q PROJ-42-csv-loader
+    turns:
+      - My reviewer left a bunch of comments on pull request 1. Can you go through them with me?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches pr-fix, which says GitHub is not connected and stops.
+    expect:
+      ends: success
+      skills: [pr-fix]
+
+  - id: trigger-pr-review
+    repo: widgets
+    turns:
+      - Can you look over pull request 1 before I approve it?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches pr-review, which says GitHub is not connected and stops.
+    expect:
+      ends: success
+      skills: [pr-review]
+
+  - id: trigger-process-doc
+    repo: widgets
+    turns:
+      - New people on the team keep asking how to add a widget part and run the tests. Can you write that down for them?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches process-doc, which says the topic, the kind and the readers, then stops at its first question.
+    expect:
+      ends: success
+      skills: [process-doc]
+
+  - id: trigger-quickstart
+    repo: widgets
+    turns:
+      - I just installed lasp-dev. What can it do for me here?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(claude *)"]
+    look_at: The request reaches quickstart, which reports the setup checks it could run and names the next command to type.
+    expect:
+      ends: success
+      skills: [quickstart]
+
+  - id: trigger-skill-feedback
+    repo: widgets
+    turns:
+      - The ticket skill gave me a 900-word ticket for a one-line fix. I want the people who maintain this plugin to know.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches skill-feedback, which asks what happened and what the person would like instead, and files nothing.
+    expect:
+      ends: success
+      skills: [skill-feedback]
+
+  - id: trigger-test-suite-review
+    repo: widgets
+    setup:
+      - git switch -q PROJ-42-csv-loader
+    turns:
+      - Is the testing on this branch good enough to merge?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches test-suite-review, which finds that loader.py arrives with no test, and edits nothing.
+    expect:
+      ends: success
+      skills: [test-suite-review]
+
+  - id: trigger-ticket-draft
+    repo: widgets
+    origin: "lasp/dev-tools#23: a plain request to file a ticket should reach ticket-draft"
+    why: Asks in a person's words to file a ticket, a phrase the description did not list, so a run shows whether the request reaches ticket-draft.
+    turns:
+      - Can you file a ticket for this? The CSV loader crashes with a raw traceback when a count cell is blank.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches ticket-draft, which restates the goal and asks to confirm it before any search, and writes nothing to Jira.
+    expect:
+      ends: success
+      skills: [ticket-draft]
+
+  - id: trigger-work
+    repo: widgets
+    setup:
+      - git switch -q PROJ-42-csv-loader
+    turns:
+      - I'm back on PROJ-42 after a week off. Where was I with it?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: The request reaches work, which works out where PROJ-42 stands and names the next phase, asking before running it.
+    expect:
+      ends: success
+      skills: [work]
+
+  - id: trigger-writing
+    repo: widgets
+    turns:
+      - Read through README.md and make it easier to follow.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: The request reaches writing, which shows its planned changes to the README and asks before applying them.
+    expect:
+      ends: success
+      skills: [writing]
+
+  - id: notrigger-ticket-draft-github-issue
+    repo: widgets
+    origin: "lasp/dev-tools#23: a GitHub issue request must not reach the Jira-only ticket-draft"
+    why: Asks for a GitHub issue in plain words, so a run shows the request does not reach ticket-draft, which drafts and files only Jira tickets.
+    turns:
+      - Open a GitHub issue on this repo for the blank-count crash in the CSV loader.
+    must_not_run: ["Skill(*ticket-draft)", "mcp__*", "Bash(gh *)", "Bash(git push*)"]
+    look_at: The request does not reach ticket-draft; the session says GitHub is not connected or drafts the issue text for the person, and files nothing.
+    expect:
+      ends: success
