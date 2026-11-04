@@ -207,6 +207,10 @@ class StaticCheck(unittest.TestCase):
             ],
         )
 
+    def test_a_dot_file_beside_the_links_is_not_a_stray_link(self):
+        (self.tmp / ".github/skills/.DS_Store").write_text("")
+        self.assertEqual(self.failures("copilot_links"), [])
+
     def test_a_copy_in_place_of_a_link_fails(self):
         (self.tmp / ".github/skills/alpha").unlink()
         shutil.copytree(self.tmp / "skills/alpha", self.tmp / ".github/skills/alpha")
@@ -219,30 +223,57 @@ class StaticCheck(unittest.TestCase):
         self.assertEqual(
             self.failures("readme_skills"),
             [
-                "readme-skills: README.md: `alpha` is not in the list above the skills table",
                 "readme-skills: README.md: `gamma` has no row in the skills table",
+                "readme-skills: README.md: `alpha` is not in the list above the skills table",
                 "readme-skills: README.md: `gamma` is not in the list above the skills table",
             ],
         )
 
-    def test_a_hidden_skill_needs_no_line_and_a_name_that_is_no_skill_fails(self):
+    def hidden_beta(self) -> None:
         (self.tmp / "skills/beta").mkdir()
         (self.tmp / "skills/beta/SKILL.md").write_text(SKILL.replace("name: alpha", "name: beta\nuser-invocable: false"))
-        self.edit("README.md", "| Do one thing |\n", "| Do one thing |\n| | `beta` | hidden | Load |\n| | `delta` | typed only | Gone |\n")
-        self.assertEqual(self.failures("readme_skills"), ["readme-skills: README.md: `delta` is not a skill"])
 
-    def test_the_table_and_the_list_disagree_on_what_is_typed(self):
-        (self.tmp / "skills/beta").mkdir()
-        (self.tmp / "skills/beta/SKILL.md").write_text(SKILL.replace("name: alpha", "name: beta\nuser-invocable: false"))
-        self.edit("README.md", "| `alpha` | typed or asked |", "| `alpha` | hidden |")
+    def test_a_hidden_skill_has_a_hidden_row_and_no_line(self):
+        self.hidden_beta()
+        self.edit("README.md", "| Do one thing |\n", "| Do one thing |\n| | `beta` | hidden | Load |\n")
+        self.assertEqual(self.failures("readme_skills"), [])
+
+    def test_a_hidden_skill_with_no_row_fails(self):
+        self.hidden_beta()
+        self.assertEqual(self.failures("readme_skills"), ["readme-skills: README.md: `beta` has no row in the skills table"])
+
+    def test_a_name_that_is_no_skill_fails(self):
+        self.edit("README.md", "| Do one thing |\n", "| Do one thing |\n| | `delta` | typed only | Gone |\n")
+        self.edit("README.md", "- `alpha`: does one thing.\n", "- `alpha`: does one thing.\n- `epsilon`: gone.\n")
+        self.assertEqual(
+            self.failures("readme_skills"),
+            ["readme-skills: README.md: `delta` is not a skill", "readme-skills: README.md: `epsilon` is not a skill"],
+        )
+
+    def test_a_hidden_skill_marked_typed_or_listed_fails(self):
+        self.hidden_beta()
         self.edit("README.md", "| Do one thing |\n", "| Do one thing |\n| | `beta` | typed only | Load |\n")
+        self.edit("README.md", "- `alpha`: does one thing.\n", "- `alpha`: does one thing.\n- `beta`: loads.\n")
         self.assertEqual(
             self.failures("readme_skills"),
             [
-                "readme-skills: README.md: `beta` is typed in the skills table and not in the list above it",
-                "readme-skills: README.md: `alpha` is in the list above the skills table and not typed in it",
+                "readme-skills: README.md: `beta` is user-invocable: false and Started reads 'typed only', not 'hidden'",
+                "readme-skills: README.md: `beta` is user-invocable: false and in the list above the skills table",
             ],
         )
+
+    def test_a_typed_skill_marked_hidden_or_unknown_fails(self):
+        for started in ("hidden", "typed"):
+            with self.subTest(started=started):
+                (self.tmp / "README.md").write_text(README.replace("| `alpha` | typed or asked |", f"| `alpha` | {started} |"))
+                self.assertEqual(
+                    self.failures("readme_skills"),
+                    [f"readme-skills: README.md: `alpha` is typed and Started reads {started!r}, not one of ['typed only', 'typed or asked']"],
+                )
+
+    def test_a_skills_table_row_with_no_started_cell_fails(self):
+        self.edit("README.md", "| Do one thing |\n", "| Do one thing |\n| `beta` |\n")
+        self.assertEqual(self.failures("readme_skills"), ["readme-skills: README.md: the skills table row '| `beta` |' has no Started cell"])
 
     def test_a_readme_with_no_skills_table_fails(self):
         self.edit("README.md", "| Group | Skill |", "| Group | Name |")

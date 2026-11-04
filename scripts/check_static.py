@@ -21,9 +21,10 @@ Sixteen checks, each failure printed as `<check>: <file>: <what>`:
 - copilot-links: every skill has its symlink `.github/skills/<name>` and every agent its
   `.github/agents/<name>.agent.md`, each resolving to that skill's directory or agent's file, and
   no link there names anything else.
-- readme-skills: in the README's "What is included", every skill not marked `user-invocable: false`
-  has a row in the skills table and a line in the list above it; a skill the table does not mark
-  `hidden` is in the list and every one in the list is typed in the table; each names a skill.
+- readme-skills: in the README's "What is included", every skill has a row in the skills table
+  whose Started reads `hidden` for a skill marked `user-invocable: false` and `typed only` or
+  `typed or asked` otherwise; the list above the table names exactly the skills not so marked;
+  every name in either is a skill.
 - round-trip: `record.py` builds records from the test fixtures, their review bodies and
   conversation comments read back from the `reviews:` and `comments:` pointers by id, login and
   authorship, including a settled contest, an open one, an unanswered and an unparsed finding,
@@ -108,6 +109,8 @@ TOOLS = {
 AGENT_SUFFIXES = ("-reviewer", "-reader", "-planner", "-runner", "-investigator", "-describer", "-locator", "-probe")
 SCRIPT = re.compile(r"\b([\w-]+\.(?:py|sh))\b")
 PLACEHOLDER = re.compile(r"<[^>]+>|NNNN|YYYY-MM-DD")
+# The README skills table's Started values for a skill a person types.
+TYPED = {"typed only", "typed or asked"}
 
 
 def frontmatter(text: str) -> dict | None:
@@ -406,7 +409,7 @@ class Plugin:
             elif link.resolve() != target.resolve():
                 self.fail("copilot-links", link, f"links to {link.readlink()}, not {rel}")
         for d in (".github/skills", ".github/agents"):
-            for link in sorted((self.root / d).glob("*")):
+            for link in sorted((self.root / d).glob("[!.]*")):
                 if link not in want:
                     self.fail("copilot-links", link, "names no skill or agent")
 
@@ -421,21 +424,24 @@ class Plugin:
         rows = {}
         for line in m.group(1).splitlines():
             cells = [c.strip() for c in line.strip("|").split("|")]
+            if len(cells) < 3:
+                self.fail("readme-skills", readme, f"the skills table row {line.strip()!r} has no Started cell")
+                continue
             rows |= {name: cells[2] for name in re.findall(r"`([\w-]+)`", cells[1])}
-        typed = {name for name, started in rows.items() if started != "hidden"}
-        invocable = {n for n, p in self.skills.items() if (frontmatter(p.read_text()) or {}).get("user-invocable") != "false"}
-        for name in sorted(invocable):
+        hidden = {n for n, p in self.skills.items() if (frontmatter(p.read_text()) or {}).get("user-invocable") == "false"}
+        for name in self.skills:
             if name not in rows:
                 self.fail("readme-skills", readme, f"`{name}` has no row in the skills table")
-            if name not in listed:
-                self.fail("readme-skills", readme, f"`{name}` is not in the list above the skills table")
+            elif name in hidden and rows[name] != "hidden":
+                self.fail("readme-skills", readme, f"`{name}` is user-invocable: false and Started reads {rows[name]!r}, not 'hidden'")
+            elif name not in hidden and rows[name] not in TYPED:
+                self.fail("readme-skills", readme, f"`{name}` is typed and Started reads {rows[name]!r}, not one of {sorted(TYPED)}")
         for name in sorted((listed | set(rows)) - set(self.skills)):
             self.fail("readme-skills", readme, f"`{name}` is not a skill")
-        # The two lists agree on the typed skills; a miss reported above is not reported again.
-        for name in sorted((typed - listed) & set(self.skills) - invocable):
-            self.fail("readme-skills", readme, f"`{name}` is typed in the skills table and not in the list above it")
-        for name in sorted((listed - typed) & set(self.skills) - (invocable - set(rows))):
-            self.fail("readme-skills", readme, f"`{name}` is in the list above the skills table and not typed in it")
+        for name in sorted(set(self.skills) - hidden - listed):
+            self.fail("readme-skills", readme, f"`{name}` is not in the list above the skills table")
+        for name in sorted(listed & hidden):
+            self.fail("readme-skills", readme, f"`{name}` is user-invocable: false and in the list above the skills table")
 
     def check_round_trip(self) -> None:
         record, counts = self.load("record"), self.load("ratchet_counts")
