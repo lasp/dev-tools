@@ -6,7 +6,6 @@ description: >
 disallowedTools:
   - Edit
   - NotebookEdit
-  - Agent
 model: sonnet
 ---
 
