@@ -20,7 +20,7 @@ things read it:
 This repository holds two scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
 scenario runs offline in `widgets`, a made-up repository `fixture/make_widgets.sh` builds with the
 same commits every time, so it needs no server and no access to anyone's repositories. It holds
-`quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, `no-standard`, the controlled-content gates of `design-doc`, `ticket-draft` and
+`quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, `no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", the controlled-content gates of `design-doc`, `ticket-draft` and
 `pr-create`, and the `skill-feedback` previews, whose planted credentials carry `gitleaks:allow`.
 The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per

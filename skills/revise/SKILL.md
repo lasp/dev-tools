@@ -10,7 +10,7 @@ description: >
 argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | apply | correct <what is wrong, where, what it should say, the source>]"
 disable-model-invocation: true
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 2.12.0
 ---
 

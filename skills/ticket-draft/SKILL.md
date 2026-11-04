@@ -10,7 +10,7 @@ description: >
   lasp-dev skill, which is skill-feedback's.
 argument-hint: "[investigate | settle | reformat] <ticket key | description | pull request> [thread id]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.10.14
 ---
 

@@ -5,7 +5,7 @@ description: >
   unreachable server and the push stop. Applies whenever a skill or agent uses GitHub.
 user-invocable: false
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.1.1
 ---
 
