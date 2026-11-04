@@ -25,7 +25,8 @@ an absent field where it needs one.
 It writes `pr.json`, a copy of `get.json`; `reviews.json` and `issue-comments.json`, each the pages'
 items in one list; `comments.json`, `{"review_threads": [...]}` over all pages; and `body.md`, the
 body, empty when `get` has none. A page missing, out of sequence or not JSON, paging that stops early, or an item missing a
-field above exits 1 with the reason and writes nothing. Stdlib only.
+field above exits 1 with the reason and writes nothing, as does a dump directory not named
+`pr-NNNN`, the number padded to four digits. Stdlib only.
 """
 
 from __future__ import annotations
@@ -133,6 +134,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("dump", type=Path, help="the dump directory, .review/threads/pr-NNNN/ or .review/harvest/threads/pr-NNNN/")
     args = p.parse_args(argv)
     try:
+        number = re.fullmatch(r"pr-(\d+)", args.dump.name)
+        if not number or args.dump.name != f"pr-{int(number[1]):04d}":
+            raise Refused(f"{args.dump.name} is not pr-NNNN, the number padded to four digits")
         files = build(args.dump / "pages")
     except Refused as e:
         print(f"thread_dump.py: {e}", file=sys.stderr)

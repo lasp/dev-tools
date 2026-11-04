@@ -255,7 +255,7 @@ Pinned by: tests/test_next_phase.py::test_an_agree_that_carries_its_response_is_
 
 ## The thread dump
 
-Version: 4
+Version: 5
 
 Fields: `.review/threads/pr-NNNN/` (and `.review/harvest/threads/pr-NNNN/`): `pages/`, each
 `pull_request_read` result as the server returned it, one file per call, from which
@@ -270,7 +270,7 @@ a batch of thread replies has no `body`); `reviews.json`,
 server returns them; each review in `reviews.json` carries its `html_url`, which `record.py`
 reads the repository from and refuses a review without. Version 2 added `issue-comments.json`;
 version 3 states the `html_url` requirement; version 4 added `pages/` and `thread_dump.py`'s
-checks. Beside them, `judged.json`, "The
+checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`. Beside them, `judged.json`, "The
 judgments", is `pr-reader`'s own.
 
 Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
