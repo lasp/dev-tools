@@ -4,8 +4,9 @@ description: >
   Rebases the current branch onto the fetched default branch, or its pull request's base,
   resolving the conflicts that have one objectively clear resolution and stopping to ask at any
   where the two sides differ in intent or approach. Never pushes: it prints the push command for
-  you to run. Use when asked to "rebase this" or "rebase onto main". Not for the rebase pr-fix
-  offers during a review round.
+  you to run. Use when asked to "rebase this", "rebase onto main", "replay my commits on top of
+  main", "bring my branch up to date with main" or "my branch is behind main". Not for the rebase
+  pr-fix offers during a review round.
 argument-hint: "[target] [just show me]"
 metadata:
   author: lasp-dev
@@ -165,8 +166,13 @@ Resolve a conflicted text file hunk by hunk. Take a whole file from one side onl
 modify/delete or add/add conflict, or when the person says to, by naming its commit: `git checkout
 REBASE_HEAD -- <file>` for the branch's commit being replayed, `git checkout HEAD -- <file>` for
 the target's side, and `git rm <file>` for the side that deleted it; never `--ours` or `--theirs`.
-During a rebase HEAD is the target plus the branch's commits replayed so far, so it keeps their
-changes to the file, which `<target>` would drop. Run nothing that rewrites files while the
+
+**The target's side is `HEAD`, never the target's name.** When the person says "take main's side"
+or "use origin/main's version", run `git checkout HEAD -- <file>`, not `git checkout origin/main
+-- <file>`. During a rebase HEAD is the target plus the branch's commits replayed so far, so it
+keeps their changes to the file; the target's name would silently drop them.
+
+Run nothing that rewrites files while the
 rebase is in progress: no formatter, linter fix or hook. After resolving a file, check that no
 conflict markers remain, then `git add <file>`, naming it.
 
