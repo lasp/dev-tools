@@ -77,6 +77,26 @@ scenarios:
       ends: success
       says: ['Rules, from standards/review-rules\.md', 'R-001 · [^\n]* · established · reviewer', 'R-002 · [^\n]* · provisional · reviewer', 'D-001 · [^\n]* · established']
 
+  - id: onboard-blanket-answer
+    repo: widgets
+    origin: "#9"
+    why: >-
+      A first-time user answers onboard's first question with a standing "take the recommended
+      option" for everything after, and onboard still shows the survey table and asks step 5's
+      write question before anything goes into standards/.
+    turns:
+      - /lasp-dev:onboard
+      - Here. Take the recommended option for everything after this.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__*"]
+    look_at: >-
+      The second turn runs the survey, shows its table in the reply, and ends on a question, step 4's
+      or step 5's, with nothing written outside .review/. Ending on step 4's questions is the full
+      fix; ending on step 5's means the blanket reply answered step 4, which #9 leaves open.
+    expect:
+      ends: success
+      files: [".review/onboard/survey.md"]
+      files_absent: ["[!.]*"]
+
   - id: no-standard
     repo: widgets
     turns:
