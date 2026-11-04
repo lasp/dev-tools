@@ -167,7 +167,10 @@ person would be asked to approve; one rule, `Bash(*)`, allows them, so a run is 
 there, and the Bash deny rules below still hold. The rules allow reading in the sandbox and the
 plugin in use and editing in the sandbox. They deny every
 GitHub, Jira and Confluence write, which as MCP tools run outside the sandbox, and `git push`,
-`gh`, `aws`, `curl` and `claude`, which also hold within it. `claude plugin list` and `claude mcp
+`gh`, `aws`, `curl` and `claude`, which also hold within it. A server gets the GitHub or Atlassian
+rules by what it is, whatever its name: GitHub's when its `url` is at `api.githubcopilot.com`,
+Atlassian's when its command or an argument names `mcp-atlassian`, the test `sandbox.sh` applies;
+a server of neither kind gets none. `claude plugin list` and `claude mcp
 list` would read your own installation, not the sandbox's, so `quickstart`'s checks of the plugin
 and the servers stay unanswered here. `dontAsk` denies anything not allowed, a question to you included. A
 skill that would ask ends its turn with the question as text, so most scenarios stop at the
