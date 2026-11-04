@@ -521,6 +521,39 @@ out=$(write_at "$e" "$b/x.py")
 check "a closed build is not marked by a later write in another repository" \
   '[ -z "$out" ] && ! grep -q "\"kind\":\"elsewhere\"" .review/build/events.jsonl'
 
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+home=$(mktemp -d) && made+=("$home") && git init -q "$home/.claude"
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+out=$(jq -cn --arg c "$e" --arg f "$home/.claude/projects/x/memory/m.md" '{tool_name:"Write", session_id:"s1", cwd:$c, tool_input:{file_path:$f}}' |
+  HOME=$home CLAUDE_CONFIG_DIR="" "$hook" guard)
+check "a write in Claude Code's own directory, kept in git, is not refused or marked" \
+  '[ -z "$out" ] && ! grep -q "\"kind\":\"elsewhere\"" .review/build/events.jsonl'
+
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+jq -cn --arg c "$e" '{session_id:"s1", cwd:$c}' | "$hook" release
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s2", cwd:$c}' | "$hook" prompt
+out=$(jq -cn --arg c "$e" --arg f "$b/x.py" '{tool_name:"Write", session_id:"s2", cwd:$c, tool_input:{file_path:$f}}' | "$hook" guard)
+jq -cn --arg c "$e" '{session_id:"s2", cwd:$c}' | "$hook" summary
+check "a second session that resumed the build is refused in another repository, and the build reads not recorded" \
+  '[ "$(tail -2 .review/build/events.jsonl | head -1 | jq -r ".kind + \" \" + .session")" = "resume s2" ] && printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\"" >/dev/null && grep -q "^Gates: not recorded" .review/build/already-checked.md'
+
+# The take-over and release lines run as given from a plugin and a repository whose paths hold a
+# space and a quote.
+odd=$(mktemp -d) && made+=("$odd")
+plug2="$odd/it's plug"
+mkdir -p "$plug2/hooks" "$plug2/scripts" "$plug2/standards"
+cp "$hook" "$plug2/hooks/" && cp "$root/scripts/review_dir.sh" "$root/scripts/profile.py" "$root/scripts/profile.sh" "$root/scripts/survey.py" "$plug2/scripts/"
+cp "$root/standards/default-profile.yaml" "$plug2/standards/"
+e="$odd/it's repo" && mv "$(scratch)" "$e" && cd "$e" || exit 1
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$plug2/hooks/build-record.sh" prompt
+out=$(jq -cn --arg c "$e" '{prompt:"/lasp-dev:pr-fix 1", session_id:"s2", cwd:$c}' | "$plug2/hooks/build-record.sh" prompt)
+eval "$(printf "%s" "$out" | jq -r .hookSpecificOutput.additionalContext | sed -n "s/.*On Take over, run: //p")"
+check "the take-over line runs as given from paths with a space and a quote" '[ "$(jq -r .session .review/lock)" = s2 ]'
+out=$(jq -cn --arg c "$e" --arg f "$b/x.py" '{tool_name:"Write", session_id:"s2", cwd:$c, tool_input:{file_path:$f}}' | "$plug2/hooks/build-record.sh" guard)
+eval "$(printf "%s" "$out" | jq -r .hookSpecificOutput.permissionDecisionReason | sed -n "s/.*run: //p")"
+check "and so does the release line" '[ ! -e .review/lock ]'
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures failed"
   exit 1

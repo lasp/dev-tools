@@ -31,10 +31,10 @@
 # working directory when the payload names none, so a call from a subdirectory reaches the same
 # record; outside a repository it is that directory itself. A session started in one repository
 # that changes another would measure that work here. So while this session holds the lock or
-# its open build, a Write or Edit whose file is in another repository, one neither holding this
-# one nor held by it nor sharing its git directory as a worktree does, marks that build
-# `elsewhere`, and its summary then records its gates and tokens as not recorded; while the
-# session holds the lock, the call is refused too.
+# last started or resumed the open build, a Write or Edit whose file is in another repository,
+# outside Claude Code's own directory and neither holding this one nor held by it nor sharing its
+# git directory as a worktree does, marks that build `elsewhere`, and its summary then records
+# its gates and tokens as not recorded; while the session holds the lock, the call is refused too.
 # Events and summaries are inert until that directory has a .review/ directory; a phase
 # skill's start, or a write under it, creates it, and scripts/review_dir.sh keeps it out of git
 # where the repository's ignore rules do not. A build starts when implement-change is invoked,
@@ -259,10 +259,13 @@ repo_of() {
 # The git directory a repository's worktrees share, symlinks resolved.
 common_of() { (cd "$1" 2>/dev/null && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P); }
 
-# True when session $1 holds the lock here or started the open build here.
-building() {
-  [ "$(jq -r '.session // empty' .review/lock 2>/dev/null)" = "$1" ] && return 0
-  [ -s "$log" ] && [ ! -e "$dir/outcome.md" ] && [ "$(start_field session)" = "$1" ]
+# True when session $1 holds the lock here.
+holds_lock() { [ -s .review/lock ] && [ "$(jq -r '.session // empty' .review/lock 2>/dev/null)" = "$1" ]; }
+
+# True when session $1 is the last to start or resume the open build here.
+open_build_of() {
+  [ -s "$log" ] && [ ! -e "$dir/outcome.md" ] &&
+    [ "$(jq -r 'select(.kind == "start" or .kind == "resume") | .session' "$log" 2>/dev/null | tail -1)" = "$1" ]
 }
 
 # True when top level $1 is another repository than this one: neither holds the other, as a
@@ -282,14 +285,14 @@ run_line() {
   printf "printf '%%s' '%s' | bash '%s' %s" "${j//\'/$r}" "${h//\'/$r}" "$2"
 }
 
-# Session $1 is writing in repository $2, not this one: marks the open build it started here, once,
-# and, when it holds the lock, refuses the call. False, printing nothing, when it holds no lock.
+# Session $1 is writing in repository $2, not this one: marks the open build it last started or
+# resumed here, once, and, when it holds the lock, refuses the call. False, printing nothing, when
+# it holds no lock.
 elsewhere() {
-  if [ -s "$log" ] && [ ! -e "$dir/outcome.md" ] && [ "$(start_field session)" = "$1" ] &&
-    ! grep -q '"kind":"elsewhere"' "$log"; then
+  if open_build_of "$1" && ! grep -q '"kind":"elsewhere"' "$log"; then
     append "$(jq -cn --arg t "$(now)" --arg r "$2" '{t:$t,kind:"elsewhere",repo:$r}')"
   fi
-  [ "$(jq -r '.session // empty' .review/lock 2>/dev/null)" = "$1" ] || return 1
+  holds_lock "$1" || return 1
   jq -cn --arg c "This session holds \`.review/lock\` in $top for $(jq -r .skill .review/lock), and records its build there, but this edit is in $2. The work would be measured in the wrong repository. Do not go on: ask the person in one AskUserQuestion whether to Stop and start a session in $2 (recommended), Go on unrecorded, or discuss it. On either Stop or Go on unrecorded, run: $(run_line "$(jq -cn --arg s "$1" --arg c "$top" '{session_id: $s, cwd: $c}')" release)" \
     '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $c}}'
 }
@@ -312,7 +315,13 @@ if [ "$mode" = "guard" ]; then
   file=$(printf '%s' "$payload" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
   [ -n "$file" ] || exit 0
   git rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  if [ -n "$session" ] && building "$session"; then
+  # Claude Code's own files, plans and memory among them, are no repository's work, even when
+  # that directory or the home directory is kept in git.
+  own=""
+  case "$(resolved "$file")" in
+    "$(resolved "${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}")"/*) own=yes ;;
+  esac
+  if [ -z "$own" ] && [ -n "$session" ] && { holds_lock "$session" || open_build_of "$session"; }; then
     there=$(repo_of "$file")
     [ -n "$there" ] && another "$there" && elsewhere "$session" "$there" && exit 0
   fi

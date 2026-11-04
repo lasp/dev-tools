@@ -110,7 +110,8 @@ lock, the build hook refuses a Write or Edit in another repository and says how 
 A build whose session makes or tries a Write or Edit in another repository records its gates and
 tokens as `not recorded` rather than as counts; a change made there only through shell commands
 is not seen. A repository inside the session's, such as a submodule, one the session's sits in,
-and a worktree of the same repository are not another repository.
+a worktree of the same repository, and Claude Code's own directory (`~/.claude`, or
+`CLAUDE_CONFIG_DIR`) are not another repository.
 
 ### MCP servers
 
