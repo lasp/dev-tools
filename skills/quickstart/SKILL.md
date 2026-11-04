@@ -124,7 +124,8 @@ their bold label; part 1 has none.
    its bullets `not checked: <command> did not run: <reason>`. When `claude mcp list` showed other
    servers, a last bullet, `Other servers:`, names each with its status and what it means here, as
    step 1 says.
-3. **This repository**, `<repo> on <branch>`, one bullet each:
+3. **This repository**, the label followed by `<repo> on <branch>` on the same line, then one
+   bullet each:
    - `Standard:` what step 1 prints after `standard:`, or `none` with no standard.
    - `Profile:` step 1's `profile:` report.
    - `.review/ ignored:` `yes`, `locally only` or `no`.
@@ -134,20 +135,21 @@ their bold label; part 1 has none.
 4. **Fix first**, only when step 1 found a problem: a numbered list, each problem in a few words
    with the fix step 1 gives, a refused profile and a `profile:` report that carries a fix among
    them. Add no fix of your own.
-5. **Next**, the command to type and one sentence on why, `<key>` being the branch's ticket key
-   when it has one and `<ticket key>` otherwise:
+5. **Next**, the command to type and one sentence on why, from the first of these that applies:
    - with a refused profile, the fix under **Fix first**, since every skill reads the profile;
-   - with no standard, `/lasp-dev:onboard`, to record what the plugin cannot detect in this
-     repository, on your yes; then `/lasp-dev:work <key>` or
-     `/lasp-dev:ticket-draft <description>` once it is done;
+   - with no standard, or `profile: none`, `/lasp-dev:onboard`, to record what the plugin cannot
+     detect in this repository, on your yes, and to draft the first rules at its last step; then,
+     once it is done, `/lasp-dev:work` with the branch's key, or with no key both
+     `/lasp-dev:work <ticket key>` and `/lasp-dev:ticket-draft <description>`;
    - with a standard that has no ledger (`settings only, no rules yet` or `decisions, no rules
-     yet`), `/lasp-dev:onboard rules` to draft the first rules, beside `/lasp-dev:work <key>`;
-   - otherwise, with a key on the branch, `/lasp-dev:work <key>`; with none, both
+     yet`), `/lasp-dev:onboard rules` to draft the first rules, beside `/lasp-dev:work` with the
+     branch's key, or `/lasp-dev:work <ticket key>` with none;
+   - otherwise, with a key on the branch, `/lasp-dev:work` with that key; with none, both
      `/lasp-dev:work <ticket key>`, for a ticket that exists, and
      `/lasp-dev:ticket-draft <description>`, for a new one.
 6. **Read more**, these lines as they are, with `${CLAUDE_PLUGIN_ROOT}` printed as an absolute path:
 
-   Every skill, one line each: `${CLAUDE_PLUGIN_ROOT}/README.md`, "What is included".
+   The skills, one line each, are in `${CLAUDE_PLUGIN_ROOT}/README.md`, "What is included".
    How the workflow goes: `${CLAUDE_PLUGIN_ROOT}/GUIDE.md`.
    `/lasp-dev:quickstart <question>` answers a question about the plugin.
    What your agents can reach, and what they do under your credentials, is your responsibility:
