@@ -103,8 +103,8 @@ them.
 hooks record under this session's `.review/`, so the Already checked block would read zeros and the
 other repository would show a lock it does not hold. Ask: **Stop**, to start a session in that
 repository (recommended); **Go on unrecorded**, where `pr-create` writes the block's measured lines
-as `not recorded`; or **Let's discuss**. On either, run the release command the build hook's refusal of an
-edit in the other repository names; it refuses every such edit until the lock is released.
+as `not recorded`; or **Let's discuss**. On either, release the working tree as the skill's last step says;
+until then the build hook refuses every Write or Edit in the other repository.
 
 The request comes from one of these. Find a remote source's tools with a `ToolSearch` keyword
 search for what the tool does, never a server prefix.

@@ -98,8 +98,8 @@ the default profile's, no profile read`, `the repository's own, else the default
 `none, the profile is refused: <profile.py's message>`, or `none for <lint, types, tests>, which
 the repository does not state` when the repository's profile could not be read, it has no
 standard, its profile and the default values are both refused, or a gate pattern reads
-`not yet recorded` (version 9), and with the wall clock otherwise (version 7). A build whose session edited
-another repository while it was recorded reads `Gates: not recorded, this session also edited
+`not yet recorded` (version 9), and with the wall clock otherwise (version 7). A build whose session made or
+tried a Write or Edit in another repository while it was recorded reads `Gates: not recorded, this session also edited
 <repository> while its build was recorded here` and `Tokens since the build started: not
 recorded` (version 10). A pattern a
 profile leaves out takes the default profile's value as every left-out key does. Optional: `Depth:`, one of light, standard or

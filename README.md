@@ -106,9 +106,11 @@ Which model the build and its reviewers run on is a session setting, not a plugi
 
 Start Claude Code in the repository you are changing. The build's lock and record go into the
 `.review/` of the session's working directory. While `implement-change` or `pr-fix` holds that
-lock, the build hook refuses a Write or Edit in another repository and says how to release it,
-and a build whose session edited another repository records its gates and tokens as `not
-recorded` rather than as counts.
+lock, the build hook refuses a Write or Edit in another repository and says how to release it.
+A build whose session makes or tries a Write or Edit in another repository records its gates and
+tokens as `not recorded` rather than as counts; a change made there only through shell commands
+is not seen. A repository inside the session's, such as a submodule, one the session's sits in,
+and a worktree of the same repository are not another repository.
 
 ### MCP servers
 

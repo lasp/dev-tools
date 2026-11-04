@@ -482,6 +482,45 @@ out=$(write_in "$b/src/new/x.py" s1)
 check "the release the refusal names frees the lock, and the write is then allowed" \
   '[ ! -e .review/lock ] && [ -z "$out" ] && [ "$(grep -c "\"kind\":\"elsewhere\"" .review/build/events.jsonl)" = 1 ]'
 
+# A repository c inside a parent repository p, with a nested repository and two worktrees.
+write_at() { jq -cn --arg c "$1" --arg f "$2" '{tool_name:"Write", session_id:"s1", cwd:$c, tool_input:{file_path:$f}}' | "$hook" guard; }
+p=$(mktemp -d) && made+=("$p") && git init -q "$p"
+c="$p/c" && mv "$(scratch)" "$c" && cd "$c" || exit 1
+jq -cn --arg c "$c" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+git init -q "$c/vendor/lib"
+out=$(write_at "$c" "$c/vendor/lib/x.py")
+check "a write in a repository nested in the session's, as a submodule is, is not another repository" '[ -z "$out" ]'
+git worktree add -q "$c/.claude/worktrees/w1" -b PROJ-1-w1
+out=$(write_at "$c" "$c/.claude/worktrees/w1/x.py")
+check "nor is a write in a worktree nested in it" '[ -z "$out" ]'
+git worktree add -q "$p/c-wt" -b PROJ-1-wt
+out=$(write_at "$c" "$p/c-wt/x.py")
+check "nor in a sibling worktree of the same repository" '[ -z "$out" ]'
+out=$(write_at "$c" "$p/.claude/plan.md")
+check "nor in the repository the session's sits in, as a home directory under git holds plans" '[ -z "$out" ]'
+check "and none of them marks the build" '! grep -q "\"kind\":\"elsewhere\"" .review/build/events.jsonl'
+mkdir -p src
+out=$(write_at "$c/src" "$c/src/x.py")
+check "a session in a subdirectory writing in its own repository is not refused" '[ -z "$out" ]'
+out=$(write_at "$c/src" "$b/x.py")
+check "and its write in another repository is refused" \
+  'printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\"" >/dev/null && grep -q "\"kind\":\"elsewhere\"" .review/build/events.jsonl'
+
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+jq -cn --arg c "$e" '{session_id:"s1", cwd:$c}' | "$hook" release
+out=$(write_at "$e" "$b/x.py")
+check "with the lock released, a write in another repository is allowed but still marks the open build" \
+  '[ -z "$out" ] && [ "$(jq -r "select(.kind == \"elsewhere\") | .repo" .review/build/events.jsonl)" = "$b_top" ]'
+
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+jq -cn --arg c "$e" '{session_id:"s1", cwd:$c}' | "$hook" release
+echo "Build: passed" >.review/build/outcome.md
+out=$(write_at "$e" "$b/x.py")
+check "a closed build is not marked by a later write in another repository" \
+  '[ -z "$out" ] && ! grep -q "\"kind\":\"elsewhere\"" .review/build/events.jsonl'
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures failed"
   exit 1
