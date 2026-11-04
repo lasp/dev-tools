@@ -259,11 +259,12 @@ which one answers:
    `.claude/CLAUDE.local.md`: in the repositories you use it in, `lasp-dev` is the first
    choice when a task matches one of its skills and another tool's.
 
-Agents overlap the same way. A personal agent such as a `test-runner` and this plugin's
-`pytest-runner` both fit "run the tests", and Claude Code picks between them by description when
-you ask in words. The skills here start their own agents by name, so the overlap reaches only what
-you ask for directly: name the agent in the request, or name the preferred one in the
-instruction line in item 4 above.
+Agents overlap the same way. A personal agent that runs tests and this plugin's `test-runner`
+both fit "run the tests", and Claude Code picks between them by description when you ask in words.
+The skills here start their own agents by name, so the overlap reaches only what you ask for
+directly: name the agent in the request, or name the preferred one in the instruction line in
+item 4 above. A personal agent with the same name as one here, such as a personal `test-runner`,
+can be started in its place when a skill names it, so give the personal one another name.
 
 ### Permissions
 
@@ -503,7 +504,7 @@ since been rewritten; the rest were written here.
 | `focused-reviewer` | sonnet | One focus of the build's review wave (simplicity, documentation or tests), from a brief in `skills/implement-change/reviews/`; never edits the change |
 | `github-pr-reviewer` | inherit | Run by `pr-review`: reviews one pull request's head and writes the findings, organized by concept, for `pr-review` to deduplicate, draft and post |
 | `github-pr-fix-planner` | inherit | Run by `pr-fix`: assesses each review thread against the pull request with a recommended disposition, and names where a person's comment and an AI finding conflict, then plans a response to each agreed one, people's comments first; never edits or posts |
-| `pytest-runner` | sonnet | Runs pytest and summarizes the result |
+| `test-runner` | sonnet | Runs a repository's test suite in any language and summarizes the result; in coverage mode, lists the changed lines no test runs |
 | `prose-reviewer` | inherit | Reviews a long document for `writing` in two phases: a plan of changes and questions, then only the approved edits |
 | `ticket-investigator` | sonnet | Reads one repository for `ticket-draft`, `design-doc`, `architecture-doc`, `process-doc` and `downstream`: what the goal touches there, its callers, whether the source's claims hold, and scope beyond the goal; reads only |
 | `pr-reader` | sonnet | Fetches a pull request's reviews, threads, conversation comments and body for `work`, `pr-review`, `pr-fix`, `ticket-draft` and `ticket-audit`, saves them under `.review/threads/`, judges the replies written in a person's own words, and returns what `scripts/record.py` prints: where the pull request stands, or, for `revise` and `onboard`, the records it rebuilt from the merged pull requests; never posts |

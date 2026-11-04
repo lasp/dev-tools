@@ -21,7 +21,7 @@ flowchart LR
     end
     subgraph wave ["The wave, one round"]
         conformance["implementation-reviewer, conformance, your model"]
-        runner["pytest-runner, Sonnet, the wave's one suite run, with coverage when code changed"]
+        runner["test-runner, Sonnet, the wave's one suite run, with coverage when code changed"]
         simplicity["focused-reviewer, simplicity, Sonnet, when code changed"]
         documentation["focused-reviewer, documentation, Sonnet, when code or docs changed"]
         tests["focused-reviewer, tests, Sonnet, when code or tests changed"]
@@ -39,7 +39,7 @@ flowchart LR
     prreader -- "the dump" --> threadsdir
 ```
 
-Figure 1. Your session sends each group a task or a brief and gets back what it decides on: a fixed block from a reader, a plan and its review, a digest from each reviewer in the wave. The implementation reviewer calls `pytest-runner`. The rest of the README's agents table is `prose-reviewer`, `github-pr-reviewer`, `github-pr-fix-planner` and `rule-probe`.
+Figure 1. Your session sends each group a task or a brief and gets back what it decides on: a fixed block from a reader, a plan and its review, a digest from each reviewer in the wave. The implementation reviewer calls `test-runner`. The rest of the README's agents table is `prose-reviewer`, `github-pr-reviewer`, `github-pr-fix-planner` and `rule-probe`.
 
 ## Where things live, and why the package stays slim
 

@@ -7,7 +7,7 @@ description: >
 argument-hint: "[diff | branch | suite]"
 metadata:
   author: lasp-dev
-  version: 1.1.5
+  version: 1.1.6
 ---
 
 ## When to run
@@ -22,7 +22,7 @@ tests, never whether they pass. The checks, their keys and each key's severity a
 Launch, in one message, one `focused-reviewer` with
 `${CLAUDE_SKILL_DIR}/../implement-change/reviews/tests.md` and no wave number, and, when the diff
 changes code as `${CLAUDE_SKILL_DIR}/../implement-change/reviews/wave.md` "Who runs" defines it
-(a diff of test files or `conftest.py` alone gets no coverage run), one `pytest-runner` in
+(a diff of test files or `conftest.py` alone gets no coverage run), one `test-runner` in
 coverage mode with the coverage command and the base. In place of a plan file the reviewer's
 prompt names what to judge, the base, the lanes and their markers and the mocking libraries, and
 "every blocking finding; non-blocking ones up to the Suggestions per review Dial". The base is a
