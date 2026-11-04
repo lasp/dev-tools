@@ -1,8 +1,9 @@
 """Tests for scripts/check_static.py. Run with `python3 -m unittest discover -s tests`.
 
-Each test builds a small plugin tree in a temporary directory: one skill, one agent, a README
-with a `.review/` table, and the real `record.py` and record fixtures for the round trip, with a
-stub `ratchet_counts.py` standing in so the result does not depend on the real counter.
+Each test builds a small plugin tree in a temporary directory: one skill, one agent, their
+Copilot links, a README with a skills table and a `.review/` table, and the real `record.py` and
+record fixtures for the round trip, with a stub `ratchet_counts.py` standing in so the result
+does not depend on the real counter.
 """
 
 import contextlib
@@ -50,6 +51,16 @@ Runs `${CLAUDE_PLUGIN_ROOT}/scripts/record.py`.
 """
 README = """# Plugin
 
+## What is included
+
+- `alpha`: does one thing.
+
+| Group | Skill | Started | Use it to |
+| --- | --- | --- | --- |
+| Entry point | `alpha` | typed or asked | Do one thing |
+
+## Layout
+
 | File in `.review/` | Written by | Read by | Cleared when |
 | --- | --- | --- | --- |
 | `alpha/<ticket>.md` | `alpha` | The person | Never |
@@ -82,6 +93,10 @@ class StaticCheck(unittest.TestCase):
         (self.tmp / "agents").mkdir()
         (self.tmp / "agents/alpha-reader.md").write_text(AGENT)
         (self.tmp / "README.md").write_text(README)
+        (self.tmp / ".github/skills").mkdir(parents=True)
+        (self.tmp / ".github/skills/alpha").symlink_to("../../skills/alpha")
+        (self.tmp / ".github/agents").mkdir()
+        (self.tmp / ".github/agents/alpha-reader.agent.md").symlink_to("../../agents/alpha-reader.md")
         (self.tmp / ".claude-plugin").mkdir()
         (self.tmp / ".claude-plugin/plugin.json").write_text('{"name": "lasp-dev"}\n')
         (self.tmp / "scripts").mkdir()
@@ -106,7 +121,8 @@ class StaticCheck(unittest.TestCase):
         path.write_text(text.replace(old, new))
 
     def test_a_consistent_tree_passes_every_check(self):
-        self.assertEqual(self.failures("frontmatter", "references", "plugin_vars", "review_map", "round_trip"), [])
+        checks = ("frontmatter", "references", "plugin_vars", "review_map", "copilot_links", "readme_skills", "round_trip")
+        self.assertEqual(self.failures(*checks), [])
 
     def test_frontmatter_names_keys_models_and_skills(self):
         self.edit("skills/alpha/SKILL.md", "name: alpha\n", "name: beta\nwhen: always\n")
@@ -176,6 +192,61 @@ class StaticCheck(unittest.TestCase):
     def test_a_directory_or_shell_prefix_of_a_row_matches(self):
         self.edit("skills/alpha/SKILL.md", ".review/alpha/<ticket>.md", ".review/alpha and .review/alpha/${t}.md")
         self.assertEqual(self.failures("review_map"), [])
+
+    def test_a_missing_wrong_or_stray_copilot_link_fails(self):
+        (self.tmp / ".github/skills/alpha").unlink()
+        (self.tmp / ".github/agents/alpha-reader.agent.md").unlink()
+        (self.tmp / ".github/agents/alpha-reader.agent.md").symlink_to("../../skills/alpha/SKILL.md")
+        (self.tmp / ".github/skills/gone").symlink_to("../../skills/gone")
+        self.assertEqual(
+            self.failures("copilot_links"),
+            [
+                "copilot-links: .github/skills/alpha: is not a symlink to ../../skills/alpha",
+                "copilot-links: .github/agents/alpha-reader.agent.md: links to ../../skills/alpha/SKILL.md, not ../../agents/alpha-reader.md",
+                "copilot-links: .github/skills/gone: names no skill or agent",
+            ],
+        )
+
+    def test_a_copy_in_place_of_a_link_fails(self):
+        (self.tmp / ".github/skills/alpha").unlink()
+        shutil.copytree(self.tmp / "skills/alpha", self.tmp / ".github/skills/alpha")
+        self.assertEqual(self.failures("copilot_links"), ["copilot-links: .github/skills/alpha: is not a symlink to ../../skills/alpha"])
+
+    def test_a_typed_skill_missing_from_the_table_or_the_list_fails(self):
+        (self.tmp / "skills/gamma").mkdir()
+        (self.tmp / "skills/gamma/SKILL.md").write_text(SKILL.replace("name: alpha", "name: gamma"))
+        self.edit("README.md", "- `alpha`: does one thing.\n", "")
+        self.assertEqual(
+            self.failures("readme_skills"),
+            [
+                "readme-skills: README.md: `alpha` is not in the list above the skills table",
+                "readme-skills: README.md: `gamma` has no row in the skills table",
+                "readme-skills: README.md: `gamma` is not in the list above the skills table",
+            ],
+        )
+
+    def test_a_hidden_skill_needs_no_line_and_a_name_that_is_no_skill_fails(self):
+        (self.tmp / "skills/beta").mkdir()
+        (self.tmp / "skills/beta/SKILL.md").write_text(SKILL.replace("name: alpha", "name: beta\nuser-invocable: false"))
+        self.edit("README.md", "| Do one thing |\n", "| Do one thing |\n| | `beta` | hidden | Load |\n| | `delta` | typed only | Gone |\n")
+        self.assertEqual(self.failures("readme_skills"), ["readme-skills: README.md: `delta` is not a skill"])
+
+    def test_the_table_and_the_list_disagree_on_what_is_typed(self):
+        (self.tmp / "skills/beta").mkdir()
+        (self.tmp / "skills/beta/SKILL.md").write_text(SKILL.replace("name: alpha", "name: beta\nuser-invocable: false"))
+        self.edit("README.md", "| `alpha` | typed or asked |", "| `alpha` | hidden |")
+        self.edit("README.md", "| Do one thing |\n", "| Do one thing |\n| | `beta` | typed only | Load |\n")
+        self.assertEqual(
+            self.failures("readme_skills"),
+            [
+                "readme-skills: README.md: `beta` is typed in the skills table and not in the list above it",
+                "readme-skills: README.md: `alpha` is in the list above the skills table and not typed in it",
+            ],
+        )
+
+    def test_a_readme_with_no_skills_table_fails(self):
+        self.edit("README.md", "| Group | Skill |", "| Group | Name |")
+        self.assertEqual(self.failures("readme_skills"), ['readme-skills: README.md: "What is included" has no skills table'])
 
     def test_a_counter_that_cannot_read_a_record_fails_the_round_trip(self):
         (self.tmp / "scripts/ratchet_counts.py").write_text("def count(log, since=None):\n    raise ValueError('no key')\n")
@@ -387,6 +458,7 @@ class ContractChecks(unittest.TestCase):
             shutil.copytree(ROOT / d, self.tmp / d, symlinks=True, ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copytree(ROOT / "docs", self.tmp / "docs")
         shutil.copytree(ROOT / ".claude-plugin", self.tmp / ".claude-plugin")
+        shutil.copytree(ROOT / ".github", self.tmp / ".github", symlinks=True)
         shutil.copytree(ROOT / "tests", self.tmp / "tests", ignore=shutil.ignore_patterns("__pycache__", "live"))
         shutil.copytree(ROOT / "sandbox", self.tmp / "sandbox", ignore=shutil.ignore_patterns("__pycache__"))
         for f in ("GUIDE.md", "README.md", "ROADMAP.md", ".claude/CLAUDE.md"):
@@ -405,7 +477,7 @@ class ContractChecks(unittest.TestCase):
         path.write_text(text.replace(old, new, 1))
 
     def test_the_plugin_as_it_stands_passes(self):
-        for check in ("contract", "body", "sections", "paths", "dials", "contracts", "profiles", "plugin_vars", "coupling"):
+        for check in ("contract", "body", "sections", "paths", "dials", "contracts", "profiles", "plugin_vars", "coupling", "copilot_links", "readme_skills"):
             self.assertEqual(self.failures(check), [], check)
 
     def test_a_plan_line_missing_from_body_md_fails_body(self):

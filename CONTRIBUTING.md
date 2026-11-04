@@ -31,9 +31,10 @@ standard at run time, never written into the skill. Each step names where its ru
    the skill says once what that is; the same holds for `<standard>/…`. `.claude/CLAUDE.md`
    "Conventions" has the rule and `check_static.py`'s `plugin-vars` check enforces it.
 5. **Link it for Copilot**: a symlink `.github/skills/<name>` to `../../skills/<name>` (an agent:
-   `.github/agents/<name>.agent.md`). No check catches a missing link.
+   `.github/agents/<name>.agent.md`). `check_static.py`'s `copilot-links` check fails a missing or
+   misdirected link.
 6. **Add its row** to the skills table in README "What is included", and to the one-line list
-   above it. No check catches a missing row.
+   above it. `check_static.py`'s `readme-skills` check fails a typed skill missing from either.
 7. **Run the checks** in "Before a pull request" above, one after another.
 8. **Try it in the sandbox** before review: a scenario in `sandbox/`, run beside the current
    plugin ([`sandbox/README.md`](sandbox/README.md)).

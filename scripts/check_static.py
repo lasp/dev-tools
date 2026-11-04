@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the plugin's text against its own files, with no model calls.
 
-Fourteen checks, each failure printed as `<check>: <file>: <what>`:
+Sixteen checks, each failure printed as `<check>: <file>: <what>`:
 
 - frontmatter: every skill and agent opens with a frontmatter block whose keys Claude Code
   documents, whose `name` matches its directory or file, and whose description is not empty; an
@@ -18,6 +18,12 @@ Fourteen checks, each failure printed as `<check>: <file>: <what>`:
   `profile.py --standard` prints.
 - review-map: every `.review/` path the skills, agents, hooks and scripts name has a row in the
   README's `.review/` table, and every row names its writer and reader.
+- copilot-links: every skill has its symlink `.github/skills/<name>` and every agent its
+  `.github/agents/<name>.agent.md`, each resolving to that skill's directory or agent's file, and
+  no link there names anything else.
+- readme-skills: in the README's "What is included", every skill not marked `user-invocable: false`
+  has a row in the skills table and a line in the list above it; a skill the table does not mark
+  `hidden` is in the list and every one in the list is typed in the table; each names a skill.
 - round-trip: `record.py` builds records from the test fixtures, their review bodies and
   conversation comments read back from the `reviews:` and `comments:` pointers by id, login and
   authorship, including a settled contest, an open one, an unanswered and an unparsed finding,
@@ -389,6 +395,47 @@ class Plugin:
                 )
                 if not matched:
                     self.fail("review-map", path, f".review/{mention} has no row in the README's `.review/` table")
+
+    def check_copilot_links(self) -> None:
+        want = {self.root / ".github/skills" / name: self.root / "skills" / name for name in self.skills}
+        want |= {self.root / ".github/agents" / f"{name}.agent.md": path for name, path in self.agents.items()}
+        for link, target in want.items():
+            rel = f"../../{target.relative_to(self.root).as_posix()}"
+            if not link.is_symlink():
+                self.fail("copilot-links", link, f"is not a symlink to {rel}")
+            elif link.resolve() != target.resolve():
+                self.fail("copilot-links", link, f"links to {link.readlink()}, not {rel}")
+        for d in (".github/skills", ".github/agents"):
+            for link in sorted((self.root / d).glob("*")):
+                if link not in want:
+                    self.fail("copilot-links", link, "names no skill or agent")
+
+    def check_readme_skills(self) -> None:
+        readme = self.root / "README.md"
+        section = section_text(readme.read_text(), "What is included") or ""
+        m = re.search(r"^\| Group \| Skill \| Started \|.*\n\|[- |]+\|\n((?:\|.*\n)+)", section, re.M)
+        if not m:
+            self.fail("readme-skills", readme, '"What is included" has no skills table')
+            return
+        listed = set(re.findall(r"^- `([\w-]+)`:", section[: m.start()], re.M))
+        rows = {}
+        for line in m.group(1).splitlines():
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            rows |= {name: cells[2] for name in re.findall(r"`([\w-]+)`", cells[1])}
+        typed = {name for name, started in rows.items() if started != "hidden"}
+        invocable = {n for n, p in self.skills.items() if (frontmatter(p.read_text()) or {}).get("user-invocable") != "false"}
+        for name in sorted(invocable):
+            if name not in rows:
+                self.fail("readme-skills", readme, f"`{name}` has no row in the skills table")
+            if name not in listed:
+                self.fail("readme-skills", readme, f"`{name}` is not in the list above the skills table")
+        for name in sorted((listed | set(rows)) - set(self.skills)):
+            self.fail("readme-skills", readme, f"`{name}` is not a skill")
+        # The two lists agree on the typed skills; a miss reported above is not reported again.
+        for name in sorted((typed - listed) & set(self.skills) - invocable):
+            self.fail("readme-skills", readme, f"`{name}` is typed in the skills table and not in the list above it")
+        for name in sorted((listed - typed) & set(self.skills) - (invocable - set(rows))):
+            self.fail("readme-skills", readme, f"`{name}` is in the list above the skills table and not typed in it")
 
     def check_round_trip(self) -> None:
         record, counts = self.load("record"), self.load("ratchet_counts")
@@ -806,6 +853,8 @@ def main(argv: list[str] | None = None) -> int:
         plugin.check_references()
         plugin.check_plugin_vars()
         plugin.check_review_map()
+        plugin.check_copilot_links()
+        plugin.check_readme_skills()
         plugin.check_round_trip()
         plugin.check_contract()
         plugin.check_body()
