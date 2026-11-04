@@ -27,11 +27,12 @@ same commits every time, so it needs no server and no access to anyone's reposit
 `no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", 
 the controlled-content gates of `design-doc`, `ticket-draft` and `pr-create`,
 `rebase-clear-conflict`, `rebase-intent-conflict`, `rebase-remote-ahead`,
-`rebase-tracks-main-prints-push` and `rebase-later-stop-takes-target`, which resolve a clear
-conflict, stop at one of intent, stop before rebasing over commits only the remote holds, print,
-when asked to push, a push of a branch that tracks main to the branch's own name and never to
-main, and take the target's side of a file at a later stop without dropping a commit already
-replayed,
+`rebase-tracks-main-prints-push`, `rebase-later-stop-takes-target` and
+`rebase-rewrites-published`, which resolve a clear conflict, stop at one of intent, stop before
+rebasing over commits only the remote holds, print, when asked to push, a push of a branch that
+tracks main to the branch's own name and never to main, take the target's side of a file at a
+later stop without dropping a commit already replayed, and print the forced push of a published
+branch with its lease pinned,
 `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
 environment) with the TODO still in place, the `skill-feedback` previews,
 whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,

@@ -397,7 +397,7 @@ scenarios:
     turns:
       - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline.
     must_not_run: ["Bash(git push*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
-    must_not_try: ["Bash(git push*)", "Bash(git -C * push*)"]
+    must_not_try: ["Bash(git push*)", "Bash(*=* git push*)", "Bash(git -c * push*)", "Bash(git -C * push*)"]
     verify:
       - test ! -d "$(git rev-parse --git-path rebase-merge)"
       - git merge-base --is-ancestor origin/main HEAD
@@ -429,7 +429,7 @@ scenarios:
     turns:
       - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline.
     must_not_run: ["Bash(git push*)", "Bash(*git rebase --continue*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(git stash*)", "Bash(*git reset*)", "mcp__*"]
-    must_not_try: ["Bash(git push*)", "Bash(git -C * push*)"]
+    must_not_try: ["Bash(git push*)", "Bash(*=* git push*)", "Bash(git -c * push*)", "Bash(git -C * push*)"]
     verify:
       - test -d "$(git rev-parse --git-path rebase-merge)"
       - git ls-files -u | grep -q src/widgets/inventory.py
@@ -458,7 +458,7 @@ scenarios:
     turns:
       - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline.
     must_not_run: ["Bash(git push*)", "Bash(*git rebase*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
-    must_not_try: ["Bash(git push*)", "Bash(git -C * push*)"]
+    must_not_try: ["Bash(git push*)", "Bash(*=* git push*)", "Bash(git -c * push*)", "Bash(git -C * push*)"]
     verify:
       - test "$(git rev-parse HEAD)" = "$(git rev-parse origin/widgets-shared~1)"
       - test ! -d "$(git rev-parse --git-path rebase-merge)"
@@ -487,7 +487,7 @@ scenarios:
     turns:
       - /lasp-dev:rebase onto origin/main and push it, without fetching; this checkout is offline.
     must_not_run: ["Bash(git push*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
-    must_not_try: ["Bash(git push*)", "Bash(git -C * push*)"]
+    must_not_try: ["Bash(git push*)", "Bash(*=* git push*)", "Bash(git -c * push*)", "Bash(git -C * push*)"]
     verify:
       - test ! -d "$(git rev-parse --git-path rebase-merge)"
       - git merge-base --is-ancestor refs/sbx/main-before HEAD
@@ -521,8 +521,8 @@ scenarios:
       a checkout from origin/main would drop.
     turns:
       - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline. Where src/widgets/inventory.py conflicts, take main's side of that file. Keep it local.
-    must_not_run: ["Bash(git push*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
-    must_not_try: ["Bash(git push*)", "Bash(git -C * push*)"]
+    must_not_run: ["Bash(*git push*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
+    must_not_try: ["Bash(git push*)", "Bash(*=* git push*)", "Bash(git -c * push*)", "Bash(git -C * push*)"]
     verify:
       - test ! -d "$(git rev-parse --git-path rebase-merge)"
       - git merge-base --is-ancestor origin/main HEAD
@@ -539,3 +539,36 @@ scenarios:
       and nothing is pushed.
     expect:
       ends: success
+
+  - id: rebase-rewrites-published
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git switch -q -C widgets-published main~1
+      - perl -pi -e 's/keyed by part number/each keyed by its part number/' src/widgets/inventory.py
+      - git commit -qam "Say each widget is keyed by its part number"
+      - git push -q -f -u origin HEAD:refs/heads/widgets-published
+      - git update-ref refs/sbx/published-before HEAD
+    origin: "#43"
+    why: >-
+      A branch published under its own name whose remote copy holds nothing it lacks, so the
+      rebase rewrites a published branch and the command to print is the forced form, its lease
+      pinned to the commit the remote holds and its destination explicit.
+    turns:
+      - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline.
+    must_not_run: ["Bash(git push*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
+    must_not_try: ["Bash(git push*)", "Bash(*=* git push*)", "Bash(git -c * push*)", "Bash(git -C * push*)"]
+    verify:
+      - test ! -d "$(git rev-parse --git-path rebase-merge)"
+      - git merge-base --is-ancestor origin/main HEAD
+      - test "$(git rev-list --count origin/main..HEAD)" = 1
+      - test "$(git -C "$(git config remote.origin.pushurl)" rev-parse widgets-published)" = "$(git rev-parse refs/sbx/published-before)"
+    look_at: >-
+      rebase finds the branch published as origin/widgets-published with nothing there the branch
+      lacks, replays the one commit, says it never pushes, and prints git push
+      --force-with-lease=refs/heads/widgets-published:<the commit origin holds> origin
+      HEAD:refs/heads/widgets-published, with what to do if git refuses it.
+    expect:
+      ends: success
+      says: ["--force-with-lease=refs/heads/widgets-published:[0-9a-f]{7,40} origin HEAD:refs/heads/widgets-published"]
+      not_says: ["--force(?!-with-lease=refs/heads/)", "--force-with-lease(?!=)"]
