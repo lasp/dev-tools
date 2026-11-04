@@ -107,6 +107,10 @@ Skills run as `/lasp-dev:<name>`, from the terminal, VS Code, JetBrains or the d
 Which model the build and its reviewers run on is a session setting, not a plugin option; see
 "Models" below.
 
+Start Claude Code in the repository you are changing. The build's lock and record go into the
+`.review/` of the session's working directory, so a session started in one repository and used
+to change another records the build in the wrong place.
+
 ### MCP servers
 
 The tokens step 3 creates:
