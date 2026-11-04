@@ -103,7 +103,7 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 
 | Item | Why | Owner | Trigger | Status |
 | --- | --- | --- | --- | --- |
-| Neutral examples in generic skills (#21) | Generic skills and agents still carry one project's names and domain: `downstream` reads its method from `using-curryer`, the reviewer and the planner load curryer's map for any SPICE-, frame- or time-shaped diff (#21), and `quickstart` checks for the plugin this one replaced. `scripts/coupling.json` allows the rest and does not scan the docs (#15). `using-curryer` leaves for curryer's own standard, or a domain plugin installed beside this one | plugin maintainer | before the public flip | planned |
+| Neutral examples in generic skills (#21) | Generic skills and agents still carry one project's names: `downstream`, the reviewer and the planner name curryer where they load `using-curryer` for curryer and the repositories that depend on it (#21), and `quickstart` checks for the plugin this one replaced. `scripts/coupling.json` allows the rest and does not scan the docs (#15). `using-curryer` leaves for curryer's own standard, or a domain plugin installed beside this one | plugin maintainer | before the public flip | planned |
 | Forge, tracker and wiki as roles (#24) | Every skill speaks GitHub, Jira or Confluence directly, so a repository on GitLab or tracking work in GitHub Issues gets little of the workflow. One documented shape per role, the neutral thread JSON as the forge's, with the current skills as the first adapters; GitLab next, then GitHub Issues as a tracker | plugin maintainer | a team on GitLab or GitHub Issues adopts the plugin | idea |
 
 ## Publishing

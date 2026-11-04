@@ -7,7 +7,7 @@ description: >
 user-invocable: false
 metadata:
   author: lasp-dev
-  version: 1.8.8
+  version: 1.8.9
 ---
 
 ## The project
@@ -92,7 +92,7 @@ h1. Related Out of Scope Tickets
 
 h1. The code today
 *Touches:* <the modules the change lands in, with their symbols, and the user-facing docs that describe the interface it changes; "new module <path>" for new code; no tests or changelog>
-*Used by:* <what calls them: the pipeline step, each consumer that does from the repository's list, which `using-curryer`'s references/downstream.md section 1 points to, by repository and a file only when it is the single caller, or "nothing outside this repository">
+*Used by:* <what calls them: the pipeline step, each consumer that does from the repository's list, which `${CLAUDE_PLUGIN_ROOT}/skills/downstream/SKILL.md`'s `check` step 2 gives, by repository and a file only when it is the single caller, or "nothing outside this repository">
 *Most of the change:* <the module and function, or "spread across <what>: <why>"; left out when it would repeat Touches>
 *Already true:*
 * <one fact the change relies on; a claim of the source the code disproves, said plainly>

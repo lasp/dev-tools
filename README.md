@@ -197,8 +197,8 @@ on `gh`, `pr-fix` stops at its start and `pr-review` posts only a pull request's
 
 The hidden reference skills load when another skill needs them: `using-jira` and
 `using-confluence` by `source-reader`, `using-github` by every skill and agent that reaches
-GitHub, and `using-curryer` by the planner, `github-pr-reviewer`, `ticket-draft` and
-`downstream`.
+GitHub, and `using-curryer` by the planner, `github-pr-reviewer` and `downstream`, only in
+curryer and the repositories that depend on it.
 
 #### When a server is missing or failing
 

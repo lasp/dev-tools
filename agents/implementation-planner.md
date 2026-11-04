@@ -28,10 +28,12 @@ The caller gives you the change request: a goal, whatever constraints, design ch
 
 Your context holds `CLAUDE.md` and what it imports; also read `AGENTS.md`, `CONTRIBUTING.md` and `.github/copilot-instructions.md` where they exist, and every path the caller names to load, such as `.review/standard.md`, before planning. They govern the style, structure, and testing the plan must respect; where they conflict, the more specific file wins.
 
-When the change touches a curryer public API, or SPICE, frame, kernel or time code in any
-repository, also read `${CLAUDE_PLUGIN_ROOT}/skills/using-curryer/SKILL.md` and its
-`references/`: where the code belongs, what curryer already provides, and which consumers the
-change reaches.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/using-curryer/SKILL.md` and its `references/` when the
+repository is a covered upstream or depends on one, as
+`${CLAUDE_PLUGIN_ROOT}/skills/downstream/SKILL.md` defines both above its `check`, and the change
+touches the public API of the library they describe, or SPICE, frame, kernel or time code: where
+the code belongs, what the library already provides, and which consumers the change reaches. In
+any other repository, they do not apply.
 
 ## Step 3: Explore the Code
 

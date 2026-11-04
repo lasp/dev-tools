@@ -11,7 +11,7 @@ description: >
 argument-hint: "[investigate | settle | reformat] <ticket key | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
-  version: 1.10.14
+  version: 1.10.15
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
@@ -181,9 +181,8 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
      (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" <owner/repo> --field ticket.project`);
    - one `source-reader` running `plan` for the current month and the next two;
    - fresh `ticket-investigator` agents, one for this repository and one for each repository the
-     profile's `downstream` lists (`--field downstream`; where it reads `not yet recorded`, the
-     list `${CLAUDE_PLUGIN_ROOT}/skills/using-curryer/references/downstream.md` section 1 holds
-     for this repository) that is cloned beside this one
+     consumers list (the list `${CLAUDE_PLUGIN_ROOT}/skills/downstream/SKILL.md`'s `check` step 2
+     names) that is cloned beside this one
      (`$(git rev-parse --show-toplevel)/../<repo>`). Each gets its repository's path, the goal,
      the claims the source makes about that repository and the synonyms. A repository not
      cloned beside is named in Placement as unread.
