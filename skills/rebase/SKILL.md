@@ -37,13 +37,16 @@ The person's words override each default but the push, at invocation or at any s
 rebase-apply` name directories that exist only during one. In it, `head-name` holds the branch,
 `orig-head` the recovery point and `onto` the target. Say so and ask: carry it on (Recommended,
 since the conflicts already resolved in it are kept), abort it, or stop. To carry it on, take the
-branch, recovery point and target from those files. HEAD is detached and holds only part of the
-branch, so step 2's check of where the branch is published takes the branch from `head-name` and
-compares the recovery point in place of HEAD: `git log --oneline --cherry-pick --right-only
-<recovery point>...<push remote>/<dest>`. Then step 3, then step 4 at the current stop. A stop
-with no conflicted file is an edit, a break or a failed exec, which the last line of `done` in
-that directory names: say which, and ask rather than continue. Never `git rebase --continue` over
-staged or unstaged changes this skill did not make.
+branch, recovery point and target from those files; a `head-name` of `detached HEAD` is no
+branch, so step 6 prints no push. HEAD is detached and holds only part of the branch, so step 2's
+check of where the branch is published takes the branch from `head-name`, compares the recovery
+point in place of HEAD, and leaves out what the target brings in, since after `git pull --rebase`
+the target is the published copy itself: `git log --oneline --cherry-pick --right-only <recovery
+point>...<push remote>/<dest> --not <onto>`. Then step 3, then step 4 at the current stop. Under
+`rebase-merge`, a stop with no conflicted file is an edit, a break or a failed exec, which the
+last line of `done` names: say which, and ask rather than continue. Under `rebase-apply`, every
+stop is a patch that did not apply, `next` of `last` naming which. Never `git rebase --continue`
+over staged or unstaged changes this skill did not make.
 
 Otherwise `git status -sb`, and stop, saying why and what the person can run, when:
 
@@ -89,12 +92,16 @@ fetched, naming its commit and date, or stop.
   (`git remote -v`) names the head's repository. When no remote does, say so; step 6 prints no
   command.
 
-Otherwise `<dest>` is `<branch>`, on the first remote set of `branch.<branch>.pushRemote`,
-`remote.pushDefault` and `origin`. When the branch has an upstream (`git rev-parse --abbrev-ref
---symbolic-full-name @{u}`), say that it is set aside and why: it names another branch, which is
-where the branch started or what it follows, not where it is published, as `git switch -c
-<branch> origin/main` sets by default. When `<dest>` is the target's branch or any remote's default
-branch (`git symbolic-ref refs/remotes/<remote>/HEAD`), say so; step 6 prints no command.
+Otherwise read the branch's upstream (`git rev-parse --abbrev-ref --symbolic-full-name @{u}`).
+One that is the target, any remote's default branch or a local branch is where the branch
+started, not where it is published, as `git switch -c <branch> origin/main` sets by default: say
+that it is set aside, and why. Any other upstream may be where the branch is published under
+another name, as a pull request's head on a fork is: say so and ask the person where the branch is
+published. Their answer is `<dest>` and `<push remote>`; until they give one, step 6 prints no
+command. With no upstream, or one set aside, `<dest>` is `<branch>`, on the first remote set of
+`branch.<branch>.pushRemote`, `remote.pushDefault` and `origin`. When `<dest>` is the target's
+branch or any remote's default branch (`git symbolic-ref refs/remotes/<remote>/HEAD`), say so;
+step 6 prints no command.
 
 When `<push remote>/<dest>` exists, fetch it, unless the person said not to fetch, then `git log
 --oneline --cherry-pick --right-only HEAD...<push remote>/<dest>`. Any commit it lists is on the
@@ -189,6 +196,9 @@ an explicit destination, which no `push.default` or push refspec can redirect:
   <push remote> HEAD:refs/heads/<dest>`, which git refuses when the remote branch has moved since;
 - otherwise: `git push -u <push remote> HEAD:refs/heads/<dest>`, which also makes it the branch's
   upstream.
+
+When the person chose to rebase anyway under a rule that forbids a force-push, quote that rule
+again beside a `--force-with-lease` command.
 
 Never print plain `--force`, a bare `--force-with-lease`, or a push without
 `HEAD:refs/heads/<dest>`. **Before printing, check the command's destination**: it is
