@@ -140,7 +140,7 @@ scenarios:
     repo: widgets
     setup:
       - git config commit.gpgsign false
-      - git checkout -q -b notes origin/main~1
+      - git switch -q -C notes main~1
       - printf '\nCounts are whole numbers.\n' >> README.md && git commit -qam "Say counts are whole numbers"
     turns:
       - My branch is behind main. Replay my commits on top of the latest main.
