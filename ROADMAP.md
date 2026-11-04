@@ -28,6 +28,7 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 | `next_phase.py` reading `pr-fix`'s local dispositions | A decision kept in `.review/pr-<n>-fix-plan.md` `## Dispositions` and not posted leaves its thread unanswered in the record, so `work` routes to `pr-fix` each time and `pr-fix` raises it with its link. A `--fix-plan` read in `next_phase.py` would route on instead, at the cost of a GitHub record the revision cannot read | plugin maintainer | the repeated prompt proves a burden, or the team decides a local decision is enough | deferred |
 | Keep it simple and don't repeat yourself, with a tiebreak | The planner and its reviewer look for the smallest change and `standards/review-contract.md` "New surface" makes a duplicate of an existing function a finding, but nothing says which wins when the two pull apart: strict deduplication extracts abstractions early. A few lines in the contract would name both and settle it: a copy is a finding at its third occurrence, or at its second when the copies must stay in step (a constant, a unit conversion, a validation); similar blocks that may change independently are left. A sandbox check confirms the simplicity reviewer does not then flag every pair of similar lines | plugin maintainer | a review flags, or misses, a duplication the team disagrees with | idea |
 | The next round offered, from review to fix and back | After `pr-review` posts, or `pr-fix` pushes, one question offers the next round: make the fixes, commit, push and run `pr-review` again. Asked, never automatic, since one round is sometimes enough and the author may want to move fast. Today each skill ends by naming the next command | plugin maintainer | | idea |
+| Every decision point says what each answer does and where it lands (#14) | An audit of nine skills found Stop options that do not say what is kept and push gates that do not name the repository and branch | plugin maintainer | one skill at a time, each with sandbox evidence | planned |
 
 ## Build and work
 
@@ -65,6 +66,11 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 | Item | Why | Owner | Trigger | Status |
 | --- | --- | --- | --- | --- |
 | Repository documents as a source of facts (research) | The onboarding proposal of 2026-10-20, "Repository documents as a source: a research question". The survey reads committed instruction files, developer docs and CI (#128). Left: the level 3 comparison for test commands and git conventions, the same scenarios run once with a recorded value and once reading only the document; until then two sources that disagree stop a run | plugin maintainer | now: onboarding writes the standard | planned |
+| Onboard ties each answer to its question (#9) | A blanket "take the recommended option" skipped the survey table, the questions and the per-file yes in a sandbox run | plugin maintainer | a sandbox scenario that answers in words | planned |
+| The first-rules offer states its cost and can recommend (#10) | It says the cost is limited; a 114-pull-request harvest cost about $9 and 8 minutes, and no option is recommended | plugin maintainer | the next onboard change | planned |
+| Downstream search by import name (#11) | `survey.py` searches the distribution name, so a package that imports under another name finds no consumers | plugin maintainer | a fixture whose names differ | planned |
+| Harvest leaves no stray thread directories (#12) | `.td` and duplicate directories were left under `.review/harvest/threads/` after a restarted harvest | plugin maintainer | a reproduction | planned |
+| A shorter, structured quickstart reply (#17) | The reply is mostly a command table, sends a newcomer to build before onboarding, and names a settings-only standard two ways | plugin maintainer | sandbox evidence on the three quickstart scenarios | planned |
 
 ## Sandbox and tests
 
@@ -73,6 +79,8 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 | An answer key for sandbox scenarios | A scenario's `turns` answer in order, so a skill that asks one more question gets the wrong reply. A key matches each reply to its decision point by meaning (Haiku matches; the reply is sent word for word), marks the entries of skills that loop as repeatable, and stops the run on a question it does not cover | plugin maintainer | now: the sandbox re-baselined on 2026-10-14 | planned |
 | An offline scenario from the plan to the pull request | `work-end-to-end` stops at `why: unfiled`, since the sandbox cannot file a ticket in Jira, so no scenario takes `work` through `implement-change`, `commit` and `pr-create`. One would seed a context page, `.review/context/<key>.md`, on a branch named for the key, so `where.sh` finds it and `work` goes to `implement-change` with no status read, give the ticket's text through `implement-change`'s pasted-text alternative, and answer through the diff gate, the commit and `pr-create`'s draft. `work-end-to-end` is then renamed for what it covers, the draft and the unfiled stop. A run costs $5 to $20 | plugin maintainer | a change to how `work` hands a build to `commit` and `pr-create` | planned |
 | A `claude plugin eval` suite | Behavioral regression tests for a skill, starting with `commit`. The command (Claude Code's "Plugin evals" page) runs cases from an `evals/` directory against the plugin and against a no-plugin baseline. A scaffold script would build a fixture working tree, and regex, `file_exists` and `tool_used` graders would check that `commit` leaves `.review/` out and writes the repository's subject form. Every case is a live model call on the runner's account, twice per run for the baseline, plus judge calls for rubric graders, so a suite cannot run offline against fixtures | plugin maintainer | a skill change needs a behavioral regression test that the text diff and the stdlib tests cannot give, or a sandbox scenario with an `origin:` has drifted with live state once, or three such scenarios exist | deferred |
+| Sandbox write denies by server kind, not name (#13) | `run.py` expands the deny rules only for server names containing `github` or `atlassian` | plugin maintainer | the next sandbox change | planned |
+| `check_static.py` checks a new skill's link and README row (#16) | Neither is checked; preferred over a skill-creator skill | plugin maintainer | the next skill added | planned |
 
 ## Measuring the tooling
 
@@ -83,3 +91,10 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 | Gate counts by hook: option taken, Recommended taken, free text, declined | The design's reviewers disagree whether a PostToolUse hook on `AskUserQuestion` receives the answers | plugin maintainer | the maintainer runs a live check in one session; yes means one hook, no means one `procedure_log.sh` call per gate, after `skill-note` | waiting on the check |
 | A `tooling_changes.sh` script under `scripts/`: merged tooling pull requests with their `Origin:` lines, then open `skill-feedback` issues with dispositions, for a monthly meeting's five minutes | The list is read aloud monthly | plugin maintainer | the second revision meeting | deferred |
 | Skill retirement and gate folding: a skill uninvoked for three months by `/skill-doctor`, a gate approved as drafted over 20 or more events | A skill nobody runs and a gate nobody changes cost every session their descriptions and every run its question | plugin maintainer | six months of use across the team | idea |
+
+
+## Publishing
+
+| Item | Why | Owner | Trigger | Status |
+| --- | --- | --- | --- | --- |
+| The public flip (#15) | What the tree still carries before the repository goes public: README wording, planted token strings, fixture banners, CI secret scan, the Libera scrub | plugin maintainer | release approval | planned |
