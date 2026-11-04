@@ -75,6 +75,7 @@ _2026-10 · **established** · source: fix#6_
 | ID | Code name | Also called |
 | --- | --- | --- |
 | T-001 | `obsid` | observation ID |
+| T-002 | `apid` | — |
 """
 
 EXPECTED = [
@@ -90,8 +91,9 @@ EXPECTED = [
     "  D-004 · Moved to `D-009` (2026-09-23) · moved",
     "  D-005 · A status with a suffix · provisional",
     "  D-006 · Retired files are archived, not deleted · established",
-    "Terminology, from example/standard/standards/terminology.md: 1 term",
-    "  T-001 · `obsid`",
+    "Terminology, from example/standard/standards/terminology.md: 2 terms",
+    "  T-001 · `obsid`: observation ID",
+    "  T-002 · `apid`",
 ]
 
 
