@@ -69,12 +69,17 @@ def well_formed(case: unittest.TestCase, known: dict, repos: set) -> None:
             case.assertTrue(s.get("why"), s["id"])
 
 
+GITHUB_SERVER = {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}
+ATLASSIAN_SERVER = {"command": "uvx", "args": ["mcp-atlassian@0.23.1", "--read-only"], "env": {"READ_ONLY_MODE": "true"}}
+
+
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
 class Sandbox(unittest.TestCase):
     def setUp(self):
         self.sandbox = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.sandbox)
-        (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"github-example": {}, "github": {}, "atlassian": {}}}))
+        servers = {"github-example": GITHUB_SERVER, "github": GITHUB_SERVER, "atlassian": ATLASSIAN_SERVER}
+        (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": servers}))
         self.quickstart = run.scenarios()["quickstart"]
 
     def test_a_line_separator_inside_a_string_is_not_a_line_break(self):
@@ -277,6 +282,34 @@ class Sandbox(unittest.TestCase):
         self.assertNotIn("mcp__atlassian__pull_request_read", perms["allow"])
         self.assertFalse([r for r in perms["allow"] + perms["deny"] if "{" in r])
 
+    def test_settings_tell_a_servers_kind_by_what_it_is_not_its_name(self):
+        servers = {"code-host": GITHUB_SERVER,
+                   "local-code": {"command": "docker", "args": ["run", "-i", "--rm", "ghcr.io/github/github-mcp-server"]},
+                   "code-binary": {"command": "/usr/local/bin/github-mcp-server", "args": ["stdio"]},
+                   "issue-tracker": {"command": "docker", "args": ["run", "ghcr.io/sooperset/mcp-atlassian:0.23.1", "--read-only"],
+                                     "env": {"READ_ONLY_MODE": "true"}},
+                   "github-docs": {"type": "http", "url": "https://example.org/api.githubcopilot.com/mcp/"},
+                   "atlassian-notes": {"command": "uvx", "args": ["notes-server"]}}
+        (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": servers}))
+        run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
+        perms = json.loads((self.sandbox / "settings.json").read_text())["permissions"]
+        for name in ("code-host", "local-code", "code-binary"):
+            self.assertIn(f"mcp__{name}__add_issue_comment", perms["deny"])
+            self.assertIn(f"mcp__{name}__pull_request_read", perms["allow"])
+        self.assertIn("mcp__issue-tracker__jira_update_issue", perms["deny"])
+        self.assertIn("mcp__issue-tracker", perms["allow"])
+        for name in ("github-docs", "atlassian-notes"):
+            self.assertFalse([r for r in perms["allow"] + perms["deny"] if f"mcp__{name}" in r], name)
+
+    def test_settings_refuse_an_atlassian_server_that_is_not_read_only(self):
+        for server in ({"command": "uvx", "args": ["mcp-atlassian@0.23.1"], "env": {"READ_ONLY_MODE": "true"}},
+                       {"command": "uvx", "args": ["mcp-atlassian@0.23.1", "--read-only"]}):
+            (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"issue-tracker": server}}))
+            with self.assertRaises(SystemExit) as raised:
+                run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
+            self.assertIn("issue-tracker", str(raised.exception))
+            self.assertFalse((self.sandbox / "settings.json").exists())
+
     def test_settings_run_bash_in_the_sandbox_with_no_fallback_reaching_a_fixed_list(self):
         run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
         box = json.loads((self.sandbox / "settings.json").read_text())["sandbox"]
@@ -290,8 +323,8 @@ class Sandbox(unittest.TestCase):
         self.assertEqual(box["filesystem"]["allowWrite"], ["/tmp", "/private/tmp"])
 
     def test_settings_keep_credentials_and_the_settings_files_from_sandboxed_commands(self):
-        servers = {"github-example": {"headers": {"Authorization": "Bearer ${GITHUB_MCP_PAT_EXAMPLE}"}},
-                   "atlassian": {"env": {"JIRA_PERSONAL_TOKEN": "${JIRA_TOKEN}"}}}
+        servers = {"github-example": {**GITHUB_SERVER, "headers": {"Authorization": "Bearer ${GITHUB_MCP_PAT_EXAMPLE}"}},
+                   "atlassian": {**ATLASSIAN_SERVER, "env": {**ATLASSIAN_SERVER["env"], "JIRA_PERSONAL_TOKEN": "${JIRA_TOKEN}"}}}
         (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": servers}))
         run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
         text = (self.sandbox / "settings.json").read_text()
