@@ -7,7 +7,7 @@ description: >
 argument-hint: "[planned | duplicates | links | estimates | pulls]"
 disable-model-invocation: true
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.3.9
 ---
 

@@ -27,8 +27,7 @@ once a person commits the ones the team keeps. A monthly revision then proposes 
 rules from how people answered. "Adopting the standards workflow in a repository" below is the order.
 
 Libera's science data system was the first team to adopt it: its examples (its Jira tickets, the
-libera_utils repository, `LASP-Libera/libera_standards`) show one team's standard, not a
-requirement.
+libera_utils repository, its shared standard) show one team's standard, not a requirement.
 
 Without the tokens, the skills in the "Neither" row of "Which skill needs which server" below
 work once the plugin is installed.
@@ -62,8 +61,6 @@ Once per machine, in this order.
 1. **Check you have:**
    - Claude Code installed and logged in. A fresh install says `Not logged in · Please run
      /login` until you do.
-   - Read access to `lasp/dev-tools` on GitHub. Claude Code fetches the
-     marketplace with your git credentials, so a private repository needs them to reach it.
    - `bash` and `jq`. Without `jq` the build hooks record nothing, `work`, `pr-create` and
      `implement-change` cannot read where a ticket stands, and every Jira or Confluence call,
      reads included, asks first. macOS 15 and later ship `jq`.
@@ -470,7 +467,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `downstream` | typed or asked | Say which consuming repositories a change breaks, why a run went red, and which pins a release leaves behind |
 | Reference, hidden | `using-jira` | hidden | How a project's tickets are read and drafted: the format, the write plan and copy-paste markup, with the project's own fields, statuses and JQL read from its `tracker.md` |
 | | `using-confluence` | hidden | How a project's Confluence is read and written, with its spaces, pages and macro values read from its `wiki.md`; what the tools cannot read |
-| | `using-curryer` | hidden | curryer, a LASP-wide library that Libera and CSDS build on: who consumes curryer and libera_utils, and whether code belongs in curryer |
+| | `using-curryer` | hidden | curryer, a LASP-wide library that Libera and other LASP projects build on: who consumes curryer and libera_utils, and whether code belongs in curryer |
 | | `using-github` | hidden | How the skills and agents reach GitHub: the server, the `gh` alternative and the push stop |
 | Occasional | `design-doc` | typed or asked | Turn your notes page into a design doc for work that spans several tickets, existing or yet to be drafted: coaches you through the problem, goals and considerations before drafting, settles each design choice with you, draws the target architecture with `drawio`, maps the work onto tickets, and publishes the page in place on your yes; its `revise` mode changes a published one |
 | | `architecture-doc` | typed or asked | Write a page on a system as it stands, from the code and your description: its purpose, confirmed with you, its runtime interfaces, people included, and how it works, in plain language and in a shape that suits the system; publishes on your yes. Its `revise` mode checks a published page against the code and brings it up to date |

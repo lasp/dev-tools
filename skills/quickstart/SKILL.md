@@ -9,7 +9,7 @@ description: >
   applies here", "which rules apply" or "what does the plugin enforce here".
 argument-hint: "[question]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.8.0
 ---
 

@@ -8,7 +8,7 @@ description: >
   where Mermaid renders without a paste.
 argument-hint: "[context | components | flow | deployment] <what to draw> [output path]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.1.0
 ---
 
