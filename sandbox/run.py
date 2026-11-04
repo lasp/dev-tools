@@ -72,6 +72,10 @@ lists every `CLAUDE.md`, `AGENTS.md` and rules file above the sandbox and the pe
 `autoMemoryEnabled` is off, so a session, the judge's included, reads the repository's
 instructions and no one's personal ones or an earlier run's memory.
 
+A scenario file names a planted fake credential by placeholder, `{fake_github_token}` or
+`{fake_anthropic_key}`, which run.py replaces with the full string when it reads the file, so no
+tracked file holds one a secret scanner would flag.
+
 Needs PyYAML (`python3 -m pip install pyyaml`).
 """
 
@@ -114,6 +118,9 @@ SESSION_ENV = re.compile(r"(ANTHROPIC_|CLAUDE_CODE_)\w*|MAX_THINKING_TOKENS")
 UNKEYED_ENV = re.compile(r"SESSION|SOCKET|EXECPATH|ENTRYPOINT|SSE_PORT|PID|PASSPHRASE|(KEY|TOKEN)$|^ANTHROPIC_CUSTOM_HEADERS$")
 REUSE_HOURS = 24  # the README's "run both variants the same day": live scenarios read that day's servers
 SCENARIOS = None  # --scenarios; None is scenarios.yaml beside this script
+# Joined here so no tracked file holds a whole credential-shaped string.
+FAKES = {"fake_github_token": "gh" + "p_SandboxFakeToken0123456789abcdefABCDEF",
+         "fake_anthropic_key": "sk-" + "ant-api03-SandboxFakeKey0123456789abcdefABCDEF"}
 
 
 def child(cmd, check: bool = False, capture_output: bool = False, **kw) -> subprocess.CompletedProcess:
@@ -166,7 +173,10 @@ def fixture_dir() -> Path:
 
 
 def scenarios() -> dict[str, dict]:
-    return {s["id"]: s for s in yaml.safe_load(scenario_file().read_text())["scenarios"]}
+    text = scenario_file().read_text()
+    for name, value in FAKES.items():
+        text = text.replace("{" + name + "}", value)
+    return {s["id"]: s for s in yaml.safe_load(text)["scenarios"]}
 
 
 def for_plugin(node: object, name: str) -> object:

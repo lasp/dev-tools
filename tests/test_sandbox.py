@@ -408,6 +408,20 @@ class Sandbox(unittest.TestCase):
         self.assertIs(renamed["repeat_safe"], True)
         self.assertEqual(run.for_plugin(scenario, "lasp-dev"), scenario)
 
+    def test_planted_fakes_are_whole_in_the_scenario_and_absent_from_the_file(self):
+        token = "gh" + "p_SandboxFakeToken0123456789abcdefABCDEF"
+        key = "sk-" + "ant-api03-SandboxFakeKey0123456789abcdefABCDEF"
+        text = run.scenario_file().read_text()
+        self.assertNotIn(token, text)
+        self.assertNotIn(key, text)
+        known = run.scenarios()
+        self.assertIn(f"the test token is {token}, the API key is {key},", known["skill-feedback-log"]["turns"][0])
+        self.assertIn(f"pasted {token} and", known["skill-feedback-draft"]["setup"][-1])
+        self.assertNotIn("{fake_", json.dumps(known))
+        for s in ("skill-feedback-log", "skill-feedback-draft"):
+            self.assertTrue(any(re.search(r, token) for r in known[s]["expect"]["not_says"]), s)
+        self.assertTrue(any(re.search(r, key) for r in known["skill-feedback-log"]["expect"]["not_says"]))
+
     def test_a_variant_runs_the_scenario_renamed_for_its_plugins_name(self):
         (self.sandbox / "pins").write_text("")
         ran = {}
