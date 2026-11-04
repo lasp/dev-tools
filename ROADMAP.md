@@ -79,7 +79,6 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 | Onboard ties each answer to its question (#9) | A blanket "take the recommended option" skipped the survey table, the questions and the per-file yes in a sandbox run | plugin maintainer | a sandbox scenario that answers in words | planned |
 | The first-rules offer states its cost and can recommend (#10) | It says the cost is limited; a 114-pull-request harvest cost about $9 and 8 minutes, and no option is recommended | plugin maintainer | the next onboard change | planned |
 | Downstream search by import name (#11) | `survey.py` searches the distribution name, so a package that imports under another name finds no consumers | plugin maintainer | a fixture whose names differ | planned |
-| Harvest leaves no stray thread directories (#12) | `.td` and duplicate directories were left under `.review/harvest/threads/` after a restarted harvest | plugin maintainer | a reproduction | planned |
 | A shorter, structured quickstart reply (#17) | The reply is mostly a command table, sends a newcomer to build before onboarding, and names a settings-only standard two ways | plugin maintainer | sandbox evidence on the three quickstart scenarios | planned |
 
 ## Sandbox and tests
