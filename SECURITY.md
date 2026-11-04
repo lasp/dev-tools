@@ -8,7 +8,8 @@ Kinds of report that matter most here:
 
 - a way past a gate: a push, a post, a commit or a Jira or Confluence write that happens without
   the person's yes, or past `hooks/atlassian-gate.sh`, `hooks/secret-gate.sh` or
-  `hooks/controlled-gate.sh`;
+  `hooks/controlled-gate.sh` (a call the secret scan cannot read passing is by design, not a
+  vulnerability: the README's "Permissions" says what it reads);
 - a secret, credential or internal link that reaches a pull request, an issue or a page despite the
   redaction in `scripts/transcript_excerpt.py`;
 - a script that runs or writes outside the checkout it was given.
