@@ -1,0 +1,8 @@
+
+
+def by_part(widgets: list[Widget]) -> dict[str, int]:
+    """Each part number's count; a part listed twice has its counts added."""
+    counts: dict[str, int] = {}
+    for w in widgets:
+        counts[w.part] = counts.get(w.part, 0) + w.count
+    return counts

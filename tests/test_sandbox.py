@@ -139,7 +139,7 @@ class Sandbox(unittest.TestCase):
 
     def test_every_generic_scenario_is_well_formed_and_runs_in_the_fixture(self):
         known = run.scenarios()
-        self.assertEqual(len(known), 15)
+        self.assertEqual(len(known), 21)
         well_formed(self, known, {"widgets"})
 
     def test_every_fixture_a_scenario_copies_is_in_the_pack(self):
@@ -174,6 +174,22 @@ class Sandbox(unittest.TestCase):
         self.assertEqual(len(summary["must_not_run"]), 1)
         self.assertTrue(summary["must_not_run"][0].startswith("Bash(claude *): "))
         self.assertEqual(summary["denials"], [])
+
+    def test_a_denied_use_of_a_must_not_try_pattern_is_a_hit(self):
+        scenario = {**self.quickstart, "must_not_run": [], "must_not_try": ["Bash(claude *)"]}
+        summary = run.summarize(fixture(), scenario, [])
+        self.assertEqual(len(summary["denials"]), 1)
+        self.assertEqual(len(summary["must_not_run"]), 1)
+        self.assertTrue(summary["must_not_run"][0].startswith("Bash(claude *): "))
+        self.assertIn("ran Bash(claude *): ", run.check(summary, scenario))
+
+    def test_a_use_two_rules_hold_is_one_hit(self):
+        events = fixture()
+        events[-1]["permission_denials"] = []
+        scenario = {**self.quickstart, "must_not_run": ["Bash(claude *)", "Bash(*plugin*)"], "must_not_try": ["Bash(claude *)"]}
+        summary = run.summarize(events, scenario, [])
+        self.assertEqual(len(summary["must_not_run"]), 1)
+        self.assertTrue(summary["must_not_run"][0].startswith("Bash(claude *): "))
 
     def test_a_bash_rule_matches_each_command_of_a_compound_one(self):
         def bash(command):
@@ -1316,6 +1332,40 @@ class Reuse(unittest.TestCase):
         git(repo, "remote", "set-url", "origin", "https://github.com/someone/gizmos.git")
         run.reset(self.sandbox)
         self.assertEqual(git(repo, "remote", "get-url", "origin"), built)
+
+    def conflicting_branches(self) -> Path:
+        """The pinned clone with `main` and `side` each changing f.txt's one line, `side` checked out."""
+        repo = self.sandbox / "repos" / "gizmos"
+        commit = ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "commit", "-q", "-am"]
+        (repo / "f.txt").write_text("a\n")
+        git(repo, "add", "f.txt")
+        git(repo, *commit, "base")
+        git(repo, "switch", "-q", "-c", "side")
+        (repo / "f.txt").write_text("side\n")
+        git(repo, *commit, "side")
+        git(repo, "switch", "-q", "main")
+        (repo / "f.txt").write_text("main\n")
+        git(repo, *commit, "main")
+        git(repo, "switch", "-q", "side")
+        return repo
+
+    def test_a_reset_leaves_no_rebase_a_run_left_paused(self):
+        repo = self.conflicting_branches()
+        paused = subprocess.run(["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t", "rebase", "main"], capture_output=True)
+        self.assertNotEqual(paused.returncode, 0)
+        rebase_dir = repo / git(repo, "rev-parse", "--git-path", "rebase-merge")
+        self.assertTrue(rebase_dir.is_dir())
+        run.reset(self.sandbox)
+        self.assertFalse(rebase_dir.exists())
+
+    def test_a_reset_leaves_no_merge_a_run_left_paused(self):
+        repo = self.conflicting_branches()
+        paused = subprocess.run(["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t", "merge", "main"], capture_output=True)
+        self.assertNotEqual(paused.returncode, 0)
+        merge_head = repo / git(repo, "rev-parse", "--git-path", "MERGE_HEAD")
+        self.assertTrue(merge_head.is_file())
+        run.reset(self.sandbox)
+        self.assertFalse(merge_head.exists())
 
     def test_a_pinned_plugin_clone_a_run_left_untracked_files_in_is_keyed_after_its_reset(self):
         remote = self.sandbox / "remotes" / "dev-tools.git"

@@ -1,0 +1,5 @@
+
+
+def test_by_part_adds_a_part_listed_twice():
+    from widgets.inventory import by_part
+    assert by_part([Widget("A-1", 2), Widget("A-1", 1)]) == {"A-1": 3}
