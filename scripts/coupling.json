@@ -1,13 +1,9 @@
 {
   "counts": {
-    "agents/github-pr-reviewer.md": 4,
-    "agents/implementation-planner.md": 3,
-    "skills/design-doc/SKILL.md": 1,
+    "agents/github-pr-reviewer.md": 1,
+    "agents/implementation-planner.md": 1,
     "skills/downstream/SKILL.md": 5,
-    "skills/pr-create/body.md": 1,
-    "skills/quickstart/SKILL.md": 2,
-    "skills/ticket-draft/SKILL.md": 1,
-    "skills/using-jira/SKILL.md": 1
+    "skills/quickstart/SKILL.md": 2
   },
   "mission": {
     "skills/using-curryer/": "the curryer constellation and its downstream map"
