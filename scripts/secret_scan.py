@@ -1058,17 +1058,18 @@ def server_kind(server):
     """`atlassian` for an mcp-atlassian command or a server at `mcp.atlassian.com`; `github` for a
     server at `api.githubcopilot.com`, a `copilot-api.` host or a `.ghe.com` host, or one whose
     command or an argument names `github-mcp-server` or `@modelcontextprotocol/server-github`, or
-    whose argument is the image `mcp/github` with or without a tag; otherwise None. A host is read
-    from `url` and from each argument that is an http(s) URL, as `mcp-remote` takes one. The
-    sandbox's classifier covers the forms `sandbox.sh` writes, a subset of these, and must not
-    disagree with this one on them."""
+    whose argument is the image `mcp/github`, with or without a registry, a tag or a digest;
+    otherwise None. A host is read from `url` and from each argument that is an http(s) URL, as
+    `mcp-remote` takes one. The sandbox's classifier covers the forms `sandbox.sh` writes, a subset
+    of these, and must not disagree with this one on them."""
     words = [str(x) for x in [server.get("command"), *(server.get("args") or [])]]
-    hosts = [url_host(str(server.get("url") or ""))] + [url_host(w) for w in words if re.match(r"https?://", w)]
+    hosts = [url_host(str(server.get("url") or ""))]
+    hosts += [url_host(w) for w in words if re.match(r"https?://", w, re.I)]
     if "mcp.atlassian.com" in hosts or any("mcp-atlassian" in w for w in words):
         return "atlassian"
     if (any(h == "api.githubcopilot.com" or h.startswith("copilot-api.") or h.endswith(".ghe.com") for h in hosts)
             or any("github-mcp-server" in w or "@modelcontextprotocol/server-github" in w
-                   or re.fullmatch(r"mcp/github(?::[\w.-]+)?", w) for w in words)):
+                   or re.fullmatch(r"(?:[\w.-]+(?::\d+)?/)?mcp/github(?::[\w.-]+)?(?:@sha256:[0-9a-f]{64})?", w) for w in words)):
         return "github"
     return None
 

@@ -590,12 +590,15 @@ class Writes(unittest.TestCase):
                       "hub": {"command": "docker", "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
                                                             "mcp/github"]},
                       "hub-tagged": {"command": "docker", "args": ["run", "-i", "mcp/github:latest"]},
-                      "remote": {"command": "npx", "args": ["-y", "mcp-remote", "https://api.githubcopilot.com/mcp/"]},
+                      "hub-registry": {"command": "docker", "args": ["run", "-i", "docker.io/mcp/github"]},
+                      "hub-digest": {"command": "docker", "args": ["run", "-i", "mcp/github@sha256:" + "0" * 64]},
+                      "remote": {"command": "npx", "args": ["-y", "mcp-remote", "HTTPS://api.githubcopilot.com/mcp/"]},
                       "ghe": {"type": "http", "url": "https://copilot-api.corp.ghe.com/mcp/"},
                       "github-mirror": {"type": "http", "url": "https://code.example.org/mcp"},
                       "github": {"command": "an-unrecognized-binary"}})
         for tool in ("mcp__corp-code__add_issue_comment", "mcp__gh__create_pull_request",
                      "mcp__npx-code__create_issue", "mcp__hub__create_issue", "mcp__hub-tagged__create_issue",
+                     "mcp__hub-registry__create_issue", "mcp__hub-digest__create_issue",
                      "mcp__remote__create_issue", "mcp__ghe__add_issue_comment",
                      "mcp__github-mirror__add_issue_comment", "mcp__github__push_files"):
             with self.subTest(tool=tool):
