@@ -41,7 +41,6 @@ sandbox/smoke.py --scenarios sandbox/triggers/scenarios.yaml --base ../dev-tools
 ```
 
 A project's own pack, which replays its
-`pr-create`, and the `skill-feedback` previews, whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says. A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
 directory beside this file, given with `--scenarios`, with a README that lists its scenarios and
 what they need.
