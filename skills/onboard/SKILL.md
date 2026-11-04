@@ -169,7 +169,11 @@ for the repositories that use it; for Jira, the statuses and fields; for Conflue
   again. The default branch it names replaces the survey's,
   which is only the checkout's local `origin/HEAD` and can be stale; when the two differ, say so.
   Then the repositories that use this one, when the survey's `package` row names a package
-  (`<module>` is its name with `-` as `_`). Run each of these `search_code` queries once, never
+  (`<module>` is each name its `import names` row gives, queries 1 and 2 run for each). When that
+  row reads `conflict`, or gives a dotted namespace name, search nothing yet: put the names to the
+  person, recommending the table, or the names, that a `src/<name>/__init__.py` or
+  `<name>/__init__.py` in the checkout matches, with those paths as the evidence, and search the
+  names they confirm. Run each of these `search_code` queries once, never
   joined with `OR`, which GitHub's code search undercounts, paging each (`perPage` 100) until its
   `total_count` is read:
   1. `"from <module>" org:<owner> language:python`
@@ -178,14 +182,14 @@ for the repositories that use it; for Jira, the statuses and fields; for Conflue
   4. `"<package>" org:<owner> filename:requirements.txt`
 
   Every repository the hits name, apart from this one, is a candidate, and its evidence is the
-  number of distinct files the four queries' pages hold for it. Code search also matches inside
+  number of distinct files the queries' pages hold for it. Code search also matches inside
   longer names (`rad` finds `radiometer_cal`), so read each
   candidate's hit files with `get_file_contents`, in turn, until one names the module or package
   whole: an import of `<module>` followed by `.`, a space or the line's end, or a dependency entry
   of `<package>` (`-` and `_` alike) followed by no further letter, digit, `-` or `_`. A candidate
   none of whose files does is dropped, and the table names it with the longer name it matched.
-  Code search allows few calls a minute, so beside step 1's search for the standard, run no other
-  query. Otherwise a candidate is never dropped: when a query's pages hold fewer hits than its
+  Code search allows few calls a minute, and N import names make 2N+2 queries before paging, so
+  beside step 1's search for the standard, run no other query. Otherwise a candidate is never dropped: when a query's pages hold fewer hits than its
   `total_count`, or a call is refused, the counts are lower bounds and the list may be
   incomplete, which the table says. Write them to `.review/onboard/downstream.json` with
   the Write tool, as a JSON list of `{"repo": "<name>", "evidence": <count>}`, the name bare with no owner, most first, or skip
