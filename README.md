@@ -545,7 +545,9 @@ In this order:
 2. Run `/lasp-dev:onboard` and, at its last step, draft the first rules from the
    repository's merged pull request history (`/lasp-dev:onboard rules` goes straight there).
    It needs at least five merged pull requests on GitHub with review threads a person wrote, the
-   author's own included. It runs one agent per pull request with review threads, up to thirty.
+   author's own included. It reads every merged pull request in the whole history, or the last
+   six months it offers for a long history, and runs one agent per pull request with review
+   threads, up to thirty; onboard states those reads, agents and their rough cost before it asks.
 3. A person cuts the candidates in `.review/harvest/` down to the rules the team wants.
 4. Copy the PR template from the standard's `templates/<name>/`, the name the profile's `template` gives.
 5. Add `.review/` to `.gitignore`.
