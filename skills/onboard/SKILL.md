@@ -442,14 +442,15 @@ server, above, when step 2 already said it.
 Then say what a yes spends, from the counts, for the whole history and, when it was counted, the
 window:
 
-- **Reads**: about four GitHub reads per merged pull request in the range (`pr-reader`'s `get`,
-  reviews, review comments and conversation comments, more where a list pages); none when records
-  stand in.
+- **Reads**: about four GitHub reads per merged pull request in the range; none when records
+  stand in. The four are `pr-reader`'s `get`, reviews, review comments and conversation comments,
+  more where a list pages: the basis for the count, not text for the person.
 - **Agents**: one thread analyst per pull request with review threads a person wrote, up to
   thirty, then a rule probe for each example a candidate cites, often two per candidate.
-- **Cost**: what those counts come to at the rates measured on one run with Opus in November 2026,
-  about 4 cents per merged pull request read and about 15 cents per analyst or probe, saying that
-  the rates are from one run and change with the model.
+- **Cost**: the reads at about 4 cents per merged pull request, plus at most about 15 cents per
+  analyst, its share of the probes included, which at the cap of thirty is about $4 to $5. Say
+  that these rates were measured on one run in November 2026, the agents on Sonnet, and change
+  when the agents' model does.
 
 Then ask:
 
@@ -462,8 +463,10 @@ Then ask:
   so a yes that finds too few costs the reads stated and no more.
 - **Draft from the last six months**, offered when the window was counted: the same, with the
   window's first day as the harvest's first day. Recommended when the window holds thirty or more
-  merged pull requests, since the analysts stop at thirty and older history changes only which
-  thirty run. Say that it can leave out the pull request from before the review bot that the
+  merged pull requests, since the analysts stop at thirty and older history mostly changes which
+  thirty run. Say plainly that a window of thirty merged pull requests may yield fewer than thirty
+  analysts, since not every one has review threads a person wrote, and that the floor check after
+  the reads still stops the draft below five. Say that it can leave out the pull request from before the review bot that the
   sample asks for; the sample report then says so.
 - **Not yet**: nothing is spent; rerunning onboard, or `/lasp-dev:onboard rules`, offers it
   again. Recommended below the floor, or below five merged pull requests from
@@ -471,7 +474,7 @@ Then ask:
 - **Let's discuss**.
 
 A date the person names through "Other" is the harvest's first day, its reads and agents stated
-again before it starts.
+again, and asked again, before it starts.
 
 When the harvest's sample falls short of what `first-rules.md`'s "The sample" requires, say how,
 and ask again: **Draft anyway, marked** (each candidate the shortfall affects is marked),

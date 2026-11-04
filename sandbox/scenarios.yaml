@@ -97,7 +97,7 @@ scenarios:
       ends: success
       files: [".review/onboard/survey.md"]
       files_absent: ["[!.]*", ".[!r]*"]
-      says: ["In the repository", "\\?\\s*$"]
+      says: ["(?i)^[\\W\\d]*in (the|this) repository", Recommended]
 
   - id: no-standard
     repo: widgets
