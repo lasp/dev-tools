@@ -3,9 +3,10 @@ name: rebase
 description: >
   Rebases the current branch onto the fetched default branch, or its pull request's base,
   resolving the conflicts that have one objectively clear resolution and stopping to ask at any
-  where the two sides differ in intent or approach; pushes only on your yes. Use when asked to
-  "rebase this" or "rebase onto main". Not for the rebase pr-fix offers during a review round.
-argument-hint: "[target] [just show me] [push it]"
+  where the two sides differ in intent or approach. Never pushes: it prints the push command for
+  you to run. Use when asked to "rebase this" or "rebase onto main". Not for the rebase pr-fix
+  offers during a review round.
+argument-hint: "[target] [just show me]"
 metadata:
   author: lasp-dev
   version: 1.0.0
@@ -15,19 +16,20 @@ metadata:
 
 Bring the current branch up to date with its target, resolve what has one right answer, and
 stop at what needs the person's judgment. Invoking this skill is the authorization to rewrite
-the local branch; a push is not covered by it, except as step 6 says. Every question follows
+the local branch, and nothing more: **this skill never pushes**; step 6 prints the command for
+the person to run. Every question follows
 `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is
 `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
 
 ## Options
 
-The person's words override each default, at invocation or at any stop.
+The person's words override each default but the push, at invocation or at any stop.
 
 | Option | Default |
 |---|---|
 | Target | `<remote>/<default branch>`, fetched first; `<remote>/<base>` of the open pull request when the person picks it in step 2. A branch the person names, such as "main", means `<remote>/<name>` when the remote has it, fetched first; the local branch only when they say "local", or name `refs/heads/…` or a commit |
 | Conflicts | Resolve the clear ones, ask at the rest; "don't resolve anything" or "just show me" resolves none and shows each one as step 4 shows a conflict it asks about |
-| Push | None; step 6 offers it. "Push it" at invocation is the yes only for a rebase with no conflicts |
+| Push | Never, even when asked: step 6 prints the command for the person to run |
 
 ## 1. Check the Tree
 
@@ -36,11 +38,12 @@ rebase-apply` name directories that exist only during one. In it, `head-name` ho
 `orig-head` the recovery point and `onto` the target. Say so and ask: carry it on (Recommended,
 since the conflicts already resolved in it are kept), abort it, or stop. To carry it on, take the
 branch, recovery point and target from those files. HEAD is detached and holds only part of the
-branch, so step 2's upstream check names both: `git log --oneline --cherry-pick --right-only
-<recovery point>...<branch>@{u}`, and the lease is `git rev-parse <branch>@{u}`. Then step 3, then
-step 4 at the current stop. A stop with no conflicted file is an edit, a break or a failed exec,
-which the last line of `done` in that directory names: say which, and ask rather than continue.
-Never `git rebase --continue` over staged or unstaged changes this skill did not make.
+branch, so step 2's check of where the branch is published takes the branch from `head-name` and
+compares the recovery point in place of HEAD: `git log --oneline --cherry-pick --right-only
+<recovery point>...<push remote>/<dest>`. Then step 3, then step 4 at the current stop. A stop
+with no conflicted file is an edit, a break or a failed exec, which the last line of `done` in
+that directory names: say which, and ask rather than continue. Never `git rebase --continue` over
+staged or unstaged changes this skill did not make.
 
 Otherwise `git status -sb`, and stop, saying why and what the person can run, when:
 
@@ -62,12 +65,13 @@ which remote the target comes from. Find the default branch from `git symbolic-r
 refs/remotes/<remote>/HEAD`; when that is not set, ask rather than guess. A target the person
 named ends the search.
 
-With no target named, look for the branch's open pull request, reaching GitHub as
-`${CLAUDE_PLUGIN_ROOT}/skills/using-github/SKILL.md` sets out. When its base is not the default
-branch, ask which to rebase onto, the pull request's base first and recommended, since that is
-where the branch will merge, with the default branch and `Let's discuss`. When the server cannot
-be reached, say so as `${CLAUDE_PLUGIN_ROOT}/skills/work/servers.md` sets out, the pull request's
-base being what is lost, and go on with the default branch.
+Look for the branch's open pull request, reaching GitHub as
+`${CLAUDE_PLUGIN_ROOT}/skills/using-github/SKILL.md` sets out; its head is read below, where the
+branch is published. With no target named, when its base is not the default branch, ask which to
+rebase onto, the pull request's base first and recommended, since that is where the branch will
+merge, with the default branch and `Let's discuss`. When the server cannot be reached, say so as
+`${CLAUDE_PLUGIN_ROOT}/skills/work/servers.md` sets out, the pull request's base and head being
+what is lost, and go on with the default branch.
 
 `git fetch <remote> <branch>`; the target is `<remote>/<branch>` from here on. Skip the fetch when
 the person says not to fetch or the target is local. When a local target differs from its
@@ -75,14 +79,27 @@ the person says not to fetch or the target is local. When a local target differs
 When the fetch fails, show the error and ask whether to go on against `<remote>/<branch>` as last
 fetched, naming its commit and date, or stop.
 
-**The upstream check.** Read the branch's upstream with `git rev-parse --abbrev-ref
---symbolic-full-name @{u}`. An upstream that is the target, any remote's default branch, or a local
-branch (`git config branch.<branch>.remote` is `.`) is where the branch started, not where it is
-published; `git switch -c <branch> origin/main` sets one by default. Say so, and treat the branch
-as having no upstream, here and in step 6. When the branch has another upstream, fetch it too,
-unless the person said not to fetch, then `git log --oneline --cherry-pick --right-only
-HEAD...@{u}`. Any commit it lists is on the remote and not on this branch, which a rebase and a
-forced push would lose: stop and name them. Otherwise record `git rev-parse @{u}` for step 6.
+**Where the branch is published.** Step 6's command pushes to one destination, `<dest>` on
+`<push remote>`, chosen here from two cases, in order:
+
+- `git config branch.<branch>.merge` is `refs/heads/<branch>`: `<dest>` is `<branch>`, on the
+  first remote set of `branch.<branch>.pushRemote`, `remote.pushDefault` and
+  `branch.<branch>.remote`.
+- The branch's open pull request was found: `<dest>` is its head ref, on the remote whose URL
+  (`git remote -v`) names the head's repository. When no remote does, say so; step 6 prints no
+  command.
+
+Otherwise `<dest>` is `<branch>`, on the first remote set of `branch.<branch>.pushRemote`,
+`remote.pushDefault` and `origin`. When the branch has an upstream (`git rev-parse --abbrev-ref
+--symbolic-full-name @{u}`), say that it is set aside and why: it names another branch, which is
+where the branch started or what it follows, not where it is published, as `git switch -c
+<branch> origin/main` sets by default. When `<dest>` is the target's branch or any remote's default
+branch (`git symbolic-ref refs/remotes/<remote>/HEAD`), say so; step 6 prints no command.
+
+When `<push remote>/<dest>` exists, fetch it, unless the person said not to fetch, then `git log
+--oneline --cherry-pick --right-only HEAD...<push remote>/<dest>`. Any commit it lists is on the
+remote and not on this branch, which a rebase and a forced push would lose: stop and name them.
+Otherwise record `git rev-parse <push remote>/<dest>` as the lease for step 6.
 
 Say the target, how far behind it the branch is (`git rev-list --count HEAD..<target>`), and
 how many of the branch's commits will be replayed. When the branch is not behind, say so and
@@ -131,10 +148,11 @@ conflict you are unsure of, and always a binary file, a lockfile (`uv.lock`, `po
 rather than merged, a file one side modified and the other deleted, and a file both sides added.
 Resolve the clear hunks in a file first, then ask about the rest of that file in one question:
 per conflict, the file and lines, both sides as short excerpts, what each side's commit set out
-to do in its own words, and a recommendation with its evidence, or none and why. For a binary, modify/delete or add/add file, show each side's commit
-summary and each side's size or hash in place of excerpts. Offer: the recommended resolution,
-the other side's, `Abort the rebase`, and `Let's discuss`; a combination comes through "Other".
-Leave the rebase paused while the person decides; the conflict markers stay until they answer.
+to do in its own words, and a recommendation with its evidence, or none and why. For a binary,
+modify/delete or add/add file, show each side's commit summary and each side's size or hash in
+place of excerpts. Offer: the recommended resolution, the other side's, `Abort the rebase`, and
+`Let's discuss`; a combination comes through "Other". Leave the rebase paused while the person
+decides; the conflict markers stay until they answer.
 
 Resolve a conflicted text file hunk by hunk. Take a whole file from one side only for a binary,
 modify/delete or add/add conflict, or when the person says to, by naming its commit: `git checkout
@@ -156,31 +174,27 @@ When the rebase completes and any conflict was resolved, run the test command on
 is one. A failure is reported with the resolution most likely behind it; ask whether to fix it,
 undo the rebase (`git reset --hard <recovery point>`, named in the question), or leave it.
 
-## 6. Report and Offer the Push
+## 6. Report and Print the Push
 
 Say the target and its commit, how many commits were replayed, and each conflict: the file, what
 each side did, and whether you resolved it, and how, or the person chose. Then whether the test
 command ran and passed. Name the recovery point: `git reset --hard <sha>` returns the branch to
 where it was, and `git reflog` holds it after that.
 
-A rebase rewrites the branch's commits, so when the branch has an upstream its next push is a
-force-push, to the upstream's remote and branch: `git config branch.<branch>.remote` and
-`branch.<branch>.merge`. **Never push on your own.** "Push it" at invocation is the yes when the
-rebase met no conflict; otherwise ask once, here, naming the command and each conflict you
-resolved: `Leave it local` (Recommended), the person reviewing the result first; `Push with git
-push --force-with-lease=<upstream branch>:<recorded sha> <remote> HEAD:<upstream branch>`, which
-refuses when the remote branch is no longer at the commit step 2 recorded; or `Let's discuss`.
-Never plain `--force` or a bare `--force-with-lease`. A branch with no upstream, or one step 2 set
-aside, pushes with `git push -u origin <branch>`, the local branch's own name, asked the same way.
-Where the repository's instructions forbid an agent's push, print the command instead, as
-`using-github`'s "Pushing" says.
+**This skill never pushes**, whatever the person says; asked to, say so and print the command. A
+rebase rewrites the branch's commits, so print the one command that publishes them, always with
+an explicit destination, which no `push.default` or push refspec can redirect:
 
-**Before any push, or printing one, check where it lands**: the branch after `HEAD:`, or
-`<branch>` itself. When that is the target's branch or any remote's default branch, stop and push
-nothing, whatever the person said at invocation, and say why.
+- when step 2 recorded a lease: `git push --force-with-lease=refs/heads/<dest>:<recorded sha>
+  <push remote> HEAD:refs/heads/<dest>`, which git refuses when the remote branch has moved since;
+- otherwise: `git push -u <push remote> HEAD:refs/heads/<dest>`, which also makes it the branch's
+  upstream.
 
-When the push is refused, because the lease no longer holds or, with no upstream,
-`<remote>/<branch>` already holds commits this branch lacks, someone pushed there since. Stop:
-fetch that branch, show the commits it holds that the branch did not (`git log --oneline
-<recovery point>..<remote>/<branch>`; against HEAD, the rebased commits would show too), and let
-the person choose how to reconcile. Never record a new lease, retry, or force on your own.
+Never print plain `--force`, a bare `--force-with-lease`, or a push without
+`HEAD:refs/heads/<dest>`. **Before printing, check the command's destination**: it is
+`refs/heads/<dest>` as step 2 chose it, and neither the target's branch nor any remote's default
+branch. When the check fails, print no command, and say why.
+
+With the command, tell the person: if git refuses it, someone pushed there since; run `git fetch
+<push remote> <dest>` and `git log --oneline <recovery point>..<push remote>/<dest>` and decide;
+do not force. Against HEAD, the rebased commits would show too.

@@ -449,7 +449,7 @@ The skills a person types, in the order they meet them:
 **Supporting**
 - `commit`: chooses what belongs in a commit and writes the message; never pushes.
 - `rebase`: rebases the branch onto its target, resolving the clear conflicts and asking at the
-  rest; pushes only on your yes.
+  rest; never pushes, and prints the push command for you to run.
 - `test-suite-review`: judges test changes for loosening, missed failure paths and factoring; reads
   only.
 - `downstream`: says which consuming repositories a change breaks, why a CI run went red, and which
@@ -489,7 +489,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `revise` | typed only | Monthly: prepare the revision report before the meeting, with `measures` adding tickets, escaped defects and build yield; a sweep of the window's merged diffs reports where they follow or break the rules and the documented practice; `apply` drafts what the group accepted; `correct`, between revisions, corrects something the shared standards got wrong, everywhere it is carried, while a disagreement with a rule goes through Disagree and the revision |
 | | `ticket-audit` | typed only | Sweeps across the project's Jira, written to `.review/audit/`, then the actions they propose applied in Jira through one write plan on your yes |
 | | `skill-feedback` | typed or asked | File a complaint about a skill or agent as a `skill-feedback` issue here, in your words, with the session's last turns attached when you choose, or a draft `revise` wrote for a procedure finding; you see the whole issue before your yes |
-| | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts with one objectively clear resolution and stop at any where the two sides differ in intent or approach, showing both with a recommendation; pushes only on your yes, with `--force-with-lease` pinned to the commit it fetched |
+| | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts with one objectively clear resolution and stop at any where the two sides differ in intent or approach, showing both with a recommendation; never pushes, and prints the push command, its destination explicit and any `--force-with-lease` pinned to the commit it fetched |
 
 `implement-change`, `commit`, `pr-create`, `pr-review` and `pr-fix` began from upstream and have
 since been rewritten; the rest were written here.
