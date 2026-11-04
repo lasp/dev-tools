@@ -29,7 +29,7 @@ bare() {
   mkdir "$d/standards"
   printf "ticket:\n  pattern: 'PROJ-\\d+'\n  project: PROJ\nlint:\n  regex: 'pre-commit[[:space:]]+run'\ntypes:\n  regex: '(mypy|pyright)'\ngates:\n  tests: pytest\n" >"$d/standards/profile.yaml"
   git -C "$d" add standards
-  git -C "$d" -c user.name=t -c user.email=t@t commit -q -m init
+  git -C "$d" -c user.name=t -c user.email=t@t -c commit.gpgsign=false commit -q -m init
   printf '%s' "$d"
 }
 
@@ -263,7 +263,7 @@ check "a resume that goes back into the build records its gates once outcome.md 
 echo "Build: passed" >.review/build/outcome.md
 jq -cn '{session_id:"s1"}' | "$hook" summary
 git -c user.name=t -c user.email=t@t add change.txt
-git -c user.name=t -c user.email=t@t commit -q -m change
+git -c user.name=t -c user.email=t@t -c commit.gpgsign=false commit -q -m change
 before=$(events)
 prompt "/lasp-dev:implement-change PROJ-1" s1
 check "a resume on a clean tree after the commit keeps outcome.md and the block, appending nothing" \
