@@ -111,7 +111,7 @@ with the reason, and the repository checks go on.
 
 ### 2. Say
 
-In this order, and nothing else, short enough to read at a glance. Parts 2 to 6 each open with
+In this order, and nothing else, short enough to read at a glance. Parts 2 to 7 each open with
 their bold label; part 1 has none.
 
 1. **The opening line**, word for word and with no label: lasp-dev takes a ticket to a merged pull request: it drafts the
@@ -147,9 +147,34 @@ their bold label; part 1 has none.
    - otherwise, with a key on the branch, `/lasp-dev:work` with that key; with none, both
      `/lasp-dev:work <ticket key>`, for a ticket that exists, and
      `/lasp-dev:ticket-draft <description>`, for a new one.
-6. **Read more**, these lines as they are, with `${CLAUDE_PLUGIN_ROOT}` printed as an absolute path:
+6. **Skills**, this table as it is, its rows in this order. With a ledger in the standard, the
+   Standard row is `/lasp-dev:revise`, "Monthly revision: propose rules to add, reword or retire";
+   otherwise it is the row shown.
 
-   The skills, one line each, are in `${CLAUDE_PLUGIN_ROOT}/README.md`, "What is included".
+   | Group | Command | What it does |
+   | --- | --- | --- |
+   | Start | `/lasp-dev:onboard` | Survey this repository and record its settings, on your yes |
+   | Tickets | `/lasp-dev:ticket-draft` | Draft or refine a Jira ticket; writes to Jira on your yes |
+   | | `/lasp-dev:design-doc` | Turn your notes into a design doc for work across several tickets |
+   | | `/lasp-dev:ticket-audit` | Sweep the Jira project and apply the fixes you approve |
+   | Build | `/lasp-dev:work <ticket key>` | Run a ticket's next phase, from draft to merged pull request |
+   | | `/lasp-dev:implement-change` | Plan, build and verify one change |
+   | Pull requests | `/lasp-dev:pr-create` | Write the description and open a draft pull request |
+   | | `/lasp-dev:pr-review <PR>` | Review a pull request; posts one review on your yes |
+   | | `/lasp-dev:pr-fix <PR>` | Answer a review: fix, reply and push on your yes |
+   | Standard | `/lasp-dev:onboard rules` | Draft the first review rules from merged pull requests |
+   | Docs | `/lasp-dev:architecture-doc` | Write a Confluence page on a system as it stands |
+   | | `/lasp-dev:process-doc` | Write a Confluence page on how something is done |
+   | | `/lasp-dev:drawio` | Draw a diagram as draw.io XML |
+   | | `/lasp-dev:writing` | Review prose for structure and clarity |
+   | Supporting | `/lasp-dev:commit` | Choose what to commit and write the message; never pushes |
+   | | `/lasp-dev:test-suite-review` | Judge test changes; reads only |
+   | | `/lasp-dev:downstream` | Say which consuming repositories a change breaks |
+   | | `/lasp-dev:skill-feedback` | Report a problem with a skill; files on your yes |
+
+7. **Read more**, these lines as they are, with `${CLAUDE_PLUGIN_ROOT}` printed as an absolute path:
+
+   Each skill in a line, with its options: `${CLAUDE_PLUGIN_ROOT}/README.md`, "What is included".
    How the workflow goes: `${CLAUDE_PLUGIN_ROOT}/GUIDE.md`.
    `/lasp-dev:quickstart <question>` answers a question about the plugin.
    What your agents can reach, and what they do under your credentials, is your responsibility:
