@@ -76,6 +76,9 @@ _2026-10 · **established** · source: fix#6_
 | --- | --- | --- |
 | T-001 | `obsid` | observation ID |
 | T-002 | `apid` | — |
+| T-003 | `x` | - |
+| T-004 | `y` |  |
+| T-005 | `flags` | `a \| b`, either |
 """
 
 EXPECTED = [
@@ -91,9 +94,12 @@ EXPECTED = [
     "  D-004 · Moved to `D-009` (2026-09-23) · moved",
     "  D-005 · A status with a suffix · provisional",
     "  D-006 · Retired files are archived, not deleted · established",
-    "Terminology, from example/standard/standards/terminology.md: 2 terms",
+    "Terminology, from example/standard/standards/terminology.md: 5 terms",
     "  T-001 · `obsid`: observation ID",
     "  T-002 · `apid`",
+    "  T-003 · `x`",
+    "  T-004 · `y`",
+    "  T-005 · `flags`: `a \\| b`, either",
 ]
 
 
@@ -107,6 +113,10 @@ def run(argv, stdin=""):
 class Render(unittest.TestCase):
     def test_each_rule_and_decision_gets_its_number_title_status_and_source(self):
         self.assertEqual(standard_index.render(ASSEMBLED).splitlines(), EXPECTED)
+
+    def test_a_two_column_terminology_table_lists_the_code_name_alone(self):
+        text = "# own/standards/terminology.md\n\n| ID | Code name |\n| --- | --- |\n| T-001 | `obsid` |\n"
+        self.assertIn("  T-001 · `obsid`\n", standard_index.render(text))
 
     def test_a_decision_status_agrees_with_rule_lint(self):
         rule_lint = standard_index.rule_lint

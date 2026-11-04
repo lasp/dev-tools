@@ -22,8 +22,9 @@ compares a rule's against; without one, `retired` for a heading opening `retired
 which has already left out the blocks tagged for other repositories. Lines inside a code fence are
 not read, and each section starts outside one. A section with no entries prints its heading line
 and `  none`. A term's line carries its table row's third column, the names it is also called,
-after a colon, and leaves it out when that cell is empty or a dash. A context entry's title is its file's first `# ` heading, its file name otherwise;
-README.md is not an entry, and a directory that does not exist prints `Context: no <dir>`.
+after a colon, and leaves it out when that cell is empty or a dash; an escaped `\\|` stays in its
+cell. A context entry's title is its file's first `# ` heading, its file name otherwise; README.md
+is not an entry, and a directory that does not exist prints `Context: no <dir>`.
 
 A source line ending `@none` is a standard the person chose not to read, with `git config
 lasp-dev.standard none`: it prints `Standard: <owner>/<repo>, not read` and the command that
@@ -44,7 +45,7 @@ from pathlib import Path
 
 SECTION = re.compile(r"^# (.+/(review-contract|review-rules|decisions|terminology)\.md)\s*$")
 DECISION = re.compile(r"^### (D-\d+)\b[ \t]*(?:·[ \t]*)?(.*?)\s*$")
-TERM = re.compile(r"^\|\s*(T-\d+)\s*\|\s*(.*?)\s*\|(?:\s*(.*?)\s*\|)?")
+TERM = re.compile(r"^\|\s*(T-\d+)\s*\|\s*((?:\\\||[^|])*?)\s*\|(?:\s*((?:\\\||[^|])*?)\s*\|)?")
 REPOS = re.compile(r"^repos:\s*\[(.*)\]\s*$")
 FENCE = re.compile(r"^(`{3,}|~{3,})")
 
@@ -148,7 +149,7 @@ def render(text: str, source: str = "", contexts: list[Path] | None = None) -> s
         else:
             terms = [m for m in (TERM.match(x) for x in body.splitlines()) if m]
             out.append(f"Terminology, from {path}: {len(terms)} term{'' if len(terms) == 1 else 's'}")
-            out.extend(f"  {m.group(1)} · {m.group(2)}" + (f": {m.group(3)}" if m.group(3) not in (None, "", "—", "-") else "")
+            out.extend(f"  {m.group(1)} · {m.group(2)}" + (f": {m.group(3)}" if m.group(3) not in (None, "", "—", "–", "-") else "")
                        for m in terms)
     for directory in contexts or []:
         out.extend(context_lines(directory))
