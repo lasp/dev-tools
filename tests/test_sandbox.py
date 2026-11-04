@@ -175,6 +175,14 @@ class Sandbox(unittest.TestCase):
         self.assertTrue(summary["must_not_run"][0].startswith("Bash(claude *): "))
         self.assertEqual(summary["denials"], [])
 
+    def test_a_denied_use_of_a_must_not_try_pattern_is_a_hit(self):
+        scenario = {**self.quickstart, "must_not_run": [], "must_not_try": ["Bash(claude *)"]}
+        summary = run.summarize(fixture(), scenario, [])
+        self.assertEqual(len(summary["denials"]), 1)
+        self.assertEqual(len(summary["must_not_run"]), 1)
+        self.assertTrue(summary["must_not_run"][0].startswith("Bash(claude *): "))
+        self.assertIn("ran Bash(claude *): ", run.check(summary, scenario))
+
     def test_a_bash_rule_matches_each_command_of_a_compound_one(self):
         def bash(command):
             return {"name": "Bash", "input": {"command": command}}

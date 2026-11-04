@@ -51,7 +51,9 @@ that absence. --budget caps each turn, in dollars.
 The report, printed and written to <sandbox>/runs/<scenario>/report.md, is one row per run, then
 the scenario's `look_at`, then each run's last message. --check adds a column holding each run's
 summary to the scenario's `expect` block, `must_not_run` and `verify`, and exits 1 when any run
-fails it. `expect`'s `never_anywhere` lists canary strings a run must carry nowhere: not in any
+fails it. `must_not_run` counts only a use the settings let run, since a scenario may expect a
+denial; `must_not_try` counts a denied use too, for a command the sandbox denies but the run must
+not even try, such as a push. `expect`'s `never_anywhere` lists canary strings a run must carry nowhere: not in any
 reply text or tool input of the main session, in any turn, nor in a file the run changed or made
 or a commit it added, checked at the end of each turn; with `through_turn: N` beside its `tokens`,
 only turns 1 to N are held to it, for a scenario whose later turn is cleared to use them. What the
@@ -449,6 +451,7 @@ def summarize(evs: list[dict], scenario: dict, files: list[str]) -> dict:
     ends = results(evs)
     last = ends[-1] if ends else {}
     denials = {d.get("tool_use_id"): d for r in ends for d in r.get("permission_denials", [])}
+    tried = scenario.get("must_not_try", [])
     uses = tool_uses(evs)
     agents, mcp = {}, {}
     for use in uses:
@@ -464,8 +467,8 @@ def summarize(evs: list[dict], scenario: dict, files: list[str]) -> dict:
         "files": files,
         "mcp": mcp,
         "denials": [f"{d.get('tool_name')}: {argument({'input': d.get('tool_input', {})})}" for d in denials.values()],
-        "must_not_run": [f"{rule}: {argument(u)}" for u in uses if u.get("id") not in denials
-                         for rule in scenario.get("must_not_run", []) if matches(rule, u)],
+        "must_not_run": [f"{rule}: {argument(u)}" for u in uses for rule in scenario.get("must_not_run", []) + tried
+                         if matches(rule, u) and (rule in tried or u.get("id") not in denials)],
         "subtype": last.get("subtype", "no result event"),
         "is_error": bool(last.get("is_error", True)),
         "cost_usd": round(last.get("total_cost_usd", 0.0), 4),
