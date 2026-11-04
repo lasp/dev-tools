@@ -28,8 +28,12 @@ What the hook scans:
   on, reviewed, merged, closed or reopened; a gist, release or repository created or edited; or
   `gh api` with fields or a body): the command's text and the
   files it sends (`--body-file`, `--notes-file`, `-F`, `--input`, `field=@file`, a gist's files).
-- Any tool of a GitHub server (a server whose name holds `github`) but a read, and any Jira or
-  Confluence tool but a read: every string in the call's input, named by its field.
+- A server tool but a read, read as `server_write` says: every string in the call's input, named
+  by its field. A tool named `jira_*` or `confluence_*` is scanned, as is a tool of a server whose
+  name holds `github` or whose configuration in `.claude.json` or `.mcp.json` shows GitHub's or
+  Atlassian's, and a finding in it is denied. A tool of a server with no configuration there, such
+  as a claude.ai connector, a plugin's server or one `--mcp-config` names, is scanned too, and a
+  finding in it is asked about. A server whose configuration shows neither kind is not scanned.
 
 Untracked files over 1 MB are taken for data and skipped. The scan stops at its own budget, well
 inside the hook's 5 s timeout, since a hook that times out lets the call through; past it, the
@@ -37,7 +41,8 @@ hook asks.
 
 Exit codes, for `files` and `diff`: 0 nothing found, 1 a finding, 2 the scan could not run (a file
 unreadable, git failing). `hook` always exits 0 and decides in its output:
-- `deny` when what the call would carry holds a finding, naming where and what kind;
+- `deny` when what the call would carry holds a finding, naming where and what kind, but `ask`
+  for one in the input of a server of unknown kind;
 - `ask` when it cannot scan (input it cannot parse, a repository it cannot resolve, git failing,
   the budget spent), saying so, so a broken scan stops for the person rather than passing a call
   nobody checked;
@@ -46,11 +51,13 @@ unreadable, git failing). `hook` always exits 0 and decides in its output:
 import collections
 import json
 import os
+import pathlib
 import re
 import shlex
 import subprocess
 import sys
 import time
+import urllib.parse
 
 PATTERNS = [
     ("private key", re.compile(r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----")),
@@ -76,7 +83,8 @@ PATTERNS = [
         r"\bBearer\s+(?=[A-Za-z0-9._~+/\-]*[0-9])(?=[A-Za-z0-9._~+/\-]*[A-Za-z])[A-Za-z0-9._~+/\-]{30,}=*")),
 ]
 
-# A tool of a GitHub or Atlassian server that only reads; every other tool of theirs is a write.
+# A server tool that only reads, a Jira or Confluence one by ATLASSIAN_READ and any other by
+# GITHUB_READ; every other server tool is a write.
 GITHUB_READ = re.compile(r"(?:get_|list_|search_)|.*_read$|run_secret_scanning$")
 ATLASSIAN_READ = re.compile(r"(?:jira|confluence)_(?:get_|search|list_|check_|download_|batch_get_)")
 
@@ -1004,13 +1012,91 @@ def decide(decision, reason):
         "hookEventName": "PreToolUse", "permissionDecision": decision, "permissionDecisionReason": reason}}))
 
 
-def is_write(tool):
+def server_config(name, project):
+    """The configuration Claude Code holds for MCP server `name`, from the first of: the local scope
+    in `.claude.json` for `project` or a parent, a `.mcp.json` in `project` or a parent, the user
+    scope in `.claude.json`. A key matches `name` once each character outside `[A-Za-z0-9_-]` is read
+    as `_`, as Claude Code names the server's tools. None when none of them defines it, when a file
+    that exists cannot be read or nests too deep to parse, or when the entry is not an object, its
+    `command` or `url` not a string, or its `args` not a list of strings."""
+    home = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~")
+    places = [os.path.abspath(project), *map(str, pathlib.Path(os.path.abspath(project)).parents)]
+
+    def load(path):
+        if not os.path.exists(path):
+            return {}
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            raise ValueError(path)
+        return data
+
+    try:
+        user = load(os.path.join(home, ".claude.json"))
+        projects = user.get("projects") or {}
+        scopes = [(projects.get(d) or {}).get("mcpServers") or {} for d in places]
+        scopes += [load(os.path.join(d, ".mcp.json")).get("mcpServers") or {} for d in places]
+        scopes.append(user.get("mcpServers") or {})
+        found = next((v for s in scopes if isinstance(s, dict) for k, v in s.items()
+                      if re.sub(r"[^A-Za-z0-9_-]", "_", k) == name), None)
+    except (OSError, ValueError, AttributeError, RecursionError):
+        return None
+    if (not isinstance(found, dict) or not all(isinstance(found.get(k, ""), str) for k in ("command", "url"))
+            or not isinstance(found.get("args", []), list) or not all(isinstance(a, str) for a in found.get("args", []))):
+        return None
+    return found
+
+
+def url_host(text):
+    try:
+        return urllib.parse.urlparse(text).hostname or ""
+    except ValueError:
+        return ""
+
+
+def server_kind(server):
+    """`atlassian` for an mcp-atlassian command or a server at `mcp.atlassian.com`; `github` for a
+    server at `api.githubcopilot.com`, a `copilot-api.` host or a `.ghe.com` host, or one whose
+    command or an argument names `github-mcp-server` or `@modelcontextprotocol/server-github`, or
+    whose argument is the image `mcp/github`, with or without a registry, a tag or a digest;
+    otherwise None. A host is read from `url` and from each argument that is an http(s) URL, as
+    `mcp-remote` takes one. The sandbox's classifier covers the forms `sandbox.sh` writes, a subset
+    of these, and must not disagree with this one on them."""
+    words = [str(x) for x in [server.get("command"), *(server.get("args") or [])]]
+    hosts = [url_host(str(server.get("url") or ""))]
+    hosts += [url_host(w) for w in words if re.match(r"https?://", w, re.I)]
+    if "mcp.atlassian.com" in hosts or any("mcp-atlassian" in w for w in words):
+        return "atlassian"
+    if (any(h == "api.githubcopilot.com" or h.startswith("copilot-api.") or h.endswith(".ghe.com") for h in hosts)
+            or any("github-mcp-server" in w or "@modelcontextprotocol/server-github" in w
+                   or re.fullmatch(r"(?:[\w.-]+(?::\d+)?/)?mcp/github(?::[\w.-]+)?(?:@sha256:[0-9a-f]{64})?", w) for w in words)):
+        return "github"
+    return None
+
+
+def server_write(tool, project):
+    """What a finding in the input of server tool `tool` gets, or None when its input is not scanned.
+    `deny` for a write of a GitHub or Atlassian server: a Jira or Confluence tool but a read, or any
+    other tool but a read of a server whose name holds `github` or whose configuration shows GitHub's
+    or Atlassian's. `ask` for a write of a server whose configuration cannot be found or read, or
+    shows neither kind but holds a `${` Claude Code would expand in a field server_kind reads, so a
+    server of unknown kind is never passed as safe. None for a read, and for a server whose
+    configuration shows neither kind. `project` is where the configuration lookup starts."""
     if not tool.startswith("mcp__") or "__" not in tool[5:]:
-        return False
+        return None
     server, op = tool[5:].rsplit("__", 1)
     if re.match(r"(?:jira|confluence)_", op):
-        return not ATLASSIAN_READ.match(op)
-    return "github" in server.lower() and not GITHUB_READ.match(op)
+        return None if ATLASSIAN_READ.match(op) else "deny"
+    if GITHUB_READ.match(op):
+        return None
+    if "github" in server.lower():
+        return "deny"
+    config = server_config(server, project)
+    if config is None:
+        return "ask"
+    if server_kind(config) is not None:
+        return "deny"
+    return "ask" if "${" in json.dumps([config.get(k) for k in ("url", "command", "args")]) else None
 
 
 def hook(payload, budget=None):
@@ -1044,8 +1130,8 @@ def hook(payload, budget=None):
         if commit is None and sent is None:
             return
         found = (commit or []) + (sent or [])
-        what = "This command"
-    elif is_write(tool):
+        what, decision, elsewhere = "This command", "deny", "commit or post it outside Claude"
+    elif (decision := server_write(tool, os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())):
         op = tool.rsplit("__", 1)[-1]
         try:
             found = []
@@ -1056,14 +1142,20 @@ def hook(payload, budget=None):
             decide("ask", f"The secret scan could not check this {op} call: {e}. "
                           "Allow it only if you know it carries no credential.")
             return
-        what = f"This {op} call"
+        what, elsewhere = f"This {op} call", "send it outside Claude"
     else:
         return
-    if found:
-        listed = "; ".join(found[:10]) + (f"; and {len(found) - 10} more" if len(found) > 10 else "")
-        decide("deny", f"{what} would carry what looks like a credential: {listed}. Remove it, and "
-                       "rotate it if it was ever pushed or posted. If it is not a credential, the "
-                       "person can commit or post it outside Claude.")
+    if not found:
+        return
+    listed = "; ".join(found[:10]) + (f"; and {len(found) - 10} more" if len(found) > 10 else "")
+    if decision == "ask":
+        decide("ask", f"{what} would carry what looks like a credential: {listed}. The secret scan "
+                      "cannot tell what kind of server this is, so it asks rather than denies. Allow "
+                      "it only if this is not a credential or the server is meant to receive it.")
+        return
+    decide("deny", f"{what} would carry what looks like a credential: {listed}. Remove it, and "
+                   "rotate it if it was ever pushed or posted. If it is not a credential, the "
+                   f"person can {elsewhere}.")
 
 
 def main(argv):

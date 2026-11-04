@@ -49,7 +49,7 @@
         ]
       },
       {
-        "matcher": "Bash|mcp__.*github.*__.*|mcp__.*__(jira|confluence)_.*",
+        "matcher": "Bash|mcp__.*",
         "hooks": [
           {
             "type": "command",
