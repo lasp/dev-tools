@@ -453,6 +453,9 @@ def summarize(evs: list[dict], scenario: dict, files: list[str]) -> dict:
     denials = {d.get("tool_use_id"): d for r in ends for d in r.get("permission_denials", [])}
     tried = scenario.get("must_not_try", [])
     uses = tool_uses(evs)
+    # One hit per tool use: the first rule that holds it.
+    hits = [next((f"{r}: {argument(u)}" for r in scenario.get("must_not_run", []) + tried
+                  if matches(r, u) and (r in tried or u.get("id") not in denials)), None) for u in uses]
     agents, mcp = {}, {}
     for use in uses:
         if use["name"] in ("Agent", "Task"):
@@ -467,8 +470,7 @@ def summarize(evs: list[dict], scenario: dict, files: list[str]) -> dict:
         "files": files,
         "mcp": mcp,
         "denials": [f"{d.get('tool_name')}: {argument({'input': d.get('tool_input', {})})}" for d in denials.values()],
-        "must_not_run": [f"{rule}: {argument(u)}" for u in uses for rule in scenario.get("must_not_run", []) + tried
-                         if matches(rule, u) and (rule in tried or u.get("id") not in denials)],
+        "must_not_run": [h for h in hits if h],
         "subtype": last.get("subtype", "no result event"),
         "is_error": bool(last.get("is_error", True)),
         "cost_usd": round(last.get("total_cost_usd", 0.0), 4),

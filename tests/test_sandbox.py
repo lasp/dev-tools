@@ -139,7 +139,7 @@ class Sandbox(unittest.TestCase):
 
     def test_every_generic_scenario_is_well_formed_and_runs_in_the_fixture(self):
         known = run.scenarios()
-        self.assertEqual(len(known), 20)
+        self.assertEqual(len(known), 21)
         well_formed(self, known, {"widgets"})
 
     def test_every_fixture_a_scenario_copies_is_in_the_pack(self):
@@ -182,6 +182,14 @@ class Sandbox(unittest.TestCase):
         self.assertEqual(len(summary["must_not_run"]), 1)
         self.assertTrue(summary["must_not_run"][0].startswith("Bash(claude *): "))
         self.assertIn("ran Bash(claude *): ", run.check(summary, scenario))
+
+    def test_a_use_two_rules_hold_is_one_hit(self):
+        events = fixture()
+        events[-1]["permission_denials"] = []
+        scenario = {**self.quickstart, "must_not_run": ["Bash(claude *)", "Bash(*plugin*)"], "must_not_try": ["Bash(claude *)"]}
+        summary = run.summarize(events, scenario, [])
+        self.assertEqual(len(summary["must_not_run"]), 1)
+        self.assertTrue(summary["must_not_run"][0].startswith("Bash(claude *): "))
 
     def test_a_bash_rule_matches_each_command_of_a_compound_one(self):
         def bash(command):
