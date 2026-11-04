@@ -368,7 +368,7 @@ scenarios:
       paused.
     turns:
       - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline.
-    must_not_run: ["Bash(git push*)", "Bash(*git rebase --continue*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(git stash*)", "Bash(git reset*)", "mcp__*"]
+    must_not_run: ["Bash(git push*)", "Bash(*git rebase --continue*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(git stash*)", "Bash(*git reset*)", "mcp__*"]
     verify:
       - test -d "$(git rev-parse --git-path rebase-merge)"
       - git ls-files -u | grep -q src/widgets/inventory.py
@@ -378,5 +378,30 @@ scenarios:
       ValueError for a part listed twice beside the branch's adding the counts, recommends one with
       its evidence or says why it cannot, and asks, offering to abort. The rebase is left paused
       with the conflict unresolved; nothing is continued, skipped or pushed.
+    expect:
+      ends: success
+
+  - id: rebase-remote-ahead
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git switch -q -C widgets-shared main~1
+      - "perl -pi -e 's/sum\\(w\\.count for w in widgets\\)/sum(widget.count for widget in widgets)/' src/widgets/inventory.py"
+      - git commit -qam "Name the loop variable in total"
+      - git push -q -f -u origin widgets-shared
+      - 'c=$(git commit-tree "HEAD^{tree}" -p HEAD -m "A teammate pushed this") && git push -q -f origin "$c:refs/heads/widgets-shared" && git update-ref refs/remotes/origin/widgets-shared "$c"'
+    origin: "#2"
+    why: >-
+      A branch whose remote copy holds a commit a teammate pushed after the last fetch, so rebase
+      stops before rebasing and names that commit, which a rebase and a forced push would lose.
+    turns:
+      - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline.
+    must_not_run: ["Bash(git push*)", "Bash(*git rebase*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
+    verify:
+      - test "$(git rev-parse HEAD)" = "$(git rev-parse origin/widgets-shared~1)"
+      - test ! -d "$(git rev-parse --git-path rebase-merge)"
+    look_at: >-
+      rebase finds that origin/widgets-shared holds one commit the branch lacks, "A teammate pushed
+      this", names it, and stops before rebasing, with the branch where it was and nothing pushed.
     expect:
       ends: success
