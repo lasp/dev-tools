@@ -100,10 +100,10 @@ the pull request) and that the branch, build and review loop run without them un
 them.
 
 **Run from the repository being changed.** When the change is to another repository, say so: the
-hooks record under this session's `.review/`, so the Already checked block would read zeros and the
-other repository would show a lock it does not hold. Ask: **Stop**, to start a session in that
-repository (recommended); **Go on unrecorded**, where `pr-create` writes the block's measured lines
-as `not recorded`; or **Let's discuss**. The build hook refuses the build's edits in each other
+hooks record under this session's `.review/`, so the Already checked block would count the other
+repository's work as this one's. Ask: **Stop**, to start a session in that repository
+(recommended); **Go on unrecorded**, where the block's gates and tokens read `not recorded` once an
+edit there is made; or **Let's discuss**. The build hook refuses the build's edits in each other
 repository and asks the same; on **Go on unrecorded**, make the refused edit again, and it and
 every later edit there are allowed.
 

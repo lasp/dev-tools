@@ -99,7 +99,8 @@ the default profile's, no profile read`, `the repository's own, else the default
 the repository does not state` when the repository's profile could not be read, it has no
 standard, its profile and the default values are both refused, or a gate pattern reads
 `not yet recorded` (version 9), and with the wall clock otherwise (version 7). A build whose session made or
-tried a Write, Edit or NotebookEdit in another repository while it was recorded reads `Gates: not
+tried a Write, Edit or NotebookEdit in another repository while it was recorded, with the session's
+working directory still in the build's repository, reads `Gates: not
 recorded, this session also <edits> while its build was recorded here`, where `<edits>` joins with
 ` and ` one `edited <repository>`, or `tried to edit <repository>` when every attempt there was
 refused, per repository, named by its top-level directory's name and never by a path or remote,

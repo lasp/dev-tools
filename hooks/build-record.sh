@@ -320,14 +320,14 @@ elsewhere() {
   marks=$(marks_of "$2")
   printf '%s\n' "$marks" | grep -qx u && return 1
   if holds_lock "$1" && ! printf '%s\n' "$marks" | grep -qxF "r $f" &&
-    { jq -cn --arg t "$(now)" --arg r "${2##*/}" --arg p "$2" --arg f "$f" \
+    { jq -cn --arg t "$(now)" --arg r "$(printf %s "${2##*/}" | tr -c 'A-Za-z0-9._-' _)" --arg p "$2" --arg f "$f" \
       '{t:$t,kind:"elsewhere",repo:$r,top:$p,file:$f,refused:true}' >>"$log"; } 2>/dev/null &&
     marks_of "$2" | grep -qxF "r $f"; then
     jq -cn --arg c "This session holds \`.review/lock\` in $top for $(jq -r .skill .review/lock) and records its build there, but this edit is in $2, so the build's gates and tokens would count work done in another repository. Its summary now records them as not recorded. Do not go on yet: ask the person in one AskUserQuestion whether to Stop and start a session in $2 (recommended), Go on unrecorded, or discuss it. On Go on unrecorded, make this same edit again: it is not refused a second time, and later edits there are allowed." \
       '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $c}}'
     return 0
   fi
-  append "$(jq -cn --arg t "$(now)" --arg r "${2##*/}" --arg p "$2" '{t:$t,kind:"elsewhere",repo:$r,top:$p}')"
+  append "$(jq -cn --arg t "$(now)" --arg r "$(printf %s "${2##*/}" | tr -c 'A-Za-z0-9._-' _)" --arg p "$2" '{t:$t,kind:"elsewhere",repo:$r,top:$p}')"
   return 1
 }
 

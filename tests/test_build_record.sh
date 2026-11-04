@@ -592,6 +592,14 @@ check "a repository is named by its directory alone, never a remote's credential
   '! grep -qE "ghp_SECRET|tok@|alicex9|ownerlogin|owner/name|github" .review/build/already-checked.md && ! printf "%s" "$tops" | grep -F -f - .review/build/already-checked.md >/dev/null && printf "%s" "$tops" | while read -r t; do grep -qF "tried to edit ${t##*/}" .review/build/already-checked.md || exit 1; done'
 
 e=$(scratch) && made+=("$e") && cd "$e" || exit 1
+jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
+q=$(mktemp -d) && made+=("$q") && git init -q "$q/odd <name>" 2>/dev/null
+write_at "$e" "$q/odd <name>/x.py" >/dev/null
+jq -cn --arg c "$e" '{session_id:"s1", cwd:$c}' | "$hook" summary
+check "a repository's name keeps only letters, digits, dot, dash and underscore in the block" \
+  'grep -qx "Gates: not recorded, this session also tried to edit odd__name_ while its build was recorded here" .review/build/already-checked.md'
+
+e=$(scratch) && made+=("$e") && cd "$e" || exit 1
 q=$(mktemp -d) && made+=("$q") && git init -q "$q/one/same" && git init -q "$q/two/same"
 jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
 write_at "$e" "$q/one/same/x.py" >/dev/null
