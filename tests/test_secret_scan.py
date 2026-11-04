@@ -543,8 +543,22 @@ class Gh(unittest.TestCase):
 
 
 class Writes(unittest.TestCase):
+    """A server's kind comes from its configuration in `.mcp.json` or `.claude.json`, here in a
+    project directory and a config directory of the test's own."""
+
+    def setUp(self):
+        self.project = Path(tempfile.mkdtemp()).resolve()
+        self.config = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.project)
+        self.addCleanup(shutil.rmtree, self.config)
+        self.servers({"other": {"command": "other-mcp"}})
+
+    def servers(self, servers):
+        (self.project / ".mcp.json").write_text(json.dumps({"mcpServers": servers}))
+
     def call(self, tool, tool_input):
-        return run_gate(json.dumps({"tool_name": tool, "tool_input": tool_input, "cwd": "/"}))
+        return run_gate(json.dumps({"tool_name": tool, "tool_input": tool_input, "cwd": str(self.project)}),
+                        env={**os.environ, "CLAUDE_CONFIG_DIR": str(self.config)})
 
     def test_github_write_with_a_secret_is_denied_by_field(self):
         out = self.call("mcp__github-x__push_files",
@@ -563,6 +577,33 @@ class Writes(unittest.TestCase):
                      "mcp__other__create_thing"):
             with self.subTest(tool=tool):
                 self.assertIsNone(self.call(tool, body))
+
+    def test_a_github_server_is_told_by_what_it_is_not_its_name(self):
+        body = {"body": TOKEN}
+        self.servers({"corp-code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"},
+                      "gh": {"command": "docker", "args": ["run", "-i", "ghcr.io/github/github-mcp-server"]},
+                      "github-mirror": {"type": "http", "url": "https://code.example.org/mcp"}})
+        for tool in ("mcp__corp-code__add_issue_comment", "mcp__gh__create_pull_request"):
+            with self.subTest(tool=tool):
+                self.assertEqual(self.call(tool, body)["permissionDecision"], "deny")
+        self.assertIsNone(self.call("mcp__github-mirror__add_issue_comment", body))
+
+    def test_the_local_scope_wins_over_the_project_and_user_scopes(self):
+        elsewhere = {"type": "http", "url": "https://code.example.org/mcp"}
+        self.servers({"code": elsewhere})
+        (self.config / ".claude.json").write_text(json.dumps({
+            "mcpServers": {"code": elsewhere},
+            "projects": {str(self.project): {"mcpServers": {
+                "code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}}}}))
+        self.assertEqual(self.call("mcp__code__add_issue_comment", {"body": TOKEN})["permissionDecision"], "deny")
+
+    def test_a_server_of_unknown_kind_is_scanned(self):
+        body = {"body": TOKEN}
+        self.assertEqual(self.call("mcp__unconfigured__add_comment", body)["permissionDecision"], "deny")
+        self.servers({"vars": {"type": "http", "url": "${GITHUB_MCP_URL}"}})
+        self.assertEqual(self.call("mcp__vars__add_comment", body)["permissionDecision"], "deny")
+        (self.project / ".mcp.json").write_text("{not json")
+        self.assertEqual(self.call("mcp__other__create_thing", body)["permissionDecision"], "deny")
 
     def test_clean_github_write_passes(self):
         self.assertIsNone(self.call("mcp__github-x__add_issue_comment", {"body": "Looks good."}))
@@ -617,8 +658,8 @@ class Registration(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertTrue(m.match(tool))
 
-    def test_hooks_json_spares_other_servers(self):
-        self.assertFalse(self.matcher().match("mcp__spicedocs__get_page"))
+    def test_hooks_json_sends_it_a_server_whatever_its_name(self):
+        self.assertTrue(self.matcher().match("mcp__corp-code__create_pull_request"))
 
     def test_gate_is_executable(self):
         self.assertTrue(os.access(GATE, os.X_OK))

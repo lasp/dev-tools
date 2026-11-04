@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse on Bash and on the GitHub and Atlassian servers' tools, whatever the servers are named.
+# PreToolUse on Bash and on every server's tools, since a server's kind is not in its name.
 # scripts/secret_scan.py decides: a `git commit` or a `gh` write whose content holds what looks like
 # a credential, or a server write whose input holds one, is denied, naming where and what kind but
 # never the value; a call it cannot scan is asked about; every other call passes. With no python3,

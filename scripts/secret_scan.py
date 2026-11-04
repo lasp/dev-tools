@@ -28,8 +28,12 @@ What the hook scans:
   on, reviewed, merged, closed or reopened; a gist, release or repository created or edited; or
   `gh api` with fields or a body): the command's text and the
   files it sends (`--body-file`, `--notes-file`, `-F`, `--input`, `field=@file`, a gist's files).
-- Any tool of a GitHub server (a server whose name holds `github`) but a read, and any Jira or
-  Confluence tool but a read: every string in the call's input, named by its field.
+- Any server tool but a read, every string in the call's input, named by its field: a Jira or
+  Confluence tool's, and any other server's unless the configuration Claude Code holds for it
+  (`.claude.json` or `.mcp.json`) shows a server that is neither GitHub's nor Atlassian's. The kind
+  is told by what the server is, not by its name: GitHub's when its `url`'s host is
+  `api.githubcopilot.com` or its command or an argument names `github-mcp-server`, Atlassian's when
+  they name `mcp-atlassian`. A server whose configuration cannot be found or read is scanned.
 
 Untracked files over 1 MB are taken for data and skipped. The scan stops at its own budget, well
 inside the hook's 5 s timeout, since a hook that times out lets the call through; past it, the
@@ -46,11 +50,13 @@ unreadable, git failing). `hook` always exits 0 and decides in its output:
 import collections
 import json
 import os
+import pathlib
 import re
 import shlex
 import subprocess
 import sys
 import time
+import urllib.parse
 
 PATTERNS = [
     ("private key", re.compile(r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----")),
@@ -76,7 +82,8 @@ PATTERNS = [
         r"\bBearer\s+(?=[A-Za-z0-9._~+/\-]*[0-9])(?=[A-Za-z0-9._~+/\-]*[A-Za-z])[A-Za-z0-9._~+/\-]{30,}=*")),
 ]
 
-# A tool of a GitHub or Atlassian server that only reads; every other tool of theirs is a write.
+# A server tool that only reads, a Jira or Confluence one by ATLASSIAN_READ and any other by
+# GITHUB_READ; every other server tool is a write.
 GITHUB_READ = re.compile(r"(?:get_|list_|search_)|.*_read$|run_secret_scanning$")
 ATLASSIAN_READ = re.compile(r"(?:jira|confluence)_(?:get_|search|list_|check_|download_|batch_get_)")
 
@@ -1004,13 +1011,64 @@ def decide(decision, reason):
         "hookEventName": "PreToolUse", "permissionDecision": decision, "permissionDecisionReason": reason}}))
 
 
-def is_write(tool):
+def server_config(name, cwd):
+    """The configuration Claude Code holds for MCP server `name`, from the first of: the local scope
+    in `.claude.json` for `cwd` or a parent, a `.mcp.json` in `cwd` or a parent, the user scope in
+    `.claude.json`. None when none of them defines it, when a file that exists cannot be read, or
+    when the definition holds a `${` Claude Code would expand, since the kind cannot be told then."""
+    home = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~")
+    places = [os.path.abspath(cwd), *map(str, pathlib.Path(os.path.abspath(cwd)).parents)]
+
+    def load(path):
+        if not os.path.exists(path):
+            return {}
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            raise ValueError(path)
+        return data
+
+    try:
+        user = load(os.path.join(home, ".claude.json"))
+        projects = user.get("projects") or {}
+        scopes = [(projects.get(d) or {}).get("mcpServers") or {} for d in places]
+        scopes += [load(os.path.join(d, ".mcp.json")).get("mcpServers") or {} for d in places]
+        scopes.append(user.get("mcpServers") or {})
+        found = next((s[name] for s in scopes if name in s), None)
+    except (OSError, ValueError, AttributeError):
+        return None
+    if not isinstance(found, dict) or "${" in json.dumps(found):
+        return None
+    return found
+
+
+def server_kind(server):
+    """`atlassian` for an mcp-atlassian command, `github` for a server at `api.githubcopilot.com` or
+    one whose command or an argument names `github-mcp-server`, otherwise None. sandbox/run.py's
+    server_kind classifies the sandbox's servers by the same rules, and the two must agree."""
+    words = [str(x) for x in [server.get("command"), *(server.get("args") or [])]]
+    if any("mcp-atlassian" in w for w in words):
+        return "atlassian"
+    if (urllib.parse.urlparse(str(server.get("url") or "")).hostname == "api.githubcopilot.com"
+            or any("github-mcp-server" in w for w in words)):
+        return "github"
+    return None
+
+
+def is_write(tool, cwd):
+    """Whether `tool` is a server tool whose input is scanned: a Jira or Confluence tool but a read,
+    and any other server tool but a read unless its server's configuration shows a server that is
+    neither GitHub's nor Atlassian's. A server whose configuration cannot be found or read is
+    scanned, so a server of unknown kind is never passed as safe."""
     if not tool.startswith("mcp__") or "__" not in tool[5:]:
         return False
     server, op = tool[5:].rsplit("__", 1)
     if re.match(r"(?:jira|confluence)_", op):
         return not ATLASSIAN_READ.match(op)
-    return "github" in server.lower() and not GITHUB_READ.match(op)
+    if GITHUB_READ.match(op):
+        return False
+    config = server_config(server, cwd)
+    return config is None or server_kind(config) is not None
 
 
 def hook(payload, budget=None):
@@ -1045,7 +1103,7 @@ def hook(payload, budget=None):
             return
         found = (commit or []) + (sent or [])
         what = "This command"
-    elif is_write(tool):
+    elif is_write(tool, event.get("cwd") or os.getcwd()):
         op = tool.rsplit("__", 1)[-1]
         try:
             found = []

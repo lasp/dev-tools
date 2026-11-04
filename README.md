@@ -324,8 +324,10 @@ file or field, the line and the kind but never the value:
 - a `gh` command that creates, edits, comments on, reviews, merges, closes or reopens an issue or
   pull request, creates or edits a gist, release or repository, or `gh api` with fields or a body:
   its text and the files it sends;
-- any tool of a GitHub server (one whose name holds `github`) or of the Atlassian server but a
-  read: every string in its input.
+- any Jira or Confluence tool but a read, and any other server tool but a read unless the server's
+  configuration shows it is neither GitHub's nor Atlassian's, told by its URL or command rather
+  than its name, so a server whose configuration cannot be found is scanned: every string in its
+  input.
 
 It knows a fixed list of forms (`scripts/secret_scan.py`): private keys, AWS, GitHub, GitLab,
 Slack, Atlassian Cloud, Anthropic and Google keys, JSON web tokens, bearer headers and a value
