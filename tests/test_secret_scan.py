@@ -592,6 +592,24 @@ class Writes(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertEqual(self.call(tool, body)["permissionDecision"], "deny")
 
+    def test_a_variable_outside_the_fields_that_tell_the_kind_does_not_hide_it(self):
+        self.servers({"hosted": {"type": "http", "url": "https://api.githubcopilot.com/mcp/",
+                                 "headers": {"Authorization": "Bearer ${GITHUB_PAT}"}},
+                      "local": {"command": "docker", "args": ["run", "-i", "ghcr.io/github/github-mcp-server"],
+                                "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PAT}"}}})
+        for tool in ("mcp__hosted__add_issue_comment", "mcp__local__add_issue_comment"):
+            with self.subTest(tool=tool):
+                self.assertEqual(self.call(tool, {"body": TOKEN})["permissionDecision"], "deny")
+
+    def test_atlassian_s_hosted_server_is_atlassian_s(self):
+        self.servers({"rovo": {"type": "http", "url": "https://mcp.atlassian.com/v1/sse"}})
+        self.assertEqual(self.call("mcp__rovo__addCommentToJiraIssue", {"body": TOKEN})["permissionDecision"], "deny")
+
+    def test_a_key_is_matched_as_claude_code_names_its_tools(self):
+        self.servers({"corp.code host": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}})
+        self.assertEqual(self.call("mcp__corp_code_host__add_issue_comment", {"body": TOKEN})["permissionDecision"],
+                         "deny")
+
     def test_the_local_scope_wins_over_the_project_and_user_scopes(self):
         elsewhere = {"type": "http", "url": "https://code.example.org/mcp"}
         self.servers({"code": elsewhere})
@@ -666,6 +684,8 @@ class NoPython(unittest.TestCase):
         self.assertIsNone(self.gate("mcp__atl__jira_get_issue", {"issue_key": "X-1"}))
         self.assertIsNone(self.gate("mcp__github__get_me", {}))
         self.assertIsNone(self.gate("mcp__github__pull_request_read", {}))
+        self.assertIsNone(self.gate("mcp__claude-in-chrome__navigate", {"url": "x"}))
+        self.assertIsNone(self.gate("mcp__corp-code__add_issue_comment", {"body": "x"}))
 
 
 class Registration(unittest.TestCase):

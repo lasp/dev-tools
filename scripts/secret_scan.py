@@ -1015,8 +1015,10 @@ def decide(decision, reason):
 def server_config(name, cwd):
     """The configuration Claude Code holds for MCP server `name`, from the first of: the local scope
     in `.claude.json` for `cwd` or a parent, a `.mcp.json` in `cwd` or a parent, the user scope in
-    `.claude.json`. None when none of them defines it, when a file that exists cannot be read, or
-    when the definition holds a `${` Claude Code would expand, since the kind cannot be told then."""
+    `.claude.json`. A key matches `name` once each character outside `[A-Za-z0-9_-]` is read as `_`,
+    as Claude Code names the server's tools. None when none of them defines it, when a file that
+    exists cannot be read, or when a field server_kind reads holds a `${` Claude Code would expand,
+    since the kind cannot be told then."""
     home = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~")
     places = [os.path.abspath(cwd), *map(str, pathlib.Path(os.path.abspath(cwd)).parents)]
 
@@ -1035,24 +1037,25 @@ def server_config(name, cwd):
         scopes = [(projects.get(d) or {}).get("mcpServers") or {} for d in places]
         scopes += [load(os.path.join(d, ".mcp.json")).get("mcpServers") or {} for d in places]
         scopes.append(user.get("mcpServers") or {})
-        found = next((s[name] for s in scopes if isinstance(s, dict) and name in s), None)
+        found = next((v for s in scopes if isinstance(s, dict) for k, v in s.items()
+                      if re.sub(r"[^A-Za-z0-9_-]", "_", k) == name), None)
     except (OSError, ValueError, AttributeError):
         return None
-    if not isinstance(found, dict) or "${" in json.dumps(found):
+    if not isinstance(found, dict) or "${" in json.dumps([found.get(k) for k in ("url", "command", "args")]):
         return None
     return found
 
 
 def server_kind(server):
-    """`atlassian` for an mcp-atlassian command; `github` for a server at `api.githubcopilot.com`,
-    a `copilot-api.` host or a `.ghe.com` host, or one whose command or an argument names
-    `github-mcp-server` or `@modelcontextprotocol/server-github`; otherwise None. The sandbox's
-    classifier, when present, tells the sandbox's servers apart by the same rules, and the two must
-    agree."""
+    """`atlassian` for an mcp-atlassian command or a server at `mcp.atlassian.com`; `github` for a
+    server at `api.githubcopilot.com`, a `copilot-api.` host or a `.ghe.com` host, or one whose
+    command or an argument names `github-mcp-server` or `@modelcontextprotocol/server-github`;
+    otherwise None. The sandbox's classifier covers the forms `sandbox.sh` writes, a subset of
+    these, and must not disagree with this one on them."""
     words = [str(x) for x in [server.get("command"), *(server.get("args") or [])]]
-    if any("mcp-atlassian" in w for w in words):
-        return "atlassian"
     host = urllib.parse.urlparse(str(server.get("url") or "")).hostname or ""
+    if host == "mcp.atlassian.com" or any("mcp-atlassian" in w for w in words):
+        return "atlassian"
     if (host == "api.githubcopilot.com" or host.startswith("copilot-api.") or host.endswith(".ghe.com")
             or any("github-mcp-server" in w or "@modelcontextprotocol/server-github" in w for w in words)):
         return "github"
