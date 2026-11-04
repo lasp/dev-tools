@@ -719,7 +719,7 @@ Pinned by: tests/test_check_static.py::test_the_update_writes_the_baseline
 
 ## The survey
 
-Version: 9
+Version: 10
 
 Fields: `scripts/survey.py`'s printout, from the committed files of `--ref` (default `HEAD`)
 only; a candidate file the checkout holds but git does not track is named on the `not committed`
@@ -733,7 +733,17 @@ in | value | plugin today | match`, then one row a family, in a fixed order, fie
 ` | `, a `|` inside a field written `/`; the test and coverage command families add a
 `test command (also)` or `coverage command (also)` row after their own for each later source that
 gives one. `found in` is a path in the repository (a contributing
-guide's section as `<path>#<heading>`), `git`, `history` or `none`; `value` is cut at 60
+guide's section as `<path>#<heading>`), `git`, `history` or `none`. The `import names` row's
+value is the top-level names the package imports as, a namespace package's dotted down to its
+first level with an `__init__.py` (`org.pkg`), so an import of the namespace alone is not
+counted (version 10). Its `found in` is `pyproject.toml` for the arrays `[tool.setuptools]
+packages` or `[tool.poetry] packages` (any other form, such as `{find = ...}`, names none), the
+two tables naming different packages being a conflict; else `git (inferred)` for each
+`src/<name>/__init__.py`, else each `<name>/__init__.py`, outside a test, doc or example
+directory, only the one named for the package (its name with `-` as `_`, or its last `-` part)
+when one is, several and none so named being a conflict; else `pyproject.toml (inferred)`, the
+package's name with `-` as `_`. A conflict on that row, or a namespace package, is for the person
+to confirm. `value` is cut at 60
 characters in the table (`--json` gives it whole) and is never a file's text beyond a heading, a
 count, a command line or a path, and the
 default branch's value names it as the checkout's local `origin/HEAD`; `plugin today` is the
@@ -837,7 +847,8 @@ or more. With `--downstream-from`,
 `downstream` lists the repositories that use the package, most evidence first: from a JSON list of
 `{"repo", "evidence"}` the onboarding skill writes from its code search (`GitHub (search)`), or from
 a directory of checkouts, each searched at its `origin/HEAD`, else `HEAD`, for a Python file that
-imports the package or a dependency file that names it (`clones (search)`), each repository once,
+imports a name the `import names` row gives or a dependency file that names the package
+(`clones (search)`), no checkout searched when that row reads `conflict`, each repository once,
 and never the repository itself by name, whatever the owner; its `seen` gives each repository with
 its count, and a search git cannot run stops the survey. The candidate is not a drop-in profile: a key reading `not yet recorded` overrides the
 default profile's value where a profile is read. `--drop-in <path>` writes the same values with every unfilled
