@@ -109,8 +109,16 @@ Which model the build and its reviewers run on is a session setting, not a plugi
 "Models" below.
 
 Start Claude Code in the repository you are changing. The build's lock and record go into the
-`.review/` of the session's working directory, so a session started in one repository and used
-to change another records the build in the wrong place.
+`.review/` of the session's working directory. A build whose session makes or tries a Write,
+Edit or NotebookEdit in another repository records its gates and tokens as `not recorded` rather
+than as counts, naming that repository by its directory's name. Not seen: a change made there only
+through shell commands, and edits made after the session's working directory moves into it. While the build's session also holds the lock, the build hook refuses
+such edits in each other repository, so the person can stop or go on unrecorded, until a refused
+edit there is made again; that edit and every later one there are allowed. A `pr-fix` session, with no build open,
+is not refused. A repository inside the session's, such as a submodule, one the session's sits in,
+a worktree of the same repository, and a repository holding Claude Code's own directory
+(`~/.claude`, or `CLAUDE_CONFIG_DIR`), for a file in that directory, are not another repository;
+a repository cloned inside that directory, such as an installed plugin, is.
 
 ### MCP servers
 

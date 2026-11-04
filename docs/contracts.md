@@ -87,7 +87,7 @@ Pinned by: tests/test_where.sh::"no key and a matching Branch: line uses the pag
 
 ## The Already checked block
 
-Version: 9
+Version: 10
 
 Fields: the `<details><summary>Already checked</summary>` block of a built pull request's body,
 which `skills/pr-create/body.md` places after Summary, Key design choices and open questions, What
@@ -98,7 +98,13 @@ the default profile's, no profile read`, `the repository's own, else the default
 `none, the profile is refused: <profile.py's message>`, or `none for <lint, types, tests>, which
 the repository does not state` when the repository's profile could not be read, it has no
 standard, its profile and the default values are both refused, or a gate pattern reads
-`not yet recorded` (version 9), and with the wall clock otherwise (version 7). A pattern a
+`not yet recorded` (version 9), and with the wall clock otherwise (version 7). A build whose session made or
+tried a Write, Edit or NotebookEdit in another repository while it was recorded, with the session's
+working directory still in the build's repository, reads `Gates: not
+recorded, this session also <edits> while its build was recorded here`, where `<edits>` joins with
+` and ` one `edited <repository>`, or `tried to edit <repository>` when every attempt there was
+refused, per repository, named by its top-level directory's name and never by a path or remote,
+and `Tokens since the build started: not recorded` (version 10). A pattern a
 profile leaves out takes the default profile's value as every left-out key does. Optional: `Depth:`, one of light, standard or
 deep, read into the record's `inner.depth` (version 2); `Reopened:`, one line per reopened thread or `session-<pr>-<n>` reopen, read into the list
 `inner.reopened` (version 3); `Nominated:` and `Procedure:`, the corrections a person made at the
