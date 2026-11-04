@@ -32,7 +32,7 @@
 # record; outside a repository it is that directory itself. A session started in one repository
 # that changes another would measure that work here. So while this session holds the lock or
 # last started or resumed the open build, a Write or Edit whose file is in another repository,
-# outside Claude Code's own directory and neither holding this one nor held by it nor sharing its
+# not a repository holding Claude Code's own directory, and neither holding this one nor held by it nor sharing its
 # git directory as a worktree does, marks that build `elsewhere`, and its summary then records
 # its gates and tokens as not recorded; while the session holds the lock, the call is refused too.
 # Events and summaries are inert until that directory has a .review/ directory; a phase
@@ -279,6 +279,20 @@ another() {
   [ "$(common_of "$1")" != "$(common_of "$me")" ]
 }
 
+# True when file $2 is in Claude Code's own directory, CLAUDE_CONFIG_DIR or ~/.claude, and
+# repository $1 is that directory or holds it, as one kept in git or a home directory under git
+# does. Plans and memory are no repository's work; a repository cloned inside it, such as an
+# installed plugin, is its own.
+config_repo() {
+  local cfg=${CLAUDE_CONFIG_DIR:-}
+  [ -n "$cfg" ] || { [ -n "${HOME:-}" ] && cfg=$HOME/.claude; } || return 1
+  while [ "$cfg" != / ] && [ "${cfg%/}" != "$cfg" ]; do cfg=${cfg%/}; done
+  cfg=$(resolved "$cfg")
+  case "$(resolved "$2")" in "$cfg"/*) ;; *) return 1 ;; esac
+  case "$cfg/" in "$1"/*) return 0 ;; esac
+  return 1
+}
+
 # A shell command piping JSON $1 into this script's mode $2, single-quoted so any path survives.
 run_line() {
   local j=$1 h="$here/build-record.sh" r="'\\''"
@@ -315,15 +329,9 @@ if [ "$mode" = "guard" ]; then
   file=$(printf '%s' "$payload" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
   [ -n "$file" ] || exit 0
   git rev-parse --git-dir >/dev/null 2>&1 || exit 0
-  # Claude Code's own files, plans and memory among them, are no repository's work, even when
-  # that directory or the home directory is kept in git.
-  own=""
-  case "$(resolved "$file")" in
-    "$(resolved "${CLAUDE_CONFIG_DIR:-${HOME:-}/.claude}")"/*) own=yes ;;
-  esac
-  if [ -z "$own" ] && [ -n "$session" ] && { holds_lock "$session" || open_build_of "$session"; }; then
+  if [ -n "$session" ] && { holds_lock "$session" || open_build_of "$session"; }; then
     there=$(repo_of "$file")
-    [ -n "$there" ] && another "$there" && elsewhere "$session" "$there" && exit 0
+    [ -n "$there" ] && ! config_repo "$there" "$file" && another "$there" && elsewhere "$session" "$there" && exit 0
   fi
   case "$(resolved "$file")" in
     "$(resolved "$top")"/.review/*) bash "$review_dir" ;;

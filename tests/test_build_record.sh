@@ -528,6 +528,14 @@ out=$(jq -cn --arg c "$e" --arg f "$home/.claude/projects/x/memory/m.md" '{tool_
   HOME=$home CLAUDE_CONFIG_DIR="" "$hook" guard)
 check "a write in Claude Code's own directory, kept in git, is not refused or marked" \
   '[ -z "$out" ] && ! grep -q "\"kind\":\"elsewhere\"" .review/build/events.jsonl'
+out=$(jq -cn --arg c "$e" --arg f "$home/.claude/projects/x/memory/m.md" '{tool_name:"Write", session_id:"s1", cwd:$c, tool_input:{file_path:$f}}' |
+  env -u HOME CLAUDE_CONFIG_DIR="$home/.claude/" "$hook" guard)
+check "and named by CLAUDE_CONFIG_DIR with a trailing slash and no HOME, it is not refused either" '[ -z "$out" ]'
+git init -q "$home/.claude/plugins/p"
+out=$(jq -cn --arg c "$e" --arg f "$home/.claude/plugins/p/x.md" '{tool_name:"Write", session_id:"s1", cwd:$c, tool_input:{file_path:$f}}' |
+  HOME=$home CLAUDE_CONFIG_DIR="" "$hook" guard)
+check "but a repository cloned inside it, as a plugin is, is another repository and refused" \
+  'printf "%s" "$out" | jq -e ".hookSpecificOutput.permissionDecision == \"deny\"" >/dev/null'
 
 e=$(scratch) && made+=("$e") && cd "$e" || exit 1
 jq -cn --arg c "$e" '{prompt:"/lasp-dev:implement-change PROJ-1", session_id:"s1", cwd:$c}' | "$hook" prompt
