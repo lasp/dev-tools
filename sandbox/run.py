@@ -176,6 +176,8 @@ def scenarios() -> dict[str, dict]:
     text = scenario_file().read_text()
     for name, value in FAKES.items():
         text = text.replace("{" + name + "}", value)
+    if unknown := re.search(r"\{fake_\w+\}", text):
+        raise SystemExit(f"run.py: {scenario_file()} names {unknown.group()}, which is not a planted fake: {', '.join(FAKES)}")
     return {s["id"]: s for s in yaml.safe_load(text)["scenarios"]}
 
 

@@ -114,4 +114,4 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 
 | Item | Why | Owner | Trigger | Status |
 | --- | --- | --- | --- | --- |
-| The public flip (#15) | What the tree still carries before the repository goes public: README wording, planted token strings, fixture banners, CI secret scan, the Libera scrub | plugin maintainer | release approval | planned |
+| The public flip (#15) | What the tree still carries before the repository goes public: README wording, fixture banners, CI secret scan, the Libera scrub | plugin maintainer | release approval | planned |

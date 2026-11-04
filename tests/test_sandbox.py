@@ -422,6 +422,14 @@ class Sandbox(unittest.TestCase):
             self.assertTrue(any(re.search(r, token) for r in known[s]["expect"]["not_says"]), s)
         self.assertTrue(any(re.search(r, key) for r in known["skill-feedback-log"]["expect"]["not_says"]))
 
+    def test_a_pack_naming_an_unknown_fake_stops_run_py(self):
+        pack = self.sandbox / "scenarios.yaml"
+        pack.write_text('scenarios:\n  - {id: x, turns: ["the token is {fake_nope}"]}\n')
+        with mock.patch.object(run, "SCENARIOS", pack), self.assertRaises(SystemExit) as stop:
+            run.scenarios()
+        self.assertIn("{fake_nope}", str(stop.exception.code))
+        self.assertIn(str(pack), str(stop.exception.code))
+
     def test_a_variant_runs_the_scenario_renamed_for_its_plugins_name(self):
         (self.sandbox / "pins").write_text("")
         ran = {}
