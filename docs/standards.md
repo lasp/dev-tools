@@ -6,8 +6,8 @@ the plugin holds the tools and their defaults and nothing about any project. The
 in the plugin: would it change if a different project used the plugin? If so, it belongs in the
 project's standard.
 
-ROADMAP's "Libera's configuration and content into its own standard" tracks the move to this
-design; "Status" below names what is built.
+ROADMAP's "Neutral examples in generic skills" and "Libera content in the review contract" track
+what the plugin still carries of one project; "Status" below names what is built.
 
 ## What the plugin holds
 
