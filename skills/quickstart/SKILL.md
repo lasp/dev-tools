@@ -9,8 +9,8 @@ description: >
   applies here", "which rules apply" or "what does the plugin enforce here".
 argument-hint: "[question]"
 metadata:
-  author: lasp-dev
-  version: 1.8.0
+  author: dev-tools
+  version: 1.9.0
 ---
 
 # Quickstart
@@ -32,7 +32,8 @@ which tools Claude Code has registered.
 ### 1. Look
 
 Run these from the repository's top level (`git rev-parse --show-toplevel`), and nothing else
-but the two `ToolSearch` lookups below. Each finding carries its fix.
+but the two `ToolSearch` lookups below, each command in a Bash call of its own, so a denied
+`claude` command stops none of the repository checks. Each finding carries its fix.
 
 - `claude plugin list`: the `Version:` line under `lasp-dev@lasp-dev-tools`, the installed commit. A
   `libera-tools@libera` entry, enabled, is the plugin this one replaced: every skill and agent
@@ -62,8 +63,8 @@ but the two `ToolSearch` lookups below. Each finding carries its fix.
   `${CLAUDE_PLUGIN_ROOT}/skills/using-github/SKILL.md`'s "Picking the server" says; any other
   server is not used by this plugin's skills.
 
-Then, in this repository: whether it has a standard, `standards/review-rules.md`,
-`standards/decisions.md` or a `standard:` pointer in `standards/profile.yaml`, and the branch's ticket key,
+Then, in this repository: whether it has a standard, a `standards/` directory or a `standard:`
+pointer in `standards/profile.yaml`, and the branch's ticket key,
 matched by the profile's `ticket.pattern` in any letter case, upper-cased unless the pattern matches it as written
 (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" <owner/repo> --field ticket.pattern`), if it
 has one, and the profile it runs on (`--field source`), each asked with the `origin` remote's
@@ -82,10 +83,12 @@ to copy `${CLAUDE_PLUGIN_ROOT}/standards/profile.example.yaml`, printed as an ab
 file and fill it. A pointer to a standard for several repositories whose `profiles/` has no
 `<repo>.yaml` for this one is not `none` but refused, as above. With a standard, also:
 
-- The live-rule count, when the ledger exists, from its status lines, not its headings:
+- The live-rule count, when the ledger exists, from its status lines, not its headings, printed
+  `standard: N rules`:
   `grep -cE 'status: \**(provisional|established)' standards/review-rules.md`. Zero prints
-  `standard: present`. Decisions with no ledger print `standard: decisions, no rules yet`: the
-  first rules are not drafted. A pointer prints `standard: from <owner>/<repo>`, the repository
+  `standard: no rules admitted yet`. Decisions with no ledger print `standard: decisions, no rules
+  yet`: the first rules are not drafted. Neither a ledger nor decisions, only settings such as
+  `profile.yaml`, prints `standard: settings only, no rules yet`. A pointer prints `standard: from <owner>/<repo>`, the repository
   it names, with no count: the rules are that repository's and are not fetched here.
 - Whether `.github/PULL_REQUEST_TEMPLATE.md` matches (`cmp -s`) the template the profile names
   (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" <owner/repo> --field template`),
@@ -108,61 +111,74 @@ with the reason, and the repository checks go on.
 
 ### 2. Say
 
-In this order, and nothing else:
+In this order, and nothing else, short enough to read at a glance. Parts 2 to 7 each open with
+their bold label; part 1 has none.
 
-1. **Two status lines**, fields separated by ` · `:
-
-   ```
-   lasp-dev <commit> · GitHub: <name> <status> · Jira: <status> · Confluence: <status>
-   <repo> · <branch> · standard: N rules · <.review/ ignored?> · <template matches?> · last revision: <YYYY-MM>
-   ```
-
-   Jira's and Confluence's status is the Atlassian server's name and status, or `not configured`.
-   A missing server is `none`, zero rules is `standard: present`, decisions with no ledger
-   `standard: decisions, no rules yet`, and the two questions get two
-   or three words each. Without a standard the second line is `<repo> · <branch> · no standard`,
-   ending with the line `work` prints in that case, quoted from
-   `${CLAUDE_PLUGIN_ROOT}/skills/work/SKILL.md` step 1, never written from memory.
-2. **Each problem step 1 found**, one line each, with the fix step 1 gives. Add no fix of your
-   own. Then, when `claude mcp list` showed other servers, one line naming each with its status
-   and what it means here, as step 1 says.
-3. **`Next:`**: `/lasp-dev:work` with the branch's key. When the branch has no key, both
-   `/lasp-dev:work <ticket key>`, for a ticket that exists, and
-   `/lasp-dev:ticket-draft <description>`, for a new one.
-4. **This table**, its rows in this order:
+1. **The opening line**, word for word and with no label: lasp-dev takes a ticket to a merged pull request: it drafts the
+   ticket, plans and builds the change, and reviews the pull request against the repository's
+   standard where it has one, stopping for your yes before anything posts, pushes or writes to
+   Jira or Confluence.
+2. **Setup**, one bullet each: `Plugin: <commit>`, `GitHub: <name>, <status>`, `Jira: <status>`
+   and `Confluence: <status>`. Jira's and Confluence's status is the Atlassian server's name and
+   status, or `not configured`; a missing server is `none`; a setup command that did not run makes
+   its bullets `not checked: <command> did not run: <reason>`. When `claude mcp list` showed other
+   servers, a last bullet, `Other servers:`, names each with its status and what it means here, as
+   step 1 says.
+3. **This repository**, the label followed by `<repo> on <branch>` on the same line, then one
+   bullet each:
+   - `Standard:` what step 1 prints after `standard:`, or `none` with no standard.
+   - `Profile:` step 1's `profile:` report.
+   - `.review/ ignored:` `yes`, `locally only` or `no`.
+   - `PR template:` `matches`, `missing`, `differs` or `not yet recorded`; `not checked` when the
+     profile is refused. With no standard, print no `PR template:` bullet.
+   - `Last revision:` `<YYYY-MM>` or `none`. With no standard, print no `Last revision:` bullet.
+4. **Fix first**, only when step 1 found a problem: a numbered list, each problem in a few words
+   with the fix step 1 gives, a refused profile and a `profile:` report that carries a fix among
+   them. Add no fix of your own.
+5. **Next**, the command to type and one sentence on why, from the first of these that applies:
+   - with a refused profile, the fix under **Fix first**, since every skill reads the profile;
+   - with no standard, or `profile: none`, `/lasp-dev:onboard`, to record what the plugin cannot
+     detect in this repository, on your yes, and to draft the first rules at its last step; then,
+     once it is done, `/lasp-dev:work` with the branch's key, or with no key both
+     `/lasp-dev:work <ticket key>` and `/lasp-dev:ticket-draft <description>`;
+   - with a standard that has no ledger (`settings only, no rules yet` or `decisions, no rules
+     yet`), `/lasp-dev:onboard rules` to draft the first rules, beside `/lasp-dev:work` with the
+     branch's key, or `/lasp-dev:work <ticket key>` with none;
+   - otherwise, with a key on the branch, `/lasp-dev:work` with that key; with none, both
+     `/lasp-dev:work <ticket key>`, for a ticket that exists, and
+     `/lasp-dev:ticket-draft <description>`, for a new one.
+6. **Skills**, this table as it is, its rows in this order. With a ledger in the standard, the
+   Standard row is `/lasp-dev:revise`, "Monthly revision: propose rules to add, reword or retire";
+   otherwise it is the row shown.
 
    | Group | Command | What it does |
    | --- | --- | --- |
-   | Setup | `/lasp-dev:onboard` | Survey this repository for the facts the plugin works from (templates, contributing guide, test commands, pre-commit, history, and the tracker's statuses and fields when the servers are connected), say where each is read from, and write a drop-in profile on your yes |
-   | Tickets | `/lasp-dev:ticket-draft [investigate | settle | reformat] <ticket key | description | pull request>` | Write a ticket in the team's format, refine one, or write one for a pull request with none; `investigate` briefs you on the code and the design choices first; `reformat` moves a ticket to the current format, asking only what it needs |
-   | | `/lasp-dev:design-doc [revise] <page ID | URL | file | text> [change]` | Turn your notes page into a design doc for work that spans several tickets, existing or yet to be drafted, the problem and goals settled with you first; publishes the page on your yes |
-   | | `/lasp-dev:ticket-audit` | Report on the Jira project, then its proposed actions applied in Jira on your yes: gaps against the year plan, duplicates, stale tickets, link and estimate consistency, what each open pull request waits on; the report under `.review/audit/` |
-   | Implementation | `/lasp-dev:work <ticket key>` | Take a ticket from draft to merged pull request, one phase at a time |
-   | | `/lasp-dev:implement-change <ticket key | file | description>` | Plan, build and verify one change |
-   | | `/lasp-dev:commit` | Choose what belongs in the commit and write the message |
-   | | `/lasp-dev:test-suite-review <diff | branch>` | Say whether a test change weakens, misplaces or duplicates tests; reports only |
-   | | `/lasp-dev:downstream [check | ci <run> | release <version>]` | Say which consuming repositories a change breaks, by running their tests against it; why main went red; which pins lag a release |
-   | Pull requests | `/lasp-dev:pr-create` | Write the description and open a draft |
-   | | `/lasp-dev:pr-review <PR>` | Review a pull request and show the findings at their lines; on your yes, post one review |
-   | | `/lasp-dev:pr-fix <PR>` | Act on the review: implement what reviewers agreed to, reply to the rest, push |
-   | Standards | `/lasp-dev:revise` | Monthly: prepare the revision report before the meeting; `apply` drafts what the group accepted |
-   | | `/lasp-dev:revise correct <what is wrong>` | Fix a term, decision or rule wording the shared standards got wrong |
-   | Writing | `/lasp-dev:writing` | Review the wording of a ticket, pull request body or rule |
-   | | `/lasp-dev:architecture-doc [revise] <repository | page ID | URL | file | text>` | Write a page on a system as it stands, its purpose confirmed with you and its interfaces from the code; `revise` brings a published page up to date; publishes on your yes |
-   | | `/lasp-dev:process-doc [revise] <page ID | URL | file | text>` | Write a page on how something is done, a team process, a how-to or a user guide, its purpose and steps settled with you; `revise` brings a published one in line; publishes on your yes |
-   | | `/lasp-dev:drawio <what to draw>` | Draw a diagram as draw.io XML to paste into a Confluence draw.io macro |
-   | Feedback | `/lasp-dev:skill-feedback [skill: what you did not like]` | File a complaint about a skill or agent as a `skill-feedback` issue, in your words, with the session's last turns if you choose; nothing is filed before your yes |
+   | Start | `/lasp-dev:onboard` | Survey this repository and record its settings, on your yes |
+   | Tickets | `/lasp-dev:ticket-draft` | Draft or refine a Jira ticket; writes to Jira on your yes |
+   | | `/lasp-dev:design-doc` | Turn your notes into a design doc for work across several tickets |
+   | | `/lasp-dev:ticket-audit` | Sweep the Jira project and apply the fixes you approve |
+   | Build | `/lasp-dev:work <ticket key>` | Run a ticket's next phase, from draft to merged pull request |
+   | | `/lasp-dev:implement-change` | Plan, build and verify one change |
+   | Pull requests | `/lasp-dev:pr-create` | Write the description and open a draft pull request |
+   | | `/lasp-dev:pr-review <PR>` | Review a pull request; posts one review on your yes |
+   | | `/lasp-dev:pr-fix <PR>` | Answer a review: fix, reply and push on your yes |
+   | Standard | `/lasp-dev:onboard rules` | Draft the first review rules from merged pull requests |
+   | Docs | `/lasp-dev:architecture-doc` | Write a Confluence page on a system as it stands |
+   | | `/lasp-dev:process-doc` | Write a Confluence page on how something is done |
+   | | `/lasp-dev:drawio` | Draw a diagram as draw.io XML |
+   | | `/lasp-dev:writing` | Review prose for structure and clarity |
+   | Supporting | `/lasp-dev:commit` | Choose what to commit and write the message; never pushes |
+   | | `/lasp-dev:test-suite-review` | Judge test changes; reads only |
+   | | `/lasp-dev:downstream` | Say which consuming repositories a change breaks |
+   | | `/lasp-dev:skill-feedback` | Report a problem with a skill; files on your yes |
 
-   Without a standard, the Standards group is one row: `/lasp-dev:onboard rules`, "Draft
-   this repository's first rules from its merged pull requests", and the same with decisions and
-   no ledger, since `revise` needs the ledger.
-5. **Three closing lines**, as they are:
+7. **Read more**, these lines as they are, with `${CLAUDE_PLUGIN_ROOT}` printed as an absolute path:
 
-   Every command stops before it posts, pushes or writes to Jira or Confluence; the plan and the
-   diff are yours to approve.
-   What your agents can reach, and what they do under your credentials, is your responsibility:
-   `${CLAUDE_PLUGIN_ROOT}/README.md`, "Your responsibility".
+   Each skill in a line, with its options: `${CLAUDE_PLUGIN_ROOT}/README.md`, "What is included".
+   How the workflow goes: `${CLAUDE_PLUGIN_ROOT}/GUIDE.md`.
    `/lasp-dev:quickstart <question>` answers a question about the plugin.
+   What your agents can reach, and what they do under your credentials, is your responsibility:
+   the same README, "Your responsibility".
 
 ## With a question
 

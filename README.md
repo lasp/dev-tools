@@ -104,6 +104,10 @@ Skills run as `/lasp-dev:<name>`, from the terminal, VS Code, JetBrains or the d
 Which model the build and its reviewers run on is a session setting, not a plugin option; see
 "Models" below.
 
+Start Claude Code in the repository you are changing. The build's lock and record go into the
+`.review/` of the session's working directory, so a session started in one repository and used
+to change another records the build in the wrong place.
+
 ### MCP servers
 
 The tokens step 3 creates:
@@ -455,7 +459,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | Group | Skill | Started | Use it to |
 | --- | --- | --- | --- |
 | Entry point | `work` | typed or asked | Take a ticket through the workflow: reads where it stands and runs the next phase skill; each phase keeps its own approval gates |
-| | `quickstart` | typed or asked | Say where this machine and repository stand, what to type next, and the skills by group; with a question, answer it from the plugin's own files. Reads only |
+| | `quickstart` | typed or asked | Say where this machine and repository stand, what to fix first and what to type next, with `onboard` first in a repository with no standard, and the skills by group; with a question, answer it from the plugin's own files. Reads only |
 | | `onboard` | typed or asked | Survey a repository for the facts the plugin works from, its committed templates, contributing guide, test commands (instruction files, docs, CI) and pre-commit, and its history, and the tracker's statuses and fields when the servers are connected; say where each fact would be read from, the repository's own file first; first asking where the repository's rules live, here or in another repository's standard; then ask where facts should live, which value holds where the repository's files disagree, and which proposals to keep. Writes only `.review/onboard/` unless the person says yes to a named write: the repository's standard, or its `standard:` pointer and the standard's `profiles/<repo>.yaml` |
 | Phases, also run alone | `ticket-draft` | typed or asked | Turn a prompt, an existing ticket or a pull request with none into one in the team's format: duplicates merged, dependencies, follow-up tickets for out-of-scope work, an in-session estimate, and an Open Questions section for what cannot be settled yet. `investigate` answers your questions about the code first; `settle` folds later answers in and records a departure the work keeps as a comment; `reformat` moves a drafted ticket to the current format, asking only what the format needs. Run directly for an epic or a group ticket session |
 | | `implement-change` | typed or asked | Take a change request to an agreed plan, an implementation and a diff verified by a wave of reviewers |
@@ -569,7 +573,7 @@ A pull request that `implement-change` did not build is reviewed all the same. W
 | `work` | Runs the same review stage | The same | The same | The same |
 | `implement-change`, `pr-create` | Neither reads its `standard-repo.md` | Each reads its `standard-repo.md`: the standard for every agent, the project's pull request template and the Already checked block | As with decisions, the standard fetched | Unchanged |
 | `pr-fix` | Writes no standard before its wave | Rewrites `.review/standard.md` before its wave | The same, fetched | Unchanged |
-| `quickstart` | Offers only `/lasp-dev:onboard rules` under Standards | Reports `decisions, no rules yet` and offers the same | Reports `from <owner>/<repo>` | Unchanged |
+| `quickstart` | Reports `none` and offers `/lasp-dev:onboard` next | Reports `decisions, no rules yet` and offers `/lasp-dev:onboard rules` | Reports `from <owner>/<repo>` | Unchanged |
 | `onboard` | Step 6 drafts the first rules | The same | Step 6 drafts from this repository's threads for the named standard, each tagged `repos: [<this repository>]`, once the standard covers it | Unchanged |
 | `revise` | Does not run | Does not run | Runs here and writes into a clone of the named repository (`revise`'s "The standard's repository") | Unchanged |
 | Everything else | Unchanged | Unchanged | Unchanged | Unchanged |
