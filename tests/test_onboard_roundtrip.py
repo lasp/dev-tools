@@ -421,11 +421,14 @@ class Detectors(unittest.TestCase):
     def test_downstream_from_checkouts_that_import_the_names_the_layout_gives(self):
         flat = {"pyproject.toml": "[project]\nname = 'lasp-curryer'\n", "curryer/__init__.py": "", "tests/__init__.py": ""}
         src = {"pyproject.toml": "[project]\nname = 'lasp-kit'\n", "src/kit/__init__.py": ""}
-        for files, imports in ((flat, "from curryer.spicierpy import ext\n"), (src, "import kit.io\n")):
+        spaced = {"pyproject.toml": "[project]\nname = 'lasp-kit'\n\n[tool.setuptools]\npackages = ['lasp.kit']\n",
+                  "src/lasp/kit/__init__.py": ""}
+        for files, imports in ((flat, "from curryer.spicierpy import ext\n"), (src, "import kit.io\n"),
+                               (spaced, "from lasp.kit import io\nimport lasp.kit\n")):
             with self.subTest(package=files["pyproject.toml"]):
                 parent = scratch()
                 sibling(parent, "a", {"x.py": imports}, "git@github.com:example-org/user_a.git")
-                sibling(parent, "b", {"x.py": "import lasp_curryer\nimport lasp_kit\nimport tests\n"},
+                sibling(parent, "b", {"x.py": "import lasp_curryer\nimport lasp_kit\nimport tests\nimport lasp.other\n"},
                         "git@github.com:example-org/user_b.git")
                 data, keys = values_of(make_repo(files, REMOTE), self.root, "--downstream-from", str(parent))
                 self.assertEqual(data["downstream"], ["user_a"])

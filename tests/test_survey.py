@@ -500,11 +500,23 @@ class Settings(unittest.TestCase):
             ({"pyproject.toml": "[tool.poetry]\nname = 'lasp-curryer'\npackages = [\n  { include = \"curryer\", from = \"src\","
                                 " format = [\"sdist\"] },\n  { include = \"spice\" },\n]\n"}, "pyproject.toml", "curryer, spice"),
             ({"pyproject.toml": name}, "pyproject.toml (inferred)", "lasp_curryer"),
+            ({"pyproject.toml": name + "\n[tool.setuptools]\npackages = {find = {where = [\"src\"]}}\n",
+              "src/curryer/__init__.py": "", "src/tests/__init__.py": ""}, "git (inferred)", "curryer"),
+            ({"pyproject.toml": name, "curryer/__init__.py": "", "tools/__init__.py": "", "scripts/__init__.py": ""},
+             "git (inferred)", "curryer"),
+            ({"pyproject.toml": name, "tools/__init__.py": ""}, "git (inferred)", "tools"),
+            ({"pyproject.toml": name + "\n[tool.setuptools]\npackages = ['lasp.curryer', 'lasp.curryer.io']\n",
+              "src/lasp/curryer/__init__.py": "", "src/lasp/curryer/io/__init__.py": ""}, "pyproject.toml", "lasp.curryer"),
         ]
         for files, where, value in cases:
             with self.subTest(files=sorted(files)):
                 row = rows(make_repo(files, "git@github.com:example-org/curryer.git"))["import names"]
                 self.assertEqual((row["found_in"], row["value"], row["conflict"]), (where, value, False))
+
+    def test_import_names_several_packages_none_named_for_the_distribution_are_a_conflict(self):
+        files = {"pyproject.toml": "[project]\nname = 'lasp-curryer'\n", "tools/__init__.py": "", "scripts/__init__.py": ""}
+        row = rows(make_repo(files, "git@github.com:example-org/curryer.git"))["import names"]
+        self.assertEqual((row["found_in"], row["value"], row["conflict"]), ("git (inferred)", "scripts, tools", True))
 
     def test_import_names_two_tables_disagree_on_are_a_conflict(self):
         text = ("[project]\nname = 'lasp-curryer'\n\n[tool.setuptools]\npackages = ['curryer']\n\n"

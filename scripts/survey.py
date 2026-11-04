@@ -1239,25 +1239,38 @@ def grep(clone: Path, pattern: str, ref: str, *paths: str, case: bool = True) ->
 
 def import_names(tree: Tree, text: str, package: str) -> tuple[str, list[str], bool]:
     """Where the top-level names distribution `package` imports as were read, the names, and
-    whether its sources disagree. `text` is `pyproject.toml`. The names are each listed package's
-    first dotted part from `[tool.setuptools] packages` and `[tool.poetry] packages` (`include`),
-    `pyproject.toml`; else each `src/<name>/__init__.py`, else each `<name>/__init__.py` outside a
-    test, doc or example directory, `git (inferred)`; else `package` with `-` as `_`,
-    `pyproject.toml (inferred)`. Two tables that list different names disagree, and both tables'
-    names are given."""
+    whether its sources disagree. `text` is `pyproject.toml`. The names come from the arrays
+    `[tool.setuptools] packages` and `[tool.poetry] packages` (`include`, its path up to a glob),
+    `pyproject.toml`, each name cut to its shortest dotted prefix with an `__init__.py` at the top
+    or under `src/`, or kept whole when no prefix has one, and dropped under another listed name;
+    a `packages` that is no array, such as `{find = ...}`, names none. Else each `src/<name>/__init__.py`, else each `<name>/__init__.py`,
+    outside a test, doc or example directory, `git (inferred)`, only the one that is `package` with
+    `-` as `_` or its last `-` part when one is, and several, none of them that, disagree. Else
+    `package` with `-` as `_`, `pyproject.toml (inferred)`. Two tables that list different names
+    disagree, and both tables' names are given. A namespace package's name stays dotted
+    (`org.pkg`), so an import of its namespace alone (`from org import pkg`) is not one."""
+    def prefix(name: str) -> str:
+        parts = name.split(".")
+        return next((".".join(parts[:i]) for i in range(1, len(parts) + 1)
+                     if tree.has(f"{'/'.join(parts[:i])}/__init__.py") or tree.has(f"src/{'/'.join(parts[:i])}/__init__.py")),
+                    name)
+
     tables = []
     for table, item in (("tool.setuptools", r"""["']([^"']+)["']"""), ("tool.poetry", r"""include\s*=\s*["']([^"']+)["']""")):
-        listed = re.search(r"^packages\s*=(.*?)(?=^[\w-]+\s*=|\Z)", section(text, table), re.M | re.S)
-        names = {re.split(r"[./]", n, 1)[0] for n in re.findall(item, listed.group(1))} if listed else set()
-        names = sorted(n for n in names if n.isidentifier())
+        listed = re.search(r"^packages\s*=\s*(\[.*?)(?=^[\w-]+\s*=|\Z)", section(text, table), re.M | re.S)
+        found = (re.split(r"/[^/]*[*?[]", n, maxsplit=1)[0].replace("/", ".") for n in re.findall(item, listed.group(1))) if listed else ()
+        names = sorted({prefix(n) for n in found if all(p.isidentifier() for p in n.split("."))})
+        names = [n for n in names if not any(n.startswith(f"{m}.") for m in names)]
         if names:
             tables.append(names)
     if tables:
         return "pyproject.toml", sorted(set().union(*tables)), any(t != tables[0] for t in tables)
-    layout = sorted(n.split("/")[1] for n in tree.names if re.fullmatch(r"src/[^/]+/__init__\.py", n)) or sorted(
-        n.split("/")[0] for n in tree.names if re.fullmatch(r"[^/]+/__init__\.py", n) and n.split("/")[0].lower() not in ASIDE)
+    layout = [sorted(n.split("/")[-2] for n in tree.names if re.fullmatch(rf"{root}[^/]+/__init__\.py", n)
+                     and n.split("/")[-2].lower() not in ASIDE) for root in ("src/", "")]
+    layout = layout[0] or layout[1]
     if layout:
-        return "git (inferred)", layout, False
+        own = [n for n in layout if n.lower() in (package.replace("-", "_").lower(), package.rsplit("-", 1)[-1].lower())]
+        return "git (inferred)", own or layout, not own and len(layout) > 1
     return "pyproject.toml (inferred)", [package.replace("-", "_")], False
 
 
