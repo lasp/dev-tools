@@ -9,7 +9,7 @@ description: >
   built-in `/feedback`, which sends the conversation to Anthropic.
 argument-hint: "[skill: what you did not like | .review/revision/feedback/<draft>.md]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.1.1
 ---
 

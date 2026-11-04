@@ -142,12 +142,12 @@ named. This replaces the stored review records.
 
 ## Worked example: Libera
 
-Libera's standard lives in the private `LASP-Libera/libera_standards`, covering libera_utils,
-libera_rad, libera_cam and libera_cdk, each with a file in `profiles/`. Each of those repositories
-holds only `standards/profile.yaml` with `standard: LASP-Libera/libera_standards`. libera_utils'
-rules arrive tagged `repos: [libera_utils]`, since they were written for its code, and are widened
-one at a time where the team wants them everywhere; libera_cdk's AWS and infrastructure rules carry
-`repos: [libera_cdk]`. libera_utils' own decisions take the numbers after the shared ones, D-014
+Libera's standard lives in a private repository of its own, covering libera_utils, libera_rad,
+libera_cam and an infrastructure repository, each with a file in `profiles/`. Each of those
+repositories holds only `standards/profile.yaml` with `standard: <owner>/<standard repository>`.
+libera_utils' rules arrive tagged `repos: [libera_utils]`, since they were written for its code,
+and are widened one at a time where the team wants them everywhere; the infrastructure
+repository's AWS rules carry a `repos:` tag naming it alone. libera_utils' own decisions take the numbers after the shared ones, D-014
 onward. The Jira workflow, the internal domain and the vocabulary are stated once. A library the
 project uses, owned elsewhere, keeps its own standard in its own `standards/`.
 
