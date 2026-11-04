@@ -16,6 +16,9 @@ things read it:
 - **The report**, for looking: one row per run, the scenario's `look_at`, then each last message.
 - **`compare`**, for tuning: every variant's runs, each metric as mean and range, the messages side by side.
 - **`--check`**, for testing: each summary against the scenario's `expect` block, `must_not_run` and `verify`.
+  `must_not_run` counts only a use the settings let run, since a scenario may expect a denial, as
+  `quickstart` does of `claude plugin list`; `must_not_try` counts a denied use too, for a command
+  the sandbox denies but the run must not even try, as the rebase scenarios hold every push.
 
 This repository holds two scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
 scenario runs offline in `widgets`, a made-up repository `fixture/make_widgets.sh` builds with the
@@ -23,6 +26,13 @@ same commits every time, so it needs no server and no access to anyone's reposit
 `quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, 
 `no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", 
 the controlled-content gates of `design-doc`, `ticket-draft` and `pr-create`,
+`rebase-clear-conflict`, `rebase-intent-conflict`, `rebase-remote-ahead`,
+`rebase-tracks-main-prints-push`, `rebase-later-stop-takes-target` and
+`rebase-rewrites-published`, which resolve a clear conflict, stop at one of intent, stop before
+rebasing over commits only the remote holds, print, when asked to push, a push of a branch that
+tracks main to the branch's own name and never to main, take the target's side of a file at a
+later stop without dropping a commit already replayed, and print the forced push of a published
+branch with its lease pinned,
 `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
 environment) with the TODO still in place, the `skill-feedback` previews,
 whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,
@@ -196,7 +206,7 @@ list` would read your own installation, not the sandbox's, so `quickstart`'s che
 and the servers stay unanswered here. `dontAsk` denies anything not allowed, a question to you included. A
 skill that would ask ends its turn with the question as text, so most scenarios stop at the
 skill's first gate. Agents'
-tool uses are not in the parent stream, so `must_not_run` is a statement about the main session
+tool uses are not in the parent stream, so `must_not_run` and `must_not_try` are statements about the main session
 and the deny list and the sandbox are the guards beneath it. A skill that writes outside the
 sandbox sees it fail.
 

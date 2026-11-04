@@ -51,7 +51,9 @@ that absence. --budget caps each turn, in dollars.
 The report, printed and written to <sandbox>/runs/<scenario>/report.md, is one row per run, then
 the scenario's `look_at`, then each run's last message. --check adds a column holding each run's
 summary to the scenario's `expect` block, `must_not_run` and `verify`, and exits 1 when any run
-fails it. `expect`'s `never_anywhere` lists canary strings a run must carry nowhere: not in any
+fails it. `must_not_run` counts only a use the settings let run, since a scenario may expect a
+denial; `must_not_try` counts a denied use too, for a command the sandbox denies but the run must
+not even try, such as a push. `expect`'s `never_anywhere` lists canary strings a run must carry nowhere: not in any
 reply text or tool input of the main session, in any turn, nor in a file the run changed or made
 or a commit it added, checked at the end of each turn; with `through_turn: N` beside its `tokens`,
 only turns 1 to N are held to it, for a scenario whose later turn is cleared to use them. What the
@@ -322,7 +324,7 @@ def holding(sandbox: Path, who: str, wait: bool):
 
 
 def reset(sandbox: Path) -> None:
-    """Both clones back to their pinned commits, with untracked and ignored files gone but .venv kept,
+    """Both clones back to their pinned commits, out of any rebase or merge a run left paused, with untracked and ignored files gone but .venv kept,
     origin fetching from the URL `sandbox.sh` gave it and kept as `sandbox.fetch`, and `main` and `origin/main` back at the `main`
     of the bare repository under remotes/, the source's `main` when the sandbox was built, which a
     scenario's setup may have moved."""
@@ -331,6 +333,8 @@ def reset(sandbox: Path) -> None:
         fetch = subprocess.run(["git", "-C", str(repo), "config", "--get", "sandbox.fetch"], capture_output=True, text=True).stdout.strip()
         if fetch:
             git(repo, "remote", "set-url", "origin", fetch)
+        for stop in (["rebase", "--quit"], ["merge", "--abort"]):
+            subprocess.run(["git", "-C", str(repo), *stop], capture_output=True)
         git(repo, "checkout", "-q", "-f", "-B", branch, sha)
         git(repo, "reset", "-q", "--hard", sha)
         git(repo, "clean", "-q", "-fdx", "-e", ".venv")
@@ -447,7 +451,11 @@ def summarize(evs: list[dict], scenario: dict, files: list[str]) -> dict:
     ends = results(evs)
     last = ends[-1] if ends else {}
     denials = {d.get("tool_use_id"): d for r in ends for d in r.get("permission_denials", [])}
+    tried = scenario.get("must_not_try", [])
     uses = tool_uses(evs)
+    # One hit per tool use: the first rule that holds it.
+    hits = [next((f"{r}: {argument(u)}" for r in scenario.get("must_not_run", []) + tried
+                  if matches(r, u) and (r in tried or u.get("id") not in denials)), None) for u in uses]
     agents, mcp = {}, {}
     for use in uses:
         if use["name"] in ("Agent", "Task"):
@@ -462,8 +470,7 @@ def summarize(evs: list[dict], scenario: dict, files: list[str]) -> dict:
         "files": files,
         "mcp": mcp,
         "denials": [f"{d.get('tool_name')}: {argument({'input': d.get('tool_input', {})})}" for d in denials.values()],
-        "must_not_run": [f"{rule}: {argument(u)}" for u in uses if u.get("id") not in denials
-                         for rule in scenario.get("must_not_run", []) if matches(rule, u)],
+        "must_not_run": [h for h in hits if h],
         "subtype": last.get("subtype", "no result event"),
         "is_error": bool(last.get("is_error", True)),
         "cost_usd": round(last.get("total_cost_usd", 0.0), 4),

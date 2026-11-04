@@ -2,8 +2,11 @@
 # Records what a build actually did, so the PR body's "already checked" block is measured
 # rather than remembered.
 #
-#   build-record.sh guard     PreToolUse on Bash|Write|Edit: refuses, once, a call from a session
-#                             whose lock was taken; a write under .review/ keeps it ignored
+#   build-record.sh guard     PreToolUse on Bash|Write|Edit|NotebookEdit: refuses, once, a call
+#                             from a session whose lock was taken; refuses a write in another
+#                             repository while this session holds the lock and its build is open,
+#                             until a refused write there is made again; a write under .review/
+#                             keeps it ignored
 #   build-record.sh event     PostToolUse: classify one tool call, append it
 #   build-record.sh prompt    UserPromptSubmit: a typed /implement-change starts a build
 #   build-record.sh start     by hand: start or resume a build for this session, or `manual`;
@@ -22,12 +25,19 @@
 # events keep the lock fresh; one untouched for LOCK_STALE_MIN minutes is stale and taken with a
 # note. A taken lock lists the sessions it was taken from in took_from, and each is told once, at
 # its next prompt or tool call, that the working tree is no longer its own: as context on a prompt
-# or after a call, and as the refusal of the call when that is a Bash, Write or Edit call. The
-# skill releases it at its last step, and SessionEnd when its session matches.
+# or after a call, and as the refusal of the call when that is a Bash, Write, Edit or NotebookEdit
+# call. The skill releases it at its last step, and SessionEnd when its session matches.
 #
 # Every .review/ path is under the repository's top level, found from the payload's cwd, or the
 # working directory when the payload names none, so a call from a subdirectory reaches the same
-# record; outside a repository it is that directory itself.
+# record; outside a repository it is that directory itself. A session started in one repository
+# that changes another would measure that work here. So while this session last started or
+# resumed the open build, a Write, Edit or NotebookEdit whose file is in another repository, not a
+# repository holding Claude Code's own directory, and neither holding this one nor held by it nor
+# sharing its git directory as a worktree does, marks that build `elsewhere`, naming the
+# repository by its directory's name, and its summary then records its gates and tokens as not
+# recorded. While the session also holds the lock, such a call is refused until one refused call
+# there is made again, which the person's going on unrecorded is.
 # Events and summaries are inert until that directory has a .review/ directory; a phase
 # skill's start, or a write under it, creates it, and scripts/review_dir.sh keeps it out of git
 # where the repository's ignore rules do not. A build starts when implement-change is invoked,
@@ -184,7 +194,7 @@ take_lock() {
       took=$(jq -r '"Took a stale `.review/lock`: \(.skill) in another session, on \(if (.branch // "") == "" then "no branch" else .branch end), untouched for over 4 hours."' .review/lock 2>/dev/null)
     elif [ "${4:-}" != force ]; then
       note=$(jq -r '"`.review/lock` is held by \(.skill) in another session, active in the last 4 hours, on \(if (.branch // "") == "" then "no branch" else .branch end). Do not go on yet: ask the person in one AskUserQuestion whether to Take over, Stop, or discuss it."' .review/lock 2>/dev/null)
-      note="$note On Take over, run: printf '{\"session_id\":\"$2\"}' | bash \"$here/build-record.sh\" take $1"
+      note="$note On Take over, run: $(run_line "$(jq -cn --arg s "$2" '{session_id: $s}')" "take $1")"
       jq -cn --arg e "$3" --arg c "${added:+$added }$note" '{hookSpecificOutput: {hookEventName: $e, additionalContext: $c}}'
       return 1
     fi
@@ -240,6 +250,87 @@ resolved() {
   printf '%s%s' "$(cd "${p:-/}" && pwd -P)" "$rest"
 }
 
+# The top level of the repository a file is in, symlinks resolved, or empty outside one.
+repo_of() {
+  local d
+  d=$(resolved "$1")
+  d=${d%/*}
+  while [ -n "$d" ] && [ ! -d "$d" ]; do d=${d%/*}; done
+  d=$(git -C "${d:-/}" rev-parse --show-toplevel 2>/dev/null) && cd "$d" 2>/dev/null && pwd -P
+}
+
+# The git directory a repository's worktrees share, symlinks resolved.
+common_of() { (cd "$1" 2>/dev/null && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P); }
+
+# True when session $1 holds the lock here.
+holds_lock() { [ -s .review/lock ] && [ "$(jq -r '.session // empty' .review/lock 2>/dev/null)" = "$1" ]; }
+
+# True when session $1 is the last to start or resume the open build here.
+open_build_of() {
+  [ -s "$log" ] && [ ! -e "$dir/outcome.md" ] &&
+    [ "$(jq -r 'select(.kind == "start" or .kind == "resume") | .session' "$log" 2>/dev/null | tail -1)" = "$1" ]
+}
+
+# True when top level $1 is another repository than this one: neither holds the other, as a
+# submodule, a nested worktree or a repository at the home directory does, and the two share no
+# git directory, as worktrees of one repository do.
+another() {
+  local me
+  me=$(pwd -P)
+  case "$1/" in "$me"/*) return 1 ;; esac
+  case "$me/" in "$1"/*) return 1 ;; esac
+  [ "$(common_of "$1")" != "$(common_of "$me")" ]
+}
+
+# True when file $2 is in Claude Code's own directory, CLAUDE_CONFIG_DIR or ~/.claude, and
+# repository $1 is that directory or holds it, as one kept in git or a home directory under git
+# does. Plans and memory are no repository's work; a repository cloned inside it, such as an
+# installed plugin, is its own.
+config_repo() {
+  local cfg=${CLAUDE_CONFIG_DIR:-}
+  [ -n "$cfg" ] || { [ -n "${HOME:-}" ] && cfg=$HOME/.claude; } || return 1
+  while [ "$cfg" != / ] && [ "${cfg%/}" != "$cfg" ]; do cfg=${cfg%/}; done
+  cfg=$(resolved "$cfg")
+  case "$(resolved "$2")" in "$cfg"/*) ;; *) return 1 ;; esac
+  case "$cfg/" in "$1"/*) return 0 ;; esac
+  return 1
+}
+
+# A shell command piping JSON $1 into this script's mode $2, single-quoted so any path survives.
+run_line() {
+  local j=$1 h="$here/build-record.sh" r="'\\''"
+  printf "printf '%%s' '%s' | bash '%s' %s" "${j//\'/$r}" "${h//\'/$r}" "$2"
+}
+
+# The `elsewhere` marks for top level $1, one per line: `u` for an edit allowed, `r <file>` for
+# one refused. A line that is not JSON is skipped, so it hides no later mark.
+marks_of() {
+  jq -Rr --arg p "$1" 'fromjson? | select(.kind == "elsewhere" and .top == $p) | if .refused then "r " + .file else "u" end' "$log" 2>/dev/null
+}
+
+# Session $1, whose build is open here, is writing file $3 in repository $2, not this one. While
+# the session holds the lock and no edit there has been allowed, a file not refused before is
+# refused: it marks the build `elsewhere` with `refused` and that file, and prints the refusal
+# only once the mark reads back. Any other call, one whose refused mark could not be written or
+# read back included, is allowed, and marks the build once for that repository. A mark names the repository by its directory's name for the summary, and records
+# its top level and the file only in the local log. True only when it refuses.
+elsewhere() {
+  local marks f
+  f=$(resolved "$3")
+  marks=$(marks_of "$2")
+  printf '%s\n' "$marks" | grep -qx u && return 1
+  if holds_lock "$1" && ! printf '%s\n' "$marks" | grep -qxF "r $f" &&
+    { jq -cn --arg t "$(now)" --arg r "$(printf %s "${2##*/}" | tr -c 'A-Za-z0-9._-' _)" --arg p "$2" --arg f "$f" \
+      '{t:$t,kind:"elsewhere",repo:$r,top:$p,file:$f,refused:true}' >>"$log"; } 2>/dev/null &&
+    marks_of "$2" | grep -qxF "r $f"; then
+    jq -cn --arg c "This session holds \`.review/lock\` in $top for $(jq -r .skill .review/lock) and records its build there, but this edit is in $2, so the build's gates and tokens would count work done in another repository. Its summary now records them as not recorded. Do not go on yet: ask the person in one AskUserQuestion whether to Stop and start a session in $2 (recommended), Go on unrecorded, or discuss it. On Go on unrecorded, make this same edit again: it is not refused a second time, and later edits there are allowed." \
+      '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $c}}'
+    return 0
+  fi
+  append "$(jq -cn --arg t "$(now)" --arg r "$(printf %s "${2##*/}" | tr -c 'A-Za-z0-9._-' _)" --arg p "$2" '{t:$t,kind:"elsewhere",repo:$r,top:$p}')"
+  return 1
+}
+
 # A hook's payload; `start`, `release` and `take` run by hand may have none.
 payload=""
 [ -t 0 ] || payload=$(cat 2>/dev/null) || payload=""
@@ -253,10 +344,15 @@ fi
 
 if [ "$mode" = "guard" ]; then
   command -v jq >/dev/null 2>&1 || exit 0
-  tell_taken "$(printf '%s' "$payload" | jq -r '.session_id // empty' 2>/dev/null)" PreToolUse && exit 0
-  file=$(printf '%s' "$payload" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+  session=$(printf '%s' "$payload" | jq -r '.session_id // empty' 2>/dev/null)
+  tell_taken "$session" PreToolUse && exit 0
+  file=$(printf '%s' "$payload" | jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' 2>/dev/null)
   [ -n "$file" ] || exit 0
   git rev-parse --git-dir >/dev/null 2>&1 || exit 0
+  if [ -n "$session" ] && open_build_of "$session"; then
+    there=$(repo_of "$file")
+    [ -n "$there" ] && ! config_repo "$there" "$file" && another "$there" && elsewhere "$session" "$there" "$file" && exit 0
+  fi
   case "$(resolved "$file")" in
     "$(resolved "$top")"/.review/*) bash "$review_dir" ;;
   esac
@@ -466,8 +562,17 @@ if [ -f "$helper" ]; then
   fi
 fi
 
+gates="lint $lint · types $types · tests $tests · reviewer rounds $rounds · reviewers $reviewers · wall clock $mins min$patterns"
+# A build whose session also wrote, or tried to write, in another repository may have its gates
+# and tokens counted here, so neither is a measurement of this build.
+other=$(jq -Rc 'fromjson? | select(.kind == "elsewhere")' "$log" 2>/dev/null | jq -nr '[inputs] | group_by(.top) | map((if all(.[]; .refused) then "tried to edit " else "edited " end) + .[0].repo) | join(" and ")' 2>/dev/null)
+if [ -n "$other" ]; then
+  gates="not recorded, this session also $other while its build was recorded here"
+  tokens="not recorded"
+fi
+
 {
-  echo "Gates: lint $lint · types $types · tests $tests · reviewer rounds $rounds · reviewers $reviewers · wall clock $mins min$patterns"
+  echo "Gates: $gates"
   echo "Tokens since the build started: $tokens"
   echo
   echo "Measured by the plugin's hooks from $(wc -l <"$log" | tr -d ' ') recorded events. How the"
