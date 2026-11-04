@@ -28,12 +28,12 @@ What the hook scans:
   on, reviewed, merged, closed or reopened; a gist, release or repository created or edited; or
   `gh api` with fields or a body): the command's text and the
   files it sends (`--body-file`, `--notes-file`, `-F`, `--input`, `field=@file`, a gist's files).
-- Any server tool but a read, every string in the call's input, named by its field: a Jira or
-  Confluence tool's, and any other server's unless the configuration Claude Code holds for it
-  (`.claude.json` or `.mcp.json`) shows a server that is neither GitHub's nor Atlassian's. The kind
-  is told by what the server is, not by its name: GitHub's when its `url`'s host is
-  `api.githubcopilot.com` or its command or an argument names `github-mcp-server`, Atlassian's when
-  they name `mcp-atlassian`. A server whose configuration cannot be found or read is scanned.
+- A server tool but a read, read as `server_write` says: every string in the call's input, named
+  by its field. A tool named `jira_*` or `confluence_*` is scanned, as is a tool of a server whose
+  name holds `github` or whose configuration in `.claude.json` or `.mcp.json` shows GitHub's or
+  Atlassian's, and a finding in it is denied. A tool of a server with no configuration there, such
+  as a claude.ai connector, a plugin's server or one `--mcp-config` names, is scanned too, and a
+  finding in it is asked about. A server whose configuration shows neither kind is not scanned.
 
 Untracked files over 1 MB are taken for data and skipped. The scan stops at its own budget, well
 inside the hook's 5 s timeout, since a hook that times out lets the call through; past it, the
@@ -41,7 +41,8 @@ hook asks.
 
 Exit codes, for `files` and `diff`: 0 nothing found, 1 a finding, 2 the scan could not run (a file
 unreadable, git failing). `hook` always exits 0 and decides in its output:
-- `deny` when what the call would carry holds a finding, naming where and what kind;
+- `deny` when what the call would carry holds a finding, naming where and what kind, but `ask`
+  for one in the input of a server of unknown kind;
 - `ask` when it cannot scan (input it cannot parse, a repository it cannot resolve, git failing,
   the budget spent), saying so, so a broken scan stops for the person rather than passing a call
   nobody checked;
@@ -1034,7 +1035,7 @@ def server_config(name, cwd):
         scopes = [(projects.get(d) or {}).get("mcpServers") or {} for d in places]
         scopes += [load(os.path.join(d, ".mcp.json")).get("mcpServers") or {} for d in places]
         scopes.append(user.get("mcpServers") or {})
-        found = next((s[name] for s in scopes if name in s), None)
+        found = next((s[name] for s in scopes if isinstance(s, dict) and name in s), None)
     except (OSError, ValueError, AttributeError):
         return None
     if not isinstance(found, dict) or "${" in json.dumps(found):
@@ -1043,32 +1044,39 @@ def server_config(name, cwd):
 
 
 def server_kind(server):
-    """`atlassian` for an mcp-atlassian command, `github` for a server at `api.githubcopilot.com` or
-    one whose command or an argument names `github-mcp-server`, otherwise None. sandbox/run.py's
-    server_kind classifies the sandbox's servers by the same rules, and the two must agree."""
+    """`atlassian` for an mcp-atlassian command; `github` for a server at `api.githubcopilot.com`,
+    a `copilot-api.` host or a `.ghe.com` host, or one whose command or an argument names
+    `github-mcp-server` or `@modelcontextprotocol/server-github`; otherwise None. The sandbox's
+    classifier, when present, tells the sandbox's servers apart by the same rules, and the two must
+    agree."""
     words = [str(x) for x in [server.get("command"), *(server.get("args") or [])]]
     if any("mcp-atlassian" in w for w in words):
         return "atlassian"
-    if (urllib.parse.urlparse(str(server.get("url") or "")).hostname == "api.githubcopilot.com"
-            or any("github-mcp-server" in w for w in words)):
+    host = urllib.parse.urlparse(str(server.get("url") or "")).hostname or ""
+    if (host == "api.githubcopilot.com" or host.startswith("copilot-api.") or host.endswith(".ghe.com")
+            or any("github-mcp-server" in w or "@modelcontextprotocol/server-github" in w for w in words)):
         return "github"
     return None
 
 
-def is_write(tool, cwd):
-    """Whether `tool` is a server tool whose input is scanned: a Jira or Confluence tool but a read,
-    and any other server tool but a read unless its server's configuration shows a server that is
-    neither GitHub's nor Atlassian's. A server whose configuration cannot be found or read is
-    scanned, so a server of unknown kind is never passed as safe."""
+def server_write(tool, cwd):
+    """What a finding in the input of server tool `tool` gets, or None when its input is not scanned.
+    `deny` for a write of a GitHub or Atlassian server: a Jira or Confluence tool but a read, or any
+    other tool but a read of a server whose name holds `github` or whose configuration shows GitHub's
+    or Atlassian's. `ask` for a write of a server whose configuration cannot be found or read, so a
+    server of unknown kind is never passed as safe. None for a read, and for a server whose
+    configuration shows neither kind."""
     if not tool.startswith("mcp__") or "__" not in tool[5:]:
-        return False
+        return None
     server, op = tool[5:].rsplit("__", 1)
     if re.match(r"(?:jira|confluence)_", op):
-        return not ATLASSIAN_READ.match(op)
+        return None if ATLASSIAN_READ.match(op) else "deny"
     if GITHUB_READ.match(op):
-        return False
+        return None
     config = server_config(server, cwd)
-    return config is None or server_kind(config) is not None
+    if "github" in server.lower() or (config is not None and server_kind(config) is not None):
+        return "deny"
+    return "ask" if config is None else None
 
 
 def hook(payload, budget=None):
@@ -1102,8 +1110,8 @@ def hook(payload, budget=None):
         if commit is None and sent is None:
             return
         found = (commit or []) + (sent or [])
-        what = "This command"
-    elif is_write(tool, event.get("cwd") or os.getcwd()):
+        what, decision, elsewhere = "This command", "deny", "commit or post it outside Claude"
+    elif (decision := server_write(tool, event.get("cwd") or os.getcwd())):
         op = tool.rsplit("__", 1)[-1]
         try:
             found = []
@@ -1114,14 +1122,20 @@ def hook(payload, budget=None):
             decide("ask", f"The secret scan could not check this {op} call: {e}. "
                           "Allow it only if you know it carries no credential.")
             return
-        what = f"This {op} call"
+        what, elsewhere = f"This {op} call", "send it outside Claude"
     else:
         return
-    if found:
-        listed = "; ".join(found[:10]) + (f"; and {len(found) - 10} more" if len(found) > 10 else "")
-        decide("deny", f"{what} would carry what looks like a credential: {listed}. Remove it, and "
-                       "rotate it if it was ever pushed or posted. If it is not a credential, the "
-                       "person can commit or post it outside Claude.")
+    if not found:
+        return
+    listed = "; ".join(found[:10]) + (f"; and {len(found) - 10} more" if len(found) > 10 else "")
+    if decision == "ask":
+        decide("ask", f"{what} would carry what looks like a credential: {listed}. The secret scan "
+                      "cannot tell what kind of server this is, so it asks rather than denies. Allow "
+                      "it only if this is not a credential or the server is meant to receive it.")
+        return
+    decide("deny", f"{what} would carry what looks like a credential: {listed}. Remove it, and "
+                   "rotate it if it was ever pushed or posted. If it is not a credential, the "
+                   f"person can {elsewhere}.")
 
 
 def main(argv):

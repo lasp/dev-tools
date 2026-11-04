@@ -578,15 +578,19 @@ class Writes(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertIsNone(self.call(tool, body))
 
-    def test_a_github_server_is_told_by_what_it_is_not_its_name(self):
+    def test_a_github_server_is_told_by_what_it_is_or_by_its_name(self):
         body = {"body": TOKEN}
         self.servers({"corp-code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"},
                       "gh": {"command": "docker", "args": ["run", "-i", "ghcr.io/github/github-mcp-server"]},
-                      "github-mirror": {"type": "http", "url": "https://code.example.org/mcp"}})
-        for tool in ("mcp__corp-code__add_issue_comment", "mcp__gh__create_pull_request"):
+                      "npx-code": {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"]},
+                      "ghe": {"type": "http", "url": "https://copilot-api.corp.ghe.com/mcp/"},
+                      "github-mirror": {"type": "http", "url": "https://code.example.org/mcp"},
+                      "github": {"command": "an-unrecognized-binary"}})
+        for tool in ("mcp__corp-code__add_issue_comment", "mcp__gh__create_pull_request",
+                     "mcp__npx-code__create_issue", "mcp__ghe__add_issue_comment",
+                     "mcp__github-mirror__add_issue_comment", "mcp__github__push_files"):
             with self.subTest(tool=tool):
                 self.assertEqual(self.call(tool, body)["permissionDecision"], "deny")
-        self.assertIsNone(self.call("mcp__github-mirror__add_issue_comment", body))
 
     def test_the_local_scope_wins_over_the_project_and_user_scopes(self):
         elsewhere = {"type": "http", "url": "https://code.example.org/mcp"}
@@ -597,13 +601,32 @@ class Writes(unittest.TestCase):
                 "code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}}}}))
         self.assertEqual(self.call("mcp__code__add_issue_comment", {"body": TOKEN})["permissionDecision"], "deny")
 
-    def test_a_server_of_unknown_kind_is_scanned(self):
+    def test_a_server_found_only_in_the_user_scope_or_a_parent_is_read(self):
+        (self.config / ".claude.json").write_text(json.dumps({"mcpServers": {
+            "user-code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}}))
+        self.assertEqual(self.call("mcp__user-code__add_issue_comment", {"body": TOKEN})["permissionDecision"], "deny")
+        self.servers({"up": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"},
+                      "other": {"command": "other-mcp"}})
+        self.project = self.project / "sub" / "dir"
+        self.project.mkdir(parents=True)
+        self.assertEqual(self.call("mcp__up__add_issue_comment", {"body": TOKEN})["permissionDecision"], "deny")
+        self.assertIsNone(self.call("mcp__other__create_thing", {"body": TOKEN}))
+
+    def test_a_server_of_unknown_kind_is_scanned_and_asked_about(self):
         body = {"body": TOKEN}
-        self.assertEqual(self.call("mcp__unconfigured__add_comment", body)["permissionDecision"], "deny")
-        self.servers({"vars": {"type": "http", "url": "${GITHUB_MCP_URL}"}})
-        self.assertEqual(self.call("mcp__vars__add_comment", body)["permissionDecision"], "deny")
+        self.servers({"vars": {"type": "http", "url": "${CODE_MCP_URL}"}})
+        for tool in ("mcp__unconfigured__add_comment", "mcp__vars__add_comment"):
+            with self.subTest(tool=tool):
+                out = self.call(tool, body)
+                self.assertEqual(out["permissionDecision"], "ask")
+                self.assertIn("body:1: GitHub token", out["permissionDecisionReason"])
+        self.assertIsNone(self.call("mcp__unconfigured__add_comment", {"body": "Looks good."}))
         (self.project / ".mcp.json").write_text("{not json")
-        self.assertEqual(self.call("mcp__other__create_thing", body)["permissionDecision"], "deny")
+        self.assertEqual(self.call("mcp__other__create_thing", body)["permissionDecision"], "ask")
+        for malformed in ({"mcpServers": {"other": ["not", "a", "server"]}}, {"mcpServers": ["other"]}):
+            with self.subTest(malformed=malformed):
+                (self.project / ".mcp.json").write_text(json.dumps(malformed))
+                self.assertEqual(self.call("mcp__other__create_thing", body)["permissionDecision"], "ask")
 
     def test_clean_github_write_passes(self):
         self.assertIsNone(self.call("mcp__github-x__add_issue_comment", {"body": "Looks good."}))
