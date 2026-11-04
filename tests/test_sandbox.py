@@ -74,7 +74,7 @@ class Sandbox(unittest.TestCase):
     def setUp(self):
         self.sandbox = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.sandbox)
-        (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"github-example": {}, "github": {}, "lasp-dmz-atlassian": {}}}))
+        (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"github-example": {}, "github": {}, "atlassian": {}}}))
         self.quickstart = run.scenarios()["quickstart"]
 
     def test_a_line_separator_inside_a_string_is_not_a_line_break(self):
@@ -271,10 +271,10 @@ class Sandbox(unittest.TestCase):
         perms = json.loads((self.sandbox / "settings.json").read_text())["permissions"]
         self.assertIn("mcp__github-example__pull_request_read", perms["allow"])
         self.assertIn("mcp__github__pull_request_read", perms["allow"])
-        self.assertIn("mcp__lasp-dmz-atlassian", perms["allow"])
+        self.assertIn("mcp__atlassian", perms["allow"])
         self.assertIn("mcp__github-example__add_issue_comment", perms["deny"])
-        self.assertIn("mcp__lasp-dmz-atlassian__jira_update_issue", perms["deny"])
-        self.assertNotIn("mcp__lasp-dmz-atlassian__pull_request_read", perms["allow"])
+        self.assertIn("mcp__atlassian__jira_update_issue", perms["deny"])
+        self.assertNotIn("mcp__atlassian__pull_request_read", perms["allow"])
         self.assertFalse([r for r in perms["allow"] + perms["deny"] if "{" in r])
 
     def test_settings_run_bash_in_the_sandbox_with_no_fallback_reaching_a_fixed_list(self):
@@ -291,7 +291,7 @@ class Sandbox(unittest.TestCase):
 
     def test_settings_keep_credentials_and_the_settings_files_from_sandboxed_commands(self):
         servers = {"github-example": {"headers": {"Authorization": "Bearer ${GITHUB_MCP_PAT_EXAMPLE}"}},
-                   "lasp-dmz-atlassian": {"env": {"JIRA_PERSONAL_TOKEN": "${JIRA_TOKEN}"}}}
+                   "atlassian": {"env": {"JIRA_PERSONAL_TOKEN": "${JIRA_TOKEN}"}}}
         (self.sandbox / "mcp.json").write_text(json.dumps({"mcpServers": servers}))
         run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
         text = (self.sandbox / "settings.json").read_text()
@@ -357,7 +357,7 @@ class Sandbox(unittest.TestCase):
             confluence_copy_page""".split()
         run.write_settings(self.sandbox, self.sandbox / "repos" / "dev-tools")
         deny = json.loads((self.sandbox / "settings.json").read_text())["permissions"]["deny"]
-        self.assertEqual([t for t in writes if f"mcp__lasp-dmz-atlassian__{t}" not in deny], [])
+        self.assertEqual([t for t in writes if f"mcp__atlassian__{t}" not in deny], [])
 
     def test_settings_bound_every_file_and_script_rule_to_the_sandbox_or_the_plugin(self):
         variant = Path(tempfile.mkdtemp())

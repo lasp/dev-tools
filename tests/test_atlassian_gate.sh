@@ -69,7 +69,7 @@ echo "atlassian-gate.sh"
 check "the gate is executable" '[ -x "$gate" ]'
 
 loud=""
-for t in $reads; do [ -z "$(run "mcp__lasp-dmz-atlassian__$t")" ] || loud="$loud $t"; done
+for t in $reads; do [ -z "$(run "mcp__atlassian__$t")" ] || loud="$loud $t"; done
 check "every read passes with no output" '[ -z "$loud" ]'
 
 quiet=""
@@ -86,7 +86,7 @@ call() {
     jira_link_to_epic) i='{"issue_key":"PROJ-1","epic_key":"PROJ-9"}' ;;
     *) i='{"issue_key":"PROJ-1"}' ;;
   esac
-  jq -cn --arg t "mcp__lasp-dmz-atlassian__$t" --arg s "$s" --argjson i "$i" '{tool_name:$t, tool_input:$i, session_id:$s}' \
+  jq -cn --arg t "mcp__atlassian__$t" --arg s "$s" --argjson i "$i" '{tool_name:$t, tool_input:$i, session_id:$s}' \
     | "$gate" 2>/dev/null | jq -r .hookSpecificOutput.permissionDecision
 }
 # Writes the approval record: items as JSON, then the session and the epoch seconds it was made.
@@ -184,7 +184,7 @@ rm -rf "$nojq"
 
 matcher=$(jq -r '.hooks.PreToolUse[] | select(any(.hooks[]; .command | test("atlassian-gate"))) | .matcher' "$root/hooks/hooks.json")
 missed=""
-for t in $reads $planned $writes; do printf '%s' "mcp__lasp-dmz-atlassian__$t" | grep -qE "^($matcher)$" || missed="$missed $t"; done
+for t in $reads $planned $writes; do printf '%s' "mcp__atlassian__$t" | grep -qE "^($matcher)$" || missed="$missed $t"; done
 check "hooks.json sends the gate every Atlassian tool" '[ -n "$matcher" ] && [ -z "$missed" ]'
 check "hooks.json sends it no GitHub tool" \
   '! printf "%s" mcp__github-example__pull_request_review_write | grep -qE "^($matcher)$"'
