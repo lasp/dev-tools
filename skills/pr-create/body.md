@@ -19,7 +19,7 @@ alternative a reviewer could have expected, and why it lost, only where there wa
 limitation, stated plainly.>
 
 Used by: <who calls it, naming each consumer that does from this repository's list, which
-`using-curryer`'s references/downstream.md section 1 points to, or "nothing outside this repository">
+`<plugin root>/skills/downstream/SKILL.md`'s `check` step 2 gives, or "nothing outside this repository">
 
 ## Key design choices and open questions
 

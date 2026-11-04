@@ -197,8 +197,8 @@ on `gh`, `pr-fix` stops at its start and `pr-review` posts only a pull request's
 
 The hidden reference skills load when another skill needs them: `using-jira` and
 `using-confluence` by `source-reader`, `using-github` by every skill and agent that reaches
-GitHub, and `using-curryer` by the planner, `github-pr-reviewer`, `ticket-draft` and
-`downstream`.
+GitHub, and `using-curryer` by the planner, `github-pr-reviewer` and `downstream`, only in
+curryer and the repositories that depend on it.
 
 #### When a server is missing or failing
 
@@ -333,20 +333,24 @@ file or field, the line and the kind but never the value:
   name holds `github` or whose configuration (its URL, its command or an argument) shows GitHub's
   or Atlassian's, looked up from the session's project directory. It scans every string in the
   input. A tool of a server whose configuration cannot be found or read, such as a claude.ai
-  connector, or that shows neither kind but leaves its URL, command or an argument to a `${`
-  variable, is scanned too, and a finding there is asked about rather than denied.
+  connector, or that shows neither kind, a `${` variable in its URL, command or an argument
+  included, passes like any call the scan cannot place.
 
 It knows a fixed list of forms (`scripts/secret_scan.py`): private keys, AWS, GitHub, GitLab,
 Slack, Atlassian Cloud, Anthropic and Google keys, JSON web tokens, bearer headers and a value
 assigned to a token variable these servers name. An Atlassian Data Center token has no form of its
-own, so it is found only when assigned to such a variable. When it cannot scan (a repository it
-cannot resolve, such as `cd "$DIR"`, a shell alias that commits, git failing, or more than it can
-check inside the hook's timeout), it asks rather than letting the call through. A variable the
-same command sets once, on its own after the start, `;` or `&&` (an `&&` chain is read as running
+own, so it is found only when assigned to such a variable. What it cannot read passes: a repository
+it cannot resolve, such as `cd "$DIR"`, a shell alias that commits, a file it cannot name, git
+failing, more than it can check inside the hook's timeout, or no `python3`. The rest of the call
+is still read, the command's text, its other commits and the other files it sends, and a
+credential found there is still stopped. A command it cannot split, such as one with an unclosed
+quote, is judged on its text alone when it mentions a commit or a `gh` write. The person stays
+responsible for what they commit and post; the gate stops only a credential it finds, and never
+asks. A variable the same command sets once, on its own after the start, `;` or `&&` (an `&&` chain is read as running
 through), to a literal value, as `S=/tmp/x; git commit -F $S/msg` or `C=/repo && git -C $C commit`,
 is read as that value; one set any other way is not, and none is after control flow, `eval` or
 `source`. In a message or body file's name it is read so only when the command writes no file
-with `>`. A message or body file it cannot name, such as `-F "$M"`, is asked about too, unless the
+with `>`. A message or body file it cannot name, such as `-F "$M"`, is not read, unless the
 same command writes it with `>` only from its own text: a bare `cat` reading a heredoc that
 expands nothing, or `echo` or `printf` whose words expand nothing, and named nowhere else in the
 command but the option that reads it, after the write, since the scan reads that text as the

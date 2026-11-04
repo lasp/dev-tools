@@ -9,7 +9,7 @@ description: >
 argument-hint: "[revise] <page ID | URL | file | text> [change]"
 metadata:
   author: lasp-dev
-  version: 1.1.0
+  version: 1.1.1
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
@@ -142,7 +142,7 @@ them back.
    - **Reprocessing and versioning**: old data, old algorithm versions and product versions run
      through the new design.
    - **Ownership boundaries**: which repository owns each piece, and who consumes it, as
-     `${CLAUDE_PLUGIN_ROOT}/skills/using-curryer/references/downstream.md` maps them.
+     `${CLAUDE_PLUGIN_ROOT}/skills/downstream/SKILL.md`'s `check` step 2 lists them.
    - **Compute and cost**: where each piece runs, and what grows with data volume.
    - **People outside the team**: operations, the science and instrument teams, and the
      archives that receive the products.

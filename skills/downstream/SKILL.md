@@ -7,7 +7,7 @@ description: >
 argument-hint: "[check [branch | symbol] | ci <run> | release <version>]"
 metadata:
   author: lasp-dev
-  version: 1.0.5
+  version: 1.1.1
 ---
 
 ## When to run
@@ -20,9 +20,16 @@ metadata:
 - **`ci <run>`**: a red run on main or the daily build with no change of its own.
 - **`release <version>`**: after an upstream release, to say which consumers' pins now lag.
 
-The constellation, the blast radius and the pin semantics are
-`${CLAUDE_SKILL_DIR}/../using-curryer/SKILL.md` and its `references/downstream.md`. Read both
-first. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
+How the consumers, their use sites and their pins are found is `${CLAUDE_SKILL_DIR}/consumers.md`.
+Read it first.
+
+A repository is a covered upstream when its `origin` remote's repository name, or its top-level
+`pyproject.toml`'s `[project] name` or `[tool.poetry] name`, is `curryer`, `lasp-curryer` or
+`libera_utils`. It depends on one when one of those names appears in a `pyproject.toml` or a
+`requirements*.txt`, at the top level or in a package directory. Names compare without case, with
+`-`, `_` and `.` equal. When this repository is a covered upstream, also read
+`${CLAUDE_PLUGIN_ROOT}/skills/using-curryer/SKILL.md` and its `references/downstream.md`, which add
+its particulars. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
 Every file it writes follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`, "Writing a
 file".
 
@@ -40,8 +47,11 @@ so a verdict never names a sha its lane did not run at.
    An exit of 1 is a stop: say its stderr, and never read the empty output as nothing removed.
    Nothing listed: say so and stop, since nothing a consumer imports went away; when stderr says
    the product definitions were not read, say that too, since a removal there is not covered.
-2. **The consumers.** The list `using-curryer`'s `references/downstream.md` section 1 points to
-   for this repository. A consumer not cloned beside this one
+2. **The consumers.** When the preamble's test makes this repository a covered upstream or one
+   that depends on one, the list
+   `${CLAUDE_PLUGIN_ROOT}/skills/using-curryer/references/downstream.md` section 1 gives for it,
+   where it gives one; otherwise `consumers.md` section 1's. Other skills take a repository's
+   consumers from this step. A consumer not cloned beside this one
    (`$(git rev-parse --show-toplevel)/../<repo>`) is named as unread.
 3. **The consumer's default branch.** For each cloned consumer, its default branch as the
    sibling clone last fetched it, `git -C ../<consumer> rev-parse refs/remotes/origin/HEAD`, never
@@ -54,11 +64,8 @@ so a verdict never names a sha its lane did not run at.
 4. **The use sites.** For each surface line, its name's last dotted part and, on an `enum` or
    `identifier` line, its fourth field, the member's value, run `git -C
    .review/downstream/src-<consumer> grep -n -w -F -e <term>` for each: per consumer, the use
-   sites as `repo/path:line`, or none. When this repository is curryer, also launch one
-   `ticket-investigator` per consumer, in one message, fresh, for use through libera_utils: its
-   goal "find what calls the libera_utils functions that call these names", the surface lines as
-   its claims, and no synonyms.
-5. **The pins.** Read each consumer's pin as `references/downstream.md` step 3 says, and say
+   sites as `repo/path:line`, or none, and any step that reference adds.
+5. **The pins.** Read each consumer's pin as `consumers.md` section 3 says, and say
    when the change would reach it.
 6. **The consumer lanes.** For each consumer with a use site, and only those, after one line
    naming them and saying each install takes minutes:
@@ -101,7 +108,7 @@ gh path. When the server cannot read them, say so as
 and offer the `gh` path; when that cannot read them either, say so and stop.
 
 Compare the dependency versions each run resolved, from its install step's log. When an upstream
-in the constellation released between them, run `check` on the upstream's tags: step 1 runs
+this repository depends on released between them, run `check` on the upstream's tags: step 1 runs
 `surface_diff.py <green tag> --head <red tag>` with the upstream's sibling clone as its working
 directory, which reads that clone and writes nothing to it; the consumer is this repository, cloned
 to `src-<repo>` at the red run's commit in place of step 3's default branch; and step 6 installs the
