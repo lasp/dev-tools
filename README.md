@@ -329,9 +329,11 @@ file or field, the line and the kind but never the value:
   pull request, creates or edits a gist, release or repository, or `gh api` with fields or a body:
   its text and the files it sends;
 - a server tool but a read: a tool named `jira_*` or `confluence_*`, and a tool of a server whose
-  name holds `github` or whose configuration (its URL or command) shows GitHub's or Atlassian's.
-  It scans every string in the input. A tool of a server whose configuration cannot be found, such
-  as a claude.ai connector, is scanned too, and a finding there is asked about rather than denied.
+  name holds `github` or whose configuration (its URL, its command or an argument) shows GitHub's
+  or Atlassian's, looked up from the session's project directory. It scans every string in the
+  input. A tool of a server whose configuration cannot be found or read, such as a claude.ai
+  connector, or that shows neither kind but leaves its URL, command or an argument to a `${`
+  variable, is scanned too, and a finding there is asked about rather than denied.
 
 It knows a fixed list of forms (`scripts/secret_scan.py`): private keys, AWS, GitHub, GitLab,
 Slack, Atlassian Cloud, Anthropic and Google keys, JSON web tokens, bearer headers and a value

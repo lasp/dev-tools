@@ -1012,15 +1012,15 @@ def decide(decision, reason):
         "hookEventName": "PreToolUse", "permissionDecision": decision, "permissionDecisionReason": reason}}))
 
 
-def server_config(name, cwd):
+def server_config(name, project):
     """The configuration Claude Code holds for MCP server `name`, from the first of: the local scope
-    in `.claude.json` for `cwd` or a parent, a `.mcp.json` in `cwd` or a parent, the user scope in
-    `.claude.json`. A key matches `name` once each character outside `[A-Za-z0-9_-]` is read as `_`,
-    as Claude Code names the server's tools. None when none of them defines it, when a file that
-    exists cannot be read, or when a field server_kind reads holds a `${` Claude Code would expand,
-    since the kind cannot be told then."""
+    in `.claude.json` for `project` or a parent, a `.mcp.json` in `project` or a parent, the user
+    scope in `.claude.json`. A key matches `name` once each character outside `[A-Za-z0-9_-]` is read
+    as `_`, as Claude Code names the server's tools. None when none of them defines it, when a file
+    that exists cannot be read or nests too deep to parse, or when the entry is not an object, its
+    `command` or `url` not a string, or its `args` not a list of strings."""
     home = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~")
-    places = [os.path.abspath(cwd), *map(str, pathlib.Path(os.path.abspath(cwd)).parents)]
+    places = [os.path.abspath(project), *map(str, pathlib.Path(os.path.abspath(project)).parents)]
 
     def load(path):
         if not os.path.exists(path):
@@ -1039,36 +1039,48 @@ def server_config(name, cwd):
         scopes.append(user.get("mcpServers") or {})
         found = next((v for s in scopes if isinstance(s, dict) for k, v in s.items()
                       if re.sub(r"[^A-Za-z0-9_-]", "_", k) == name), None)
-    except (OSError, ValueError, AttributeError):
+    except (OSError, ValueError, AttributeError, RecursionError):
         return None
-    if not isinstance(found, dict) or "${" in json.dumps([found.get(k) for k in ("url", "command", "args")]):
+    if (not isinstance(found, dict) or not all(isinstance(found.get(k, ""), str) for k in ("command", "url"))
+            or not isinstance(found.get("args", []), list) or not all(isinstance(a, str) for a in found.get("args", []))):
         return None
     return found
+
+
+def url_host(text):
+    try:
+        return urllib.parse.urlparse(text).hostname or ""
+    except ValueError:
+        return ""
 
 
 def server_kind(server):
     """`atlassian` for an mcp-atlassian command or a server at `mcp.atlassian.com`; `github` for a
     server at `api.githubcopilot.com`, a `copilot-api.` host or a `.ghe.com` host, or one whose
-    command or an argument names `github-mcp-server` or `@modelcontextprotocol/server-github`;
-    otherwise None. The sandbox's classifier covers the forms `sandbox.sh` writes, a subset of
-    these, and must not disagree with this one on them."""
+    command or an argument names `github-mcp-server` or `@modelcontextprotocol/server-github`, or
+    whose argument is the image `mcp/github` with or without a tag; otherwise None. A host is read
+    from `url` and from each argument that is an http(s) URL, as `mcp-remote` takes one. The
+    sandbox's classifier covers the forms `sandbox.sh` writes, a subset of these, and must not
+    disagree with this one on them."""
     words = [str(x) for x in [server.get("command"), *(server.get("args") or [])]]
-    host = urllib.parse.urlparse(str(server.get("url") or "")).hostname or ""
-    if host == "mcp.atlassian.com" or any("mcp-atlassian" in w for w in words):
+    hosts = [url_host(str(server.get("url") or ""))] + [url_host(w) for w in words if re.match(r"https?://", w)]
+    if "mcp.atlassian.com" in hosts or any("mcp-atlassian" in w for w in words):
         return "atlassian"
-    if (host == "api.githubcopilot.com" or host.startswith("copilot-api.") or host.endswith(".ghe.com")
-            or any("github-mcp-server" in w or "@modelcontextprotocol/server-github" in w for w in words)):
+    if (any(h == "api.githubcopilot.com" or h.startswith("copilot-api.") or h.endswith(".ghe.com") for h in hosts)
+            or any("github-mcp-server" in w or "@modelcontextprotocol/server-github" in w
+                   or re.fullmatch(r"mcp/github(?::[\w.-]+)?", w) for w in words)):
         return "github"
     return None
 
 
-def server_write(tool, cwd):
+def server_write(tool, project):
     """What a finding in the input of server tool `tool` gets, or None when its input is not scanned.
     `deny` for a write of a GitHub or Atlassian server: a Jira or Confluence tool but a read, or any
     other tool but a read of a server whose name holds `github` or whose configuration shows GitHub's
-    or Atlassian's. `ask` for a write of a server whose configuration cannot be found or read, so a
+    or Atlassian's. `ask` for a write of a server whose configuration cannot be found or read, or
+    shows neither kind but holds a `${` Claude Code would expand in a field server_kind reads, so a
     server of unknown kind is never passed as safe. None for a read, and for a server whose
-    configuration shows neither kind."""
+    configuration shows neither kind. `project` is where the configuration lookup starts."""
     if not tool.startswith("mcp__") or "__" not in tool[5:]:
         return None
     server, op = tool[5:].rsplit("__", 1)
@@ -1076,10 +1088,14 @@ def server_write(tool, cwd):
         return None if ATLASSIAN_READ.match(op) else "deny"
     if GITHUB_READ.match(op):
         return None
-    config = server_config(server, cwd)
-    if "github" in server.lower() or (config is not None and server_kind(config) is not None):
+    if "github" in server.lower():
         return "deny"
-    return "ask" if config is None else None
+    config = server_config(server, project)
+    if config is None:
+        return "ask"
+    if server_kind(config) is not None:
+        return "deny"
+    return "ask" if "${" in json.dumps([config.get(k) for k in ("url", "command", "args")]) else None
 
 
 def hook(payload, budget=None):
@@ -1114,7 +1130,7 @@ def hook(payload, budget=None):
             return
         found = (commit or []) + (sent or [])
         what, decision, elsewhere = "This command", "deny", "commit or post it outside Claude"
-    elif (decision := server_write(tool, event.get("cwd") or os.getcwd())):
+    elif (decision := server_write(tool, os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())):
         op = tool.rsplit("__", 1)[-1]
         try:
             found = []
