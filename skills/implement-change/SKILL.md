@@ -8,7 +8,7 @@ description: >
 argument-hint: "[file | ticket key | issue | description]"
 metadata:
   author: llm-tooling
-  version: 1.16.0
+  version: 1.17.0
 ---
 
 # Implement Change
