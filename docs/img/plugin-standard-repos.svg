@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 170 1840 480" width="920" height="240" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">The plugin, a project's standard and its repositories</title>
+  <desc id="desc">Three boxes. The lasp-dev plugin holds the skills, agents and hooks, the review contract and a default profile. A project's standard holds its rules, decisions, terms and settings in standards/, and the plugin reads it. Each repository holds its own standard or a pointer to it, standard: owner/repo, and its facts are detected at run time.</desc>
+  <defs><marker id="ah1B51A5" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1B51A5"/></marker></defs>
+  <rect x="40" y="170" width="1840" height="480" fill="#FFFFFF"/>
+  <rect x="72" y="200" width="540" height="420" fill="#FFFFFF" stroke="#000000" stroke-width="3"/>
+  <text x="104" y="254" font-size="26" fill="#1B51A5" font-weight="700" letter-spacing="2">THE TOOLS</text>
+  <text x="104" y="306" font-size="36" fill="#1B51A5" font-weight="700">The lasp-dev plugin</text>
+  <text x="104" y="352" font-size="28" fill="#565A5C" font-style="italic">the same for every project</text>
+  <text x="104" y="408" font-size="28" fill="#000000">• Skills, agents and hooks</text>
+  <text x="104" y="448" font-size="28" fill="#000000">• The review contract</text>
+  <text x="104" y="488" font-size="28" fill="#000000">• A default profile</text>
+  <text x="104" y="584" font-size="26" fill="#000000" font-family="Menlo, Consolas, monospace">lasp/dev-tools</text>
+  <rect x="690" y="200" width="540" height="420" fill="#FFFFFF" stroke="#000000" stroke-width="3"/>
+  <text x="722" y="254" font-size="26" fill="#1B51A5" font-weight="700" letter-spacing="2">THE STANDARD</text>
+  <text x="722" y="306" font-size="36" fill="#1B51A5" font-weight="700">Your project's standard</text>
+  <text x="722" y="352" font-size="28" fill="#565A5C" font-style="italic">what your team agreed</text>
+  <text x="722" y="408" font-size="28" fill="#000000">• Rules</text>
+  <text x="722" y="448" font-size="28" fill="#000000">• Decisions</text>
+  <text x="722" y="488" font-size="28" fill="#000000">• Terms</text>
+  <text x="722" y="528" font-size="28" fill="#000000">• Settings</text>
+  <text x="722" y="584" font-size="26" fill="#000000" font-family="Menlo, Consolas, monospace">standards/</text>
+  <rect x="1308" y="200" width="540" height="420" fill="#FFFFFF" stroke="#1B51A5" stroke-width="5"/>
+  <text x="1340" y="254" font-size="26" fill="#1B51A5" font-weight="700" letter-spacing="2">THE WORK</text>
+  <text x="1340" y="306" font-size="36" fill="#1B51A5" font-weight="700">Your repositories</text>
+  <text x="1340" y="352" font-size="28" fill="#565A5C" font-style="italic">the code and its history</text>
+  <text x="1340" y="408" font-size="28" fill="#000000">• Facts detected at run time</text>
+  <text x="1340" y="448" font-size="28" fill="#000000">• Their own standard, or</text>
+  <text x="1356" y="488" font-size="28" fill="#000000">a pointer:</text>
+  <rect x="1340" y="514" width="320" height="56" fill="#EEF1F5" stroke="none" stroke-width="0"/>
+  <text x="1356" y="550" font-size="24" fill="#000000" font-family="Menlo, Consolas, monospace">standard: owner/repo</text>
+  <path d="M690 405 L627.0 405.0" fill="none" stroke="#1B51A5" stroke-width="5" marker-end="url(#ah1B51A5)"/>
+  <path d="M1308 405 L1245.0 405.0" fill="none" stroke="#1B51A5" stroke-width="5" marker-end="url(#ah1B51A5)"/>
+</svg>
