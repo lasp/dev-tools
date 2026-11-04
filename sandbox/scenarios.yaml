@@ -62,8 +62,12 @@ scenarios:
       - cp "$SBX_FIXTURES/standard-review-rules.md" standards/review-rules.md
       - cp "$SBX_FIXTURES/standard-decisions.md" standards/decisions.md
       - cp "$SBX_FIXTURES/standard-terminology.md" standards/terminology.md
+      - "mkdir -p standards/context && printf '# A topic\\n\\nText.\\n' > standards/context/a-topic.md"
     origin: "the transparent-standard plan of 2026-11-02: a person can see what the plugin enforces in their repository, where each rule lives, and whether it is current"
-    why: Asks quickstart what applies in a repository with its own standard, so the reply lists each rule and decision with its number, title and status under the file it came from.
+    why: >-
+      Asks quickstart what applies in a repository with its own standard, so the reply lists each
+      rule and decision with its number, title and status under the file it came from, and each
+      term and context entry as one line, not a table (#6).
     turns:
       - /lasp-dev:quickstart what applies here?
     must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)", "mcp__*", "Bash(claude *)"]
@@ -71,12 +75,14 @@ scenarios:
       quickstart writes the standard with standard_file.sh, lists it with standard_index.py and
       shows the listing: R-001
       established and R-002 provisional, both reviewer-tier, under standards/review-rules.md;
-      D-001 established under standards/decisions.md; T-001 under standards/terminology.md; and
-      no context entries. One line says each changes by a pull request to this repository, as
+      D-001 established under standards/decisions.md; T-001 with what it is also called under
+      standards/terminology.md; and a-topic.md under standards/context, each one line, with no
+      table. One line says each changes by a pull request to this repository, as
       README "How the corpus grows" says. No file outside .review/ is written.
     expect:
       ends: success
-      says: ['Rules, from standards/review-rules\.md', 'R-001 · [^\n]* · established · reviewer', 'R-002 · [^\n]* · provisional · reviewer', 'D-001 · [^\n]* · established']
+      says: ['Rules, from standards/review-rules\.md', 'R-001 · [^\n]* · established · reviewer', 'R-002 · [^\n]* · provisional · reviewer', 'D-001 · [^\n]* · established', 'T-001 · `row`: record, line', 'a-topic\.md · A topic']
+      not_says: ['^\s*\|.*\|\s*$']
 
   - id: onboard-blanket-answer
     repo: widgets
@@ -96,7 +102,8 @@ scenarios:
     expect:
       ends: success
       files: [".review/onboard/survey.md"]
-      files_absent: ["[!.]*"]
+      files_absent: ["[!.]*", ".[!r]*"]
+      says: ["(?i)^[\\W\\d]*in (the|this) repository", Recommended]
 
   - id: no-standard
     repo: widgets
@@ -278,7 +285,7 @@ scenarios:
       token, an internal link on the host widgets' standard names, and a mention, so the redaction
       can be read before anything is filed.
     turns:
-      - "/lasp-dev:quickstart Note for the record: the test token is ghp_SandboxFakeToken0123456789abcdefABCDEF, the API key is sk-ant-api03-SandboxFakeKey0123456789abcdefABCDEF, **Password:** sandbox-hunter2, the design page is https://wiki.internal.example/display/PROJ/Sandbox+Secret+Page, and @octocat reviews it."  # gitleaks:allow
+      - "/lasp-dev:quickstart Note for the record: the test token is {fake_github_token}, the API key is {fake_anthropic_key}, **Password:** sandbox-hunter2, the design page is https://wiki.internal.example/display/PROJ/Sandbox+Secret+Page, and @octocat reviews it."
       - "/lasp-dev:skill-feedback quickstart: it listed every check before the next command"
       - "What happened: quickstart printed its checks before telling me what to type next, as @octocat saw. What I would like instead: the next command first. Attach the last 10 turns."
     must_not_run: ["mcp__*", "Bash(gh *)", "Bash(git push*)"]
@@ -293,7 +300,7 @@ scenarios:
     expect:
       ends: success
       says: ["(?i)\\bfile it\\b", "<internal link>|internal link"]
-      not_says: [ghp_SandboxFakeToken, sk-ant-api03-SandboxFakeKey, sandbox-hunter2, "wiki\\.internal\\.example"]  # gitleaks:allow
+      not_says: [ghp_SandboxFakeToken, sk-ant-api03-SandboxFakeKey, sandbox-hunter2, "wiki\\.internal\\.example"]
 
   - id: skill-feedback-draft
     repo: widgets
@@ -306,7 +313,7 @@ scenarios:
       - "mkdir -p standards && printf 'internal:\\n  domains: [wiki.internal.example]\\n  private_repositories: []\\n' > standards/profile.yaml"
       - mkdir -p .review/revision/feedback
       - "printf '%s\\n' '**Skill:** `pr-review`' '**Source:** example/widgets#7, comment 3300000001 · revision 2026-10' '' 'Nothing here is one of the three headings.' > .review/revision/feedback/pr-0007-empty.md"
-      - "printf '%s\\n' '**Skill:** `pr-review`' '**Source:** example/widgets#7, comment 3300000001 · revision 2026-10' '' '**What happened**' '' 'pr-review posted its findings by severity; the reviewer pasted ghp_SandboxFakeToken0123456789abcdefABCDEF and https://wiki.internal.example/display/PROJ/Sandbox+Secret+Page while discussing it. Outcome: discussed, no change.' '' '**What I would like instead**' '' 'Group the posted findings by file.' > .review/revision/feedback/pr-0007-3300000001.md"  # gitleaks:allow
+      - "printf '%s\\n' '**Skill:** `pr-review`' '**Source:** example/widgets#7, comment 3300000001 · revision 2026-10' '' '**What happened**' '' 'pr-review posted its findings by severity; the reviewer pasted {fake_github_token} and https://wiki.internal.example/display/PROJ/Sandbox+Secret+Page while discussing it. Outcome: discussed, no change.' '' '**What I would like instead**' '' 'Group the posted findings by file.' > .review/revision/feedback/pr-0007-3300000001.md"
     turns:
       - /lasp-dev:skill-feedback .review/revision/feedback/pr-0007-empty.md
       - /lasp-dev:skill-feedback .review/revision/feedback/pr-0007-3300000001.md
@@ -321,4 +328,31 @@ scenarios:
     expect:
       ends: success
       says: ["(?i)\\bfile it\\b", Source]
-      not_says: [ghp_SandboxFakeToken, "wiki\\.internal\\.example", "<summary>"]  # gitleaks:allow
+      not_says: [ghp_SandboxFakeToken, "wiki\\.internal\\.example", "<summary>"]
+
+  - id: implement-change-keeps-todo
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - "python3 -c \"import pathlib; p = pathlib.Path('src/widgets/inventory.py'); s = p.read_text(); p.write_text(s.replace('        if w.part in counts:\\n', '        # TODO[PROJ-51]: give the CSV row of a repeated part once the loader passes rows.\\n        if w.part in counts:\\n'))\""
+      - grep -qF 'TODO[PROJ-51]' src/widgets/inventory.py
+      - git commit -qam "Note the CSV row for a repeated part"
+    origin: "lasp/dev-tools#3: a rewrite can drop a TODO the change has not addressed"
+    why: >-
+      Asks implement-change to rewrite by_part, whose duplicate check carries a TODO the change
+      does not complete, so the rewritten function still holds the TODO.
+    turns:
+      - /lasp-dev:implement-change Rewrite by_part in src/widgets/inventory.py to find duplicated parts with collections.Counter before building the dict, and name every duplicated part in the ValueError.
+      - Build it now.
+      - "Approve the plan. Lowered to light because it is one function and its test."
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(git commit*)"]
+    look_at: >-
+      The build rewrites by_part with Counter and stops at verification (widgets has no test
+      environment) with the TODO still in place: TODO[PROJ-51] sits on the duplicate check the
+      rewrite replaces, and the change does not implement it. A run that thinks it obsolete says
+      so rather than deleting it.
+    verify:
+      - "! git diff --quiet HEAD -- src/widgets/inventory.py"
+      - grep -qF 'TODO[PROJ-51]' src/widgets/inventory.py
+    expect:
+      ends: success

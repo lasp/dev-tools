@@ -41,7 +41,9 @@ person wrote, the pull request author's own included, at most thirty, ranked pas
   exists**, in place of a ranked one when the ranking leaves it out. The date is the first thread
   written by a review bot, not the pull request that added the instruction files: the two can be
   months apart, with the bot first. A repository a bot has reviewed since the beginning has no
-  baseline; say so rather than calling the oldest pull request one.
+  baseline; say so rather than calling the oldest pull request one. A harvest that started at a
+  window's first day did not read before it: say the baseline was outside the window, not that
+  none exists.
 - Every thread carries **who wrote it** and whether it was **human or AI-drafted**.
 
 Report the sample against each of these before writing a single candidate. If it cannot be
@@ -91,7 +93,8 @@ the share of AI-drafted threads in its own right, separate from which rules it d
 
 ## Steps
 
-1. Run harvest.md's "Records" from the repository's first merge, telling `pr-reader` `Judge: no`,
+1. Run harvest.md's "Records" from the repository's first merge, or from the first day of the
+   window the person chose at `onboard`'s step 6, telling `pr-reader` `Judge: no`,
    since nothing here reads a verdict. Records already in `.review/harvest/records/` stand in for
    it, and the report names the earliest merge they cover and how many of the pull requests that
    `main`'s first-parent subjects name, as `merge_commit.py` reads them (`(#N)` or `Merge pull

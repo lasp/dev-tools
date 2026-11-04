@@ -31,12 +31,17 @@ standard at run time, never written into the skill. Each step names where its ru
    the skill says once what that is; the same holds for `<standard>/…`. `.claude/CLAUDE.md`
    "Conventions" has the rule and `check_static.py`'s `plugin-vars` check enforces it.
 5. **Link it for Copilot**: a symlink `.github/skills/<name>` to `../../skills/<name>` (an agent:
-   `.github/agents/<name>.agent.md`). No check catches a missing link.
+   `.github/agents/<name>.agent.md`). `check_static.py`'s `copilot-links` check fails a missing or
+   misdirected link.
 6. **Add its row** to the skills table in README "What is included", and to the one-line list
-   above it. No check catches a missing row.
+   above it; a skill marked `user-invocable: false` gets a `hidden` row and no line.
+   `check_static.py`'s `readme-skills` check fails a missing row or line and a wrong Started value.
 7. **Run the checks** in "Before a pull request" above, one after another.
 8. **Try it in the sandbox** before review: a scenario in `sandbox/`, run beside the current
-   plugin ([`sandbox/README.md`](sandbox/README.md)).
+   plugin ([`sandbox/README.md`](sandbox/README.md)). A skill a person types needs a
+   `trigger-<name>` scenario in `sandbox/triggers/scenarios.yaml`, a request in plain words, and
+   its id in `sandbox/triggers/coverage.yaml`, or `TriggerPack` in `tests/test_sandbox.py` fails;
+   a skill with `user-invocable: false` or `disable-model-invocation: true` needs none.
 9. **Fill the pull request's `Origin:`, `Sandbox:` and `Canary:` lines**, as README "Changing the
    tooling" says, and set the skill's `metadata.version`.
 
