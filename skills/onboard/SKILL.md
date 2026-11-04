@@ -169,7 +169,8 @@ for the repositories that use it; for Jira, the statuses and fields; for Conflue
   again. The default branch it names replaces the survey's,
   which is only the checkout's local `origin/HEAD` and can be stale; when the two differ, say so.
   Then the repositories that use this one, when the survey's `package` row names a package
-  (`<module>` is its name with `-` as `_`). Run each of these `search_code` queries once, never
+  (`<module>` is each name its `import names` row gives, queries 1 and 2 run for each; when that
+  row reads `conflict`, ask which names the package exposes first). Run each of these `search_code` queries once, never
   joined with `OR`, which GitHub's code search undercounts, paging each (`perPage` 100) until its
   `total_count` is read:
   1. `"from <module>" org:<owner> language:python`

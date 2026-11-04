@@ -489,6 +489,29 @@ class Settings(unittest.TestCase):
         self.assertEqual(found["package"]["value"], "single")
         self.assertEqual(found["pytest settings"]["value"], "markers: slow, net")
 
+    def test_import_names_come_from_the_packages_tables_then_its_layout_then_its_name(self):
+        name = "[project]\nname = 'lasp-curryer'\n"
+        cases = [
+            ({"pyproject.toml": name, "curryer/__init__.py": "", "tests/__init__.py": ""}, "git (inferred)", "curryer"),
+            ({"pyproject.toml": name, "src/curryer/__init__.py": "", "src/curryer/io/__init__.py": "",
+              "tools/__init__.py": ""}, "git (inferred)", "curryer"),
+            ({"pyproject.toml": name + "\n[tool.setuptools]\npackages = [\"curryer\", \"curryer.io\"]\nzip-safe = false\n",
+              "other/__init__.py": ""}, "pyproject.toml", "curryer"),
+            ({"pyproject.toml": "[tool.poetry]\nname = 'lasp-curryer'\npackages = [\n  { include = \"curryer\", from = \"src\","
+                                " format = [\"sdist\"] },\n  { include = \"spice\" },\n]\n"}, "pyproject.toml", "curryer, spice"),
+            ({"pyproject.toml": name}, "pyproject.toml (inferred)", "lasp_curryer"),
+        ]
+        for files, where, value in cases:
+            with self.subTest(files=sorted(files)):
+                row = rows(make_repo(files, "git@github.com:example-org/curryer.git"))["import names"]
+                self.assertEqual((row["found_in"], row["value"], row["conflict"]), (where, value, False))
+
+    def test_import_names_two_tables_disagree_on_are_a_conflict(self):
+        text = ("[project]\nname = 'lasp-curryer'\n\n[tool.setuptools]\npackages = ['curryer']\n\n"
+                "[tool.poetry]\npackages = [{ include = 'spice' }]\n")
+        row = rows(make_repo({"pyproject.toml": text}, "git@github.com:example-org/curryer.git"))["import names"]
+        self.assertEqual((row["value"], row["conflict"], row["match"]), ("curryer, spice", True, "-"))
+
     def test_merge_commits_are_not_counted_as_habit(self):
         repo = make_repo({}, "git@github.com:example-org/m.git", subjects=("ABC-1: one", "ABC-2: two"))
         git(repo, "checkout", "-q", "-b", "side")
