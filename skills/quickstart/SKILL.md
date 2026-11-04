@@ -62,8 +62,8 @@ but the two `ToolSearch` lookups below. Each finding carries its fix.
   `${CLAUDE_PLUGIN_ROOT}/skills/using-github/SKILL.md`'s "Picking the server" says; any other
   server is not used by this plugin's skills.
 
-Then, in this repository: whether it has a standard, `standards/review-rules.md`,
-`standards/decisions.md` or a `standard:` pointer in `standards/profile.yaml`, and the branch's ticket key,
+Then, in this repository: whether it has a standard, a `standards/` directory or a `standard:`
+pointer in `standards/profile.yaml`, and the branch's ticket key,
 matched by the profile's `ticket.pattern` in any letter case, upper-cased unless the pattern matches it as written
 (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" <owner/repo> --field ticket.pattern`), if it
 has one, and the profile it runs on (`--field source`), each asked with the `origin` remote's
@@ -82,7 +82,8 @@ to copy `${CLAUDE_PLUGIN_ROOT}/standards/profile.example.yaml`, printed as an ab
 file and fill it. A pointer to a standard for several repositories whose `profiles/` has no
 `<repo>.yaml` for this one is not `none` but refused, as above. With a standard, also:
 
-- The live-rule count, when the ledger exists, from its status lines, not its headings:
+- The live-rule count, when the ledger exists, from its status lines, not its headings, printed
+  `standard: N rules`:
   `grep -cE 'status: \**(provisional|established)' standards/review-rules.md`. Zero prints
   `standard: no rules admitted yet`. Decisions with no ledger print `standard: decisions, no rules
   yet`: the first rules are not drafted. Neither a ledger nor decisions, only settings such as
@@ -111,29 +112,36 @@ with the reason, and the repository checks go on.
 
 In this order, and nothing else, each part under its bold label, short enough to read at a glance:
 
-1. **One line on what the plugin is**, as it stands: lasp-dev takes a ticket to a merged pull
-   request: it drafts the ticket, plans and builds the change, and reviews the pull request
-   against this repository's standard, stopping for your yes before anything posts, pushes or
-   writes to Jira or Confluence.
+1. **This line, as it is**: lasp-dev takes a ticket to a merged pull request: it drafts the
+   ticket, plans and builds the change, and reviews the pull request against the repository's
+   standard where it has one, stopping for your yes before anything posts, pushes or writes to
+   Jira or Confluence.
 2. **Setup**, one bullet each: `Plugin: <commit>`, `GitHub: <name>, <status>`, `Jira: <status>`
    and `Confluence: <status>`. Jira's and Confluence's status is the Atlassian server's name and
    status, or `not configured`; a missing server is `none`; a setup command that did not run makes
-   its bullets `not checked`.
+   its bullets `not checked: <command> did not run: <reason>`. When `claude mcp list` showed other
+   servers, a last bullet, `Other servers:`, names each with its status and what it means here, as
+   step 1 says.
 3. **This repository**, `<repo> on <branch>`, one bullet each:
-   - `Standard:` what step 1 prints after `standard:`, or `none yet` with no standard. A
-     `profile:` report from step 1 that carries a fix goes under **Fix first**.
+   - `Standard:` what step 1 prints after `standard:`, or `none` with no standard.
+   - `Profile:` step 1's `profile:` report.
    - `.review/ ignored:` `yes`, `locally only` or `no`.
-   - `PR template:` `matches`, `missing`, `differs` or `not recorded`, left out with no standard.
-   - `Last revision:` `<YYYY-MM>` or `none yet`, left out with no standard.
+   - `PR template:` `matches`, `missing`, `differs` or `not yet recorded`; `not checked` when the
+     profile is refused; left out with no standard.
+   - `Last revision:` `<YYYY-MM>` or `none`, left out with no standard.
 4. **Fix first**, only when step 1 found a problem: a numbered list, each problem in a few words
-   with the fix step 1 gives. Add no fix of your own. Then, when `claude mcp list` showed other
-   servers, one line naming each with its status and what it means here, as step 1 says.
-5. **Next**, one command and one sentence on why:
+   with the fix step 1 gives, a refused profile and a `profile:` report that carries a fix among
+   them. Add no fix of your own.
+5. **Next**, the command to type and one sentence on why, `<key>` being the branch's ticket key
+   when it has one and `<ticket key>` otherwise:
+   - with a refused profile, the fix under **Fix first**, since every skill reads the profile;
    - with no standard, `/lasp-dev:onboard`, to record what the plugin cannot detect in this
-     repository, on your yes; then `/lasp-dev:work <ticket key>` or
+     repository, on your yes; then `/lasp-dev:work <key>` or
      `/lasp-dev:ticket-draft <description>` once it is done;
-   - with one and a ticket key on the branch, `/lasp-dev:work` with that key;
-   - with one and no key, both `/lasp-dev:work <ticket key>`, for a ticket that exists, and
+   - with a standard that has no ledger (`settings only, no rules yet` or `decisions, no rules
+     yet`), `/lasp-dev:onboard rules` to draft the first rules, beside `/lasp-dev:work <key>`;
+   - otherwise, with a key on the branch, `/lasp-dev:work <key>`; with none, both
+     `/lasp-dev:work <ticket key>`, for a ticket that exists, and
      `/lasp-dev:ticket-draft <description>`, for a new one.
 6. **Read more**, these lines as they are, with `${CLAUDE_PLUGIN_ROOT}` printed as an absolute path:
 

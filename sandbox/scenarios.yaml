@@ -50,7 +50,8 @@ scenarios:
       The message says the setup commands, claude plugin list and claude mcp list, did not run,
       each with the reason, and that no server is connected. The repository checks follow: that
       widgets has no standard, whether .review/ is ignored, and the branch's PROJ-42 prefix. It
-      ends on the next command to type here, without editing a file or calling a server.
+      names the next command to type here, /lasp-dev:onboard, without editing a file or calling a
+      server.
     expect:
       ends: success
 

@@ -514,7 +514,7 @@ A pull request that `implement-change` did not build is reviewed all the same. W
 | `work` | Runs the same review stage | The same | The same | The same |
 | `implement-change`, `pr-create` | Neither reads its `standard-repo.md` | Each reads its `standard-repo.md`: the standard for every agent, the project's pull request template and the Already checked block | As with decisions, the standard fetched | Unchanged |
 | `pr-fix` | Writes no standard before its wave | Rewrites `.review/standard.md` before its wave | The same, fetched | Unchanged |
-| `quickstart` | Reports `none yet` and offers `/lasp-dev:onboard` next | Reports `decisions, no rules yet` | Reports `from <owner>/<repo>` | Unchanged |
+| `quickstart` | Reports `none` and offers `/lasp-dev:onboard` next | Reports `decisions, no rules yet` and offers `/lasp-dev:onboard rules` | Reports `from <owner>/<repo>` | Unchanged |
 | `onboard` | Step 6 drafts the first rules | The same | Step 6 drafts from this repository's threads for the named standard, each tagged `repos: [<this repository>]`, once the standard covers it | Unchanged |
 | `revise` | Does not run | Does not run | Runs here and writes into a clone of the named repository (`revise`'s "The standard's repository") | Unchanged |
 | Everything else | Unchanged | Unchanged | Unchanged | Unchanged |
