@@ -15,7 +15,7 @@ description: >
 argument-hint: "[rules [Confluence page or Jira epic to add]]"
 metadata:
   author: lasp-dev
-  version: 0.5.0
+  version: 0.5.1
 ---
 
 # Onboard
@@ -232,7 +232,8 @@ stands out: a family the
 repository could hold but does not, such as a pull request template or secret scanning, and a
 value the plugin reads that the repository contradicts.
 
-Write the table, the survey's printout and the server findings to `.review/onboard/survey.md`
+Show the table in the reply, then write it, the survey's printout and the server findings to
+`.review/onboard/survey.md`
 with the Write tool, as `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`, "Writing a file",
 says, replacing any earlier one. Then run the survey again with the same `--ref`, adding
 `--profile .review/onboard/profile.yaml`, `--public false` or `--public true` when GitHub said
@@ -250,7 +251,8 @@ the person confirms or trims it.
 
 At one point, in one widget, or as few widgets of four as the questions need
 (`${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`), each with what bears on it and a
-recommendation. A reply typed in chat answers as well, several at once included.
+recommendation. A reply typed in chat answers as well, several at once included. When nothing is
+left to ask, say so in one line; step 5's question is then the next one.
 
 Each question opens with what the setting does in the plugin, in plain words rather than its key,
 and each option says what choosing it changes. Recording a value writes it into the standard, where
@@ -345,7 +347,12 @@ question that wrote it is asked again.
 Show the drop-in profile's values, each with the file it would go to, and, for a standard here,
 which is one file, that file whole with its difference from one already there, then ask, as one question,
 which of these happens. Recommend writing the standard, with the repository edits for the commands
-whose sources disagree, and keeping it in `.review/onboard/` when the person skipped step 4. The recommendation says why, in
+whose sources disagree, and keeping it in `.review/onboard/` when the person skipped a question
+step 4 asked. This question is a gate that holds, as `decision-points.md` allows a skill to name
+one: it is asked even when step 4 asked none, the turn ends on it, and nothing outside
+`.review/onboard/` is written before a reply to it. No earlier reply stands in for it, "take the
+recommended option for everything" included, since the person has not yet seen the values it
+would write. The recommendation says why, in
 what the next session changes: what the plugin would read from the standard that it does not read
 today, or that nothing changes when nothing would. Both writes can be taken together, named
 through "Other".

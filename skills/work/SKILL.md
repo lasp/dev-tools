@@ -6,7 +6,7 @@ description: >
   "what's next on this ticket", "what's next on this PR" or "pick up where I left off".
 argument-hint: "[ticket key | PR number | nothing]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.8.0
 ---
 

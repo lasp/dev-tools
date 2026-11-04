@@ -9,7 +9,7 @@ description: >
   Not for how a system is built (architecture-doc) or a change still being designed (design-doc).
 argument-hint: "[revise] <page ID | URL | file | text>"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.0.2
 ---
 

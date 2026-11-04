@@ -7,7 +7,7 @@ description: >
   or code comments.
 argument-hint: "[text | file]"
 metadata:
-  author: dev-tools
+  author: lasp-dev
   version: 1.2.1
 ---
 
