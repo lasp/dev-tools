@@ -65,12 +65,21 @@ the repeats, then the last messages, into <sandbox>/runs/<scenario>/compare.md.
 
 The settings each session runs under are written to <sandbox>/settings.json from
 `settings.template.json`: a rule naming `{github}` or `{atlassian}` once per server of that kind
-in <sandbox>/mcp.json, `{sandbox}` and `{plugin}` once per spelling of the sandbox's path and the
+in <sandbox>/mcp.json, the kind told by what the server is, not by its name: GitHub's when its
+`url`'s host is `api.githubcopilot.com` or its command or an argument names `github-mcp-server`,
+Atlassian's when its command or an argument names `mcp-atlassian`, the test `sandbox.sh` applies
+before it forces the server read-only. An Atlassian server without `--read-only` and
+`READ_ONLY_MODE=true`, which `sandbox.sh` sets, stops run.py, since its rules allow every tool. A
+server of neither kind gets no rule, so under `dontAsk` every call to it is refused. `{sandbox}` and `{plugin}` are repeated once per spelling of the sandbox's path and the
 plugin directory's, so file and shell rules stay inside them. Its `sandbox` block is copied as it
 stands: Bash runs in Claude Code's sandbox, which allows it without a rule. `claudeMdExcludes`
 lists every `CLAUDE.md`, `AGENTS.md` and rules file above the sandbox and the person's own, and
 `autoMemoryEnabled` is off, so a session, the judge's included, reads the repository's
 instructions and no one's personal ones or an earlier run's memory.
+
+A scenario file names a planted fake credential by placeholder, `{fake_github_token}` or
+`{fake_anthropic_key}`, which run.py replaces with the full string when it reads the file, so no
+tracked file holds one a secret scanner would flag.
 
 Needs PyYAML (`python3 -m pip install pyyaml`).
 """
@@ -93,6 +102,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 try:
     import yaml
@@ -114,6 +124,9 @@ SESSION_ENV = re.compile(r"(ANTHROPIC_|CLAUDE_CODE_)\w*|MAX_THINKING_TOKENS")
 UNKEYED_ENV = re.compile(r"SESSION|SOCKET|EXECPATH|ENTRYPOINT|SSE_PORT|PID|PASSPHRASE|(KEY|TOKEN)$|^ANTHROPIC_CUSTOM_HEADERS$")
 REUSE_HOURS = 24  # the README's "run both variants the same day": live scenarios read that day's servers
 SCENARIOS = None  # --scenarios; None is scenarios.yaml beside this script
+# Joined here so no tracked file holds a whole credential-shaped string.
+FAKES = {"fake_github_token": "gh" + "p_SandboxFakeToken0123456789abcdefABCDEF",
+         "fake_anthropic_key": "sk-" + "ant-api03-SandboxFakeKey0123456789abcdefABCDEF"}
 
 
 def child(cmd, check: bool = False, capture_output: bool = False, **kw) -> subprocess.CompletedProcess:
@@ -166,7 +179,12 @@ def fixture_dir() -> Path:
 
 
 def scenarios() -> dict[str, dict]:
-    return {s["id"]: s for s in yaml.safe_load(scenario_file().read_text())["scenarios"]}
+    text = scenario_file().read_text()
+    for name, value in FAKES.items():
+        text = text.replace("{" + name + "}", value)
+    if unknown := re.search(r"\{fake_\w+\}", text):
+        raise SystemExit(f"run.py: {scenario_file()} names {unknown.group()}, which is not a planted fake: {', '.join(FAKES)}")
+    return {s["id"]: s for s in yaml.safe_load(text)["scenarios"]}
 
 
 def for_plugin(node: object, name: str) -> object:
@@ -221,14 +239,33 @@ def outside_instructions(sandbox: Path) -> list[str]:
     return list(dict.fromkeys(paths))
 
 
+def server_kind(server: dict) -> str | None:
+    """`atlassian` for an mcp-atlassian command, by the test `sandbox.sh` applies before it forces
+    the server read-only; `github` for a server at `api.githubcopilot.com` or a `github-mcp-server`
+    command, its docker image or its binary; otherwise None."""
+    words = [str(x) for x in [server.get("command"), *(server.get("args") or [])]]
+    if any("mcp-atlassian" in w for w in words):
+        return "atlassian"
+    if urlparse(server.get("url") or "").hostname == "api.githubcopilot.com" or any("github-mcp-server" in w for w in words):
+        return "github"
+    return None
+
+
 def write_settings(sandbox: Path, plugin: Path) -> None:
     """The template with each placeholder string repeated once per value, wherever it sits, every
     environment variable `mcp.json` reads added to the variables sandboxed commands lose, and every
     instruction file outside the sandbox excluded."""
     template = json.loads((HERE / "settings.template.json").read_text())
     mcp = (sandbox / "mcp.json").read_text()
-    names = list(json.loads(mcp)["mcpServers"])
-    values = {"github": [n for n in names if "github" in n], "atlassian": [n for n in names if "atlassian" in n],
+    servers = json.loads(mcp)["mcpServers"]
+    kinds = {name: server_kind(server) for name, server in servers.items()}
+    for name, kind in kinds.items():
+        server = servers[name]
+        if kind == "atlassian" and ("--read-only" not in (server.get("args") or [])
+                                    or (server.get("env") or {}).get("READ_ONLY_MODE") != "true"):
+            raise SystemExit(f"run.py: the mcp-atlassian server {name} in mcp.json lacks --read-only or READ_ONLY_MODE=true; "
+                             "rebuild the sandbox with sandbox.sh, which sets both")
+    values = {"github": [n for n, k in kinds.items() if k == "github"], "atlassian": [n for n, k in kinds.items() if k == "atlassian"],
               "sandbox": spellings(sandbox), "plugin": spellings(plugin)}
 
     def expand(node):

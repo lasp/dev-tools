@@ -138,6 +138,11 @@ Write it to be read:
 - Size it to what a reviewer needs to judge the goal, not to the diff. Cut mechanics before
   motivation; a small fix to a serious problem still gets its why.
 - Headings once there are several sections, named for goals and problems, not files.
+- Formatting as the GitHub Markdown bullet in `${CLAUDE_SKILL_DIR}/../pr-review/comment-style.md`'s
+  Form says. Where the change adds a workflow, an architecture pattern or a dependency between
+  components that a diagram shows faster than prose, consider a Mermaid diagram
+  ([diagrams](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-diagrams)),
+  which GitHub renders inline.
 - Plain words, as to a teammate at their desk. Say how bad a problem was.
 - Argue why the goal matters; do not argue that the change is good. The reviewer judges that
   against the goal.

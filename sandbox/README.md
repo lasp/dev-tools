@@ -17,11 +17,32 @@ things read it:
 - **`compare`**, for tuning: every variant's runs, each metric as mean and range, the messages side by side.
 - **`--check`**, for testing: each summary against the scenario's `expect` block, `must_not_run` and `verify`.
 
-There are two scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
+This repository holds two scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
 scenario runs offline in `widgets`, a made-up repository `fixture/make_widgets.sh` builds with the
 same commits every time, so it needs no server and no access to anyone's repositories. It holds
-`quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, `no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", the controlled-content gates of `design-doc`, `ticket-draft` and
-`pr-create`, `rebase-clear-conflict`, `rebase-intent-conflict` and `rebase-remote-ahead`, which resolve a clear conflict, stop at one of intent, and stop before rebasing over commits only the remote holds, and the `skill-feedback` previews, whose planted credentials carry `gitleaks:allow`. A project's own pack, which replays its
+`quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, 
+`no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", 
+the controlled-content gates of `design-doc`, `ticket-draft` and `pr-create`,
+`rebase-clear-conflict`, `rebase-intent-conflict` and `rebase-remote-ahead`, which resolve a clear
+conflict, stop at one of intent, and stop before rebasing over commits only the remote holds,
+`implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
+environment) with the TODO still in place, the `skill-feedback` previews,
+whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,
+and `pr-create-new-flow`, a description for a branch that adds a pipeline.
+The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
+skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
+skill, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
+`notrigger-` scenario holds the other side, a request that must not reach a skill, named in its
+`must_not_run` as `Skill(...)`: a GitHub issue is not `ticket-draft`'s.
+`revise` and `ticket-audit` are not in it, since `disable-model-invocation` keeps them to their
+slash commands. Its `coverage.yaml` names the whole pack as its set, so `smoke.py` runs it on two
+checkouts, after a change to a skill's `description:`:
+
+```bash
+sandbox/smoke.py --scenarios sandbox/triggers/scenarios.yaml --base ../dev-tools-main --head . --sandbox ~/sbx/1002 --repeat 3
+```
+
+A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
 directory beside this file, given with `--scenarios`, with a README that lists its scenarios and
 what they need.
@@ -167,7 +188,12 @@ person would be asked to approve; one rule, `Bash(*)`, allows them, so a run is 
 there, and the Bash deny rules below still hold. The rules allow reading in the sandbox and the
 plugin in use and editing in the sandbox. They deny every
 GitHub, Jira and Confluence write, which as MCP tools run outside the sandbox, and `git push`,
-`gh`, `aws`, `curl` and `claude`, which also hold within it. `claude plugin list` and `claude mcp
+`gh`, `aws`, `curl` and `claude`, which also hold within it. A server gets the GitHub or Atlassian
+rules by what it is, whatever its name: GitHub's when its `url` is at `api.githubcopilot.com` or
+its command or an argument names `github-mcp-server`, Atlassian's when its command or an argument
+names `mcp-atlassian`, the test `sandbox.sh` applies. An Atlassian server without the read-only
+flag and variable `sandbox.sh` sets stops `run.py`, since its rules allow every tool. A server of
+neither kind gets no rule, so under `dontAsk` every call to it is refused. `claude plugin list` and `claude mcp
 list` would read your own installation, not the sandbox's, so `quickstart`'s checks of the plugin
 and the servers stay unanswered here. `dontAsk` denies anything not allowed, a question to you included. A
 skill that would ask ends its turn with the question as text, so most scenarios stop at the

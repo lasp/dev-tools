@@ -227,9 +227,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/standard_index.py" .review/standard.md --
 otherwise `standards/context`. When `.review/standard/source`
 ends `@none`, the standard is not read: pass no `--context`. `standard_index.py` lists
 what every build and review loads: each rule and decision with its number, title, status and
-`repos:` tag, the terminology and the context entries, each under the file it came from. Show its
-output as it prints, in a code block, then one line: a rule's wording is its entry's `> ` lines,
-and each file changes by a pull request to the repository it came from, as
+`repos:` tag, each term with what it is also called, and the context entries, each under the file
+it came from. Show its output as it prints, one line per entry in a code block, never recast as a
+table and with nothing added from the files it lists, then one line: a rule's wording is its
+entry's `> ` lines, and each file changes by a pull request to the repository it came from, as
 `${CLAUDE_PLUGIN_ROOT}/README.md` "How the corpus grows" says. When its last line is `No
 standard: …`, add `/lasp-dev:onboard` as the way to start one; when its first line says the
 standard is not read, it already names the command that reads it again.
