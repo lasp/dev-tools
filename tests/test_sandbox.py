@@ -139,7 +139,7 @@ class Sandbox(unittest.TestCase):
 
     def test_every_generic_scenario_is_well_formed_and_runs_in_the_fixture(self):
         known = run.scenarios()
-        self.assertEqual(len(known), 14)
+        self.assertEqual(len(known), 15)
         well_formed(self, known, {"widgets"})
 
     def test_every_fixture_a_scenario_copies_is_in_the_pack(self):

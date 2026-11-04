@@ -24,8 +24,9 @@ same commits every time, so it needs no server and no access to anyone's reposit
 `no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", 
 the controlled-content gates of `design-doc`, `ticket-draft` and `pr-create`,
 `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
-environment) with the TODO still in place, and the `skill-feedback` previews,
-whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says.
+environment) with the TODO still in place, the `skill-feedback` previews,
+whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,
+and `pr-create-new-flow`, a description for a branch that adds a pipeline.
 The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
 skill, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
