@@ -289,6 +289,114 @@ Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
 
 Pinned by: tests/test_record.py::test_a_comment_without_its_date_is_refused_naming_its_position
 
+## The comment list
+
+Version: 1
+
+Fields: `.review/harvest/threads/pr-NNNN/comment-list.json`, a JSON object: `pr`, the pull
+request's number, and `comments`, every comment in its dump, ordered by `created` then `id` and
+empty when no one commented: each review thread's opening comment and
+every reply in it, each review whose summary is not blank, and each conversation comment, a bot's
+and the pull request author's included. Each item has exactly these keys: `pr`, the number; `id`,
+the comment's number (a review comment's from its `html_url`'s `#discussion_r<n>`); `url`;
+`author`, the login; `authorship`, `human`, `ai-drafted` or `bot`, as "The record"'s "Authorship"
+reads this comment alone; `kind`, `thread`, `reply`, `review` or `comment`; `thread`, the review
+thread's id, null for a review or a conversation comment; `path` and `line`, where the comment
+anchors, `line` its `original_line`, the line in the commit it was made on, else `line`, null at
+file level, both null for a review or a conversation comment; `created`,
+GitHub's timestamp (`created_at`, or a review's `submitted_at`); and `body`, the text unchanged.
+
+Every comment is listed, a reply as much as the comment that opened its thread: guidance is read
+per comment, apart from how a thread was settled, which the record and `thread-analyst` judge per
+thread.
+
+`scripts/comment_list.py <dump> [...]` writes it from a dump `scripts/thread_dump.py` wrote, and
+prints `wrote <path>: <n> comments, <n> human, <n> ai-drafted, <n> bot` per dump. An `id` is
+unique in the list, since a reader names a comment by its number alone. It exits 1 with the
+reason, writing nothing for any dump given, for a dump directory not named `pr-NNNN`, one of
+`comments.json`, `reviews.json` and `issue-comments.json` missing or not JSON,
+a review comment whose `html_url` has no `#discussion_r<n>`, a review with a body but no
+`submitted_at`, an id given twice, across kinds as well as within one, or a profile `record.py`
+refuses.
+
+Writers: `scripts/comment_list.py`, run by harvest.md's "Records". Readers: `guidance-extractor`
+and `scripts/guidance_check.py`, through harvest.md's "Guidance"; `sandbox/harvest_recall.py`,
+whose fixture holds comment lists.
+
+Pinned by: tests/test_comment_list.py::test_lists_every_comment_with_its_own_authorship
+
+## The guidance items
+
+Version: 1
+
+Fields: `.review/harvest/guidance/slice-<n>.json`, one `guidance-extractor` run, a JSON object:
+`prs`, the pull request numbers whose comment lists it read, each once; `comments_read`, the
+comments those lists hold; and `items`, one object per statement of guidance, in the lists' order,
+each with exactly these keys:
+
+| Key | Value |
+|---|---|
+| `pr`, `comment_id`, `url`, `author`, `authorship` | the comment's, as its entry in "The comment list" gives them |
+| `quote` | the words that carry the guidance, one passage of 1 to 40 words of the comment's own words: its `body` without the lines that open `>` |
+| `generality` | `general` or `pr-specific` |
+| `signal` | `addresses agents`, `states a principle`, `names a habit`, `cites a source` or `none`; `none` on a `pr-specific` item |
+| `kind` | `rule`, `agent-guidance`, `data-convention`, `process`, `decision`, `tool-config`, `exemplar`, `review-calibration` or `open-question` |
+| `principle` | one sentence in the extractor's words |
+| `rationale` | the comment's own reason, one passage of 1 to 40 of its own words, or `null` |
+| `covered_by` | `R-<n>`, `D-<n>`, `instruction file`, or `null` |
+| `outcome` | `changed as asked`, `changed differently`, `declined`, `discussed` or `unanswered` |
+
+`scripts/guidance_check.py <slice> [...] --comments <comment-list.json> [...]`, given every slice
+of a run and every comment list it read, holds them to this form: every list's pull request in
+exactly one slice, and every slice's among the lists; a slice of more than 300 comments only when
+it holds one pull request; every key present and no other, each value of its form;
+`comments_read` the comments a slice's lists hold; each item on a comment its `pr`'s list holds,
+its `pr` one of its slice's, with that comment's `url`, `author` and `authorship`; and each
+`quote`, and each `rationale` that is not null, found in that comment's own words, within one
+run of its lines between those that open `>`, a run of whitespace read as one space, never starting
+or ending inside a word, and nothing else forgiven.
+It prints `slices: <n> · comments: <n> · items: <n> · general: <n> · pr-specific: <n>`, then
+`kind · <kind> · <general> · <pr-specific>` for each kind with an item, and exits 0; otherwise one
+`refused · <where> · <why>` line per fault, every fault found, and exit 1: a slice that cannot be
+read as JSON is one, and leaves its pull requests in no slice while the other slices are checked.
+
+Writers: `guidance-extractor`, at the path harvest.md's "Guidance" gives it. Readers:
+`scripts/guidance_check.py` and `scripts/guidance_tally.py`; `revise` `prepare`, through harvest.md;
+`sandbox/harvest_recall.py` `--items`.
+
+Pinned by: tests/test_guidance_check.py::test_a_run_true_to_its_comments_passes
+
+## The guidance tally
+
+Version: 1
+
+Fields: what `scripts/guidance_tally.py <slice> [...] --comments <comment-list.json> [...]` prints,
+given a run's slices and lists as `guidance_check.py` takes them, and refusing, with that check's
+lines and exit 1, any run the check refuses. One line per `general` item, in the slices' order,
+`<key>` being `s<n>-<i>`, the n-th slice given, from 1, and the item's index in it, from 0:
+
+- `admit · <key> · pr-NNNN · <comment id> · <author> · rule · <signal> · <url> · <quote>`: a
+  person's words (`authorship` `human`) of kind `rule` whose `signal` is `states a principle`,
+  `addresses agents` or `names a habit`, with `covered_by` null;
+- `covered · <key> · pr-NNNN · <comment id> · <author> · <kind> · <covered_by> · <url> · <quote>`:
+  a person's general item a live rule, decision or the instruction file already says;
+- `hold · <key> · pr-NNNN · <comment id> · <author> · <kind> · <criterion> · <url> · <quote>`: a
+  person's other general items, the criterion `no signal of generality` for signal `none`,
+  `signal <signal>, not one that admits`, or `a <kind> statement: revise proposes rules only` for
+  one of another kind that would otherwise admit;
+- `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
+  general item the pull request's author changed as asked.
+
+An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
+is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
+before it. A last line reads `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> ·
+not listed: <n>`.
+
+Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
+"Clusters" and `revise` `prepare` step 5, for the Admission Dial's single statements.
+
+Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admits_and_the_rest_is_held_or_supports
+
 ## The judgments
 
 Version: 1
@@ -407,7 +515,7 @@ Pinned by: tests/test_sandbox.py::test_the_no_standard_scenario_quotes_works_no_
 
 ## The profile
 
-Version: 15
+Version: 16
 
 Fields: each key is, first, the repository's standard's, read in the working directory's checkout
 when it is that repository, the owner being the argument's, or the `origin` remote's, never the
@@ -417,7 +525,7 @@ pointer"); for another repository of the same owner, that standard when its `pro
 repository, as a revision harvesting every repository a standard covers reads it, and a standard
 there that is refused or cannot be fetched refuses that query too. A standard with a `profiles/`
 directory covers several repositories: its `profile.yaml` holds only the project settings,
-`ticket`, `posted_text`, `github_server`, `jira`, `internal`, `attribution` and `surface`, and
+`ticket`, `posted_text`, `github_server`, `issue_tracker`, `internal`, `attribution` and `surface`, and
 `profiles/<repo>.yaml` only each repository's own, the rest; a setting in the other file, a pointer
 from a repository with no file there, a pointer to a standard with no `profiles/`, and a pointer in
 the standard's own `profile.yaml` are refused (version 13). The standard's own repository, its
@@ -432,8 +540,8 @@ give (version 11): `ticket` (`pattern`, `project`), `public`, `template`, `downs
 (`tests`), `github_server`, `posted_text`, `depth` (`light`, `deep`), `corpus` gone (version 13).
 No team layer is read: its owners, team files, profiles and the fork refusal are gone
 (version 15). Any value but the project sections' below may read `not yet recorded`, and a
-standard sets a section whole: one whose section reads `not yet recorded`, other than `jira`, is
-refused. `scripts/profile.py`'s `SCHEMA` defines the shapes, and the default profile under a
+standard sets a section whole: one whose section reads `not yet recorded`, other than
+`issue_tracker`, is refused. `scripts/profile.py`'s `SCHEMA` defines the shapes, and the default profile under a
 standard's settings is refused when it leaves a key out or has a key the schema does not know.
 `profile.py --standard` prints the absolute path of the standard's directory of the working
 directory's checkout, when it is the repository: the fetched standard its pointer names, or its own
@@ -443,13 +551,22 @@ checkout, a pointer that cannot be read, a standard not read, and anything `prof
 refuses but what is detected, such as a standard that does not cover the repository or that the
 schema refuses (version 15).
 Sections a standard's project settings and the default profile set, and a standard's
-`profiles/<repo>.yaml` does not: `jira`
-(`statuses`, each `{name, next}` with `next` one of `ticket-draft`, `implement-change` or `nothing`,
-read by `next_phase.py` for a ticket with no context page, and a `role` on the statuses the generic
-skills name by role, each of `filed`, `approved`, `implementation`, `finished` and `abandoned` on
-exactly one status, which `--defaults` prints as `jira.roles`, so `--defaults --field
-jira.roles.finished` prints that status's name (version 8); `pr_statuses`, each one of the
-statuses) and `internal` (`domains`, bare host names, the hosts `transcript_excerpt.py` redacts,
+`profiles/<repo>.yaml` does not: `issue_tracker` (`kind`, `jira` or `github`; `location`,
+optional, `owner/repo`, the repository whose GitHub issues the project's are, each repository's
+own when it is left out, when it prints `none` as a role with no label does, and refused for Jira,
+whose project is `ticket.project`; `statuses`, a Jira status or a GitHub label each, no GitHub label
+named `none`, each `{name, next}` with
+`next` one of `ticket-draft`, `implement-change` or `nothing`, read by `next_phase.py` for a ticket
+with no context page, and a `role` on the statuses the generic skills name by role, each of
+`filed`, `approved`, `implementation`, `finished` and `abandoned` on exactly one Jira status, or on
+at most one GitHub label, as "The ticket shape" sets out, which `--defaults` prints as
+`issue_tracker.roles`, a GitHub role with no label printing `none`, so `--defaults --field
+issue_tracker.roles.finished` prints that status's name (version 8); `pr_statuses`, each one of
+the statuses). A file's `jira:` section is read as `issue_tracker:` with `kind: jira`, a file that
+sets both, or a `kind` or `location` under `jira:`, is refused, a refusal names the section's fields
+as `issue_tracker.<field> (jira:)`, and `--field jira.<field>` reads `issue_tracker.<field>` when its kind is
+`jira` and `not yet recorded` otherwise, so every reader of a `jira.<field>` reads as before (version 16).
+And `internal` (`domains`, bare host names, the hosts `transcript_excerpt.py` redacts,
 the default profile's and the working directory's standard's together (version 15),
 and which exits 1 before printing when they cannot be read; `private_repositories`, bare
 repository names, for each of which `public` prints `false` and a profile setting it `true` is
@@ -457,13 +574,15 @@ refused, ignoring case (version 5)), `attribution` (`phrases`, the wordings besi
 attribution line that `record.py` reads as marking a comment AI-drafted, case aside, none of them
 empty, the working directory's repository's (version 13)) and `surface` (`identifiers`, the enum classes whose members `surface_diff.py` lists as
 `identifier`, each a Python class name) (version 10); either may be an empty list, and no field of
-`jira`, `internal`, `attribution` or `surface` may read `not yet recorded`. The default profile's
-`jira` reads `not yet recorded`, and its `internal` lists no domain and no repository, so a
-repository takes a workflow and internal hosts only from its standard: with none,
-`--defaults --field jira.roles`, `jira.roles.<role>` and `jira.pr_statuses` print `not yet
-recorded`, `next_phase.py` routes every ticket status to ticket-draft, as with no status read,
-naming the status in its reason, and a standard that sets `jira` sets both its fields (version
-14). A status named twice, ignoring case, or with spaces around it is refused. The default
+`issue_tracker`, `internal`, `attribution` or `surface` may read `not yet recorded`; `location` may
+be left out, and then prints `none`.
+The default profile's `issue_tracker` reads `not yet recorded`, and its `internal` lists no domain
+and no repository, so a repository takes a workflow and internal hosts only from its standard: with
+none, `--defaults --field issue_tracker.roles`, `issue_tracker.roles.<role>` and
+`issue_tracker.pr_statuses` print `not yet recorded`, `next_phase.py` routes every ticket status to
+ticket-draft, as with no status read, naming the status in its reason, and a standard that sets
+`issue_tracker` sets its `kind`, `statuses` and `pr_statuses` (version 16). `next_phase.py` reads
+a Jira workflow only; with a GitHub tracker it routes as with none recorded (version 16). A status named twice, ignoring case, or with spaces around it is refused. The default
 profile's `depth.light` is `CHANGELOG.md`, `README.md`, `docs/**/*.md` and `doc/**/*.md` at the
 documentation brief, so no skill, agent file, `CLAUDE.md`, `AGENTS.md` or instruction file is
 light without a profile that says so (version 2). A `ticket.pattern` or a `hunk` that is not a
@@ -488,18 +607,51 @@ for a standard covering several repositories, its `profiles/<repo>.yaml`, with t
 the plugin, `standards/default-profile.yaml`; each repository's
 maintainers, its `standards/profile.yaml`; and `profile.py`, through `survey.py --drop-in`, the
 detected cache.
-Readers: `scripts/profile.py`, and through it the hooks, `standard_file.sh`, `record.py`, `depth_floor.py`, `next_phase.py` (`jira`), `transcript_excerpt.py` (`internal`) and the skills, `writing`'s `short.md` among them (`public`, `internal.domains`), and `write-plan.md`, `ticket-audit`, `ticket-draft` and `source-reader` (`jira.roles`); `source`
+Readers: `scripts/profile.py`, and through it the hooks, `standard_file.sh`, `record.py`, `depth_floor.py`, `next_phase.py` (`issue_tracker`), `transcript_excerpt.py` (`internal`) and the skills, `writing`'s `short.md` among them (`public`, `internal.domains`), and `write-plan.md`, `ticket-audit`, `ticket-draft` and `source-reader` (`jira.roles`, through the alias); `source`
 is read by `hooks/where.sh` into its `profile=` field, the build hook's Gates line and
 `quickstart`.
 
 Pinned by: tests/test_profile.py::test_a_value_of_the_wrong_shape
 
+## The ticket shape
+
+Version: 1
+
+Fields: a ticket, in whatever tracker files it, is an id (a Jira key, `<KEY>-NNNN`, or a GitHub
+issue's number), a title (Jira's summary), a description in `standards/ticket-format.md`'s format,
+written in the tracker's markup, its links to other tickets, and a status. Its fields beyond those,
+an issue type, a component, an epic or parent, an estimate, a due date, are the tracker's, as its
+skill reads them. A status plays at most one of five roles the generic skills name it by, from
+the profile's `issue_tracker.statuses` ("The profile"):
+
+| Role | Where a ticket stands | With no status mapped, on GitHub |
+|---|---|---|
+| `filed` | filed, to be vetted and refined | the issue is open |
+| `approved` | approved by a ticket writer, ready for estimation | skipped |
+| `implementation` | its implementation is under way | skipped |
+| `finished` | closed with its work done | the issue is closed as completed |
+| `abandoned` | closed with its work not done | the issue is closed as not planned |
+
+A Jira workflow maps each role to exactly one status. A GitHub tracker maps each to at most one
+label, and `--defaults --field issue_tracker.roles.<role>` prints `none` for a role with no label:
+an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. With #59, a skill
+that would move a ticket into `approved` or `implementation` with no label for it skips the move;
+until then every skill that moves a ticket reads `jira.roles`, which prints `not yet recorded` for a
+GitHub tracker, and stops.
+An open issue that carries no mapped label is in `filed`, and `work` sends it to `ticket-draft`.
+
+Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`
+and the tracker's skill, `using-jira`, for the description. Readers: `scripts/profile.py`, and
+through it `scripts/next_phase.py` for a Jira workflow, and the skills that read `jira.roles`.
+
+Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_to_each_role
+
 ## The record
 
-Version: 12
+Version: 13
 
 Fields: `<log>/pr-NNNN.yaml`, `<log>` the records directory `revise`'s "The standard's repository"
-names, first line `contract: 12`. This section is the one
+names, first line `contract: 13`. This section is the one
 place the fields are defined; the records directory's own README says how the revision
 reads them.
 
@@ -554,9 +706,8 @@ reads them.
 - `threads:`, a pointer to every other review thread: a person's, a bot's, or a finding posted
   with no key. Each carries `thread`; `by`, its opener, `bot` for a bot or `review` for an uncited
   finding, which also carries its `severity`, `unparsed` with `verdict: unparsed` and `line:` as
-  on a finding; `authorship` (`human`, `bot`, or `ai-drafted` when
-  the opening comment carries the review's attribution line or one of the
-  `attribution.phrases` of the repository's standard, Libera's being D-013's "drafted with AI assistance" and the loop review's attribution line); `at`; `opened`, the day; `resolved` and `outdated`, GitHub's flags; `replies`,
+  on a finding; `authorship` of its opening comment, as
+  "Authorship" below defines it; `at`; `opened`, the day; `resolved` and `outdated`, GitHub's flags; `replies`,
   the count from people; `verdict`, an uncited finding's read as a finding's, otherwise the pull
   request author's from the first of their replies that starts with one of the three words, or
   judged from one in their own words (`judged`, `basis` and `done` as on a finding), a Discuss
@@ -588,6 +739,10 @@ version without it may still have run on uncommitted standards. Version 11: in a
 standard is elsewhere, `standards_sha` is the named repository's commit, not this one's.
 Version 12: a finding whose severity label is not one of the four is recorded with `severity:
 unparsed`, where earlier versions refused the record of its pull request.
+Version 13: `authorship` reads the signatures under "Authorship" as well as the attribution line
+and the standard's phrases, so a reply reworded from the attribution line, and an agent's own
+signature, read `ai-drafted` where earlier versions read `human`; a thread the author opened that
+way reads `verdict: none`, where it read `unanswered` or `unparsed`.
 
 A harvested record reaches the log through `scripts/archive_records.py`, which refuses to
 replace a record whose findings, counted per rule, the harvested one falls short of, unless told
@@ -598,6 +753,40 @@ Writers: `scripts/record.py`, run by `pr-reader` at the harvest; `scripts/archiv
 copies it into the log. Readers:
 `scripts/ratchet_counts.py`, `revise`; `thread-analyst`, for each thread's, review's and
 comment's `authorship`.
+
+### Authorship
+
+`scripts/record.py`'s `authorship_of` decides who wrote one comment, and every reader of a
+comment's authorship uses it: the record's `threads:`, `reviews:` and `comments:`. It reads the
+comment alone, never its thread, so a person's reply in a thread an agent opened is `human`. It
+reads the comment's own lines that are not blank: not the lines that open `>`, which quote someone
+else, and not a fenced code block, which shows text rather than signs the comment; a fence closes on
+a line of its own character, at least as long, with nothing after it. Case is ignored.
+
+- `bot`: the login ends `[bot]` or is one of the review bots `BOT_LOGINS` names.
+- `ai-drafted`: its own lines carry the review's attribution line, `AI-assisted comment, posted
+  by @` or the earlier `AI-assisted comment, reviewed and approved by @`, or one of the
+  `attribution.phrases` of the repository's standard; or its first or last own line, where an
+  agent signs, with its inline code spans removed, has one of the shapes `AI_SIGNATURES` lists:
+  - a line that opens or closes with `🤖` and carries `AI-assisted`, as any rewording of the
+    attribution line keeps them (`pr-review/comment-style.md`);
+  - a line that ends with `AI assistance level: <n>/5`, its meaning in parentheses after it, and
+    no `?`;
+  - a line that opens with markup, such as `🤖 *` or `_`, then `comment`, `reply`, `review` or
+    `summary`, optionally `this` before it and `was` or `is` after, then `generated`, `drafted`
+    or `written`, `by` or `with`, and `Claude`, `Copilot`, or `a` or `an` then `AI` or `LLM`, with no
+    `?` after it;
+  - a line that opens with `🤖` and then `generated by` or `generated with`;
+  - a line that is, after any markup, `generated by Claude Code` or `generated with Claude
+    Code`, the name bracketed with its link or not, and nothing after it but punctuation;
+  - a line opening `Co-Authored-By: Claude`, so a person who pastes that trailer as their comment's
+    first or last line fences it.
+- `human`: none of these. A comment that gives no sign is a person's.
+
+A person's sentence about a signature, such as "is this review generated by Copilot?" or "please
+add AI assistance level: 3/5 to your replies", has no signature's shape and reads `human`. Every
+level of the assistance scale reads `ai-drafted`, 1/5 included: the line says an agent posted the
+text, and the level is the person's own account of how much of it they wrote.
 
 Pinned by: tests/test_record.py::test_reproduces_the_committed_record
 
@@ -748,7 +937,7 @@ mismatch:` line with more after it, a line of no form above, or a `Procedure:`, 
 
 Writers: `thread-analyst`, at the path harvest.md's "Analysts" gives it. Readers:
 `scripts/block_tally.py`, run by harvest.md's "Analysts"; `revise` `prepare` step 2 and `onboard`'s
-first rules, for the asks.
+first rules, for the asks; `sandbox/harvest_recall.py` `--analyst`, through `block_tally.py`'s grammar.
 
 Pinned by: tests/test_block_tally.py::test_the_analysis_counts_asks_by_who_source_category_and_outcome
 

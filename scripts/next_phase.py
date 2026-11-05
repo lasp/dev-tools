@@ -49,10 +49,11 @@ request, `#<n> <open|merged|closed> <branch> <claimed criteria, comma-separated>
 `--criteria`, the ticket's Acceptance Criteria: the first line `work` says lists the stack, the
 fields' `part=` (`k of n`) gives the plan's part count, and the ticket is done only when every
 criterion is claimed by a merged pull request. A ticket with no context page here and a status in the
-`jira.pr_statuses` of the repository's standard, or the default profile, needs the state block,
-since its pull request may exist elsewhere. A missing, unreadable or contradictory input exits 1
-with the reason, as do statuses (the profile's `jira`) that cannot be read when the status is
-needed. Where no workflow is recorded, as for a repository whose standard records none, every
+`issue_tracker.pr_statuses` of the repository's standard, or the default profile, needs the state
+block, since its pull request may exist elsewhere. A missing, unreadable or contradictory input
+exits 1 with the reason, as do statuses (the profile's `issue_tracker`) that cannot be read when the
+status is needed. Where no Jira workflow is recorded, as for a repository whose standard records
+none or whose tracker is GitHub's, every
 status routes to ticket-draft, as with no status read, and the reason names the status and that no
 workflow is recorded.
 Stdlib only.
@@ -98,10 +99,10 @@ def workflow() -> tuple[dict[str, str], tuple[str, ...]] | None:
     profile = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(profile)
     try:
-        jira = profile.defaults(ROOT)["jira"]
+        jira = profile.defaults(ROOT)["issue_tracker"]
     except (profile.ProfileError, OSError) as e:
         raise Refused(f"the Jira statuses could not be read: {e}") from e
-    if jira == profile.NOT_RECORDED:
+    if jira == profile.NOT_RECORDED or jira["kind"] != "jira":
         return None
     return {s["name"].lower(): s["next"] for s in jira["statuses"]}, tuple(s.lower() for s in jira["pr_statuses"])
 
@@ -349,7 +350,7 @@ def decide(
         if known:
             statuses, pr_statuses = known
             if status not in statuses:
-                raise Refused(f"the ticket status {ticket_status!r} is not one of the statuses the profile's jira names")
+                raise Refused(f"the ticket status {ticket_status!r} is not one of the statuses the profile's issue_tracker names")
             if status in pr_statuses and pr is None:
                 raise Refused(f"{ticket} is {ticket_status}: pass the state block of its pull request, or pull request: none")
             if statuses[status] == "implement-change":

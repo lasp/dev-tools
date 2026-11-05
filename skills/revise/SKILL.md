@@ -11,7 +11,7 @@ argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | appl
 disable-model-invocation: true
 metadata:
   author: lasp-dev
-  version: 2.14.1
+  version: 2.17.0
 ---
 
 # Revise the standard
@@ -116,6 +116,7 @@ In `<archive>` and `<context>`, from `apply`: `R-NNN.md` entries and accepted `c
 
 In this repository's `.review/`:
 - `harvest/analysis/pr-NNNN.md`, each `thread-analyst` block, written by the analyst.
+- `harvest/guidance/slice-<n>.json`, each `guidance-extractor` run, written by the extractor.
 - `backtest/R-NNN.entry.md` and `backtest/R-NNN.md`, a proposal's drafted entry and its
   `rule-probe` blocks.
 - `revision/claims.md`, the rules and documented claims the sweep judges, and
@@ -150,6 +151,7 @@ of the two below.
 
 One report and one diff: one pull request here, from the driver's diff, and, with a clone, one in
 the standard's repository, merged first. Every proposal carries its evidence pointers.
+One `guidance-extractor` per slice of about 300 comments, as `harvest.md`'s "Guidance" cuts them.
 One `thread-analyst` per merged pull request with a record, within `harvest.md`'s cap, and one
 `diff-probe` per pull request merged in the window, at most thirty. If
 the corpus is over its line budget, the proposal names a retirement. Every proposal reaches the

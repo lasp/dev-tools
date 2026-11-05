@@ -400,7 +400,9 @@ then your session's model. An agent's `model:` line wins over the environment va
 `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` is also set (Claude Code 2.1.257 and later).
 
 Agents that fetch or review one focus run on Sonnet; the rest are `inherit` and run on whatever
-model your session uses; the agents table's Model column names each. On a Pro plan, start with `claude --model sonnet` or switch with `/model`, and the whole
+model your session uses, but for `guidance-extractor`, which runs on Opus: on one month's review
+comments Sonnet found under two thirds of the guidance Opus found, and the revision runs it once a
+month. The agents table's Model column names each. On a Pro plan, start with `claude --model sonnet` or switch with `/model`, and the whole
 build follows. To run the inheriting reviewers on a stronger or
 weaker model than your session, set `CLAUDE_CODE_SUBAGENT_MODEL` in the `env` block of your
 user settings. Never set `model` in a repository's project settings: it outranks each person's
@@ -525,6 +527,7 @@ since been rewritten; the rest were written here.
 | `rule-probe` | sonnet | Reads one rule and one place in merged code and says whether the rule fires there, with the line; run on both anchors of a proposed rule's example line; reads only |
 | `diff-probe` | sonnet | Reads one merged pull request's diff, commits and description for `revise`'s sweep and says, per rule or documented claim, whether the change follows it, breaks it (with the line) or leaves it untouched; writes only its block, to the path `revise` gives |
 | `thread-analyst` | sonnet | Reads one merged pull request's review threads, reviewers' summaries and conversation comments, and the files they anchor to, for `revise`: what each asked for, what the diff did, and which asked about a lasp-dev skill or agent; in `defect` mode, which rule, candidate or check should have caught a fixed defect; writes only its report, to the path `revise` or `onboard` gives |
+| `guidance-extractor` | opus | Reads every comment of a slice of merged pull requests for `revise`, replies and review summaries included, and writes one JSON item per statement of guidance: the comment's own words, whether it reaches beyond its pull request, its kind and the principle; writes only its items, to the path `revise` gives |
 
 | Other | Role |
 | --- | --- |
@@ -749,8 +752,9 @@ session-start line or `work` says something unexpected, these files are what it 
 | `downstream/` | `downstream`: `surface.txt`, `report.md`, a `ripple-<consumer>.md` or `ci-<run>.md` prompt for `ticket-draft`, and a throwaway venv and `git clone --shared` checkout per consumer, read at its default branch | The person; `ticket-draft`, given a prompt | Not cleared by the tools |
 | `feedback/` | `skill-feedback`: the person's words (`words.txt`), and on the `gh` path the issue's title (`title.txt`) and body (`body.md`) | `scripts/transcript_excerpt.py --stdin`, for the words; `gh api`, for the title and body | Replaced at the next filing |
 | `backtest/` | `revise` and `onboard`, each proposal's drafted entry and probe blocks (`R-NNN.entry.md`, `R-NNN.md`); the `rule-probe` sandbox scenario, `calibration.md` | The month's driver | Not cleared by the tools |
-| `harvest/threads/`, `harvest/records/` | `pr-reader` in `harvest` mode, for `revise` and `onboard`: each merged pull request's dump (`pages/`, `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json`, `body.md`, `judged.json`) and the record `scripts/record.py` rebuilt from it | `revise`, which copies the records into `standards/log/<repo>/` with `scripts/archive_records.py`; `thread-analyst`, for each record's authorship | Replaced at each harvest |
+| `harvest/threads/`, `harvest/records/` | `pr-reader` in `harvest` mode, for `revise` and `onboard`: each merged pull request's dump (`pages/`, `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json`, `body.md`, `judged.json`, and `comment-list.json`, every comment with its own authorship, from `scripts/comment_list.py`) and the record `scripts/record.py` rebuilt from it | `revise`, which copies the records into `standards/log/<repo>/` with `scripts/archive_records.py`; `thread-analyst`, for each record's authorship | Replaced at each harvest |
 | `harvest/analysis/` | `thread-analyst`, one `pr-NNNN.md` per merged pull request with a record, within the cap of `revise`'s `harvest.md`, for `revise` and `onboard` | `revise`, for the report's front page, through `scripts/block_tally.py`; never copied into the log | A pull request's block is replaced when it is analyzed again; not cleared by the tools |
+| `harvest/guidance/` | `guidance-extractor`, one `slice-<n>.json` per slice of about 300 comments, for `revise`, checked by `scripts/guidance_check.py` | `revise`, for the report's head, and through `scripts/guidance_tally.py` for its clusters, proposals and held candidates | Removed and rewritten at each revision |
 | `harvest/` | `onboard`'s first rules: `threads.yaml`, `measurements.md` | The person | Not cleared by the tools |
 | `harvest/context-refresh.md` | `revise`, its context refresh | The person, marking the refresh proposals | Rewritten at each revision |
 | `ratchet-proposal.diff` | `revise`: the accepted change to this repository's `standards/`, instruction file and pull request template, and to the documents accepted `doc/` proposals name | The driver, to apply and open as a pull request | Not cleared by the tools |

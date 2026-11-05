@@ -9,8 +9,10 @@ come first, from profile.py `--defaults` whole and on every field, the project o
 from the scratch directory, which no standard covers. Fixture code repositories are made once per
 tree: `core` and `infra`, named as repositories a project's standard would cover; `rad`, `lib` and
 `analysis`, named as ones it would not; a repository of another owner nobody has heard of;
-`acme-widgets`, whose own `standards/profile.yaml` sets every key; `refused`, whose own `standards/profile.yaml` the schema
-refuses; and one with no remote. Each commits a product
+`acme-widgets`, whose own `standards/profile.yaml` sets every key; `widgets-family`, whose own
+standard covers several repositories and records a `jira:` workflow in its `profile.yaml`, with
+its `profiles/widgets-family.yaml`, read through `--defaults` too; `refused`, whose own
+`standards/profile.yaml` the schema refuses; and one with no remote. Each commits a product
 definition under core/data/ and under schema/, a light and a deep glob of the fixtures' profiles,
 and a pyproject.toml. In each, the cases run profile.py on every field,
 surface_diff.py with one variable of both product definitions and one DataProductIdentifier member
@@ -71,6 +73,24 @@ OWN_PROFILES = {
         "depth:\n  light:\n    - {glob: 'docs/**', brief: documentation}\n  deep: ['schema/**']\n"
     ),
     "refused": "flavor: blue\n",
+    # A standard for several repositories, its own among them, whose project settings record the
+    # example workflow under `jira:`; a dict maps each file under standards/ to its text.
+    "family": {
+        "profile.yaml": (
+            "ticket:\n  pattern: 'FAM-\\d+'\n  project: FAM\nposted_text: workflow\njira:\n  statuses:\n"
+            "    - {name: New, next: ticket-draft, role: filed}\n"
+            "    - {name: To Do, next: implement-change, role: approved}\n"
+            "    - {name: Upcoming, next: implement-change}\n"
+            "    - {name: Exploration, next: implement-change}\n"
+            "    - {name: Under Development, next: implement-change, role: implementation}\n"
+            "    - {name: External Needs, next: nothing}\n"
+            "    - {name: In Review, next: nothing}\n"
+            "    - {name: Done, next: nothing, role: finished}\n"
+            "    - {name: Abandoned, next: nothing, role: abandoned}\n"
+            "  pr_statuses: [Under Development, In Review]\n"
+        ),
+        "profiles/widgets-family.yaml": "tests:\n  command: 'pytest -q'\n",
+    },
 }
 
 # name, origin URL (None: no remote), branch, ticket key
@@ -82,6 +102,7 @@ REPOS = [
     ("analysis", "https://github.com/acme/widgets-analysis.git", "PROJ-4-analysis", "PROJ-4"),
     ("unknown", "https://github.com/someorg/unknown-tool.git", "PROJ-6-unknown", "PROJ-6"),
     ("acme", "https://github.com/acme/acme-widgets.git", "WID-3-widget", "WID-3"),
+    ("family", "https://github.com/acme/widgets-family.git", "FAM-2-family", "FAM-2"),
     ("refused", "https://github.com/o/refused.git", "PROJ-5-refused", "PROJ-5"),
     ("noremote", None, "PROJ-9-local", "PROJ-9"),
 ]
@@ -135,14 +156,15 @@ def copy_tree(base: str, dest: Path) -> None:
 IDS = 'from enum import Enum\n\n\nclass DataProductIdentifier(str, Enum):\n    L1A_RAD = "L1A-RAD"\n    L1B_CAM = "L1B-CAM"\n'
 
 
-def make_repo(path: Path, origin: str | None, branch: str, key: str, profile: str | None = None) -> None:
+def make_repo(path: Path, origin: str | None, branch: str, key: str, profile: str | dict | None = None) -> None:
     path.mkdir(parents=True)
     git(path, "init", "-q", "-b", branch)
     (path / "README.md").write_text("# fixture\n")
     (path / "standards").mkdir()
     (path / "standards/review-rules.md").write_text("# Review rules\n\n### R-001 · A rule\n\nStatus: live\n")
-    if profile is not None:
-        (path / "standards/profile.yaml").write_text(profile)
+    for rel, text in (profile if isinstance(profile, dict) else {"profile.yaml": profile} if profile is not None else {}).items():
+        (path / "standards" / rel).parent.mkdir(parents=True, exist_ok=True)
+        (path / "standards" / rel).write_text(text)
     for rel in ("core/data/p.yaml", "schema/p.yaml"):
         (path / rel).parent.mkdir(parents=True)
         (path / rel).write_text(PRODUCT_DEF)
@@ -214,6 +236,12 @@ def run_tree(name: str, root: Path, work: Path) -> dict[str, tuple[int, str, str
         make_repo(repo, origin, branch, key, OWN_PROFILES.get(rname))
         for case, argv, stdin in cases(root, repo, origin, key):
             results[f"{rname}/{case}"] = norm(sh(argv, repo, stdin), root, repo, work)
+        if isinstance(OWN_PROFILES.get(rname), dict):
+            # The project's sections, which only --defaults prints, from the repository whose
+            # standard records them.
+            results[f"{rname}/defaults"] = norm(sh(profile, repo), root, repo, work)
+            for f in PROJECT_FIELDS:
+                results[f"{rname}/defaults.{f}"] = norm(sh([*profile, "--field", f], repo), root, repo, work)
         if origin:
             # A change that removes a variable from both product definitions, read through the
             # profile's depth.deep globs, then put back so the cases below see a clean tree.

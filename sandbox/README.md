@@ -300,6 +300,69 @@ other four differing only in such tools; main against the sandbox's pin found th
 `using-confluence` body that `source-reader` preloads, the namespaced names it preloads by, and
 the skill and agent listings.
 
+## Harvest recall
+
+`sandbox/harvest_recall.py <fixture>` scores what a reading of a month's review comments finds,
+against an answer key, with no model and no login: whatever is measured reads the comments once,
+and the score is a script. A change to how `revise` reads review comments, such as `record.py`'s
+authorship or the guidance extractor, reports it before and after; a change to what comes after
+the reading, such as clustering or admission, adds what it needs to the scorer.
+
+`sandbox/harvest/` is the public fixture: one synthetic month of an invented repository, ten merged
+pull requests and 186 comments as `scripts/comment_list.py` lists them, most threads opened by an
+agent's finding with the principle in a person's reply. Its key holds 46 general statements in
+eight themes, each theme stated on three pull requests in different words, one comment holding
+two, and 20 people's comments, openers and replies, that ask only for a change in their own pull
+request. Its README gives the shape and the traps. `tests/test_harvest_recall.py` holds the
+fixture to that shape and reproduces the scores below from the run recorded under `runs/`, so CI
+pins the scorer, the fixture and that run, never the extractor itself. A project scores its own
+months the same way: a directory of comment lists and a `labels.json` of what a person's full read
+found, kept in that project, since it quotes the team.
+
+What is scored is one of:
+- `--items <slice> ...`, a `guidance-extractor` run;
+- `--analyst <dir>`, `thread-analyst` blocks, a pull request with no block reported and read as
+  finding nothing;
+- `--openers`, the analyst's reading with no run: an item on each person's thread-opening comment,
+  review summary and conversation comment, and none on a reply.
+
+An item finds a label where their quotes overlap in the comment. An analyst line carries no quote,
+so it finds every label on its comment. `--pairs <file>` writes each such label beside its line,
+for a judge, and `--carried <file>`, the judge's `carried` or `local` per label, adds the recall of
+lines that carry the principle. The printout gives:
+- recall overall, by kind, by signal, in replies, and in replies to an agent's finding;
+- each theme's items and pull requests found, and how many themes have found items on two pull
+  requests, which a two-pull-request bar can meet once clustering joins them;
+- the extractor's agreement on kind;
+- precision, with each general item no label holds listed for a person to judge;
+- the negatives read as general;
+- the quotes found in their comments.
+
+`--openers` places an item on an approval the analyst would skip, so it reports neither precision
+nor negatives.
+
+Scores of 2026-11-05:
+
+| Reading | Recall | In replies, to an agent's finding | Agent guidance | Themes on two PRs | Precision | Negatives read general | Cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Public fixture, `--openers` | 14/46 | 0/32, 0/27 | 1/14 | 1/8 | — | — | none |
+| Public fixture, `guidance-extractor` on Opus, `runs/` | 46/46 | 32/32, 27/27 | 14/14 | 8/8 | 45/47 | 1/20 | 1 agent, about 154,000 tokens, 6 minutes |
+| A private month, 1,232 comments, `--analyst` with a judge's `--carried` | 38/117 carried (76 found) | 0/30, 0/13 | — | — | — | — | as that month's run |
+| The same month, `guidance-extractor` on Opus | 92/117 | 22/30, 12/13 | 7/7 | — | 96/263 | — | 4 agents, about 840,000 tokens, 11 minutes in parallel |
+
+On the private month, the key was drafted by agents, and the extractor's quotes were all in their
+comments (631 of 631); 4 of the key's 117 quotes could not be found in their comments, which
+leaves those labels unfound. A judge read most of the general items no label held, 127 of 164 at
+an earlier count, as general guidance the key missed. A person samples about twenty labels before a key's figures are read as
+recall or precision. The synthetic month is easier than real review prose, so its figures are a
+check that nothing regressed, and a real month's are the measure.
+
+To record a new run after a change to the extractor's prompt, run `guidance-extractor` on the ten
+comment lists with `standard/` as the ledger and decisions and no instruction file. Write its slice
+under `runs/` and check it with `python3 scripts/guidance_check.py <slice> --comments
+sandbox/harvest/comments/*.json`. Then score it, and record the figures and the cost in this table
+and in the test's pins.
+
 ## From a complaint to a scenario
 
 Write the scenario with `origin:` and `why:`, and the `expect` check that states the complaint:

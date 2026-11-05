@@ -11,7 +11,7 @@ meeting deferred everything: stop, there is nothing to write, and name the repor
 in a clone, its branch. Then, by mark:
 - A proposal not marked `accept` gets no archive entry, no diff line of its own and no ticket. A
   declined, escalated or blank admission, the last one the meeting deferred, returns to the held
-  candidates with its evidence.
+  candidates with its evidence and its quotes.
 - A proposal held by the bar is accepted only by `accept, override: <reason>`. A held admission
   not so marked returns to the held candidates; a held rewording, promotion or broadening not so
   marked leaves its rule as it stands. A held proposal marked a plain `accept` stops `apply`,
@@ -42,8 +42,8 @@ in a clone, its branch. Then, by mark:
    the lint refuses a ledger that mixes the two; a changed title changes that file's anchor, and
    the ledger's link changes with it. Whatever the marks, the diff also rewrites the
    ledger's `## Candidates below the criteria` from the held candidates, the admissions declined,
-   escalated or deferred, and the held admissions not accepted with an override, each with its evidence and
-   the criterion or check it fails. An admitted, reworded, promoted or broadened entry takes its
+   escalated or deferred, and the held admissions not accepted with an override, each with its evidence, its
+   quotes and the criterion or check it fails. An admitted, reworded, promoted or broadened entry takes its
    `scope:` and `example:` lines verbatim from under its proposal. An admitted rule's `since:` is
    the month its entry reaches `main`, never the window's, since the Provisional expiry Dial counts
    from then. An accepted override goes on the entry's evidence line as `rule-bar.md` says. An

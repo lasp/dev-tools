@@ -76,7 +76,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    window's pull requests, and the count merged without a build, whose body has no Already checked
    block.
 2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 wrote; the report
-   cites thread ids. What it did not read goes under "Not read".
+   cites thread ids. Then run harvest.md's "Guidance" on this repository's comment lists; into
+   "Head", the guidance line from its check's printout, never counted by hand. What either did not
+   read goes under "Not read".
 
    From the blocks, leaving out lines with `asked: none`, the counts from harvest.md's
    `block_tally.py analysis` printout, never counted by hand:
@@ -182,20 +184,31 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
 5. **Cluster.** Run harvest.md's "Clusters", adding the records' `inner.nominated` corrections,
    the taken suggestions, and each ask in the meeting or chat notes the driver pasted into
    `.review/revision/notes/*.md`, cited by its file and marked `pasted`: a person's line that
-   strengthens its cluster's evidence but counts as no merged pull request for the Admission or
-   Recurring ask Dial. List
-   the clusters the Recurring ask Dial admits, with their evidence.
+   strengthens its cluster's evidence but counts as no merged pull request for the Recurring ask
+   Dial. List the clusters the Recurring ask Dial admits, and those a single statement admits, with
+   their evidence.
+
+   **Single statements.** A cluster admits on one guidance tally `admit` line alone, a person's
+   general statement, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
+   note admits the same way when a named person states a principle or asks for a rule in it,
+   cited `pasted <file>` with that person's name, when it is of kind `rule`. The tally holds a
+   statement of any other kind with its criterion. A cluster with no `admit` line and a `hold`
+   line is held with the tally's criterion. A `covered` line supports the live rule, decision or
+   instruction it names, listed under it in "Rules", and is no candidate. A `support` line, an agent's statement the author
+   changed as asked, never admits; it is listed under its cluster. Every line the tally prints
+   reaches the report, as a proposal's evidence, a rule's support or a held candidate, never
+   dropped.
    **Before admitting one, search `<archive>`.** If the archived rule graduated,
    this is a gap in the check, not a missing rule; if it retired at a low agree rate, the evidence
    line says what changed; if it expired unfired, say how long it sat idle, which argues for a
    check.
 6. **Merge the held candidates.** Merge this window's clusters into the ledger's "Candidates below
    the criteria", re-judge each against the Dials, and propose each that now meets them. The rest
-   go under "Held candidates", each with its updated evidence and the criterion still failing,
-   never as a proposal to mark; drop one under the Candidate drop Dial and say so. Then
-   consolidate: proposals acting on the same rule become one; candidates asking for the same
+   go under "Held candidates", each with its updated evidence, its quotes, and the criterion
+   still failing, never as a proposal to mark; drop one under the Candidate drop Dial and say so.
+   Then consolidate: proposals acting on the same rule become one; candidates asking for the same
    change become one, with both sets of evidence; a candidate a live rule already covers becomes a
-   proposal to reword that rule.
+   proposal to reword that rule, except a tally `covered` line, which only supports it.
 
    **Tickets and documents.** Two kinds of proposal no Dial governs, marked like any other, and
    made below the Revision floor too, since they rest on no count of records:
@@ -228,7 +241,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     within a group by impact: the number of merged pull requests in its evidence, then the number
     of files it would change, most first, both written in its Impact cell. A
     proposal is high when it rests on what people wrote, the author's own comments and other
-    developers', or on a break still on `main`; low when it rests only on AI findings' agree
+    developers', in two merged pull requests or from two people, or on a break still on `main`;
+    medium when it rests on one person's statement in one pull request; low when it rests only on AI findings' agree
     rates, since a person's comment is more often about the design and a finding agreed to may
     have missed the mark; medium otherwise. No cap: the group takes them in order and leaves the
     rest blank. Each line also says what the proposal applies to: project-wide, for a rule with no
