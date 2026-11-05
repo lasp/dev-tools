@@ -21,9 +21,25 @@ With --ledger, then one line per live reviewer-tier rule, in ledger order:
 
 A glob matches as `rule_lint.py`'s scope check does: `fnmatch` against the path, `*` matching `/`.
 A rule with no scope: line is never matched against every file; a rule with no since: is never
-`predates`. A git that cannot read --ref, a --since that is not a date, or a ledger that cannot be
-read or whose since: is not `YYYY-MM` or `YYYY-MM-DD` prints the reason on stderr and exits 2.
-Stdlib only.
+`predates`.
+
+With --doc, one per document a claim of every change cites, and --dumps, the harvest's threads
+directory, then one line per document, in the order given:
+
+    doc <path>: pr-NNNN [pr-NNNN ...]          opened at or after the document reached --ref
+    doc <path>: none                           none was
+    doc <path>: predates pr-NNNN [...]         opened before it did
+    doc <path>: no opened day pr-NNNN [...]    no <dumps>/pr-NNNN/pr.json to read it from
+    doc <path>: not on <ref>                   no commit on --ref's first-parent history adds it
+
+A document reaches --ref with the oldest commit on its first-parent history that adds the path,
+compared against its first parent, by committer time; a pull request is opened at its pr.json's
+`created_at`. Every pull request listed is on one of the first four lines.
+
+A git that cannot read --ref, a --since that is not a date, a ledger that cannot be read or whose
+since: is not `YYYY-MM` or `YYYY-MM-DD`, --doc without --dumps, or a pr.json that is not JSON or
+whose `created_at` is not a UTC time like `2026-10-01T12:00:00Z` prints the reason on stderr and
+exits 2. Stdlib only.
 """
 
 from __future__ import annotations
@@ -32,6 +48,7 @@ import argparse
 import datetime
 import fnmatch
 import importlib.util
+import json
 import re
 import subprocess
 import sys
@@ -95,14 +112,55 @@ def rule_lines(entries: dict, found: list[tuple[int, str, str, list[str]]]) -> l
     return lines
 
 
+def reached(repo: Path, ref: str, path: str) -> int | None:
+    """When `path` reached `ref`: the committer time of the oldest first-parent commit adding it, or None."""
+    log = git(repo, "log", "--first-parent", "--diff-merges=first-parent", "--no-patch", "--diff-filter=A", "--format=%ct", ref, "--", path)
+    return int(log.split()[-1]) if log.split() else None
+
+
+def opened(dumps: Path, n: int) -> int | None:
+    """When pull request `n` was opened, from its dump's pr.json, or None with no pr.json."""
+    path = dumps / f"pr-{n:04d}" / "pr.json"
+    if not path.is_file():
+        return None
+    try:
+        stamp = json.loads(path.read_text())["created_at"]
+        return int(datetime.datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).timestamp())
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        raise CannotRun(f"{path}: no created_at like 2026-10-01T12:00:00Z: {e!r}") from e
+
+
+def doc_lines(repo: Path, ref: str, docs: list[str], dumps: Path, found: list[tuple[int, str, str, list[str]]]) -> list[str]:
+    days = {n: opened(dumps, n) for n, _, _, _ in found}
+    lines = []
+    for path in docs:
+        since = reached(repo, ref, path)
+        if since is None:
+            lines.append(f"doc {path}: not on {ref}")
+            continue
+        after = [f"pr-{n:04d}" for n, t in days.items() if t is not None and t >= since]
+        early = [f"pr-{n:04d}" for n, t in days.items() if t is not None and t < since]
+        unknown = [f"pr-{n:04d}" for n, t in days.items() if t is None]
+        lines.append(f"doc {path}: {' '.join(after)}" if after else f"doc {path}: none")
+        if early:
+            lines.append(f"doc {path}: predates {' '.join(early)}")
+        if unknown:
+            lines.append(f"doc {path}: no opened day {' '.join(unknown)}")
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--repo", type=Path, required=True, help="the repository's path")
     p.add_argument("--ref", required=True, help="the base branch, fetched, such as origin/main")
     p.add_argument("--since", required=True, help="the window's first day, YYYY-MM-DD")
     p.add_argument("--ledger", type=Path, help="the repository's standards/review-rules.md")
+    p.add_argument("--doc", action="append", default=[], help="a document a claim of every change cites, relative to --repo; repeatable")
+    p.add_argument("--dumps", type=Path, help="the harvest's .review/harvest/threads/, holding pr-NNNN/pr.json")
     args = p.parse_args(argv)
     try:
+        if args.doc and args.dumps is None:
+            raise CannotRun("--doc needs --dumps, which says when each pull request was opened")
         try:
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", args.since):
                 raise ValueError("not YYYY-MM-DD")
@@ -119,12 +177,13 @@ def main(argv: list[str] | None = None) -> int:
                 if e["since"] != "-" and not re.fullmatch(r"\d{4}-\d{2}(-\d{2})?", e["since"]):
                     raise CannotRun(f"{args.ledger}: {rid}'s since: {e['since']} is not YYYY-MM or YYYY-MM-DD")
         found = merges(args.repo, args.ref, args.since, load("merge_commit").pr_numbers)
+        docs = doc_lines(args.repo, args.ref, args.doc, args.dumps, found) if args.doc else []
     except CannotRun as e:
         print(f"window_merges.py: {e}", file=sys.stderr)
         return 2
     for n, sha, day, files in found:
         print(f"pr-{n:04d} {sha} {day} {' '.join(files)}")
-    for line in rule_lines(entries, found):
+    for line in [*rule_lines(entries, found), *docs]:
         print(line)
     return 0
 

@@ -103,16 +103,20 @@ step 1.
    break, as `### C-n · <path>:<line> · every change` when it asks something of every pull request,
    or of every one that makes a kind of change, or `· code` when it governs how code is written,
    and the claim in one line. Show the `C-` claims and ask once: **Sweep these** (Recommended),
-   **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**. Then, all in one
+   **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**. With `every
+   change` claims kept, rerun the script adding `--dumps .review/harvest/threads/` and a `--doc
+   <path>` for each document they cite, so each is judged only on the pull requests opened after
+   its document reached `main`. Then, all in one
    message, one `diff-probe` per merged pull request the script listed, past thirty the thirty
    merged most recently, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
-   and every `C-` claim. Write each block to `.review/revision/sweep/pr-NNNN.md` as returned. Into
+   each `every change` claim whose document's `doc` line names it, and every `code` claim. Write each block to `.review/revision/sweep/pr-NNNN.md` as returned. Into
    "Practice", per claim: the pull requests it was judged on and how many follow it, break it,
    leave it untouched and could not be judged for want of a description, each break with its pull request and place; `drift` beside a claim broken
    in more than half of those that touched it; `missed by review` beside a break on a pull request
    with a record in which no finding cites the claim's rule, any break on such a pull request for
    a `C-` claim. Then the rules the script printed as `not swept: no scope`, the `predates` lines,
+   each `doc` line's `predates`, `no opened day` and `not on` pull requests or document,
    the pull requests past thirty, and each pull request step 1's harvest listed in the window that
    the script did not, as `not swept: no merge subject`.
 3. **Check breadth before promoting anything.** A rule's breadth is the `distinct-prs-agreed`

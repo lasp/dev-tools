@@ -669,7 +669,7 @@ Pinned by: tests/test_rule_lint.py::test_the_anchor_form_parses
 
 ## The window's merges
 
-Version: 1
+Version: 2
 
 Fields: `scripts/window_merges.py`'s printout. One line per pull request merged into `--ref` from
 `--since` on, oldest first, `pr-NNNN <full sha> <YYYY-MM-DD> <path> [<path> ...]`, the merge's
@@ -677,12 +677,17 @@ committer date as a UTC day, as GitHub's `merged_at` reads, and the files it cha
 first parent; with `--ledger`, then one line per live reviewer-tier rule in
 ledger order: `R-NNN pr-NNNN [pr-NNNN ...]`, `R-NNN none`, `R-NNN predates pr-NNNN [...]` and
 `R-NNN not swept: no scope`. A pull request is named by its merge subject as
-`scripts/merge_commit.py`'s `pr_numbers` reads it.
+`scripts/merge_commit.py`'s `pr_numbers` reads it. With `--doc` and `--dumps`, then per document
+in the order given: `doc <path>: pr-NNNN [...]` or `doc <path>: none`, the pull requests opened,
+by their `pr.json`'s `created_at`, at or after the first commit on `--ref`'s first-parent history
+that adds the document; `doc <path>: predates pr-NNNN [...]`, those opened before; `doc <path>: no
+opened day pr-NNNN [...]`, those with no `pr.json`; or `doc <path>: not on <ref>` alone (version 2).
 
 Writers: `scripts/window_merges.py`. Readers: `revise` `prepare` step 2, which gives each
-`diff-probe` the rules whose line names its pull request.
+`diff-probe` the rules whose line names its pull request, and each `every change` claim whose
+document's `doc` line names it.
 
-Pinned by: tests/test_window_merges.py::test_each_live_reviewer_rule_gets_the_pull_requests_its_scope_matches
+Pinned by: tests/test_window_merges.py::test_a_document_judges_only_the_pull_requests_opened_after_it_reached_main
 
 ## The ledger's held-candidates heading
 
