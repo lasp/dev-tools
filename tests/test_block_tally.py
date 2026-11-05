@@ -77,6 +77,13 @@ ANALYSIS_WANT = [
 ]
 
 
+def block_tally_main(args):
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        code = block_tally.main(args)
+    return code, out.getvalue().splitlines(), err.getvalue()
+
+
 class Tally(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -86,12 +93,16 @@ class Tally(unittest.TestCase):
     def write(self, name, text):
         (self.dir / name).write_text(text)
 
-    def run_it(self, kind, *prs, folder=None, claims=CLAIMS):
+    def run_it(self, kind, *prs, folder=None, claims=CLAIMS, merges=None):
         args = [kind, str(folder or self.dir), *prs]
         if kind == "sweep" and claims is not None:
             path = self.dir / "claims.md"
             path.write_text(claims)
             args += ["--claims", str(path)]
+        if merges is not None:
+            path = self.dir / "merges.txt"
+            path.write_text(merges)
+            args += ["--merges", str(path)]
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = block_tally.main(args)
@@ -145,6 +156,59 @@ class Tally(unittest.TestCase):
         code, out, err = self.run_it("sweep", "pr-0007", claims=CLAIMS + "\n### C-3 · README.md:4 · every change\n\nA claim.\n")
         self.assertEqual((code, out), (2, []))
         self.assertIn("pr-0007: no line for C-3", err)
+
+    def test_an_every_change_claim_is_owed_only_by_the_pull_requests_opened_after_its_document(self):
+        self.write("pr-0007.md", SWEEP_7)
+        self.write("pr-0012.md", SWEEP_12.replace("C-1 · not judged · no description\n", ""))
+        merges = (
+            "pr-0007 abc1234 2026-10-01 CONTRIBUTING.md\npr-0012 def5678 2026-10-03 pkg/io.py\nR-001 pr-0007 pr-0012\n"
+            "doc CONTRIBUTING.md: pr-0007\ndoc CONTRIBUTING.md: predates pr-0012\n"
+        )
+        code, out, err = self.run_it("sweep", "pr-0007", "pr-0012", merges=merges)
+        self.assertEqual(code, 0, err)
+        self.assertIn("claim · C-1 · judged 1 · follows 0 · breaks 0 · not touched 1 · not judged 0", out)
+        code, out, err = self.run_it("sweep", "pr-0007", "pr-0012")
+        self.assertEqual((code, out), (2, []))
+        self.assertIn("pr-0012: no line for C-1", err)
+
+    def test_a_code_claim_is_owed_by_every_block_and_a_document_not_on_main_by_none(self):
+        claims = (
+            CLAIMS + "\n### C-3 · pkg/x.py:1 · code\n\nA code claim.\n"
+            "\n### C-4 · docs/a b: c.md:2 · every change\n\nA claim whose document is not on main.\n"
+        )
+        merges = (
+            "doc CONTRIBUTING.md: pr-0007 pr-0012\ndoc docs/a b: c.md: not on origin/main\n"
+        )
+        self.write("pr-0007.md", SWEEP_7.replace("Not read:", "C-3 · not touched\nNot read:"))
+        self.write("pr-0012.md", SWEEP_12)
+        code, out, err = self.run_it("sweep", "pr-0007", "pr-0012", claims=claims, merges=merges)
+        self.assertEqual((code, out), (2, []))
+        self.assertIn("pr-0012: no line for C-3", err)
+        self.write("pr-0012.md", SWEEP_12.replace("Not read:", "C-3 · not touched\nNot read:"))
+        code, out, err = self.run_it("sweep", "pr-0007", "pr-0012", claims=claims, merges=merges)
+        self.assertEqual(code, 0, err)
+        self.assertFalse(any("C-4" in line for line in out))
+
+    def test_a_five_digit_pull_request_on_a_doc_line_is_read(self):
+        self.write("pr-10007.md", SWEEP_7.replace("pr-0007", "pr-10007"))
+        merges = "doc CONTRIBUTING.md: pr-10007\n"
+        code, out, err = self.run_it("sweep", "pr-10007", merges=merges)
+        self.assertEqual(code, 0, err)
+
+    def test_a_merges_file_missing_or_without_a_claims_document_is_refused(self):
+        self.write("pr-0007.md", SWEEP_7)
+        code, out, err = self.run_it("sweep", "pr-0007", merges="doc README.md: pr-0007\n")
+        self.assertEqual((code, out), (2, []))
+        self.assertIn("has no `doc CONTRIBUTING.md` line", err)
+        code, out, err = block_tally_main(["sweep", str(self.dir), "pr-0007", "--claims", str(self.dir / "claims.md"), "--merges", str(self.dir / "absent.txt")])
+        self.assertEqual((code, out), (2, []))
+        self.assertIn("no merges file", err)
+
+    def test_a_claim_heading_not_in_its_form_is_refused(self):
+        self.write("pr-0007.md", SWEEP_7)
+        code, out, err = self.run_it("sweep", "pr-0007", claims=CLAIMS + "\n### C-3 · README.md\n\nA claim.\n")
+        self.assertEqual((code, out), (2, []))
+        self.assertIn("is not `### C-n", err)
 
     def test_a_sweep_without_its_claims_file_is_refused(self):
         self.write("pr-0007.md", SWEEP_7)

@@ -34,7 +34,7 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    repository last, from the window's first day, since each harvest starts its directories afresh, copying each repository's
    records into its `<log>` (`revise`'s "The standard's repository") before the next harvest
    starts, with `python3 "<plugin root>/scripts/archive_records.py" <its records> <its log>`, each
-   replacing a record of the same number; the threads stay the source, and the copy lets the
+   replacing a record of the same number, and making `<log>` on the repository's first harvest; the threads stay the source, and the copy lets the
    history be read without GitHub. The script refuses, copying nothing, when a harvested record
    would drop findings the log's record holds, which the threads cannot rebuild. Show its
    `refused` lines and ask: **Keep those records** (Recommended: rerun with `--keep <n>` for each,
@@ -117,7 +117,7 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    proposal rests on it; step 6 turns a break still on `main` into a `ticket/` proposal and a
    `drift` into a `doc/` one. It runs after step 1's harvest of this repository, never beside an
    earlier one: `diff-probe` reads each description from that harvest's
-   `.review/harvest/threads/pr-NNNN/pr.json`, which every harvest empties. First remove `.review/revision/sweep/` and `.review/revision/claims.md`, which a
+   `.review/harvest/threads/pr-NNNN/pr.json`, which every harvest empties. First remove `.review/revision/sweep/`, `.review/revision/claims.md` and `.review/revision/merges.txt`, which a
    last revision may have left. Run `python3 "<plugin root>/scripts/window_merges.py" --repo .
    --ref origin/main --since <the window's first day> --ledger <standard files>/review-rules.md`, which
    reads git only; the sweep fetches nothing, so it reads `origin/main` as the last fetch left it,
@@ -130,22 +130,29 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    or of every one that makes a kind of change, or `· code` when it governs how code is written,
    and the claim in one line. Show the `C-` claims and ask once: **Sweep these** (Recommended),
    **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**, removing from
-   the claims file every `C-` claim the answer drops. Then one `diff-probe` per merged pull
-   request the script listed, past thirty the thirty merged most recently, launched as
+   the claims file every `C-` claim the answer drops. With `every change` claims kept, rerun the
+   script adding `--dumps .review/harvest/threads/` and a `--doc <path>` for each document they
+   cite, writing its output to `.review/revision/merges.txt`, so each is judged only on the pull
+   requests opened after its document reached `main`; an exit 2 on that rerun drops the `every
+   change` claims from the claims file, with its line under "Practice". Then one `diff-probe` per
+   merged pull request the script listed, past thirty the thirty merged most recently, launched as
    harvest.md's "Analysts" launches agents, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
-   and every `C-` claim, and the path `.review/revision/sweep/pr-NNNN.md`, where it writes its
-   block and returns `wrote <path>`. Never repeat a block: a probe that returns `write failed:
-   <error>` could not write it, and you write the block that follows that line, without it, to its
-   path. Then run `python3 "<plugin root>/scripts/block_tally.py" sweep --claims
-   .review/revision/claims.md .review/revision/sweep/ <pr-NNNN ...>`, naming each pull request
-   probed; an exit 2 names the block that
+   each `every change` claim whose document's `doc <path>: pr-…` line names it, never one under
+   its `predates` or `no opened day`, and every `code` claim, and the path
+   `.review/revision/sweep/pr-NNNN.md`, where it writes its block and returns `wrote <path>`.
+   Never repeat a block: a probe that returns `write failed: <error>` could not write it, and you
+   write the block that follows that line, without it, to its path. Then run `python3 "<plugin
+   root>/scripts/block_tally.py" sweep --claims .review/revision/claims.md [--merges
+   .review/revision/merges.txt] .review/revision/sweep/ <pr-NNNN ...>`, the `--merges` when the
+   rerun wrote it, naming each pull request probed; an exit 2 names the block that
    does not hold its form, to rerun that probe. Into "Practice", from its `claim` and `break` lines,
    per claim: the pull requests it was judged on and how many follow it, break it,
    leave it untouched and could not be judged for want of a description, each break with its pull request and place; `drift` beside a claim broken
    in more than half of those that touched it, as the tally marks it; `missed by review` beside a break on a pull request
    with a record in which no finding cites the claim's rule, any break on such a pull request for
    a `C-` claim. Then the rules the script printed as `not swept: no scope`, the `predates` lines,
+   each `doc` line's `predates`, `no opened day` and `not on` pull requests or document,
    the pull requests past thirty, and each pull request step 1's harvest listed in the window that
    the script did not, as `not swept: no merge subject`.
 3. **Check breadth before promoting anything.** A rule's breadth is the `distinct-prs-agreed`
@@ -161,7 +168,7 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    `python3 "<plugin root>/scripts/rule_lint.py" --ledger <the standard's ledger> --repo .
    --checks budget`, with `--instructions` naming the instruction file the ledger's `Wording:`
    lines link, if any, and the `--profiles` step 7 names, reports, a line for each covered
-   repository over it. Name the Dial beside each proposal. Below the Minimum settled
+   repository with its lines against its budget, `budget ok` or over it. Name the Dial beside each proposal. Below the Minimum settled
    firings before a rate is read Dial, no proposal resting on a rate is made for that rule, and its
    rate line reads `keep, insufficient evidence`; admission, establishment and expiry rest on no
    rate. A candidate that meets the Admission Dial is proposed whatever the rule count. The Low
@@ -202,8 +209,11 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
      thing to fix, a `ticket/` in its place. A rule the sweep marks `drift` stays under
      "Practice", since no Dial reads the sweep.
 7. **Hold each proposal to the bar.** Run harvest.md's "The bar" on each proposal that admits,
-   rewords, promotes or broadens a rule, with the decisions files that exist: `<standard files>/decisions.md`,
-   and, with `profiles/`, `--profiles <standard files>/profiles/`; a rule that applies to only some repositories carries their `repos:`
+   rewords, promotes or broadens a rule, with one decisions file, the project's, by `revise`'s "The
+   standard's repository": `--decisions <clone>/standards/decisions.md` in the pointer's row and
+   `--decisions standards/decisions.md` in the other, either only when that file exists. The plugin
+   ships no `decisions.md`, so none is passed from `<plugin root>/standards/`. With `profiles/`,
+   add `--profiles <standard files>/profiles/`; a rule that applies to only some repositories carries their `repos:`
    line. A proposal a
    gate fails goes under "Held by the bar".
 

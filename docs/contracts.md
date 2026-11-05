@@ -679,7 +679,7 @@ Pinned by: tests/test_rule_lint.py::test_the_anchor_form_parses
 
 ## The window's merges
 
-Version: 1
+Version: 2
 
 Fields: `scripts/window_merges.py`'s printout. One line per pull request merged into `--ref` from
 `--since` on, oldest first, `pr-NNNN <full sha> <YYYY-MM-DD> <path> [<path> ...]`, the merge's
@@ -687,12 +687,18 @@ committer date as a UTC day, as GitHub's `merged_at` reads, and the files it cha
 first parent; with `--ledger`, then one line per live reviewer-tier rule in
 ledger order: `R-NNN pr-NNNN [pr-NNNN ...]`, `R-NNN none`, `R-NNN predates pr-NNNN [...]` and
 `R-NNN not swept: no scope`. A pull request is named by its merge subject as
-`scripts/merge_commit.py`'s `pr_numbers` reads it.
+`scripts/merge_commit.py`'s `pr_numbers` reads it. With `--doc` and `--dumps`, then per document
+in the order given: `doc <path>: pr-NNNN [...]` or `doc <path>: none`, the pull requests opened,
+by their `pr.json`'s `created_at`, at or after the latest commit on `--ref`'s first-parent history
+that adds the document; `doc <path>: predates pr-NNNN [...]`, those opened before; `doc <path>: no
+opened day pr-NNNN [...]`, those with no `pr.json`; or `doc <path>: not on <ref>` alone (version 2).
+A `--dumps` that is not a directory exits 2.
 
 Writers: `scripts/window_merges.py`. Readers: `revise` `prepare` step 2, which gives each
-`diff-probe` the rules whose line names its pull request.
+`diff-probe` the rules whose line names its pull request, and each `every change` claim whose
+document's `doc` line names it.
 
-Pinned by: tests/test_window_merges.py::test_each_live_reviewer_rule_gets_the_pull_requests_its_scope_matches
+Pinned by: tests/test_window_merges.py::test_a_document_judges_only_the_pull_requests_opened_after_it_reached_main
 
 ## The ledger's held-candidates heading
 
@@ -754,15 +760,19 @@ Fields: `.review/revision/sweep/pr-NNNN.md`, one `diff-probe` block, its blank l
 heading `## pr-NNNN · <sha, 7 characters>` naming the file's pull request; one line per claim,
 `<id> · follows · <place>`, `<id> · breaks · <place> · "<the line>" · <why>`, `<id> · not
 touched` or `<id> · not judged · no description`, `id` an `R-NNN` or `C-n`, each id once; then
-`Not read: <paths or none>`; every `C-n` claim `.review/revision/claims.md` heads has a line in
-every block. `scripts/block_tally.py sweep --claims <claims.md> <dir> pr-NNNN [...]` reads the
-named pull requests' blocks only and prints `blocks: <n>`; per claim,
+`Not read: <paths or none>`; every `C-n` claim `.review/revision/claims.md` heads, as `### C-n ·
+<path>:<line> · every change|code`, has a line in every block, except an `every change` claim whose
+document's `doc <path>:` line in `.review/revision/merges.txt`, `scripts/window_merges.py`'s
+printout with `--doc`, does not name that pull request. `scripts/block_tally.py sweep --claims
+<claims.md> [--merges <merges.txt>] <dir> pr-NNNN [...]` reads the named pull requests' blocks only
+and prints `blocks: <n>`; per claim,
 rules first, `claim · <id> · judged <n> · follows <n> · breaks <n> · not touched <n> · not judged
 <n>`, with ` · drift` when breaks are more than half of follows and breaks together; `break ·
 <id> · pr-NNNN · <place>` per break; and `not read · pr-NNNN · <paths>` for each not `none`. It
-exits 2 with a `CANNOT RUN` line, printing nothing, on a named block or the claims file missing, a
-pull request named twice or not as `pr-NNNN`, a heading missing or naming another pull request, a
-line of no form above, a claim judged twice, a block with no line for a `C-n` claim, or a `Not
+exits 2 with a `CANNOT RUN` line, printing nothing, on a named block, the claims file or a named
+merges file missing, a `### C-n` heading not in its form, an `every change` claim's document with
+no `doc` line in the merges file, a pull request named twice or not as `pr-NNNN`, a heading missing or naming another pull request, a
+line of no form above, a claim judged twice, a block with no line for a `C-n` claim it owes, or a `Not
 read:` line missing or repeated.
 
 Writers: `diff-probe`, at the path `revise` `prepare` step 2 gives it. Readers:
