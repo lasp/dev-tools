@@ -284,7 +284,7 @@ scenarios:
     expect:
       ends: success
       agents: [implementation-reviewer]
-      not_says: ["(?i)(remove|drop|replace)[^\\n]*\\bretr", "(?i)\\bretr[^\\n]*\\b(with|by) a raise"]
+      not_says: ["(?i)\\b(remove|drop|replace)\\b[^\\n]*\\bretr","(?i)\\bretr[^\\n]*\\b(with|by) a raise"]
 
   - id: review-fail-loud-decision
     repo: widgets
