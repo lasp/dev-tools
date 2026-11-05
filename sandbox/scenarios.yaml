@@ -204,6 +204,59 @@ scenarios:
       says: ["CUI|[Ee]xport"]
       not_says: ["0\\.137", "291\\.4", "\\bK7\\b"]
 
+  - id: ticket-draft-retitle
+    repo: widgets
+    setup:
+      - cp "$SBX_FIXTURES/retitle-ticket.txt" ticket.txt
+    origin: lasp/dev-tools#93
+    why: >-
+      Refines an existing ticket whose work has moved away from its summary, so the draft proposes
+      a new summary as a field change rather than keeping a title that no longer fits.
+    turns:
+      - >-
+        /lasp-dev:ticket-draft refine PROJ-51. Jira is not connected: the ticket as it stands is
+        in ticket.txt. The work has changed since it was filed: negative counts are fine, since
+        returns are entered as negative counts. What we need now is for by_part to accept a part
+        listed twice and sum its counts, instead of raising ValueError.
+      - Right. Draft this ticket.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
+      - Looks right. Paste it all.
+    must_not_run: ["mcp__*", "Bash(git push*)"]
+    look_at: >-
+      What changed lists the summary under Reworded, now and after, and the field changes and
+      PROJ-51.jira.txt's Summary line carry one about summing a part listed twice.
+    verify:
+      - test -f .review/context/PROJ-51.jira.txt
+      - "! grep -qE '^Summary: *Refuse a negative count in by_part *$' .review/context/PROJ-51.jira.txt"
+    expect:
+      ends: success
+      files: [".review/context/PROJ-51.jira.txt"]
+
+  - id: ticket-draft-retitle-control
+    repo: widgets
+    setup:
+      - cp "$SBX_FIXTURES/retitle-ticket.txt" ticket.txt
+    origin: lasp/dev-tools#93
+    why: >-
+      Refines the same ticket with a change its summary still covers, so the draft keeps the
+      summary and proposes no field change for it.
+    turns:
+      - >-
+        /lasp-dev:ticket-draft refine PROJ-51. Jira is not connected: the ticket as it stands is
+        in ticket.txt. One addition: the ValueError message names the part and its count, so the
+        person fixing the file can find the line.
+      - Right. Draft this ticket.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
+      - Looks right. Paste it all.
+    must_not_run: ["mcp__*", "Bash(git push*)"]
+    look_at: The summary is kept, and no field change names it.
+    verify:
+      - test -f .review/context/PROJ-51.jira.txt
+      - "grep -qE '^Summary: *Refuse a negative count in by_part *$' .review/context/PROJ-51.jira.txt"
+    expect:
+      ends: success
+      files: [".review/context/PROJ-51.jira.txt"]
+
   - id: design-doc-controlled-two-items
     repo: widgets
     setup:
