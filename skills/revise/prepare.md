@@ -185,8 +185,10 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    the taken suggestions, and each ask in the meeting or chat notes the driver pasted into
    `.review/revision/notes/*.md`, cited by its file and marked `pasted`: a person's line that
    strengthens its cluster's evidence but counts as no merged pull request for the Recurring ask
-   Dial. List the clusters the Recurring ask Dial admits, and those a single statement admits, with
-   their evidence.
+   Dial; with "Guidance" run, each joins a cluster as a note. List the clusters the Recurring ask
+   Dial admits, and those a single statement admits, with their evidence: from the
+   `guidance_clusters.py` printout, when "Guidance" ran, each cluster's pull requests, people and
+   `said` quotes as it prints them.
 
    **Single statements.** A cluster admits on one guidance tally `admit` line alone, a person's
    general statement, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
@@ -203,7 +205,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    line says what changed; if it expired unfired, say how long it sat idle, which argues for a
    check.
 6. **Merge the held candidates.** Merge this window's clusters into the ledger's "Candidates below
-   the criteria", re-judge each against the Dials, and propose each that now meets them. The rest
+   the criteria", a cluster whose `held` line names a candidate into that one, re-judge each
+   against the Dials, and propose each that now meets them. The rest
    go under "Held candidates", each with its updated evidence, its quotes, and the criterion
    still failing, never as a proposal to mark; drop one under the Candidate drop Dial and say so.
    Then consolidate: proposals acting on the same rule become one; candidates asking for the same

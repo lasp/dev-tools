@@ -114,6 +114,30 @@ class Scores(unittest.TestCase):
         self.assertEqual(got["themes on two prs"], "1/8 = 0.12")
         self.assertNotIn("precision", got)
 
+    def test_the_recorded_clusters_join_every_theme(self):
+        got = score("--items", str(FIXTURE / "runs" / "guidance-extractor-2026-11-05.json"),
+                    "--clusters", str(FIXTURE / "clusters" / "clusters-2026-11-05.json"))
+        self.assertEqual(got["themes joined"], "8/8 = 1.00")
+        self.assertEqual(got["themes kept apart"], "8/8 = 1.00")
+
+    def test_one_cluster_of_everything_joins_every_theme_and_keeps_none_apart(self):
+        run = FIXTURE / "runs" / "guidance-extractor-2026-11-05.json"
+        keys = [f"s1-{i}" for i in range(len(json.loads(run.read_text())["items"]))]
+        with tempfile.TemporaryDirectory() as d:
+            one = Path(d) / "one.json"
+            one.write_text(json.dumps({"clusters": [{"id": "C1", "principle": "x", "items": keys, "notes": [], "held": None}]}))
+            got = score("--items", str(run), "--clusters", str(one))
+            self.assertEqual((got["themes joined"], got["themes kept apart"]), ("8/8 = 1.00", "0/8 = 0.00"))
+            twice = Path(d) / "twice.json"
+            twice.write_text(json.dumps({"clusters": [{"id": "C1", "principle": "x", "items": keys[:2], "notes": [], "held": None},
+                                                      {"id": "C2", "principle": "y", "items": keys[1:3], "notes": [], "held": None}]}))
+            for extra, why in ((["--items", str(run), "--clusters", str(twice)], "is in C1 and C2"),
+                               (["--openers", "--clusters", str(twice)], "needs --items")):
+                with self.subTest(why=why), contextlib.redirect_stdout(io.StringIO()), \
+                        contextlib.redirect_stderr(io.StringIO()) as err:
+                    self.assertEqual(harvest_recall.main([str(FIXTURE), *extra]), 1)
+                    self.assertIn(why, err.getvalue())
+
     def test_the_recorded_extractor_run(self):
         got = score("--items", str(FIXTURE / "runs" / "guidance-extractor-2026-11-05.json"))
         for key, want in RECORDED.items():

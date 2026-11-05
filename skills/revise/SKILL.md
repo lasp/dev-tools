@@ -11,7 +11,7 @@ argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | appl
 disable-model-invocation: true
 metadata:
   author: lasp-dev
-  version: 2.17.0
+  version: 2.18.0
 ---
 
 # Revise the standard
@@ -117,6 +117,8 @@ In `<archive>` and `<context>`, from `apply`: `R-NNN.md` entries and accepted `c
 In this repository's `.review/`:
 - `harvest/analysis/pr-NNNN.md`, each `thread-analyst` block, written by the analyst.
 - `harvest/guidance/slice-<n>.json`, each `guidance-extractor` run, written by the extractor.
+- `harvest/guidance/tally.txt`, the guidance tally, and `harvest/clusters.json`, the driver's clusters
+  of it, checked by `scripts/guidance_clusters.py`.
 - `backtest/R-NNN.entry.md` and `backtest/R-NNN.md`, a proposal's drafted entry and its
   `rule-probe` blocks.
 - `revision/claims.md`, the rules and documented claims the sweep judges, and
