@@ -57,9 +57,10 @@ step 1.
 2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 wrote; the report
    cites thread ids. What it did not read goes under "Not read".
 
-   From the blocks, leaving out lines with `asked: none`:
+   From the blocks, leaving out lines with `asked: none`, the counts from harvest.md's
+   `block_tally.py analysis` printout, never counted by hand:
    - **What review asked for**: a table of category by outcome, with counts and a source column
-     (`thread`, `review`, `comment`); under it, the asks step 5 finds recurring, each with its pull
+     (`thread`, `review`, `comment`), from its `count` lines; under it, the asks step 5 finds recurring, each with its pull
      requests and each ask's source and id, joining step 5's candidates marked `from people's
      threads`. Then each thread the record holds as `unanswered`, by its analyst line: `diff:
      addresses it` counts as answered in code, `does not` as ignored, `cannot tell` apart, with
@@ -107,10 +108,14 @@ step 1.
    message, one `diff-probe` per merged pull request the script listed, past thirty the thirty
    merged most recently, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
-   and every `C-` claim. Write each block to `.review/revision/sweep/pr-NNNN.md` as returned. Into
-   "Practice", per claim: the pull requests it was judged on and how many follow it, break it,
+   and every `C-` claim, and the path `.review/revision/sweep/pr-NNNN.md`, where it writes its
+   block and returns `wrote <path>`. Never repeat a block: only one returned in place of that line,
+   since its write failed, is written to its path by you. Then run `python3 "<plugin
+   root>/scripts/block_tally.py" sweep .review/revision/sweep/`; an exit 2 names the block that
+   does not hold its form, to rerun that probe. Into "Practice", from its `claim` and `break` lines,
+   per claim: the pull requests it was judged on and how many follow it, break it,
    leave it untouched and could not be judged for want of a description, each break with its pull request and place; `drift` beside a claim broken
-   in more than half of those that touched it; `missed by review` beside a break on a pull request
+   in more than half of those that touched it, as the tally marks it; `missed by review` beside a break on a pull request
    with a record in which no finding cites the claim's rule, any break on such a pull request for
    a `C-` claim. Then the rules the script printed as `not swept: no scope`, the `predates` lines,
    the pull requests past thirty, and each pull request step 1's harvest listed in the window that

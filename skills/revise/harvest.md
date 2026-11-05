@@ -23,13 +23,17 @@ past thirty, the thirty whose records hold the most findings plus pointers under
 each of those dumps' `pr.json`, which prints each pull request's merge commit, the one commit on
 `main`'s first-parent history whose subject names it; the `get` result carries none. Then all in
 one message, each given this repository's path, its dump `.review/harvest/threads/pr-NNNN/`, its
-record `.review/harvest/records/pr-NNNN.yaml`, its merge commit and the categories design,
-correctness, tests, naming, docs, scope, process and style. A pull request the script prints
+record `.review/harvest/records/pr-NNNN.yaml`, its merge commit, the categories design,
+correctness, tests, naming, docs, scope, process and style, and the path
+`.review/harvest/analysis/pr-NNNN.md`, where it writes its block and returns `wrote <path>`. A pull request the script prints
 `none` for gets no analyst, since a guessed commit would put the `diff:` verdict on the wrong
-tree; an exit 2 stops the step with its line. Write each block to
-`.review/harvest/analysis/pr-NNNN.md` as returned. The pull requests past the cap or with no merge
-commit, the script's reason beside each, a block that is a `record mismatch` line, and each
-block's `Not read:` ids are what was not read.
+tree; an exit 2 stops the step with its line. Never repeat a block: an analyst that returns its
+block in place of `wrote <path>` could not write it, and only that block is written to its path
+by you. Then run `python3 "<plugin root>/scripts/block_tally.py" analysis
+.review/harvest/analysis/`, which counts the blocks and lists what they did not read; an exit 2
+names the block that does not hold its form, to rerun that analyst. The pull requests past the cap or with no merge
+commit, the script's reason beside each, and the tally's `mismatch` and `not read` lines are what
+was not read.
 
 ## Clusters
 

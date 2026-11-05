@@ -11,7 +11,7 @@ argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | appl
 disable-model-invocation: true
 metadata:
   author: lasp-dev
-  version: 2.12.0
+  version: 2.13.0
 ---
 
 # Revise the standard
