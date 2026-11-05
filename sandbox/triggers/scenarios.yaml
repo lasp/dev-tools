@@ -1,6 +1,7 @@
-# The trigger pack: one plain-language request per skill a person types, in the words a person
-# would use rather than the skill's name or its description's phrases, so a run shows whether the
-# request reaches the skill. Each runs in `widgets`, as the generic pack does, with the same
+# The trigger pack: one plain-language request per skill a person types, `trigger-<skill>`, and a
+# second, `trigger-<skill>-<suffix>`, where one request leaves a gap, each in the words a
+# person would use rather than the skill's name or its description's phrases, so a run shows
+# whether the request reaches the skill. Each runs in `widgets`, as the generic pack does, with the same
 # sandbox and an mcp.json of `{"mcpServers": {}}`. The fields are the generic pack's, in
 # ../scenarios.yaml. Each expects only its skill's Skill call and a turn that ends in success:
 # dontAsk mode ends the turn at the skill's first question, and with no server connected nothing
@@ -18,12 +19,40 @@ scenarios:
       ends: success
       skills: [architecture-doc]
 
+  - id: trigger-architecture-doc-confluence
+    repo: widgets
+    origin: "lasp/dev-tools#23: a held-out request for an architecture page"
+    why: Asks for the page in words neither the description nor trigger-architecture-doc uses, so a run shows whether it reaches architecture-doc.
+    turns:
+      - Our Confluence space has nothing on the widgets library yet. Draft a page covering its parts and how data moves through them.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches architecture-doc, which says what the page will describe and for whom, then stops at its first question.
+    expect:
+      ends: success
+      skills: [architecture-doc]
+
   - id: trigger-commit
     repo: widgets
     setup:
       - printf '\nInventories are CSV files with the columns part and count.\n' >> README.md
     turns:
       - Go ahead and save what I've changed to git.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)"]
+    verify:
+      - test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+    look_at: The request reaches commit, which finds the README edit on main and asks before committing to the default branch, offering a branch.
+    expect:
+      ends: success
+      skills: [commit]
+
+  - id: trigger-commit-history
+    repo: widgets
+    origin: "lasp/dev-tools#23: a second request for a commit, without the word"
+    why: Asks for a commit in other words than trigger-commit's, so a run shows whether the request reaches commit rather than a direct git commit.
+    setup:
+      - printf '\nInventories are CSV files with the columns part and count.\n' >> README.md
+    turns:
+      - I'm happy with the README edit. Put it in the history.
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)"]
     verify:
       - test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
@@ -52,6 +81,18 @@ scenarios:
       ends: success
       skills: [downstream]
 
+  - id: trigger-downstream-notice
+    repo: widgets
+    origin: "lasp/dev-tools#23: a held-out request for the consumers a change reaches"
+    why: Asks in words neither the description nor trigger-downstream uses, so a run shows whether it reaches downstream.
+    turns:
+      - I'm about to drop the total() function. Will anything outside this repo notice?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches downstream, which says what it knows of widgets' consumers, none being configured.
+    expect:
+      ends: success
+      skills: [downstream]
+
   - id: trigger-drawio
     repo: widgets
     turns:
@@ -66,6 +107,18 @@ scenarios:
     repo: widgets
     turns:
       - I want by_part to add the counts together when a part is listed twice instead of raising. Work out the approach with me first, then build it and get it ready for review.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: The request reaches implement-change, which restates it as a brief and asks whether to plan it or build it now.
+    expect:
+      ends: success
+      skills: [implement-change]
+
+  - id: trigger-implement-change-finished
+    repo: widgets
+    origin: "lasp/dev-tools#23: a held-out request for a change taken to review"
+    why: Asks in words neither the description nor trigger-implement-change uses, so a run shows whether it reaches implement-change.
+    turns:
+      - Add a parts() function to inventory.py that lists each part once, sorted by name. I'd like it finished, tested and up for review.
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
     look_at: The request reaches implement-change, which restates it as a brief and asks whether to plan it or build it now.
     expect:
@@ -106,10 +159,36 @@ scenarios:
       ends: success
       skills: [pr-fix]
 
+  - id: trigger-pr-fix-push-back
+    repo: widgets
+    origin: "lasp/dev-tools#23: a held-out request to answer a review"
+    why: Asks in words neither the description nor trigger-pr-fix uses, so a run shows whether it reaches pr-fix.
+    setup:
+      - git switch -q PROJ-42-csv-loader
+    turns:
+      - PR 1 came back with changes requested. Help me sort out what to change and what to push back on.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches pr-fix, which says GitHub is not connected and stops.
+    expect:
+      ends: success
+      skills: [pr-fix]
+
   - id: trigger-pr-review
     repo: widgets
     turns:
       - Can you look over pull request 1 before I approve it?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches pr-review, which says GitHub is not connected and stops.
+    expect:
+      ends: success
+      skills: [pr-review]
+
+  - id: trigger-pr-review-once-over
+    repo: widgets
+    origin: "lasp/dev-tools#23: a held-out request for a review"
+    why: Asks for a review in words neither the description nor trigger-pr-review uses, so a run shows whether it reaches pr-review rather than a direct gh read.
+    turns:
+      - Give PR 1 a once-over and tell me what you'd change.
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
     look_at: The request reaches pr-review, which says GitHub is not connected and stops.
     expect:
@@ -121,6 +200,18 @@ scenarios:
     turns:
       - New people on the team keep asking how to add a widget part and run the tests. Can you write that down for them?
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches process-doc, which says the topic, the kind and the readers, then stops at its first question.
+    expect:
+      ends: success
+      skills: [process-doc]
+
+  - id: trigger-process-doc-wiki
+    repo: widgets
+    origin: "lasp/dev-tools#23: trigger-process-doc names no wiki, so a file in the repository can fairly answer it"
+    why: Asks for the same guide on the team wiki, so a run shows whether a request that says where the page goes reaches process-doc.
+    turns:
+      - Put a guide on our team wiki for adding a widget part and running the tests.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Edit", "Write(*/repos/widgets/[!.]*)"]
     look_at: The request reaches process-doc, which says the topic, the kind and the readers, then stops at its first question.
     expect:
       ends: success
@@ -173,6 +264,20 @@ scenarios:
       ends: success
       skills: [test-suite-review]
 
+  - id: trigger-test-suite-review-solid
+    repo: widgets
+    origin: "lasp/dev-tools#23: trigger-test-suite-review asks a merge question the session answers itself"
+    why: Asks about the tests themselves, so a run shows whether a plain question on test quality reaches test-suite-review.
+    setup:
+      - git switch -q PROJ-42-csv-loader
+    turns:
+      - Look at the tests on this branch and tell me how solid they are.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches test-suite-review, which finds that loader.py arrives with no test, and edits nothing.
+    expect:
+      ends: success
+      skills: [test-suite-review]
+
   - id: trigger-ticket-draft
     repo: widgets
     origin: "lasp/dev-tools#23: a plain request to file a ticket should reach ticket-draft"
@@ -201,6 +306,18 @@ scenarios:
     repo: widgets
     turns:
       - Read through README.md and make it easier to follow.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: The request reaches writing, which shows its planned changes to the README and asks before applying them.
+    expect:
+      ends: success
+      skills: [writing]
+
+  - id: trigger-writing-rambles
+    repo: widgets
+    origin: "lasp/dev-tools#23: a held-out request to improve prose"
+    why: Asks in words neither the description nor trigger-writing uses, so a run shows whether it reaches writing.
+    turns:
+      - The README rambles. Give it an edit so a newcomer gets the point quickly.
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Edit", "Write(*/repos/widgets/[!.]*)"]
     look_at: The request reaches writing, which shows its planned changes to the README and asks before applying them.
     expect:

@@ -34,6 +34,16 @@ class Counts(unittest.TestCase):
             self.assertEqual((row["firings"], row["disagree"], row["contested"]), (1, 1, 1))
             self.assertEqual(ratchet_counts.missing(log, [1, 2]), [2])
 
+    def test_an_unlabeled_finding_is_a_firing_counted_apart_from_the_unanswered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp)
+            (log / "pr-0001.yaml").write_text(
+                "pr: 1\nfindings:\n  - key: R-003/x.py::f\n    severity: unparsed\n    verdict: unparsed\n    line: \"**Question — x**\"\n"
+                "  - key: R-003/x.py::g\n    severity: should-fix\n    verdict: unparsed\n    line: \"Hmm.\"\nquestions: []\n"
+            )
+            row = ratchet_counts.count(log)["R-003"]
+            self.assertEqual((row["firings"], row["unlabeled"], row["unanswered"]), (2, 1, 1))
+
     def test_a_contested_findings_lines_are_not_read_as_findings(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp)

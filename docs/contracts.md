@@ -261,7 +261,7 @@ Pinned by: tests/test_next_phase.py::test_an_agree_that_carries_its_response_is_
 
 ## The thread dump
 
-Version: 5
+Version: 6
 
 Fields: `.review/threads/pr-NNNN/` (and `.review/harvest/threads/pr-NNNN/`): `pages/`, each
 `pull_request_read` result as the server returned it, one file per call, from which
@@ -270,13 +270,16 @@ names; `pr.json`, the
 `pull_request_read` `get` result, with `draft`, `state` and `merged`, and `merged_at` once it
 merged, since the server leaves out an empty field rather than sending null (a review posted with
 a batch of thread replies has no `body`); `reviews.json`,
-`get_reviews`, paged 100 at a time into one list; `comments.json`, `get_review_comments`, whose
+`get_reviews`, paged 100 at a time, or at the smaller size `thread_dump.py --per-page` names, into one list; `comments.json`, `get_review_comments`, whose
 `review_threads` carry GitHub's `is_resolved` and `is_outdated` flags; `issue-comments.json`,
-`get_comments`, the conversation comments, paged 100 at a time into one list; `body.md`, the pull request body. As the GitHub MCP
+`get_comments`, the conversation comments, paged as `get_reviews` is into one list; `body.md`, the pull request body. As the GitHub MCP
 server returns them; each review in `reviews.json` carries its `html_url`, which `record.py`
 reads the repository from and refuses a review without. Version 2 added `issue-comments.json`;
 version 3 states the `html_url` requirement; version 4 added `pages/` and `thread_dump.py`'s
-checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`. Beside them, `judged.json`, "The
+checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`; version 6 lets a
+list be paged below 100, named by `--per-page`, and has `save_page.py` refuse a response that is
+not JSON, such as the harness's size-limit notice, and clear a pull request's
+`get_review_comments` pages at its first page. Beside them, `judged.json`, "The
 judgments", is `pr-reader`'s own.
 
 Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
@@ -493,10 +496,10 @@ Pinned by: tests/test_profile.py::test_a_value_of_the_wrong_shape
 
 ## The record
 
-Version: 11
+Version: 12
 
 Fields: `<log>/pr-NNNN.yaml`, `<log>` the records directory `revise`'s "The standard's repository"
-names, first line `contract: 11`. This section is the one
+names, first line `contract: 12`. This section is the one
 place the fields are defined; the records directory's own README says how the revision
 reads them.
 
@@ -541,12 +544,17 @@ reads them.
   `unanswered` with `why: "disagree with no reason"`; an unparsed finding carries `line:`, the
   first line of the reply that left it open; a finding two reviewers answered differently carries
   `contested: true` and both original lines, `lines:`, beside the verdict the author settled on,
-  or `verdict: contested` while the author has not settled it.
+  or `verdict: contested` while the author has not settled it. A finding whose first line is not
+  one of the four severity lines has `severity: unparsed`, `verdict: unparsed` and `line:`, that
+  first line; its replies are not read, since the severity decides how they read.
+  `scripts/ratchet_counts.py` counts it as a firing in its `unlabeled` column, not with the
+  unanswered.
 - `questions:`, every cited question: `q`, `key`, `at`, `thread`, and `a`, the answer, or
   `unanswered: true`.
 - `threads:`, a pointer to every other review thread: a person's, a bot's, or a finding posted
   with no key. Each carries `thread`; `by`, its opener, `bot` for a bot or `review` for an uncited
-  finding, which also carries its `severity`; `authorship` (`human`, `bot`, or `ai-drafted` when
+  finding, which also carries its `severity`, `unparsed` with `verdict: unparsed` and `line:` as
+  on a finding; `authorship` (`human`, `bot`, or `ai-drafted` when
   the opening comment carries the review's attribution line or one of the
   `attribution.phrases` of the repository's standard, Libera's being D-013's "drafted with AI assistance" and the loop review's attribution line); `at`; `opened`, the day; `resolved` and `outdated`, GitHub's flags; `replies`,
   the count from people; `verdict`, an uncited finding's read as a finding's, otherwise the pull
@@ -578,6 +586,8 @@ author opened in their own words, by which a pull request whose only review is t
 has a record. Version 10: `standards_sha` may end ` + uncommitted`; a record of an earlier
 version without it may still have run on uncommitted standards. Version 11: in a repository whose
 standard is elsewhere, `standards_sha` is the named repository's commit, not this one's.
+Version 12: a finding whose severity label is not one of the four is recorded with `severity:
+unparsed`, where earlier versions refused the record of its pull request.
 
 A harvested record reaches the log through `scripts/archive_records.py`, which refuses to
 replace a record whose findings, counted per rule, the harvested one falls short of, unless told

@@ -494,7 +494,10 @@ class Plugin:
             test_record.thread("Should fix"),
             test_record.thread("Should fix", ("bob", "Looks odd.")),
             test_record.thread("Should fix", ("bob", "Agree."), ("carol", "Disagree, not here")),
+            test_record.thread("Should fix", ("bob", "Agree.")),
         ]
+        # A severity label that is not one of the four, recorded `severity: unparsed`.
+        unsettled[-1]["comments"][0]["body"] = unsettled[-1]["comments"][0]["body"].replace("**Should fix** — a finding", "**Suggestion — a finding**")
         for i, th in enumerate(unsettled):
             th["id"] = f"PRRT_u{i}"
             th["comments"][0]["body"] = th["comments"][0]["body"].replace("R-001/x.py::f", f"R-00{i + 1}/x.py::u")
@@ -508,7 +511,7 @@ class Plugin:
         cases.append(record.build(test_record.PR, [test_record.REVIEW], [judged], test_record.BODY, "o/r", "abc1234", issue_comments=[], judged=judgment)[0])
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp)
-            want = {k: 0 for k in ("firings", "agree", "disagree", "discuss", "unanswered", "open-contest", "contested")}
+            want = {k: 0 for k in ("firings", "agree", "disagree", "discuss", "unanswered", "unlabeled", "open-contest", "contested")}
             column = {"unparsed": "unanswered", "contested": "open-contest"}
             for i, lines in enumerate(cases, 1):
                 text = "\n".join(lines) + "\n"
@@ -516,6 +519,8 @@ class Plugin:
                 section = text.split("\nfindings:", 1)[1].split("\nquestions:", 1)[0]
                 for item in re.split(r"^  - key: ", section, flags=re.M)[1:]:
                     v = column.get(*[re.search(r"^    verdict: (\w+)$", item, re.M).group(1)] * 2)
+                    if re.search(r"^    severity: unparsed$", item, re.M):
+                        v = "unlabeled"
                     want["firings"] += 1
                     want[v] += 1
                     want["contested"] += v != "open-contest" and "\n    contested: true" in item
