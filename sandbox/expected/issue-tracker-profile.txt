@@ -1,0 +1,5 @@
+# The profile's jira section is named issue_tracker; jira: is read as its alias, and every jira.*
+# field reads as before.
+defaults: the whole default output names the section issue_tracker, which reads not yet recorded as jira did
+family/defaults: the whole output names the jira: workflow issue_tracker, with its kind and its location none
+family/next_phase(Blocked no page*: a status the workflow does not have is refused naming the profile's issue_tracker

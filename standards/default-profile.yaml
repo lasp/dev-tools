@@ -36,10 +36,11 @@ depth:
   deep: []
 
 # Set only by a standard's project settings and here, never in a repository's own profile in a
-# standard for several. No default describes a Jira workflow, so no status is moved or routed by until a
-# standard records one (`jira.roles` and `jira.pr_statuses` print `not yet recorded`); no host or
-# repository is internal until a standard names it.
-jira: not yet recorded
+# standard for several. No default names an issue tracker or describes its workflow, so no status is
+# moved or routed by until a standard records one (`issue_tracker.roles` and
+# `issue_tracker.pr_statuses` print `not yet recorded`); no host or repository is internal until a
+# standard names it.
+issue_tracker: not yet recorded
 internal:
   domains: []
   private_repositories: []

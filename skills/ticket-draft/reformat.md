@@ -1,7 +1,7 @@
 # Reformat
 
 `ticket-draft reformat <key>`: rewrite a ticket that already holds its requirements in the current
-format, `using-jira`'s "The description format", keeping every fact and asking only where the format
+format, `<plugin root>/standards/ticket-format.md`, as `using-jira`'s "The description format" renders it in Jira, keeping every fact and asking only where the format
 needs what the old text cannot supply. It runs no search and no investigation unless the person
 asks, and needs the Atlassian server, as SKILL.md's Reads say. It suits any ticket that already says
 what the work must accomplish and how to tell it is done, whoever wrote it and whatever its

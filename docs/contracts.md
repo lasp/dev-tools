@@ -407,7 +407,7 @@ Pinned by: tests/test_sandbox.py::test_the_no_standard_scenario_quotes_works_no_
 
 ## The profile
 
-Version: 15
+Version: 16
 
 Fields: each key is, first, the repository's standard's, read in the working directory's checkout
 when it is that repository, the owner being the argument's, or the `origin` remote's, never the
@@ -417,7 +417,7 @@ pointer"); for another repository of the same owner, that standard when its `pro
 repository, as a revision harvesting every repository a standard covers reads it, and a standard
 there that is refused or cannot be fetched refuses that query too. A standard with a `profiles/`
 directory covers several repositories: its `profile.yaml` holds only the project settings,
-`ticket`, `posted_text`, `github_server`, `jira`, `internal`, `attribution` and `surface`, and
+`ticket`, `posted_text`, `github_server`, `issue_tracker`, `internal`, `attribution` and `surface`, and
 `profiles/<repo>.yaml` only each repository's own, the rest; a setting in the other file, a pointer
 from a repository with no file there, a pointer to a standard with no `profiles/`, and a pointer in
 the standard's own `profile.yaml` are refused (version 13). The standard's own repository, its
@@ -432,8 +432,8 @@ give (version 11): `ticket` (`pattern`, `project`), `public`, `template`, `downs
 (`tests`), `github_server`, `posted_text`, `depth` (`light`, `deep`), `corpus` gone (version 13).
 No team layer is read: its owners, team files, profiles and the fork refusal are gone
 (version 15). Any value but the project sections' below may read `not yet recorded`, and a
-standard sets a section whole: one whose section reads `not yet recorded`, other than `jira`, is
-refused. `scripts/profile.py`'s `SCHEMA` defines the shapes, and the default profile under a
+standard sets a section whole: one whose section reads `not yet recorded`, other than
+`issue_tracker`, is refused. `scripts/profile.py`'s `SCHEMA` defines the shapes, and the default profile under a
 standard's settings is refused when it leaves a key out or has a key the schema does not know.
 `profile.py --standard` prints the absolute path of the standard's directory of the working
 directory's checkout, when it is the repository: the fetched standard its pointer names, or its own
@@ -443,13 +443,22 @@ checkout, a pointer that cannot be read, a standard not read, and anything `prof
 refuses but what is detected, such as a standard that does not cover the repository or that the
 schema refuses (version 15).
 Sections a standard's project settings and the default profile set, and a standard's
-`profiles/<repo>.yaml` does not: `jira`
-(`statuses`, each `{name, next}` with `next` one of `ticket-draft`, `implement-change` or `nothing`,
-read by `next_phase.py` for a ticket with no context page, and a `role` on the statuses the generic
-skills name by role, each of `filed`, `approved`, `implementation`, `finished` and `abandoned` on
-exactly one status, which `--defaults` prints as `jira.roles`, so `--defaults --field
-jira.roles.finished` prints that status's name (version 8); `pr_statuses`, each one of the
-statuses) and `internal` (`domains`, bare host names, the hosts `transcript_excerpt.py` redacts,
+`profiles/<repo>.yaml` does not: `issue_tracker` (`kind`, `jira` or `github`; `location`,
+optional, `owner/repo`, the repository whose GitHub issues the project's are, each repository's
+own when it is left out, when it prints `none` as a role with no label does, and refused for Jira,
+whose project is `ticket.project`; `statuses`, a Jira status or a GitHub label each, no GitHub label
+named `none`, each `{name, next}` with
+`next` one of `ticket-draft`, `implement-change` or `nothing`, read by `next_phase.py` for a ticket
+with no context page, and a `role` on the statuses the generic skills name by role, each of
+`filed`, `approved`, `implementation`, `finished` and `abandoned` on exactly one Jira status, or on
+at most one GitHub label, as "The ticket shape" sets out, which `--defaults` prints as
+`issue_tracker.roles`, a GitHub role with no label printing `none`, so `--defaults --field
+issue_tracker.roles.finished` prints that status's name (version 8); `pr_statuses`, each one of
+the statuses). A file's `jira:` section is read as `issue_tracker:` with `kind: jira`, a file that
+sets both, or a `kind` or `location` under `jira:`, is refused, a refusal names the section's fields
+as `issue_tracker.<field> (jira:)`, and `--field jira.<field>` reads `issue_tracker.<field>` when its kind is
+`jira` and `not yet recorded` otherwise, so every reader of a `jira.<field>` reads as before (version 16).
+And `internal` (`domains`, bare host names, the hosts `transcript_excerpt.py` redacts,
 the default profile's and the working directory's standard's together (version 15),
 and which exits 1 before printing when they cannot be read; `private_repositories`, bare
 repository names, for each of which `public` prints `false` and a profile setting it `true` is
@@ -457,13 +466,15 @@ refused, ignoring case (version 5)), `attribution` (`phrases`, the wordings besi
 attribution line that `record.py` reads as marking a comment AI-drafted, case aside, none of them
 empty, the working directory's repository's (version 13)) and `surface` (`identifiers`, the enum classes whose members `surface_diff.py` lists as
 `identifier`, each a Python class name) (version 10); either may be an empty list, and no field of
-`jira`, `internal`, `attribution` or `surface` may read `not yet recorded`. The default profile's
-`jira` reads `not yet recorded`, and its `internal` lists no domain and no repository, so a
-repository takes a workflow and internal hosts only from its standard: with none,
-`--defaults --field jira.roles`, `jira.roles.<role>` and `jira.pr_statuses` print `not yet
-recorded`, `next_phase.py` routes every ticket status to ticket-draft, as with no status read,
-naming the status in its reason, and a standard that sets `jira` sets both its fields (version
-14). A status named twice, ignoring case, or with spaces around it is refused. The default
+`issue_tracker`, `internal`, `attribution` or `surface` may read `not yet recorded`; `location` may
+be left out, and then prints `none`.
+The default profile's `issue_tracker` reads `not yet recorded`, and its `internal` lists no domain
+and no repository, so a repository takes a workflow and internal hosts only from its standard: with
+none, `--defaults --field issue_tracker.roles`, `issue_tracker.roles.<role>` and
+`issue_tracker.pr_statuses` print `not yet recorded`, `next_phase.py` routes every ticket status to
+ticket-draft, as with no status read, naming the status in its reason, and a standard that sets
+`issue_tracker` sets its `kind`, `statuses` and `pr_statuses` (version 16). `next_phase.py` reads
+a Jira workflow only; with a GitHub tracker it routes as with none recorded (version 16). A status named twice, ignoring case, or with spaces around it is refused. The default
 profile's `depth.light` is `CHANGELOG.md`, `README.md`, `docs/**/*.md` and `doc/**/*.md` at the
 documentation brief, so no skill, agent file, `CLAUDE.md`, `AGENTS.md` or instruction file is
 light without a profile that says so (version 2). A `ticket.pattern` or a `hunk` that is not a
@@ -488,11 +499,44 @@ for a standard covering several repositories, its `profiles/<repo>.yaml`, with t
 the plugin, `standards/default-profile.yaml`; each repository's
 maintainers, its `standards/profile.yaml`; and `profile.py`, through `survey.py --drop-in`, the
 detected cache.
-Readers: `scripts/profile.py`, and through it the hooks, `standard_file.sh`, `record.py`, `depth_floor.py`, `next_phase.py` (`jira`), `transcript_excerpt.py` (`internal`) and the skills, `writing`'s `short.md` among them (`public`, `internal.domains`), and `write-plan.md`, `ticket-audit`, `ticket-draft` and `source-reader` (`jira.roles`); `source`
+Readers: `scripts/profile.py`, and through it the hooks, `standard_file.sh`, `record.py`, `depth_floor.py`, `next_phase.py` (`issue_tracker`), `transcript_excerpt.py` (`internal`) and the skills, `writing`'s `short.md` among them (`public`, `internal.domains`), and `write-plan.md`, `ticket-audit`, `ticket-draft` and `source-reader` (`jira.roles`, through the alias); `source`
 is read by `hooks/where.sh` into its `profile=` field, the build hook's Gates line and
 `quickstart`.
 
 Pinned by: tests/test_profile.py::test_a_value_of_the_wrong_shape
+
+## The ticket shape
+
+Version: 1
+
+Fields: a ticket, in whatever tracker files it, is an id (a Jira key, `<KEY>-NNNN`, or a GitHub
+issue's number), a title (Jira's summary), a description in `standards/ticket-format.md`'s format,
+written in the tracker's markup, its links to other tickets, and a status. Its fields beyond those,
+an issue type, a component, an epic or parent, an estimate, a due date, are the tracker's, as its
+skill reads them. A status plays at most one of five roles the generic skills name it by, from
+the profile's `issue_tracker.statuses` ("The profile"):
+
+| Role | Where a ticket stands | With no status mapped, on GitHub |
+|---|---|---|
+| `filed` | filed, to be vetted and refined | the issue is open |
+| `approved` | approved by a ticket writer, ready for estimation | skipped |
+| `implementation` | its implementation is under way | skipped |
+| `finished` | closed with its work done | the issue is closed as completed |
+| `abandoned` | closed with its work not done | the issue is closed as not planned |
+
+A Jira workflow maps each role to exactly one status. A GitHub tracker maps each to at most one
+label, and `--defaults --field issue_tracker.roles.<role>` prints `none` for a role with no label:
+an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. With #59, a skill
+that would move a ticket into `approved` or `implementation` with no label for it skips the move;
+until then every skill that moves a ticket reads `jira.roles`, which prints `not yet recorded` for a
+GitHub tracker, and stops.
+An open issue that carries no mapped label is in `filed`, and `work` sends it to `ticket-draft`.
+
+Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`
+and the tracker's skill, `using-jira`, for the description. Readers: `scripts/profile.py`, and
+through it `scripts/next_phase.py` for a Jira workflow, and the skills that read `jira.roles`.
+
+Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_to_each_role
 
 ## The record
 

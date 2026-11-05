@@ -11,7 +11,7 @@ description: >
 argument-hint: "[investigate | settle | reformat] <ticket key | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
-  version: 1.10.15
+  version: 1.10.17
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
@@ -37,7 +37,7 @@ the repository's state, a TODO sweep or a roadmap on its own initiative.
 
 ## Reads
 
-`using-jira` for the format, the fields and the estimate scheme; `using-confluence` for the year
+`${CLAUDE_PLUGIN_ROOT}/standards/ticket-format.md` for the format; `using-jira` for its Jira markup, the fields and the estimate scheme; `using-confluence` for the year
 plan. The shared `<standard>/terminology.md` and `<standard>/decisions.md`, `<standard>`
 being the directory `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --standard` prints, and the repository's own `standards/` when
 it has one; a failed read names the path. The titles under `<standard>/context/`: its README
@@ -157,14 +157,14 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
    ticket says** is two to four bullets in the ticket's own terms. **Where it likely lands**
    names each repository the change reaches and whether it needs a pull request there, a
    follow-up or none, from the ticket, this repository and the profile's `downstream` list.
-   **Looks missing** lists at most three gaps against `using-jira`'s format, or is left out. Go
+   **Looks missing** lists at most three gaps against `ticket-format.md`, or is left out. Go
    straight on to step 2: the goal is confirmed with the placement. Only a source too thin to
    state a goal, such as a sentence that names no behavior, is asked for one first. An existing
    ticket that is already detailed and not in the current format is asked first, before any
    reader runs. It is already detailed when its status line opens `ticket-draft: drafted`, or
    when it says what the work must accomplish and how to tell it is done, as requirements and
    criteria or what stands for them, whoever wrote it and whatever its headings. It is in the
-   current format when its sections are `using-jira`'s, Motivation first, with no Context, Where
+   current format when its sections are `ticket-format.md`'s, Motivation first, with no Context, Where
    it fits or Not this ticket. Say so in one line, "This ticket is already detailed: reformat it,
    or draft it again?", with what it holds, and ask: **Reformat it** (Recommended), which goes on as
    `${CLAUDE_SKILL_DIR}/reformat.md` from its step 2, or **Draft it again**, which goes on to step
@@ -249,7 +249,7 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
    what changes what the ticket requires or decides: the goal, the scope, an acceptance criterion, a
    contract or a design choice. A question whose answer changes only how the code is written is the
    planner's, and one the reports already answer is not raised.
-   - **Design choices**, as `using-jira` defines them, come from the source or the person and go
+   - **Design choices**, as `ticket-format.md` defines them, come from the source or the person and go
      into Technical Requirements with their source, whatever the investigation thinks of them.
      A finding against one is a question ("<the choice> conflicts with <finding>; keep it,
      change it, or leave it to planning?"), never a silent rewrite. A design-level question the
@@ -268,8 +268,8 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
      would fail is a route; raise "criterion <n> is a route; keep it as a design choice, or cut it
      to For planning?". A cheatable criterion is fixed by a sharper observable outcome, never a
      prescribed mechanism, and neither test changes a criterion itself.
-5. **Write the draft and show it**, in the format `using-jira` sets, cut as its "Readers and
-   length" says. Where each part comes from:
+5. **Write the draft and show it**, in the format `ticket-format.md` sets, cut as its "Readers and
+   length" says, and in Jira's markup as `using-jira`'s "The description format" renders it. Where each part comes from:
    - The Component/s field from the search block's `Components:` line, the list's name nearest
      the change, never one outside it.
    - Every fact an existing ticket holds lands in one place: a section, a field or link, or For
@@ -288,7 +288,7 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
      date the ticket does not give. One the source and the person did not state, such as a term,
      a decision or a rule the change must meet, is not added: it is a question at step 6, `one
      line: add <the requirement> (<its source>)?`.
-   - Acceptance Criteria as outcomes, as `using-jira` defines them; how each is checked, the test
+   - Acceptance Criteria as outcomes, as `ticket-format.md` defines them; how each is checked, the test
      and what it needs, to For planning.
    - Related Out of Scope Tickets from the overlaps that own part of the work and the scope
      questions step 6 answers out of scope, each a ticket that exists or a follow-up ticket, also
@@ -331,7 +331,7 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
    now goes where it applies, marked `(for now, see Open Questions)`, and its question stays with
    `Answered for now:`. A question kept open or answered for now gets `Open because:`, drafted
    from the reports for the person to keep or correct at step 7; the reason they keep there is
-   theirs, as `using-jira` defines the field. One the person cannot give a reason for is offered
+   theirs, as `ticket-format.md` defines the field. One the person cannot give a reason for is offered
    back as a decision, with the recommendation first. Every question ends answered, answered for
    now, open or dropped by the person, who may add one of their own at any point. More than five
    kept open is a sign of two tickets: say so, and offer step 3's split.
