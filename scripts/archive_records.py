@@ -51,9 +51,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--keep", type=int, action="append", default=[], help="a pull request whose log record stays as it is")
     args = p.parse_args(argv)
     try:
+        if args.log.is_symlink():
+            raise ValueError(f"{args.log} is not a directory")
         new = (
             not args.log.exists()
-            and not args.log.is_symlink()
             and args.log.parent.name == "log"
             and args.log.parent.parent.name == "standards"
             and args.log.parent.parent.is_dir()
@@ -77,17 +78,17 @@ def main(argv: list[str] | None = None) -> int:
             if gained:
                 counts = ", ".join(f"{rule} ×{n}" for rule, n in sorted(gained.items()))
                 raise ValueError(f"--keep {name[3:7].lstrip('0')}: the harvested {name} holds findings the log's does not, which keeping it would drop: {counts}")
+        refused = {name: lost for name, lost in losses.items() if name not in kept}
+        if refused:
+            for name, lost in sorted(refused.items()):
+                counts = ", ".join(f"{rule} ×{n}" for rule, n in sorted(lost.items()))
+                print(f"refused {name[:-5]} · the log's record holds findings the harvested one does not: {counts}")
+            return 1
+        if new:
+            args.log.mkdir(parents=True)
     except (ValueError, OSError) as e:
         print(f"archive_records.py: {e}", file=sys.stderr)
         return 1
-    refused = {name: lost for name, lost in losses.items() if name not in kept}
-    if refused:
-        for name, lost in sorted(refused.items()):
-            counts = ", ".join(f"{rule} ×{n}" for rule, n in sorted(lost.items()))
-            print(f"refused {name[:-5]} · the log's record holds findings the harvested one does not: {counts}")
-        return 1
-    if new:
-        args.log.mkdir(parents=True)
     for path in harvested:
         if path.name in kept:
             print(f"kept {path.stem} · {sum(losses[path.name].values())} finding(s) the threads do not carry")

@@ -174,6 +174,10 @@ class WindowMerges(unittest.TestCase):
         ])
         self.assertEqual(out[-14], "R-003 not swept: no scope")
 
+    def test_a_document_the_root_commit_adds_is_on_main_whatever_log_showroot_says(self):
+        self.git("config", "log.showRoot", "false")
+        self.assertEqual(window_merges.reached(self.repo, "main", "README.md"), int(self.git("log", "--format=%ct", "--root", "main", "--", "README.md").split()[-1]))
+
     def test_a_doc_without_dumps_or_an_unreadable_opened_day_cannot_run(self):
         dumps = self.with_docs()
         rc, out, err = self.run_it("--doc", "docs/guide.md")

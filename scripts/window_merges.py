@@ -116,7 +116,7 @@ def rule_lines(entries: dict, found: list[tuple[int, str, str, list[str]]]) -> l
 
 def reached(repo: Path, ref: str, path: str) -> int | None:
     """When `path` reached `ref`: the committer time of the latest first-parent commit adding it, or None."""
-    adds = git(repo, "log", "--first-parent", "--diff-merges=first-parent", "--no-patch", "--diff-filter=A", "--format=%ct", ref, "--", path).split()
+    adds = git(repo, "log", "--root", "--first-parent", "--diff-merges=first-parent", "--no-patch", "--diff-filter=A", "--format=%ct", ref, "--", path).split()
     return int(adds[0]) if adds else None
 
 

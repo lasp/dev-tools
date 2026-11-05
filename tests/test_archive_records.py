@@ -85,13 +85,16 @@ class Archive(unittest.TestCase):
         (base / "other" / "log").mkdir(parents=True)
         (base / "kept" / "standards" / "log").mkdir(parents=True)
         (base / "kept" / "standards" / "log" / "linked").symlink_to(base / "gone")
+        (base / "kept" / "standards" / "log" / "live").symlink_to(self.log)
         for log in (base / "standards" / "log" / "new_repo", base / "elsewhere" / "new_repo",
-                    base / "other" / "log" / "new_repo", base / "kept" / "standards" / "log" / "linked"):
+                    base / "other" / "log" / "new_repo", base / "kept" / "standards" / "log" / "linked",
+                    base / "kept" / "standards" / "log" / "live"):
             self.log = log
             rc, out, err = self.run_it()
             self.assertEqual((rc, out), (1, []), log)
             self.assertIn(f"{log} is not a directory", err)
-            self.assertFalse(log.exists())
+            self.assertEqual(log.exists(), log.name == "live")
+        self.assertEqual(sorted(p.name for p in (base / "log").iterdir()), ["pr-0066.yaml", "pr-0067.yaml"])
         self.assertFalse((base / "standards").exists())
 
 
