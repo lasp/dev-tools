@@ -12,7 +12,7 @@ step 1.
    repository last, since each harvest starts its directories afresh, copying each repository's
    records into its `<log>` (`revise`'s "The standard's repository") before the next harvest
    starts, with `python3 "<plugin root>/scripts/archive_records.py" <its records> <its log>`, each
-   replacing a record of the same number; the threads stay the source, and the copy lets the
+   replacing a record of the same number, and making `<log>` on the repository's first harvest; the threads stay the source, and the copy lets the
    history be read without GitHub. The script refuses, copying nothing, when a harvested record
    would drop findings the log's record holds, which the threads cannot rebuild. Show its
    `refused` lines and ask: **Keep those records** (Recommended: rerun with `--keep <n>` for each,

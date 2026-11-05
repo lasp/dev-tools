@@ -71,6 +71,25 @@ class Archive(unittest.TestCase):
         self.assertIn("pr-0067.yaml: a finding without a readable key and verdict", err)
         self.assertFalse((self.log / "pr-0068.yaml").exists())
 
+    def test_a_first_harvest_makes_the_log_directory_under_an_existing_log_parent(self):
+        self.log = self.log.parent / "standards" / "log" / "new_repo"
+        self.log.parent.mkdir(parents=True)
+        (self.records / "pr-0066.yaml").write_text(LEGACY)
+        rc, out, _ = self.run_it()
+        self.assertEqual((rc, out), (0, ["copied pr-0066", "copied pr-0067", "copied pr-0068"]))
+        self.assertEqual((self.log / "pr-0066.yaml").read_text(), LEGACY)
+
+    def test_a_missing_log_whose_parent_is_not_an_existing_log_directory_is_refused(self):
+        base = self.log.parent
+        for log in (base / "standards" / "log" / "new_repo", base / "elsewhere" / "new_repo", base / "log" / "a" / "b"):
+            if log.parent.name != "log":
+                log.parent.mkdir(parents=True, exist_ok=True)
+            self.log = log
+            rc, out, err = self.run_it()
+            self.assertEqual((rc, out), (1, []), log)
+            self.assertIn(f"{log} is not a directory", err)
+            self.assertFalse(log.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

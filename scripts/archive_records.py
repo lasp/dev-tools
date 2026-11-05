@@ -13,9 +13,11 @@ harvest did not write, is refused, so a kept record is always one the threads ca
 so is one whose harvested record holds findings, per rule, the log's lacks, since keeping it would
 drop those instead.
 
-Prints `copied pr-NNNN` or `kept pr-NNNN · <n> finding(s) the threads do not carry` per record.
-A record either side whose findings cannot be read, or a directory that is not one, exits 1 with
-the reason. Stdlib only.
+A log directory that does not exist yet, on a repository's first harvest, is made when its parent
+is an existing directory named `log`, as `standards/log/<repo>/` is; any other missing log is
+refused. Prints `copied pr-NNNN` or `kept pr-NNNN · <n> finding(s) the threads do not carry` per
+record. A record either side whose findings cannot be read, or a directory that is not one, exits
+1 with the reason. Stdlib only.
 """
 
 from __future__ import annotations
@@ -49,7 +51,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--keep", type=int, action="append", default=[], help="a pull request whose log record stays as it is")
     args = p.parse_args(argv)
     try:
-        for d in (args.records, args.log):
+        new = not args.log.exists() and args.log.parent.name == "log" and args.log.parent.is_dir()
+        for d in (args.records, *([] if new else [args.log])):
             if not d.is_dir():
                 raise ValueError(f"{d} is not a directory")
         harvested = sorted(args.records.glob("pr-*.yaml"))
@@ -77,6 +80,8 @@ def main(argv: list[str] | None = None) -> int:
             counts = ", ".join(f"{rule} ×{n}" for rule, n in sorted(lost.items()))
             print(f"refused {name[:-5]} · the log's record holds findings the harvested one does not: {counts}")
         return 1
+    if new:
+        args.log.mkdir()
     for path in harvested:
         if path.name in kept:
             print(f"kept {path.stem} · {sum(losses[path.name].values())} finding(s) the threads do not carry")
