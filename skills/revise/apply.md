@@ -51,7 +51,8 @@ in a clone, its branch. Then, by mark:
    quotes and the criterion or check it fails. An admitted, reworded, promoted or broadened entry takes its
    `scope:` and `example:` lines verbatim from under its proposal. An admitted rule's `since:` is
    the month its entry reaches `main`, never the window's, since the Provisional expiry Dial counts
-   from then. An accepted override goes on the entry's evidence line as `rule-bar.md` says. An
+   from then. An accepted override goes on the entry's evidence line as `rule-bar.md` says, or,
+   for a `D-NNN`, on its date line as harvest.md's "Destinations" says. An
    accepted `doc/<path>` proposal changes that document to say what its pull requests show, in
    the same diff, and touches nothing else in it; an accepted `exemplar/<path>` adds a pointer to
    that code to the instruction file.
@@ -68,21 +69,21 @@ in a clone, its branch. Then, by mark:
    - `D-NNN` entries go at the end of `<standard files>/decisions.md`, and so does each answered
      `question/`, as a provisional `D-NNN` stating the answer, numbered as harvest.md says, so a
      later revision finds it covered.
-   - `tool/<rule>` changes the lint configuration the repository's instruction files or CI name,
-     in this repository's diff, enabling that rule and nothing else.
-   - `tool/<rule>` paired with a `ticket/` for its violations writes the setting only when that
-     ticket is accepted too.
+   - `tool/<rule>`, proposed only with no violations on `main`, changes the lint configuration
+     the repository's instruction files or CI name, in this repository's diff, enabling that rule
+     and nothing else.
 
    Lint each changed agent guidance or data conventions file with `python3 "<plugin
    root>/scripts/entries_lint.py"` on its copy beside the ledger's; a refusal stops as the ledger's
-   lint does.
+   lint does. Append each `D-NNN` to a copy of `decisions.md` beside them and pass that copy as
+   the lint's `--decisions` below, with `--checks fields` run on it even when nothing is named.
 
    Apply the drafted diff to copies of the ledger, and of the instruction file it links if any,
    under `mktemp -d` and run `rule_lint.py` on them with `--ledger`, `--instructions` only for a
    linked instruction file, `--repo .`, the `--decisions` and `--profiles` files `prepare.md`
-   step 7 names, and `--changed` naming each accepted proposal that admits,
+   step 7 names, the copied `decisions.md` in place of its own, and `--changed` naming each accepted proposal that admits,
    rewords, promotes or broadens a rule, less those accepted with an override, whose lint lines
-   go into the report beside the reason. With nothing to name, skip the lint. A failure stops,
+   go into the report beside the reason. With nothing to name and no new decision, skip the lint. A failure stops,
    with its lines, and nothing is written. Once a repository is over its budget, any named
    change to a rule counted there fails the budget gate, a narrowing included, so the proposals
    that bring it back under go in the same apply; an admission accepted with an override is not

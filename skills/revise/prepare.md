@@ -224,8 +224,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    **Tickets and documents.** Two kinds of proposal no Dial governs, marked like any other, and
    made below the Revision floor too, since they rest on no count of records:
    - `ticket/<slug>`, one per distinct problem still in the code: a thread step 2 lists as
-     `unanswered` with `diff: does not` whose analyst `by:` is `human`, or a sweep `breaks` line of
-     a claim not marked `drift`; either only while `git grep -nF -e '<the line>' origin/main --
+     `unanswered` with `diff: does not` whose analyst `by:` is `human`, a sweep `breaks` line of
+     a claim not marked `drift`, or a `tool/` proposal held for its violations on `origin/main`;
+     each only while `git grep -nF -e '<the line>' origin/main --
      <path>` still finds the line it names. Its evidence is the pull request and the thread id or
      `path:line`.
    - `doc/<path>`, for a documented claim the sweep marks `drift`: change the document to say what
@@ -262,7 +263,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     `repos:` line names, or, for a
     `ticket/`, `doc/` or `tool/`, the repository whose code, document or configuration it names;
     and where `apply` would change it: the standard's repository, this repository's diff, Jira
-    through `ticket-draft` for a `ticket/`, or nothing for a `question/`, which the group answers. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
+    through `ticket-draft` for a `ticket/`, or, for a `question/`, the standard's repository once
+    answered. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
     diff and no archive entry. Ask, so `apply` can check the branch out: **Commit and push the
     branch** (Recommended: the group marks it on GitHub or in any checkout), **Commit only**,
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,

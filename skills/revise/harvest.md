@@ -117,7 +117,7 @@ guidance tally has already read the part of the bar a statement's signal decides
 | `data-convention` | its source, the document with its version and section or the data's owner, named in the evidence or found by the driver | `F-NNN` | `data-conventions.md` |
 | `process` | practiced in two merged pull requests, its cluster's `prs` 2 or more, or stated as the team's way by a person, an `admit` line whose signal is `states a principle` | `D-NNN` | `decisions.md` |
 | `decision` | as `process` | `D-NNN` | `decisions.md` |
-| `tool-config` | the rule exists in the linter the repository configures, and its count of violations on `origin/main`, run with that rule alone, is shown under the proposal; recommended a plain `accept` only at none, otherwise paired with a `ticket/` for the fixes | `tool/<rule>` | the lint configuration, in this repository's diff |
+| `tool-config` | the rule exists in the linter the repository configures, and its count of violations on `origin/main`, run with that rule alone, is shown under the proposal; at none, proposed; otherwise held `no override` with that count, and a `ticket/` for the fixes proposed in its place, so the setting comes once `main` is clean | `tool/<rule>` | the lint configuration, in this repository's diff |
 | `exemplar` | the code it points to is still at its path on `main`, by `git ls-files` | `exemplar/<path>`, the code's path | the instruction file |
 | `review-calibration` | as a rewording when it names a rule; none otherwise | `R-NNN`, rewording the rule's one `Do not flag:` line; otherwise `D-NNN` | the rule's entry, held to "The bar"; otherwise `decisions.md` |
 | `open-question` | none | `question/<slug>` | `decisions.md`, as a `D-NNN` stating the group's answer |
@@ -129,7 +129,9 @@ people's quotes, into `.review/backtest/<id>.entry.md`, and under its proposal i
 `scope:` and `example:` lines are. Append it to a copy of the file, or of
 `<plugin root>/standards/templates/<file>` when the standard has none, under `mktemp -d`, keeping
 the file's name, and run `python3 "<plugin root>/scripts/entries_lint.py"` on the copy; a `D-NNN`
-takes the form of `docs/standards.md`'s "Example decision: fail loud", its status `**provisional**`, since
+takes the form of `docs/standards.md`'s "Example decision: fail loud", appended to a copy of
+`decisions.md` under `mktemp -d` that `rule_lint.py --checks fields` reads as a `--decisions` file
+with `--ledger` and `--profiles` as "The bar" gives them, its status `**provisional**`, since
 a rule that implements a decision carries its status, with a `repos:` line naming this repository
 in a standard with `profiles/`. A proposal whose bar or lint fails is held, the failed
 check named, and never recommended a plain `accept`; a data convention with no source is held

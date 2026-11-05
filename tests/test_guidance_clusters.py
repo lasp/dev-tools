@@ -133,10 +133,19 @@ class Clusters(unittest.TestCase):
         self.assertIn("· rule · admit 1 · hold 1 · support 0 ·", heads[0])
         self.assertIn("· process · admit 0 · hold 2 · support 1 ·", heads[1])
 
-    def test_a_cluster_of_agents_lines_alone_takes_their_kind(self):
-        clusters = self.two(items=["s1-0", "s1-2", "s1-4"])
-        clusters["clusters"].append({"id": "C3", "kind": "rule", "principle": "An agent's.", "items": ["s1-3"], "notes": [], "held": None})
-        self.assertEqual(self.run_clusters(clusters)[0], 0)
+    def test_a_cluster_of_agents_lines_alone_takes_their_kind_and_people_s_lines_outrank_them(self):
+        (self.dir / "tally.txt").write_text(TALLY.replace("support · s1-3 · pr-0104 · 42 · alice · rule ·",
+                                                          "support · s1-3 · pr-0104 · 42 · alice · tool-config ·"))
+        alone = self.two(items=["s1-0", "s1-2", "s1-4"])
+        alone["clusters"].append({"id": "C3", "kind": "tool-config", "principle": "An agent's.", "items": ["s1-3"],
+                                  "notes": [], "held": None})
+        self.assertEqual(self.run_clusters(alone)[0], 0)
+        alone["clusters"][2]["kind"] = "rule"
+        self.assertIn("kind rule, which none of its lines is", "\n".join(self.run_clusters(alone)[1]))
+        outranked = self.two(kind="tool-config")
+        code, lines = self.run_clusters(outranked)
+        self.assertEqual(code, 1)
+        self.assertIn("kind tool-config, which none of its lines is", "\n".join(lines))
 
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {

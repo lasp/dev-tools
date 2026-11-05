@@ -24,7 +24,7 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
 
 ## Overview                                 step 10: every proposal below, the held ones included, one line each
 | Priority | Proposal | Applies to | Impact | Rests on | Apply changes |
-| high | ticket/<slug> | <project-wide | <repo>, …> | <n> pull requests, <n> files | <people's asks, a break on main, findings' agree rates> | <the standard's repository | this repository's diff | Jira, through ticket-draft | nothing> |
+| high | ticket/<slug> | <project-wide | <repo>, …> | <n> pull requests, <n> files | <people's asks, a break on main, findings' agree rates> | <the standard's repository | this repository's diff | Jira, through ticket-draft | the standard's repository, once answered> |
 
 ## Proposals                                steps 3 to 8: one section per destination, harvest.md's "Destinations", each in the overview's order; a section with none is left out
 ### Rules
@@ -52,9 +52,10 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
   said: …
   Recommended: …
   entry: the drafted decision, indented
+  bar: ok | <lint lines>
   Mark:
 ### Tool configuration
-- [ ] tool/<rule> · <the linter's rule and the asks it answers> · <evidence pointers>
+- [ ] tool/<rule> · <the linter's rule and the asks it answers> · 0 violations on main · <evidence pointers>
   Recommended: …
   Mark:
 ### Questions for the group
