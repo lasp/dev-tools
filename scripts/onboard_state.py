@@ -36,7 +36,8 @@ import sys
 from pathlib import Path
 
 POINTER = re.compile(r"""^standard:\s+['"]?([\w.-]+/[\w.-]+)""", re.M)
-OWN = ("standards/review-rules.md", "standards/decisions.md", "standards/profile.yaml")
+OWN = ("standards/review-rules.md", "standards/decisions.md", "standards/agent-guidance.md", "standards/data-conventions.md",
+       "standards/profile.yaml")
 
 
 def git(where: Path, *args: str) -> str:

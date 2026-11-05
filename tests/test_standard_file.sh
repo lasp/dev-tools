@@ -308,6 +308,12 @@ check "a standard for several loads only the rules and decisions tagged for this
   '[ "$rc" = 0 ] && [[ "$out" == *"for everyone"* ]] && [[ "$out" == *"for member"* ]] && [[ "$out" != *"not for member"* ]] && [[ "$out" != *"Elsewhere only"* ]] &&
    [[ "$out" == *"shared decision"* ]] && [[ "$out" != *"other decision"* ]] && [[ "$out" == *"## Archive"* ]] && [[ "$out" != *"- held"* ]] &&
    [[ "$out" != *"fenced other"* ]] && [[ "$out" != *"D-090"* ]] && [[ "$out" != *"still other"* ]] && [[ "$out" != *"in the text"* ]] && [[ "$out" == *"crlf decision"* ]]'
+printf '# Agent guidance\n\n### A-001 · Everywhere\n\nguidance for all\n\n### A-003 · Bad tag\nrepos: other\n\nbad\n' >"$family/standards/agent-guidance.md"
+git -C "$family" -c user.name=t -c user.email=t@t commit -qam "a bad agent guidance tag"
+out=$(bash "$script" 2>err); rc=$?
+check "an agent guidance entry's repos: line that is not a list of names stops the standard, naming it" \
+  '[ "$rc" = 1 ] && grep -q "A-003 has a repos: line that is not a list of names" err'
+git -C "$family" reset -q --hard HEAD~1
 sed -i.bak 's/^repos: \[other\]$/repos: [other]  # widen later/' "$family/standards/review-rules.md" && rm "$family/standards/review-rules.md.bak"
 git -C "$family" -c user.name=t -c user.email=t@t commit -qam "a tag with a comment"
 out=$(bash "$script" 2>err); rc=$?

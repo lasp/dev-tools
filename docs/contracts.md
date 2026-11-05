@@ -966,7 +966,8 @@ last saw the habit, or `_YYYY-MM_` for a data convention, the month admitted; th
 guidance, one `habit: <the habit>` line, and for a data convention one `source: <the document, or
 the data's owner>` line; one or more `> ` lines, the instruction an agent reads; and `said:
 "<words>" — <login>, <url>` lines, at least one for agent guidance. Text before the first entry is
-the file's own, with no heading of level two or three, and a code fence shows an example without making it an entry. A retired entry
+the file's own, and the file holds no heading of level two or three but its entries'; the lines
+after the date line come in any order, and a code fence shows an example without making it an entry. A retired entry
 leaves the file for the standard's `archive/`. `standards/templates/` holds a starting copy of each
 file.
 
