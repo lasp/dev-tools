@@ -705,6 +705,23 @@ window's clusters into it; `scripts/ratchet_counts.py` and `scripts/rule_lint.py
 
 Pinned by: tests/test_standard_file.sh::"the ledger stops before its held candidates, headed as onboard's first rules and revise's apply head them"
 
+## The probe's input
+
+Version: 1
+
+Fields: `scripts/probe_input.py`'s printout from one drafted entry, `.review/backtest/R-NNN.entry.md`:
+`R-NNN · <title>`, then the wording, one line each, the entry's `> ` lines without the marker or,
+when the entry is followed by a second `### R-NNN · <title>` heading of the same id and title, that
+heading's lines, then the entry's one `Do not flag:` line. Nothing else of the entry is printed, its
+`example:` line least of all, since the probe tests it. The script exits 2 with a `CANNOT RUN` line
+on an entry with no heading or more than two, a second heading that differs, no wording, wording in
+both places, or other than one `Do not flag:` line.
+
+Writers: `scripts/probe_input.py`. Readers: `rule-probe`, given the printout by harvest.md's "The
+bar", run by `revise` and `onboard`.
+
+Pinned by: tests/test_probe_input.py::test_an_inline_entry_gives_its_title_wording_and_do_not_flag_line_and_never_its_example
+
 ## The coupling baseline
 
 Version: 1
