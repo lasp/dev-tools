@@ -457,7 +457,7 @@ issue_tracker.roles.finished` prints that status's name (version 8); `pr_statuse
 the statuses). A file's `jira:` section is read as `issue_tracker:` with `kind: jira`, a file that
 sets both, or a `kind` or `location` under `jira:`, is refused, a refusal names the section's fields
 as `issue_tracker.<field> (jira:)`, and `--field jira.<field>` reads `issue_tracker.<field>` when its kind is
-`jira` and `not yet recorded` otherwise, so every reader of `jira` reads as before (version 16).
+`jira` and `not yet recorded` otherwise, so every reader of a `jira.<field>` reads as before (version 16).
 And `internal` (`domains`, bare host names, the hosts `transcript_excerpt.py` redacts,
 the default profile's and the working directory's standard's together (version 15),
 and which exits 1 before printing when they cannot be read; `private_repositories`, bare
@@ -466,7 +466,8 @@ refused, ignoring case (version 5)), `attribution` (`phrases`, the wordings besi
 attribution line that `record.py` reads as marking a comment AI-drafted, case aside, none of them
 empty, the working directory's repository's (version 13)) and `surface` (`identifiers`, the enum classes whose members `surface_diff.py` lists as
 `identifier`, each a Python class name) (version 10); either may be an empty list, and no field of
-`issue_tracker` but `location`, `internal`, `attribution` or `surface` may read `not yet recorded`.
+`issue_tracker`, `internal`, `attribution` or `surface` may read `not yet recorded`; `location` may
+be left out, and then prints `none`.
 The default profile's `issue_tracker` reads `not yet recorded`, and its `internal` lists no domain
 and no repository, so a repository takes a workflow and internal hosts only from its standard: with
 none, `--defaults --field issue_tracker.roles`, `issue_tracker.roles.<role>` and
@@ -525,8 +526,10 @@ the profile's `issue_tracker.statuses` ("The profile"):
 
 A Jira workflow maps each role to exactly one status. A GitHub tracker maps each to at most one
 label, and `--defaults --field issue_tracker.roles.<role>` prints `none` for a role with no label:
-an issue's own open and closed states stand for `filed`, `finished` and `abandoned`, and a skill
-that would move a ticket into `approved` or `implementation` with no label for it skips the move.
+an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. With #59, a skill
+that would move a ticket into `approved` or `implementation` with no label for it skips the move;
+until then every skill that moves a ticket reads `jira.roles`, which prints `not yet recorded` for a
+GitHub tracker, and stops.
 An open issue that carries no mapped label is in `filed`, and `work` sends it to `ticket-draft`.
 
 Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`

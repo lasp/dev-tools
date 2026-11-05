@@ -69,7 +69,7 @@ deep, scalars, flow lists, and block lists of scalars or one-line flow maps. A k
 read exits 1 naming it, as does a `ticket.pattern` or a `depth.light` entry's `hunk` that is not a
 regular expression, and a default profile under a standard's settings that leaves a key out, has a
 section other than `issue_tracker` reading `not yet recorded`, leaves a field of
-`issue_tracker` but its `location`, `internal`, `attribution` or `surface` unrecorded, names a
+`issue_tracker`, `internal`, `attribution` or `surface` unrecorded (a `location` may be left out, never unrecorded), names a
 tracker kind other than `jira` or `github`, a location that is not `owner/repo` or one for Jira, a
 GitHub label `none`, names a status twice or with spaces around it, gives a status a role not in `ROLES`, gives a role two statuses or,
 for Jira, none, names a pull request status that is not one of its statuses, names a domain that is not a bare host name, or a private repository that is

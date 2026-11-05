@@ -9,7 +9,7 @@ description: >
 argument-hint: "[text | file]"
 metadata:
   author: lasp-dev
-  version: 1.2.2
+  version: 1.2.3
 ---
 
 # Writing for a reader
@@ -39,7 +39,7 @@ A rewrite that alters what the text asserts is a defect, however much better it 
 
 ## Structure
 
-Which sections a document has belongs to its format: the ticket format in `using-jira`, the pull
+Which sections a document has belongs to its format: the ticket format in `${CLAUDE_PLUGIN_ROOT}/standards/ticket-format.md`, the pull
 request sections in the repository's `.github/PULL_REQUEST_TEMPLATE.md`, and in an adopted
 repository `pr-create/body.md`, a document's own template. This section sets how each of those sections reads.
 
