@@ -80,7 +80,7 @@ review with no `html_url` or one on a repository other than --repo, or an input 
 JSON, exits 1 with the reason; nothing is guessed. Stdlib only, so the
 plugin needs no environment.
 
-A record's first line is `contract: 12` and the --state printout's `contract: 6`: the version
+A record's first line is `contract: 13` and the --state printout's `contract: 6`: the version
 of each interface as `docs/contracts.md` defines it.
 
 With --state it writes nothing and prints where the pull request stands: the head, then
@@ -122,10 +122,25 @@ LABEL = re.compile(r"\*\*(Must fix before merge|Should fix|Suggestion|Question)\
 # The attribution line opens with either wording: the current one, and the one comments posted before
 # the AI assistance level carry.
 ATTRIBUTIONS = ("AI-assisted comment, posted by @", "AI-assisted comment, reviewed and approved by @")
+# Signs, beside the attribution line and a standard's `attribution.phrases`, that a comment was
+# drafted by an agent, as docs/contracts.md "Authorship" lists them. Each is matched against the
+# first and the last of the comment's own lines, where an agent signs, lowercased and with its code
+# spans removed, and each has a signature's shape, so a person's sentence about one does not match.
+AI_SIGNATURES = tuple(
+    re.compile(p)
+    for p in (
+        r"^[^a-z0-9]*🤖.*(?<![a-z])ai-assisted(?![a-z])|(?<![a-z])ai-assisted(?![a-z]).*🤖[^a-z0-9]*$",
+        r"(?<![a-z])ai assistance level: *[1-5]/5( *\([^)]*\))?[^a-z0-9?]*$",
+        r"^[\W_]+(this )?(comment|reply|review|summary) (was |is )?(generated|drafted|written) (by|with) (claude|copilot|an? (ai|llm))(?![a-z])[^?]*$",
+        r"^[^a-z0-9]*🤖[^a-z0-9]*generated (by|with)(?![a-z])",
+        r"^[\W_]*generated (by|with) (\[claude code\]\([^)]*\)|claude code)[^a-z0-9]*$",
+        r"^co-authored-by: *claude(?![a-z])",
+    )
+)
 SEVERITIES = {"must fix before merge": "must-fix", "should fix": "should-fix", "suggestion": "suggestion", "question": "question"}
 # The versions of the --state printout and of the record, as docs/contracts.md defines them.
 CONTRACT = 6
-RECORD_CONTRACT = 12
+RECORD_CONTRACT = 13
 # What a judgment may say a reply means, as docs/contracts.md "The judgments" defines it.
 JUDGED = (*VERDICTS, "answered", "unclear")
 # The Already checked lines a built pull request's body must carry; pr-create's body.md writes them.
@@ -196,15 +211,42 @@ def answerable(opener: dict, pr_author: str) -> bool:
     return opener["author"] != pr_author or authorship_of(opener) == "human"
 
 
+CODE_SPAN = re.compile(r"`[^`]*`")
+FENCE = re.compile(r"^(`{3,}|~{3,})")
+
+
+def own_lines(body: str) -> list[str]:
+    """A comment's own lines, stripped and not blank: without the lines that open `>`, which quote
+    someone else, and without fenced code blocks, which show text rather than sign the comment. A
+    fence closes on a line of the same character, at least as long, and nothing else after it."""
+    out, fence = [], None
+    for line in body.splitlines():
+        s = line.strip()
+        m = FENCE.match(s)
+        if fence is None and m:
+            fence = m[1]
+        elif fence is not None:
+            if m and m[1][0] == fence[0] and len(m[1]) >= len(fence) and not s[len(m[1]):].strip():
+                fence = None
+        elif s and not s.startswith(">"):
+            out.append(s)
+    return out
+
+
 def authorship_of(comment: dict) -> str:
     """Who wrote a comment: `bot` for a bot's login; `ai-drafted` when it carries the review's
-    attribution line or one of the standard's `attribution.phrases`, case aside, outside the lines that
-    open `>`, which quote someone else; `human` otherwise. The one definition of AI-drafted that
-    the record and thread-analyst share."""
+    attribution line or one of the standard's `attribution.phrases` in its own lines (`own_lines`),
+    or one of AI_SIGNATURES on the first or the last of them, case aside; `human` otherwise, so a
+    comment with no sign is a person's. Read per comment, so a person's reply in a thread an agent
+    opened is `human`. The one definition of AI-drafted that the record and thread-analyst
+    share."""
     if is_bot(comment["author"]):
         return "bot"
-    body = "\n".join(line for line in comment["body"].splitlines() if not line.lstrip().startswith(">")).lower()
+    lines = own_lines(comment["body"].lower())
+    body = "\n".join(lines)
     if any(a.lower() in body for a in ATTRIBUTIONS) or any(p in body for p in project_phrases()):
+        return "ai-drafted"
+    if any(sig.search(CODE_SPAN.sub("", line)) for sig in AI_SIGNATURES for line in {*lines[:1], *lines[-1:]}):
         return "ai-drafted"
     return "human"
 
