@@ -396,7 +396,7 @@ Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: h
 "Clusters" and `revise` `prepare` step 5, for the Admission Dial's single statements;
 `scripts/guidance_clusters.py`, which reads each line's fields by place.
 
-Pinned by: tests/test_guidance_tally.py::test_a_persons_signalled_statement_admits_and_the_rest_is_held_or_supports
+Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admits_and_the_rest_is_held_or_supports
 
 ## The guidance clusters
 
