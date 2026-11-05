@@ -11,7 +11,7 @@ argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | appl
 disable-model-invocation: true
 metadata:
   author: lasp-dev
-  version: 2.13.0
+  version: 2.14.0
 ---
 
 # Revise the standard
@@ -115,11 +115,11 @@ In `<log>`:
 In `<archive>` and `<context>`, from `apply`: `R-NNN.md` entries and accepted `context/` refreshes.
 
 In this repository's `.review/`:
-- `harvest/analysis/pr-NNNN.md`, each `thread-analyst` block as returned.
+- `harvest/analysis/pr-NNNN.md`, each `thread-analyst` block, written by the analyst.
 - `backtest/R-NNN.entry.md` and `backtest/R-NNN.md`, a proposal's drafted entry and its
   `rule-probe` blocks.
 - `revision/claims.md`, the rules and documented claims the sweep judges, and
-  `revision/sweep/pr-NNNN.md`, each `diff-probe` block as returned.
+  `revision/sweep/pr-NNNN.md`, each `diff-probe` block, written by the probe.
 - `harvest/context-refresh.md`, from `context-refresh.md`.
 - `checks/`, the drafted checks for graduation candidates.
 - `revision/feedback/`, a `skill-feedback` draft per procedure finding, from `prepare` step 2 and

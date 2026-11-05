@@ -15,7 +15,7 @@ description: >
 argument-hint: "[rules [Confluence page or Jira epic to add]]"
 metadata:
   author: lasp-dev
-  version: 0.6.2
+  version: 0.6.3
 ---
 
 # Onboard

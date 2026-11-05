@@ -78,13 +78,15 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
 2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 wrote; the report
    cites thread ids. What it did not read goes under "Not read".
 
-   From the blocks, leaving out lines with `asked: none`:
+   From the blocks, leaving out lines with `asked: none`, the counts from harvest.md's
+   `block_tally.py analysis` printout, never counted by hand:
    - **What review asked for**: a table of category by outcome, with counts and a source column
-     (`thread`, `review`, `comment`); under it, the asks step 5 finds recurring, each with its pull
+     (`thread`, `review`, `comment`), from its `count` lines; under it, the asks step 5 finds recurring, each with its pull
      requests and each ask's source and id, joining step 5's candidates marked `from people's
-     threads`. Then each thread the record holds as `unanswered`, by its analyst line: `diff:
-     addresses it` counts as answered in code, `does not` as ignored, `cannot tell` apart, with
-     its thread id.
+     threads`. Then each thread the record holds as `unanswered`, the record's verdict, by its
+     analyst line in the block: `diff: addresses it` counts as answered in code, `does not` as
+     ignored, `cannot tell` apart, with its thread id. The tally's `outcome unanswered` lines are
+     the analyst's reading of the replies and choose nothing here; they count only in the table.
    - **About the procedure**: every `Procedure:` id with its ask, each correction in a record's
      `inner.procedure` line, and every `kind: procedure` note. Each is about the plugin, not this
      repository, so it becomes a `skill-feedback` draft, never a `ROADMAP.md` row, unless it is
@@ -127,14 +129,21 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    break, as `### C-n · <path>:<line> · every change` when it asks something of every pull request,
    or of every one that makes a kind of change, or `· code` when it governs how code is written,
    and the claim in one line. Show the `C-` claims and ask once: **Sweep these** (Recommended),
-   **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**. Then one
-   `diff-probe` per merged pull request the script listed, past thirty the thirty merged most
-   recently, launched as harvest.md's "Analysts" launches agents, each given this repository's path, its number and sha, the claims file
+   **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**, removing from
+   the claims file every `C-` claim the answer drops. Then one `diff-probe` per merged pull
+   request the script listed, past thirty the thirty merged most recently, launched as
+   harvest.md's "Analysts" launches agents, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
-   and every `C-` claim. Write each block to `.review/revision/sweep/pr-NNNN.md` as returned. Into
-   "Practice", per claim: the pull requests it was judged on and how many follow it, break it,
+   and every `C-` claim, and the path `.review/revision/sweep/pr-NNNN.md`, where it writes its
+   block and returns `wrote <path>`. Never repeat a block: a probe that returns `write failed:
+   <error>` could not write it, and you write the block that follows that line, without it, to its
+   path. Then run `python3 "<plugin root>/scripts/block_tally.py" sweep --claims
+   .review/revision/claims.md .review/revision/sweep/ <pr-NNNN ...>`, naming each pull request
+   probed; an exit 2 names the block that
+   does not hold its form, to rerun that probe. Into "Practice", from its `claim` and `break` lines,
+   per claim: the pull requests it was judged on and how many follow it, break it,
    leave it untouched and could not be judged for want of a description, each break with its pull request and place; `drift` beside a claim broken
-   in more than half of those that touched it; `missed by review` beside a break on a pull request
+   in more than half of those that touched it, as the tally marks it; `missed by review` beside a break on a pull request
    with a record in which no finding cites the claim's rule, any break on such a pull request for
    a `C-` claim. Then the rules the script printed as `not swept: no scope`, the `predates` lines,
    the pull requests past thirty, and each pull request step 1's harvest listed in the window that
