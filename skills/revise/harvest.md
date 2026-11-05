@@ -52,8 +52,8 @@ comment lists, each `.review/harvest/threads/pr-NNNN/comment-list.json` "Records
 slices of whole pull requests in order of number, each slice adding pull requests until the next
 would take it past 300 comments; a pull request of more than 300 is a slice alone. Run one
 `guidance-extractor` per slice, launched as "Analysts" launches agents, each given its slice's
-comment lists, the standard's ledger, its decisions file and the instruction file, each path or
-`none`, and the path `.review/harvest/guidance/slice-<n>.json`, n from 1. Never repeat a slice's
+comment lists, the standard's ledger, its decisions file, its agent guidance and data conventions
+files and the instruction file, each path or `none`, and the path `.review/harvest/guidance/slice-<n>.json`, n from 1. Never repeat a slice's
 JSON: an extractor that returns `write failed: <error>` could not write it, and you write the JSON
 that follows that line, without it, to its path.
 
@@ -80,9 +80,10 @@ and another for user documents, is two clusters. A statement joins one cluster o
 joins nothing is a cluster of one.
 
 With "Guidance" run, the statements are the guidance tally's `admit`, `hold` and `support` lines;
-its `covered` lines support the rule they name and join nothing. Write
+its `covered` lines support the entry they name and join nothing. Write
 `.review/harvest/clusters.json` (`docs/contracts.md`, "The guidance clusters"): each cluster's
-principle in one sentence; its tally lines by key; as notes, each analyst `asked:` line not `none`,
+kind, the destination "Destinations" sends it to, the kind of most of its people's lines unless
+the principle plainly belongs elsewhere; its principle in one sentence; its tally lines by key; as notes, each analyst `asked:` line not `none`,
 `pr-NNNN · <opener login> · <by> · <source> <id>: <asked>`, so a person's ask the extractor read as
 one pull request's still counts toward the Recurring ask Dial, and each pasted note as `pasted
 <file> · <name> · <the ask>`; and the title of the ledger's held candidate it continues, when one
@@ -92,8 +93,9 @@ states the same principle, so the evidence of earlier revisions joins it. Then r
 and run it again. Its printout is the clusters the caller reads: each one's pull requests, people
 and clearest quotes, counted by the script, never by hand: its pull requests are those a person
 asked on, which the Recurring ask Dial counts, and a cluster whose people are none, all its words
-an agent's or a bot's, is not admitted as a rule. The partition is the driver's judgment, and the
-script holds it to one cluster per statement and does the counting.
+an agent's or a bot's, is not admitted. The partition and each cluster's kind are the driver's
+judgment, and the script holds them to one cluster per statement, a kind one of its lines carries,
+and does the counting.
 
 Without "Guidance", group the analysts' `asked:` lines from threads (people's, bots' and a review's
 uncited findings), review bodies and conversation comments, leaving out `asked: none`, with
@@ -101,6 +103,40 @@ whatever else the caller adds. From people's threads, review bodies and conversa
 count only the lines whose analyst `by:` is `human` (the analyst's word, not the record's login),
 the pull request author's own included; a cluster whose lines are all AI-drafted is not admitted
 as a rule.
+
+## Destinations
+
+Each admitted cluster goes where its kind sends it, held to the rest of that kind's bar; the
+guidance tally has already read the part of the bar a statement's signal decides. Without
+"Guidance", every cluster is a rule.
+
+| Kind | The rest of its bar | Proposal | Where `apply` writes it |
+| --- | --- | --- | --- |
+| `rule` | `rule-bar.md`, through "The bar" | `R-NNN` | the ledger |
+| `agent-guidance` | a person's quote that names the habit | `A-NNN` | `agent-guidance.md` |
+| `data-convention` | its source, the document with its version and section or the data's owner, named in the evidence or found by the driver | `F-NNN` | `data-conventions.md` |
+| `process` | practiced in two merged pull requests, its cluster's `prs` 2 or more, or a person stating it as the team's way, an `admit` line | `D-NNN` | `decisions.md` |
+| `decision` | as `process` | `D-NNN` | `decisions.md` |
+| `tool-config` | none | `tool/<rule>` | the lint configuration, in this repository's diff |
+| `exemplar` | the code it points to is still at its path on `main`, by `git ls-files` | `doc/<path>` | the instruction file |
+| `review-calibration` | none | `review/<topic>` | a `Do not flag:` or severity line on the rule it names; otherwise a decision in `decisions.md` |
+| `open-question` | none | `question/<slug>` | nowhere: the group answers it |
+
+An `A-NNN` or `F-NNN` entry is drafted in the form `docs/contracts.md`'s "Agent guidance and data
+conventions" sets, numbered after the highest in the file and in `<archive>`, its months the
+window's last until `apply` sets the month it reaches `main`, its `said:` lines the cluster's
+people's quotes, into `.review/backtest/<id>.entry.md`. Append it to a copy of the file, or of
+`<plugin root>/standards/templates/<file>` when the standard has none, under `mktemp -d`, keeping
+the file's name, and run `python3 "<plugin root>/scripts/entries_lint.py"` on the copy; a `D-NNN`
+takes the form of `docs/standards.md`'s "Example decision: fail loud", with a `repos:` line naming this
+repository in a standard with `profiles/`. A proposal whose bar or lint fails is held, the failed
+check named, and never recommended a plain `accept`; a data convention with no source is held
+`no source named`.
+
+A cluster that would change a live data convention is a proposal on that `F-NNN`, recommended
+`escalate: <its source>`, since only its owner changes it. A `covered` line naming an `A-NNN`, and
+a finding keyed `agent/A-NNN` in the window's records, is the habit seen again: that entry's
+`seen` month moves to the window's last.
 
 ## The bar
 

@@ -22,7 +22,7 @@ covered · s1-1 · pr-0101 · 12 · bob · rule · R-002 · u12 · Let it raise.
 hold · s1-2 · pr-0104 · 41 · carol · rule · no signal of generality · u41 · Put libnetcdf in the image, not a fake.
 support · s1-3 · pr-0104 · 42 · alice · rule · u42 · A missing system library is installed, not mocked.
 admit · s1-4 · pr-0106 · 61 · dave · rule · addresses agents · u61 · Agents: add the dependency · CI, never skip.
-hold · s1-5 · pr-0106 · 62 · dave · process · a process statement: revise proposes rules only · u62 · Changelog holds user-visible changes.
+hold · s1-5 · pr-0106 · 62 · dave · process · no signal of generality · u62 · Changelog holds user-visible changes.
 items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3
 """
 LEDGER = ("# Review rules\n\n## R-001 · A rule\n\n## Candidates below the criteria\n\n### Changelog scope\n\nEvidence.\n\n"
@@ -45,11 +45,11 @@ class Clusters(unittest.TestCase):
         return code, out.getvalue().splitlines()
 
     def two(self, **change) -> dict:
-        first = {"id": "C1", "principle": "Install a missing system dependency rather than mock it.",
+        first = {"id": "C1", "kind": "rule", "principle": "Install a missing system dependency rather than mock it.",
                  "items": ["s1-0", "s1-2", "s1-3", "s1-4"],
                  "notes": ["pr-0108 · erin · human · thread PRRT_x: add libhdf5 · the image",
                            "pr-0109 · copilot · bot · thread PRRT_y: mock the import"], "held": None}
-        second = {"id": "C2", "principle": "The changelog lists only user-visible changes.", "items": ["s1-5"],
+        second = {"id": "C2", "kind": "process", "principle": "The changelog lists only user-visible changes.", "items": ["s1-5"],
                   "notes": ["pasted notes-1.md · erin · keep the changelog to what users see"], "held": "Changelog scope"}
         return {"clusters": [{**first, **change}, second]}
 
@@ -57,7 +57,7 @@ class Clusters(unittest.TestCase):
         code, lines = self.run_clusters(self.two())
         self.assertEqual(code, 0, lines)
         self.assertEqual(lines, [
-            "cluster · C1 · admit 2 · hold 1 · support 1 · prs 4 · people 4 · "
+            "cluster · C1 · rule · admit 2 · hold 1 · support 1 · prs 4 · people 4 · "
             "Install a missing system dependency rather than mock it.",
             "prs · C1 · pr-0101, pr-0104, pr-0106, pr-0108",
             "people · C1 · bob, carol, dave, erin",
@@ -66,7 +66,7 @@ class Clusters(unittest.TestCase):
             'said · C1 · "Install the library in CI; never mock it away." — bob, u11',
             'said · C1 · "Agents: add the dependency · CI, never skip." — dave, u61',
             'said · C1 · "Put libnetcdf in the image, not a fake." — carol, u41',
-            "cluster · C2 · admit 0 · hold 1 · support 0 · prs 1 · people 2 · The changelog lists only user-visible changes.",
+            "cluster · C2 · process · admit 0 · hold 1 · support 0 · prs 1 · people 2 · The changelog lists only user-visible changes.",
             "prs · C2 · pr-0106",
             "people · C2 · dave, erin",
             "held · C2 · Changelog scope",
@@ -77,13 +77,13 @@ class Clusters(unittest.TestCase):
 
     def test_an_agents_or_a_bots_words_count_for_no_pull_request_or_person(self):
         clusters = {"clusters": [
-            {"id": "C1", "principle": "One person.", "items": ["s1-2", "s1-3", "s1-0", "s1-4", "s1-5"],
+            {"id": "C1", "kind": "rule", "principle": "One person.", "items": ["s1-2", "s1-3", "s1-0", "s1-4", "s1-5"],
              "notes": ["pr-0201 · alice · ai-drafted · thread PRRT_a: x", "pr-0202 · copilot · bot · review 9: y"],
              "held": None}]}
         head = self.run_clusters(clusters)[1][0]
         self.assertIn("· prs 3 · people 3 ·", head)
         clusters["clusters"][0]["items"] = ["s1-2", "s1-3"]
-        clusters["clusters"].append({"id": "C2", "principle": "Rest.", "items": ["s1-0", "s1-4", "s1-5"], "notes": [],
+        clusters["clusters"].append({"id": "C2", "kind": "rule", "principle": "Rest.", "items": ["s1-0", "s1-4", "s1-5"], "notes": [],
                                      "held": None})
         self.assertIn("· support 1 · prs 1 · people 1 ·", self.run_clusters(clusters)[1][0])
 
@@ -100,7 +100,7 @@ class Clusters(unittest.TestCase):
 
     def test_quotes_a_second_line_of_a_pull_request_once_every_one_is_quoted(self):
         quoted = [line for line in self.run_clusters({"clusters": [
-            {"id": "C1", "principle": "All of it.", "items": ["s1-0", "s1-2", "s1-3", "s1-4", "s1-5"], "notes": [], "held": None}
+            {"id": "C1", "kind": "rule", "principle": "All of it.", "items": ["s1-0", "s1-2", "s1-3", "s1-4", "s1-5"], "notes": [], "held": None}
         ]})[1] if line.startswith("said")]
         self.assertEqual([q.rsplit(", ", 1)[1] for q in quoted], ["u11", "u61", "u41"])
 
@@ -116,6 +116,8 @@ class Clusters(unittest.TestCase):
             "s1-3 · in no cluster": self.two(items=["s1-0", "s1-2", "s1-4"]),
             "an id not C<n>, or given twice": self.two(id="C2"),
             "no principle": self.two(principle=" "),
+            "kind 'style', not one of rule, agent-guidance": self.two(kind="style"),
+            "kind process, which none of its lines is": self.two(kind="process"),
             "neither an item nor a note": self.two(items=[], notes=[]),
             "notes are not each": self.two(notes=["a free note"]),
             "notes are not each `": self.two(notes=["pasted notes 1.md · erin · x"]),

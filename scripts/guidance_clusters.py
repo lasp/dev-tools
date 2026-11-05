@@ -5,7 +5,7 @@ The driver groups the guidance tally's lines by the principle they state, across
 and in whatever words (`skills/revise/harvest.md`, "Clusters"), and writes the grouping as JSON
 (`docs/contracts.md`, "The guidance clusters"):
 
-    {"clusters": [{"id": "C1", "principle": "<one sentence>", "items": ["s1-0", ...],
+    {"clusters": [{"id": "C1", "kind": "<its destination>", "principle": "<one sentence>", "items": ["s1-0", ...],
                    "notes": ["<other evidence, one line each>", ...],
                    "held": "<a held candidate's title in the ledger>" | null}, ...]}
 
@@ -15,7 +15,9 @@ this script refuses, one `refused · <where> · <why>` line per fault and exit 1
 
 - a tally whose closing `items:` line is missing or counts its words otherwise than its lines, or a
   line with too few cells;
-- a cluster without exactly the keys above, an `id` not `C<n>` or given twice, a blank principle,
+- a cluster without exactly the keys above, an `id` not `C<n>` or given twice, a `kind` that is not
+  one of the guidance items' kinds or, in a cluster with tally lines, the kind of none of them,
+  a blank principle,
   a note not `pr-NNNN · <login> · <human|ai-drafted|bot> · <text>`, an analyst's ask, or
   `pasted <file> · <name> · <text>`, a pasted note, or neither an item nor a note;
 - a key that is not one of the tally's `admit`, `hold` or `support` lines, or one in two clusters,
@@ -24,8 +26,9 @@ this script refuses, one `refused · <where> · <why>` line per fault and exit 1
   heading or as the bold title a bullet opens with, a trailing full stop aside, or one given with
   no --ledger.
 
-Otherwise it prints, per cluster in the file's order, `cluster · <id> · admit <n> · hold <n> ·
-support <n> · prs <n> · people <n> · <principle>`: its pull requests those a person asked on, of
+Otherwise it prints, per cluster in the file's order, `cluster · <id> · <kind> · admit <n> · hold <n> ·
+support <n> · prs <n> · people <n> · <principle>`, its kind the destination `harvest.md`'s
+"Destinations" sends it to: its pull requests those a person asked on, of
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
@@ -48,7 +51,9 @@ from pathlib import Path
 
 WORDS = ("admit", "hold", "support")
 HELD = "## Candidates below the criteria"
-KEYS = {"id", "principle", "items", "notes", "held"}
+KEYS = {"id", "kind", "principle", "items", "notes", "held"}
+KINDS = ("rule", "agent-guidance", "data-convention", "process", "decision", "tool-config", "exemplar",
+         "review-calibration", "open-question")
 
 
 class Refused(Exception):
@@ -68,7 +73,7 @@ def tally_lines(text: str) -> dict[str, dict]:
                 raise Refused(f"a tally line with too few cells: {line[:80]}")
             counts[cells[0]] += 1
             if cells[0] != "covered":
-                out[cells[1]] = {"word": cells[0], "pr": cells[2], "author": cells[4], "url": cells[url_at],
+                out[cells[1]] = {"word": cells[0], "pr": cells[2], "author": cells[4], "kind": cells[5], "url": cells[url_at],
                                  "quote": " · ".join(cells[url_at + 1:])}
         elif line.startswith("items: "):
             summary = dict(re.findall(r"(\w+): (\d+)", line))
@@ -119,6 +124,10 @@ def check(clusters, lines: dict[str, dict], headings: set[str] | None) -> list[s
             continue
         if not isinstance(c["principle"], str) or not c["principle"].strip():
             faults.append(f"refused · {where} · no principle")
+        if c["kind"] not in KINDS:
+            faults.append(f"refused · {where} · kind {c['kind']!r}, not one of {', '.join(KINDS)}")
+        elif c["items"] and all(k in lines for k in c["items"]) and c["kind"] not in {lines[k]["kind"] for k in c["items"]}:
+            faults.append(f"refused · {where} · kind {c['kind']}, which none of its lines is")
         notes_ok = isinstance(c["notes"], list) and all(isinstance(n, str) and NOTE.fullmatch(n) for n in c["notes"])
         if not notes_ok:
             faults.append(f"refused · {where} · notes are not each `pr-NNNN · <login> · <human|ai-drafted|bot> · "
@@ -183,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
                      | {f"pr-{int(m[1][3:]):04d}" for m in notes if m[3] == "human"})
         people = sorted({lines[k]["author"] for k in keys if lines[k]["word"] != "support"}
                         | {m[2] for m in notes if m[3] == "human"} | {m[5].strip() for m in notes if m[4]})
-        print(f"cluster · {c['id']} · " + " · ".join(f"{w} {n}" for w, n in count.items())
+        print(f"cluster · {c['id']} · {c['kind']} · " + " · ".join(f"{w} {n}" for w, n in count.items())
               + f" · prs {len(prs)} · people {len(people)} · {c['principle']}")
         print(f"prs · {c['id']} · {', '.join(prs) or 'none'}")
         print(f"people · {c['id']} · {', '.join(people) or 'none'}")

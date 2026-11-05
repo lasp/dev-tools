@@ -357,6 +357,14 @@ beside it, and two restate live rules and support them as `covered` statements. 
 private run, before the section said that statements needing two different changes are two
 clusters, merged three of the themes into one.
 
+Routing, under `skills/revise/harvest.md` "Destinations" of 2026-11-05: on the public fixture, the
+recorded run's tally admits each labeled statement as its own kind for 8 of 8 data conventions, 4 of
+4 process statements and 4 of 6 tool-checkable asks, where it held every one before; the two others
+admit under the kind the extractor gave them. The recorded clusters' kinds are 8 rule, 6 data
+convention, 4 process, 3 agent guidance and 8 of the other kinds. On the private month, 100 of the
+tally's 164 held statements admit under their kind, 34 of them process and 22 data conventions, so
+its admissions rise from 53 to 153 before clustering.
+
 On the private month, the key was drafted by agents, and the extractor's quotes were all in their
 comments (631 of 631); 4 of the key's 117 quotes could not be found in their comments, which
 leaves those labels unfound. A judge read most of the general items no label held, 127 of 164 at

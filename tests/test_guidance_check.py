@@ -68,6 +68,12 @@ class GuidanceCheck(unittest.TestCase):
         self.assertEqual(out.splitlines(), ["slices: 1 · comments: 1 · items: 2 · general: 1 · pr-specific: 1",
                                             "kind · rule · 1 · 1"])
 
+    def test_covered_by_names_a_rule_a_decision_an_entry_or_the_instruction_file(self):
+        for covered in ("R-001", "D-002", "A-003", "F-004", "instruction file"):
+            with self.subTest(covered=covered):
+                self.assertEqual(self.run_check(self.slice({**ITEM, "covered_by": covered}))[0], 0)
+        self.assertRefused("covered_by", self.slice({**ITEM, "covered_by": "T-001"}))
+
     def test_a_quote_never_spans_a_line_quoted_from_someone_else(self):
         body = "Use units.\n> they said\nAlways."
         self.lists[0] = self.write("pr-0007.json", {"pr": 7, "comments": [{**REPLY, "body": body}]})

@@ -175,7 +175,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    rate line reads `keep, insufficient evidence`; admission, establishment and expiry rest on no
    rate. A candidate that meets the Admission Dial is proposed whatever the rule count. The Low
    agree rate Dial's "still below at the next revision" reads the rules the previous report, the
-   newest `ratchet-*.md` in any `<log>` of the standard, proposed rewording under that Dial.
+   newest `ratchet-*.md` in any `<log>` of the standard, proposed rewording under that Dial. An
+   agent guidance entry past the Agent guidance expiry Dial, its `seen` month moved first as
+   harvest.md's "Destinations" says, is a proposal `A-NNN · retire`.
 
    **Dials at the margin.** For each Dial with values in its Either way column, list the rules
    and candidates whose measured value lies between the default and either value, and the
@@ -192,9 +194,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
 
    **Single statements.** A cluster admits on one guidance tally `admit` line alone, a person's
    general statement, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
-   note admits the same way when a named person states a principle or asks for a rule in it,
-   cited `pasted <file>` with that person's name, when it is of kind `rule`. The tally holds a
-   statement of any other kind with its criterion. A cluster with no `admit` line and a `hold`
+   note admits the same way when a named person states a principle or asks for a change in it,
+   cited `pasted <file>` with that person's name. Each admitted cluster is a proposal of its kind,
+   with the id and destination harvest.md's "Destinations" gives it. A cluster with no `admit` line and a `hold`
    line is held with the tally's criterion. A `covered` line supports the live rule, decision or
    instruction it names, listed under it in "Rules", and is no candidate. A `support` line, an agent's statement the author
    changed as asked, never admits; it is listed under its cluster. Every line the tally prints
@@ -231,7 +233,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    ships no `decisions.md`, so none is passed from `<plugin root>/standards/`. With `profiles/`,
    add `--profiles <standard files>/profiles/`; a rule that applies to only some repositories carries their `repos:`
    line. A proposal a
-   gate fails goes under "Held by the bar".
+   gate fails goes under "Held by the bar". Every other proposal is held to its kind's bar as
+   harvest.md's "Destinations" sets out, and one that fails it goes there too.
 
    With measures on, read `<plugin root>/skills/revise/measures.md` now and run it.
 8. **Refresh the context**, when the repository has `context/` entries or a page or epic was
@@ -250,9 +253,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     have missed the mark; medium otherwise. No cap: the group takes them in order and leaves the
     rest blank. Each line also says what the proposal applies to: project-wide, for a rule with no
     `repos:` line or a `context/` entry, or the repositories its `repos:` line names, or, for a
-    `ticket/` or `doc/`, the repository whose code or document it names; and where `apply` would
-    change it: the standard's repository, this repository's diff, or, for a `ticket/`, Jira through
-    `ticket-draft`. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
+    `ticket/`, `doc/` or `tool/`, the repository whose code, document or configuration it names;
+    and where `apply` would change it: the standard's repository, this repository's diff, Jira
+    through `ticket-draft` for a `ticket/`, or nothing for a `question/`, which the group answers. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
     diff and no archive entry. Ask, so `apply` can check the branch out: **Commit and push the
     branch** (Recommended: the group marks it on GitHub or in any checkout), **Commit only**,
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,

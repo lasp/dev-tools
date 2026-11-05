@@ -22,15 +22,16 @@ path the caller gives for your items, never any other file.
 
 The caller gives you: one or more comment lists, `.review/harvest/threads/pr-NNNN/comment-list.json`
 (`docs/contracts.md`, "The comment list"), each an object with the pull request's number, `pr`, and
-its `comments`, which may be empty; the standard's live ledger, decisions file and the
-repository's instruction file, each path or `none`; and the path to write your items to.
+its `comments`, which may be empty; the standard's live ledger, decisions file, agent guidance
+file, data conventions file and the repository's instruction file, each path or `none`; and the path to write your items to.
 
 Read all your inputs in your first turn, every file in one message, so a slice of many small pull
 requests fits your turns; page a long file in parallel the same way. Read every comment in every
 list, in full: a thread's opening comment, every reply, every review
 summary and every conversation comment. A reply is read as carefully as the comment that opened
 its thread, since a person's reply to an agent's finding is often where the principle is. Read the
-ledger, the decisions and the instruction file once, to judge `covered_by`. Nothing else.
+ledger, the decisions, the agent guidance, the data conventions and the instruction file once, to
+judge `covered_by`. Nothing else.
 
 ## What an item is
 
@@ -68,7 +69,8 @@ Each item is an object with exactly these keys:
   `pr-specific` item, the change asked for.
 - `rationale`: the comment's own reason, one passage of at most 40 words copied character for
   character, or `null` when it gives none.
-- `covered_by`: the live rule (`R-NNN`) or decision (`D-NNN`) that already says it, or
+- `covered_by`: the live rule (`R-NNN`), decision (`D-NNN`), agent guidance entry (`A-NNN`) or
+  data convention (`F-NNN`) that already says it, or
   `instruction file` when the instruction file does, or `null`. Only when the wording covers the
   statement, not a neighbor of it.
 - `outcome`, from the later comments in the same thread, or the later conversation for a review or

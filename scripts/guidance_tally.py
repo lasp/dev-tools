@@ -6,17 +6,19 @@ Reads the slices of one `guidance-extractor` run with the comment lists they rea
 refuses. Then, for each `general` item, as `docs/contracts.md` "The guidance tally" and the
 Admission Dial in `standards/dials.md` read it:
 
-- `admit · <key> · pr-NNNN · <comment id> · <author> · rule · <signal> · <url> · <quote>`: a
-  person's words (`authorship` `human`) of kind `rule` whose `signal` is `states a principle`,
-  `addresses agents` or `names a habit`, and that no live rule, decision or instruction covers
-  (`covered_by` null);
+- `admit · <key> · pr-NNNN · <comment id> · <author> · <kind> · <signal> · <url> · <quote>`: a
+  person's words (`authorship` `human`) that nothing live covers (`covered_by` null) and that meet
+  the part of their kind's bar the tally can read: for `rule`, `agent-guidance`,
+  `data-convention`, `process` and `decision`, a `signal` of `states a principle`, `addresses
+  agents` or `names a habit`; for `tool-config`, `exemplar`, `review-calibration` and
+  `open-question`, whose bar reads no signal, any. The rest of each kind's bar, and where it goes,
+  is `skills/revise/harvest.md`'s "Destinations";
 - `covered · <key> · pr-NNNN · <comment id> · <author> · <kind> · <covered_by> · <url> · <quote>`:
-  a person's general item a live rule, decision or the instruction file already says, which
-  supports it and is no candidate;
+  a person's general item a live rule, decision, agent guidance entry, data convention or the
+  instruction file already says, which supports it and is no candidate;
 - `hold · <key> · pr-NNNN · <comment id> · <author> · <kind> · <criterion> · <url> · <quote>`: a
-  person's other general items, the criterion `no signal of generality` for signal `none`,
-  `signal <signal>, not one that admits`, or, for one of another kind that would otherwise admit,
-  `a <kind> statement: revise proposes rules only`;
+  person's other general items, of a kind whose bar reads the signal, the criterion `no signal of
+  generality` for signal `none` or `signal <signal>, not one that admits`;
 - `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
   general item (`ai-drafted`) the pull request's author changed as asked, which never admits.
 
@@ -40,6 +42,7 @@ import sys
 from pathlib import Path
 
 SIGNALS = ("states a principle", "addresses agents", "names a habit")
+ANY_SIGNAL = ("tool-config", "exemplar", "review-calibration", "open-question")
 
 
 def load_check():
@@ -56,13 +59,11 @@ def verdict(item: dict) -> tuple[str, str] | None:
     if item["authorship"] == "human":
         if item["covered_by"] is not None:
             return "covered", item["covered_by"]
+        if item["kind"] in ANY_SIGNAL or item["signal"] in SIGNALS:
+            return "admit", item["signal"]
         if item["signal"] == "none":
             return "hold", "no signal of generality"
-        if item["signal"] not in SIGNALS:
-            return "hold", f"signal {item['signal']}, not one that admits"
-        if item["kind"] != "rule":
-            return "hold", f"a {item['kind']} statement: revise proposes rules only"
-        return "admit", item["signal"]
+        return "hold", f"signal {item['signal']}, not one that admits"
     if item["authorship"] == "ai-drafted" and item["outcome"] == "changed as asked":
         return "support", ""
     return None
