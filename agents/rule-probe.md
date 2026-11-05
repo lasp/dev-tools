@@ -56,12 +56,13 @@ silent
 ```
 
 or, when the thread, its dump or the code it commented on cannot be read: no `comments.json`
-in the dump, no thread with that id in it, or a squash merge whose file before the pull request
-lacks the lines the thread quotes:
+in the dump, no thread with that id in it, a merge with no commit on its branch dated before the
+thread's first comment, as after a rebase or force-push, or a squash merge whose file before the
+pull request lacks the lines the thread quotes:
 
 ```
 cannot read
-<one sentence naming which of these it was, and the file or commit>
+<one sentence naming which of these it was, and the file or the merge commit>
 ```
 
 ## Never
