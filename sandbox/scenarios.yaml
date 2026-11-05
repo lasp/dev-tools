@@ -90,7 +90,7 @@ scenarios:
       - mkdir -p standards/profiles
       - "awk '{print} /^scope:/{n++; print (n==1 ? \"repos: [widgets]\" : \"repos: [widgets, gadgets]\")}' \"$SBX_FIXTURES/standard-review-rules.md\" > standards/review-rules.md"
       - "for r in widgets gadgets sprockets; do printf '# %s\\n' \"$r\" > \"standards/profiles/$r.yaml\"; done"
-      - git add standards && git -c user.name=Sandbox -c user.email=sandbox@example.com commit -qm "Adopt the standard"
+      - git add -f standards && git -c user.name=Sandbox -c user.email=sandbox@example.com commit -qm "Adopt the standard"
       - git update-ref refs/remotes/origin/main HEAD
     origin: "#45, #63"
     why: >-
