@@ -393,9 +393,45 @@ before it. A last line reads `items: <n> · admit: <n> · covered: <n> · hold: 
 not listed: <n>`.
 
 Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
-"Clusters" and `revise` `prepare` step 5, for the Admission Dial's single statements.
+"Clusters" and `revise` `prepare` step 5, for the Admission Dial's single statements;
+`scripts/guidance_clusters.py`, which reads each line's fields by place.
 
 Pinned by: tests/test_guidance_tally.py::test_a_persons_signalled_statement_admits_and_the_rest_is_held_or_supports
+
+## The guidance clusters
+
+Version: 1
+
+Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
+object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
+once; `principle`, one sentence; `items`, the keys of the guidance tally's `admit`, `hold` and
+`support` lines it holds ("The guidance tally"); `notes`, other evidence, one line each, an
+analyst's ask as `pr-NNNN · <login> · <human|ai-drafted|bot> · <text>` or a pasted note as `pasted
+<file> · <name> · <text>`; and `held`, the title of the
+ledger's held candidate it continues, its heading or the bold title its bullet opens with, or
+null. Every `admit`, `hold` and `support` line of the
+tally is in exactly one cluster; a cluster holds at least one item or note.
+
+`scripts/guidance_clusters.py --clusters <file> --tally <the tally's printout> [--ledger <ledger>]`
+refuses, one `refused · <where> · <why>` line each and exit 1, a file of any other form, a key
+that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
+ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
+no `--ledger`. Otherwise it
+prints per cluster `cluster · <id> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
+<principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, a `held · <id> · <title>`
+line when it continues one, a `note · <id> · <note>` line per note, and up to three `said · <id> ·
+"<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
+from a pull request and a person not yet quoted while one is left; then `clusters: <n> · lines:
+<n>` and exit 0. A cluster's pull requests are those a person asked on, of its `admit` and `hold`
+lines and its `human` notes, which the Recurring ask Dial counts; its people the authors of those
+and of its pasted notes; either `none` when there are none; an agent's or a bot's words count for neither. It also refuses a tally whose closing `items:` line is missing or counts its words
+otherwise than its lines, and reads each tally line's fields by place, the quote last, so a `·` in
+a quote splits nothing.
+
+Writers: the driver, in harvest.md's "Clusters". Readers: `scripts/guidance_clusters.py`; `revise`
+`prepare` steps 5 and 6, through its printout; `sandbox/harvest_recall.py` `--clusters`.
+
+Pinned by: tests/test_guidance_clusters.py::test_prints_each_cluster_with_its_people_prs_and_quotes
 
 ## The judgments
 

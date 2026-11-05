@@ -42,8 +42,14 @@ It prints, as `key: value` lines:
   to a thread an agent's comment opened;
 - `theme · <id> · <found general>/<items> · prs <found prs>/<prs> · <on two prs | on fewer>`, a
   theme whose found general items span two pull requests or more being one a two-pull-request bar
-  can meet once its items are clustered together, which this script does not do;
+  can meet once its items are clustered together;
 - `themes on two prs`: those themes over the themes;
+- with `--clusters <file>`, the clusters file `scripts/guidance_clusters.py` checked for the same
+  run, `theme · <id> · joined in <cluster> over <n> prs · joined | not joined`, a theme joined when
+  one cluster holds its found general items from two pull requests or more, and ` · shares <cluster>
+  with <themes>` when that cluster also holds another theme's; then `themes joined`, and `themes
+  kept apart`, those joined in a cluster no other theme shares, since one cluster holding every
+  statement would join every theme;
 - `kind agreement`: the found labels whose item's kind is the label's (`--items` only);
 - `precision`: the general items on people's comments that find a label, over all of them, then
   each that finds none as `unmatched · pr-NNNN · <comment id> · <principle>`, for a person to judge,
@@ -102,12 +108,25 @@ def fixture(directory: Path) -> tuple[dict[int, dict], dict]:
 
 
 def from_items(paths: list[Path], comments: dict[int, dict]) -> list[dict]:
+    """The slices' items, each with its tally key, `s<n>-<i>`."""
     out = []
-    for path in paths:
-        for item in read_json(path)["items"]:
+    for n, path in enumerate(paths, 1):
+        for i, item in enumerate(read_json(path)["items"]):
             if item["comment_id"] not in comments:
                 raise Refused(f"{path}: an item is on comment {item['comment_id']}, which the fixture does not hold")
-            out.append(item)
+            out.append({**item, "key": f"s{n}-{i}"})
+    return out
+
+
+def cluster_of(path: Path) -> dict[str, str]:
+    """Each tally key to its cluster's id, from `guidance_clusters.py`'s clusters file."""
+    data = read_json(path)
+    out = {}
+    for c in data["clusters"]:
+        for key in c["items"]:
+            if key in out:
+                raise Refused(f"{path}: {key} is in {out[key]} and {c['id']}")
+            out[key] = c["id"]
     return out
 
 
@@ -209,7 +228,7 @@ def ratio(n: int, d: int) -> str:
 
 
 def score(comments: dict[int, dict], labels: dict, items: list[dict], mode: str,
-          carried: dict | None = None) -> tuple[list[str], dict]:
+          carried: dict | None = None, clusters: dict[str, str] | None = None) -> tuple[list[str], dict]:
     on = defaultdict(list)
     for it in items:
         on[it["comment_id"]].append(it)
@@ -249,6 +268,28 @@ def score(comments: dict[int, dict], labels: dict, items: list[dict], mode: str,
                    f"{'on two prs' if ok else 'on fewer'}")
         fig[f"theme · {theme['id']}"] = [n, len(group), len(prs), ok]
     put("themes on two prs", two, len(labels["themes"]))
+    if clusters is not None:
+        best, holds = {}, defaultdict(set)
+        for theme in labels["themes"]:
+            by = defaultdict(set)
+            for lab in labs:
+                if lab["theme"] == theme["id"]:
+                    for it in hits[lab["id"]]:
+                        if it["generality"] == "general" and it["key"] in clusters:
+                            by[clusters[it["key"]]].add(lab["pr"])
+                            holds[clusters[it["key"]]].add(theme["id"])
+            best[theme["id"]] = max(by.items(), key=lambda kv: len(kv[1]), default=(None, set()))
+        joined = apart = 0
+        for theme in labels["themes"]:
+            cid, prs = best[theme["id"]]
+            ok = len(prs) >= 2
+            others = sorted(holds[cid] - {theme["id"]}) if cid else []
+            joined += ok
+            apart += ok and not others
+            out.append(f"theme · {theme['id']} · joined in {cid or 'none'} over {len(prs)} prs · "
+                       f"{'joined' if ok else 'not joined'}" + (f" · shares {cid} with {', '.join(others)}" if others else ""))
+        put("themes joined", joined, len(labels["themes"]))
+        put("themes kept apart", apart, len(labels["themes"]))
     if mode == "items":
         put("kind agreement", sum(any(it.get("kind") == lab["kind"] for it in hits[lab["id"]]) for lab in labs
                                   if found[lab["id"]]), sum(found.values()))
@@ -276,6 +317,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--json", type=Path)
     p.add_argument("--pairs", type=Path, help="write each label an item finds, beside the lines that find it, for a judge")
     p.add_argument("--carried", type=Path, help="the judge's answer: each of those labels' ids to carried or local")
+    p.add_argument("--clusters", type=Path, help="with --items, the clusters file guidance_clusters.py checked")
     args = p.parse_args(argv)
     mode = "items" if args.items else "openers" if args.openers else "analyst"
     try:
@@ -299,12 +341,15 @@ def main(argv: list[str] | None = None) -> int:
                 raise Refused(f"{args.carried}: no answer for {', '.join(missing)}")
         elif mode == "items":
             carried = {lab["id"]: "carried" for lab in labels["items"]}
+        if args.clusters and mode != "items":
+            raise Refused("--clusters scores an extractor run's clusters, so it needs --items")
+        clusters = cluster_of(args.clusters) if args.clusters else None
     except (Refused, KeyError) as e:
         print(f"harvest_recall.py: {e}", file=sys.stderr)
         return 1
     if args.pairs:
         args.pairs.write_text(json.dumps(pairs, ensure_ascii=False, indent=1))
-    lines, fig = score(comments, labels, items, mode, carried)
+    lines, fig = score(comments, labels, items, mode, carried, clusters)
     print("\n".join([*(f"no block · pr-{pr:04d}" for pr in unread), *lines]))
     if args.json:
         args.json.write_text(json.dumps(fig, indent=1))

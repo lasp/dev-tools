@@ -21,6 +21,8 @@ guidance a careful human reader would take away.
 | `labels.json` | The answer key: `themes`, `items`, `negatives` |
 | `standard/review-rules.md` | A live rule ledger with R-001 and R-002 |
 | `standard/decisions.md` | A decision ledger with D-001 |
+| `runs/guidance-extractor-2026-11-05.json` | One `guidance-extractor` run on the ten lists, the slice `sandbox/README.md` "Harvest recall" scores |
+| `clusters/clusters-2026-11-05.json` | A driver's clustering of that run's guidance tally, written by an agent that followed `skills/revise/harvest.md` "Clusters" and read only the tally, the ledger and that section, never this key |
 
 Each comment has the keys `pr`, `id`, `url`, `author`, `authorship` (`human`, `ai-drafted`, `bot`), `kind`
 (`thread`, `reply`, `review`, `comment`), `thread`, `path`, `line`, `created` and `body`. Its

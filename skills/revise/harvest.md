@@ -65,17 +65,38 @@ slice was given it, is a cut to make again, as is a slice too large. Then check 
 still refused, after it went back once, is not read: check again without it and its comment
 lists, and name its pull requests and its lines with what was not read. The printout of the
 check that passes is the guidance's count. Then run `python3 "<plugin root>/scripts/guidance_tally.py"`
-with the same slices and lists: its `admit`, `covered`, `hold` and `support` lines, each with the
-comment's own words, are what "Clusters" and the caller read (`docs/contracts.md`, "The guidance
-tally"). With
+with the same slices and lists, writing its printout to `.review/harvest/guidance/tally.txt`: its
+`admit`, `covered`, `hold` and `support` lines, each with the comment's own words, are what
+"Clusters" and the caller read (`docs/contracts.md`, "The guidance tally"). With
 no comment list, or none left once the unread slices are set aside, no check runs, and the count
 is `none read`.
 
 ## Clusters
 
-Group by what was asked: the analysts' `asked:` lines from threads (people's, bots' and a review's
-uncited findings), review bodies and conversation comments, leaving out `asked: none`, and the
-guidance tally's `admit`, `hold` and `support` lines, a cluster keeping each line's quote, with
+Group what people asked for by the principle it states, whatever its words and whichever pull
+request it came from: two statements join when the same change to the standard would answer both,
+and a cluster whose statements would need two different changes, such as one rule for docstrings
+and another for user documents, is two clusters. A statement joins one cluster only, and one that
+joins nothing is a cluster of one.
+
+With "Guidance" run, the statements are the guidance tally's `admit`, `hold` and `support` lines;
+its `covered` lines support the rule they name and join nothing. Write
+`.review/harvest/clusters.json` (`docs/contracts.md`, "The guidance clusters"): each cluster's
+principle in one sentence; its tally lines by key; as notes, each analyst `asked:` line not `none`,
+`pr-NNNN · <opener login> · <by> · <source> <id>: <asked>`, so a person's ask the extractor read as
+one pull request's still counts toward the Recurring ask Dial, and each pasted note as `pasted
+<file> · <name> · <the ask>`; and the title of the ledger's held candidate it continues, when one
+states the same principle, so the evidence of earlier revisions joins it. Then run `python3
+"<plugin root>/scripts/guidance_clusters.py" --clusters .review/harvest/clusters.json --tally
+.review/harvest/guidance/tally.txt --ledger <the ledger>`; on its `refused` lines, correct the file
+and run it again. Its printout is the clusters the caller reads: each one's pull requests, people
+and clearest quotes, counted by the script, never by hand: its pull requests are those a person
+asked on, which the Recurring ask Dial counts, and a cluster whose people are none, all its words
+an agent's or a bot's, is not admitted as a rule. The partition is the driver's judgment, and the
+script holds it to one cluster per statement and does the counting.
+
+Without "Guidance", group the analysts' `asked:` lines from threads (people's, bots' and a review's
+uncited findings), review bodies and conversation comments, leaving out `asked: none`, with
 whatever else the caller adds. From people's threads, review bodies and conversation comments,
 count only the lines whose analyst `by:` is `human` (the analyst's word, not the record's login),
 the pull request author's own included; a cluster whose lines are all AI-drafted is not admitted
