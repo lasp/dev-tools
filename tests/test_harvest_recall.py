@@ -90,11 +90,11 @@ class Fixture(unittest.TestCase):
                 prs = {i["pr"] for i in items if i["theme"] == theme["id"]}
                 self.assertGreaterEqual(len(prs), 2)
                 self.assertEqual(sorted(prs), sorted(theme["prs"]))
-        labelled = [i["comment_id"] for i in items]
-        self.assertGreaterEqual(max(labelled.count(c) for c in labelled), 2)
+        labeled = [i["comment_id"] for i in items]
+        self.assertGreaterEqual(max(labeled.count(c) for c in labeled), 2)
         for n in self.labels["negatives"]:
             self.assertEqual(self.comments[n]["authorship"], "human")
-            self.assertNotIn(n, labelled)
+            self.assertNotIn(n, labeled)
         self.assertGreaterEqual(sum(self.comments[n]["kind"] == "reply" for n in self.labels["negatives"]), 3)
 
     def test_each_recorded_run_passes_the_guidance_check(self):

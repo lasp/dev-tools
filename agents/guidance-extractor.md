@@ -70,7 +70,7 @@ Each item is an object with exactly these keys:
   character, or `null` when it gives none.
 - `covered_by`: the live rule (`R-NNN`) or decision (`D-NNN`) that already says it, or
   `instruction file` when the instruction file does, or `null`. Only when the wording covers the
-  statement, not a neighbour of it.
+  statement, not a neighbor of it.
 - `outcome`, from the later comments in the same thread, or the later conversation for a review or
   conversation comment: `changed as asked`, `changed differently`, `declined`, `discussed`
   (talked over, no change said), or `unanswered`. You see no diff or commit, so `changed as asked`

@@ -142,7 +142,7 @@
    "path": "src/widgets/readers/registry.py",
    "line": 44,
    "created": "2026-10-27T00:48:34Z",
-   "body": "Echoing alice: the comment above a function should tell you its behaviour. Design alternatives we rejected go in the PR description or an ADR."
+   "body": "Echoing alice: the comment above a function should tell you its behavior. Design alternatives we rejected go in the PR description or an ADR."
   },
   {
    "pr": 109,

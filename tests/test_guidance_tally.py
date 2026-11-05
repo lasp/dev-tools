@@ -44,7 +44,7 @@ class Tally(unittest.TestCase):
             code = guidance_tally.main([str(found), "--comments", str(lists)])
         return code, out.getvalue().splitlines()
 
-    def test_a_persons_signalled_statement_admits_and_the_rest_is_held_or_supports(self):
+    def test_a_persons_signaled_statement_admits_and_the_rest_is_held_or_supports(self):
         agent = {**COMMENT, "id": 13, "url": "u13", "author": "alice", "authorship": "ai-drafted",
                  "body": "Should fix: check units here, and in general at the boundary."}
         bot = {**COMMENT, "id": 14, "url": "u14", "author": "copilot", "authorship": "bot", "body": "Always add types."}
@@ -84,7 +84,7 @@ class Tally(unittest.TestCase):
 
 
 class Benchmark(unittest.TestCase):
-    """On sandbox/harvest/, every labelled statement with a signal reaches the tally, and no
+    """On sandbox/harvest/, every labeled statement with a signal reaches the tally, and no
     negative admits."""
 
     def test_the_recorded_run(self):
@@ -101,8 +101,8 @@ class Benchmark(unittest.TestCase):
             return {cells[0] for cells in lines if int(cells[3]) == label["comment_id"] and harvest_recall.finds(
                 {"comment_id": label["comment_id"], "quote": cells[-1]}, label, comments[label["comment_id"]]["body"])}
 
-        signalled = [i for i in labels["items"] if i["signal"] in guidance_tally.SIGNALS and not i.get("covered_by")]
-        self.assertEqual([i["id"] for i in signalled if not words(i) & {"admit", "hold"}], [])
+        signaled = [i for i in labels["items"] if i["signal"] in guidance_tally.SIGNALS and not i.get("covered_by")]
+        self.assertEqual([i["id"] for i in signaled if not words(i) & {"admit", "hold"}], [])
         self.assertEqual([i["id"] for i in labels["items"] if i.get("covered_by") and words(i) != {"covered"}], [])
         admitted = {int(cells[3]) for cells in lines if cells[0] == "admit"}
         self.assertEqual([n for n in labels["negatives"] if n in admitted], [])
