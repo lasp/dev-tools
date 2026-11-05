@@ -129,7 +129,7 @@ class ProbeInput(unittest.TestCase):
         above = INLINE.replace(flags, "").replace("> A path is checked", flags + "> A path is checked")
         code, out, _ = self.run_it(above)
         self.assertEqual(code, 0)
-        self.assertEqual(out.count("> A path is checked where it enters,"), 1)
+        self.assertEqual(out.count("A path is checked where it enters,"), 1)
 
     def test_wording_under_a_second_heading_is_read_from_there(self):
         code, out, _ = self.run_it(LINKED)
