@@ -45,7 +45,8 @@ def block(text: str, start: int) -> str:
 
 def split_flags(text: str) -> tuple[list[str], list[list[str]]]:
     """text's lines outside any `Do not flag:` paragraph, and each such paragraph's lines: its
-    opening line and the lines after it up to a blank line, a heading or a line opening a field."""
+    opening line and the lines after it up to a blank line, a heading, a `> ` line or a line opening
+    a field."""
     rest: list[str] = []
     paragraphs: list[list[str]] = []
     inside = False
@@ -53,7 +54,7 @@ def split_flags(text: str) -> tuple[list[str], list[list[str]]]:
         if DO_NOT_FLAG.match(line):
             paragraphs.append([line.rstrip()])
             inside = True
-        elif inside and line.strip() and not line.startswith("#") and not STOP.match(line):
+        elif inside and line.strip() and not line.startswith(("#", ">")) and not STOP.match(line):
             paragraphs[-1].append(line.rstrip())
         else:
             inside = False

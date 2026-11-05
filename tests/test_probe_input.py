@@ -124,6 +124,13 @@ class ProbeInput(unittest.TestCase):
         self.assertNotIn("example", out)
         self.assertNotIn("PRRT_", out)
 
+    def test_a_do_not_flag_line_directly_above_the_wording_does_not_take_the_wording_in(self):
+        flags = "Do not flag: a path validated by its caller, when the docstring says so.\n"
+        above = INLINE.replace(flags, "").replace("> A path is checked", flags + "> A path is checked")
+        code, out, _ = self.run_it(above)
+        self.assertEqual(code, 0)
+        self.assertEqual(out.count("> A path is checked where it enters,"), 1)
+
     def test_wording_under_a_second_heading_is_read_from_there(self):
         code, out, _ = self.run_it(LINKED)
         self.assertEqual(code, 0)
