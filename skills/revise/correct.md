@@ -70,7 +70,7 @@ thread: PRRT_x                     # when there is one
    - *By ID.* The rule, decision or term the correction names or implies. Then everything that
      links to it: its ledger entry in `standards/review-rules.md` with its wording, the `> `
      lines or the instruction file's section under the anchor it links, and its `Do not flag:` line, a
-     decision or term restating it in the repository's or the shared `decisions.md` and
+     decision or term restating it in the repository's `decisions.md` and
      `terminology.md`, and its archive entry if it has one.
    - *By words.* The phrase and its obvious variants across everything "Reads" names. A copy
      in a second repository or in the plugin's text is a place like any other.

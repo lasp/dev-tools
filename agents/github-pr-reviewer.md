@@ -118,7 +118,7 @@ Evaluate every change against:
    - every caller passes several kwargs or a switch argument, so it really performs different behaviors — hasty generalization.
 
    A symbol a framework calls by registration is not a helper: a `@pytest.fixture`, a pydantic validator or a registered hook has one caller by design.
-9. **Fail loud**, as the contract's section of that name says, where the caller passed the contract or a standard file.
+9. **The product's contract**, as the contract's section of that name says, where the caller passed the contract or a standard file.
 
 Give a caller-supplied focus area extra scrutiny and its own section. Let caller context shift the weighting — a production hotfix weights correctness and risk over style. Drop anything that duplicates an existing review comment, and list it as dropped in the review file, never skipped silently.
 

@@ -13,12 +13,10 @@ plan, build, review, pull request, and a standard that changes with what reviewe
 differs between teams is meant to live in each repository's standard, not in the plugin: the
 review rules and decisions, the Jira project and its workflow, the Confluence spaces, the pull
 request template, the test commands. It is not all there yet: Libera's names still appear in a
-number of skills and agents, and the review contract checks every repository's tickets against
-Libera's ticket headings. [`ROADMAP.md`](ROADMAP.md) tracks both, in "Neutral examples in generic
-skills" and "Libera content in the review contract". A repository keeps its standard in its own
-`standards/`, or points at a project's shared standard in another repository. Tools for one
-domain, such as flight software or engineering, belong in plugins of their own installed beside
-this one.
+number of skills and agents, which [`ROADMAP.md`](ROADMAP.md) tracks in "Neutral examples in
+generic skills". A repository keeps its standard in its own `standards/`, or points at a
+project's shared standard in another repository. Tools for one domain, such as flight software or
+engineering, belong in plugins of their own installed beside this one.
 
 ![The lasp-dev plugin reads a project's standard of rules, decisions, terms and settings; each repository holds its own standard or a pointer to one](docs/img/plugin-standard-repos.svg)
 
@@ -525,8 +523,8 @@ since been rewritten; the rest were written here.
 | `pr-reader` | sonnet | Fetches a pull request's reviews, threads, conversation comments and body for `work`, `pr-review`, `pr-fix`, `ticket-draft` and `ticket-audit`, saves them under `.review/threads/`, judges the replies written in a person's own words, and returns what `scripts/record.py` prints: where the pull request stands, or, for `revise` and `onboard`, the records it rebuilt from the merged pull requests; never posts |
 | `source-reader` | sonnet | Reads Jira, Confluence and GitHub for one task (a ticket, the ten closest tickets, the year plan, a page, or one `ticket-audit` sweep) and returns a fixed block; carries `using-jira` and `using-confluence`; never writes to Jira, Confluence or GitHub |
 | `rule-probe` | sonnet | Reads one rule and one place in merged code and says whether the rule fires there, with the line; run on both anchors of a proposed rule's example line; reads only |
-| `diff-probe` | sonnet | Reads one merged pull request's diff, commits and description for `revise`'s sweep and says, per rule or documented claim, whether the change follows it, breaks it (with the line) or leaves it untouched; reads only |
-| `thread-analyst` | sonnet | Reads one merged pull request's review threads, reviewers' summaries and conversation comments, and the files they anchor to, for `revise`: what each asked for, what the diff did, and which asked about the procedure; in `defect` mode, which rule, candidate or check should have caught a fixed defect; reads only |
+| `diff-probe` | sonnet | Reads one merged pull request's diff, commits and description for `revise`'s sweep and says, per rule or documented claim, whether the change follows it, breaks it (with the line) or leaves it untouched; writes only its block, to the path `revise` gives |
+| `thread-analyst` | sonnet | Reads one merged pull request's review threads, reviewers' summaries and conversation comments, and the files they anchor to, for `revise`: what each asked for, what the diff did, and which asked about a lasp-dev skill or agent; in `defect` mode, which rule, candidate or check should have caught a fixed defect; writes only its report, to the path `revise` or `onboard` gives |
 
 | Other | Role |
 | --- | --- |
@@ -544,7 +542,7 @@ Once per repository. It needs:
 | File | Where it comes from |
 | --- | --- |
 | `standards/review-rules.md`, the ledger, each entry holding its rule's wording as `> ` lines | `onboard`'s step 6 drafts it into `.review/harvest/`; people cut and commit |
-| `standards/decisions.md`, optional | written by hand |
+| `standards/decisions.md`, optional | written by hand; a pipeline that produces a defined product adopts the fail-loud decision in `docs/standards.md`, "Example decision: fail loud" |
 | `.github/PULL_REQUEST_TEMPLATE.md` | copied byte for byte from the standard's `templates/<name>/`, in the directory `scripts/profile.py --standard` prints; `/lasp-dev:quickstart` reports drift |
 | `.review/` in `.gitignore` | the skills and hooks write their working files there |
 
@@ -734,7 +732,7 @@ session-start line or `work` says something unexpected, these files are what it 
 | `pr-<n>-review-submission.md` | `pr-review`, from step 3, zero findings included: `Head: <sha>`, `Posting: undecided, declined or posted`, its progress, the findings and, once drafted, the comments | `next_phase.py`, through `work`; `pr-review` on a re-review; the person, and the posted record | Replaced when the head moves; otherwise not cleared by the tools |
 | `pr-<n>-fix-plan.md` | `pr-fix`, from step 5: `Head: <sha>`, its progress, the dispositions with each thread's link and `fixed <sha>` mark, and from step 7 the draft plan, replaced by the approved one | The implementation reviewer, as its plan file; `pr-fix` on a later run | Started afresh on a new head, keeping the dispositions not yet posted and the `fixed <sha>` rows whose fix reply has not posted |
 | `fix/pr-<n>/` | `pr-fix` step 9's review wave: `wave-<N>.md` and each reviewer's `wave-<N>-<focus>.md`, as `build/` holds a build's | `pr-fix`, only for a finding it is fixing; the person | Emptied at the start of each `pr-fix` round on that pull request |
-| `pages/<owner>-<repo>/pr-NNNN/` | `hooks/save-page.sh`, through `scripts/save_page.py`, after each `pull_request_read`: the result as the server returned it, named as a dump's `pages/` | `pr-reader`, which copies each page a hook note names into its dump | Each page replaced by the next call of its name; never cleared |
+| `pages/<owner>-<repo>/pr-NNNN/` | `hooks/save-page.sh`, through `scripts/save_page.py`, after each `pull_request_read`: the result as the server returned it, named as a dump's `pages/` | `pr-reader`, which copies each page a hook note names into its dump | Each page replaced by the next call of its name; a pull request's folder removed by `pr-reader` before it fetches, and its `get_review_comments` pages by the hook at the first page |
 | `threads/pr-NNNN/` | `pr-reader`, the pull request's dump: `pages/`, the server's results as returned, and from them `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json` and `body.md`, and its `judged.json` | `scripts/record.py --state`; `github-pr-fix-planner`, for `pr-fix` | Rewritten at each state call |
 | `audit/` | `ticket-audit`: each sweep's report, and from Apply the write plan's texts (`<date>-send/`) and record (`<date>-writes.md`) | The person | Not cleared by the tools |
 | `onboard/survey.md` | `onboard`: the survey's table, `scripts/survey.py`'s printout and what the servers showed | The person | Replaced at each survey |
@@ -751,13 +749,13 @@ session-start line or `work` says something unexpected, these files are what it 
 | `downstream/` | `downstream`: `surface.txt`, `report.md`, a `ripple-<consumer>.md` or `ci-<run>.md` prompt for `ticket-draft`, and a throwaway venv and `git clone --shared` checkout per consumer, read at its default branch | The person; `ticket-draft`, given a prompt | Not cleared by the tools |
 | `feedback/` | `skill-feedback`: the person's words (`words.txt`), and on the `gh` path the issue's title (`title.txt`) and body (`body.md`) | `scripts/transcript_excerpt.py --stdin`, for the words; `gh api`, for the title and body | Replaced at the next filing |
 | `backtest/` | `revise` and `onboard`, each proposal's drafted entry and probe blocks (`R-NNN.entry.md`, `R-NNN.md`); the `rule-probe` sandbox scenario, `calibration.md` | The month's driver | Not cleared by the tools |
-| `harvest/threads/`, `harvest/records/` | `pr-reader` in `harvest` mode, for `revise` and `onboard`: each merged pull request's dump (`pages/`, `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json`, `body.md`, `judged.json`) and the record `scripts/record.py` rebuilt from it | `revise`, which copies the records into `standards/<repo>/log/` with `scripts/archive_records.py`; `thread-analyst`, for each record's authorship | Replaced at each harvest |
-| `harvest/analysis/` | `thread-analyst`, one `pr-NNNN.md` per merged pull request with a record, within the cap of `revise`'s `harvest.md`, for `revise` and `onboard` | `revise`, for the report's front page; never copied into the log | Replaced at each revision |
+| `harvest/threads/`, `harvest/records/` | `pr-reader` in `harvest` mode, for `revise` and `onboard`: each merged pull request's dump (`pages/`, `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json`, `body.md`, `judged.json`) and the record `scripts/record.py` rebuilt from it | `revise`, which copies the records into `standards/log/<repo>/` with `scripts/archive_records.py`; `thread-analyst`, for each record's authorship | Replaced at each harvest |
+| `harvest/analysis/` | `thread-analyst`, one `pr-NNNN.md` per merged pull request with a record, within the cap of `revise`'s `harvest.md`, for `revise` and `onboard` | `revise`, for the report's front page, through `scripts/block_tally.py`; never copied into the log | A pull request's block is replaced when it is analyzed again; not cleared by the tools |
 | `harvest/` | `onboard`'s first rules: `threads.yaml`, `measurements.md` | The person | Not cleared by the tools |
 | `harvest/context-refresh.md` | `revise`, its context refresh | The person, marking the refresh proposals | Rewritten at each revision |
 | `ratchet-proposal.diff` | `revise`: the accepted change to this repository's `standards/`, instruction file and pull request template, and to the documents accepted `doc/` proposals name | The driver, to apply and open as a pull request | Not cleared by the tools |
 | `checks/`, `archive-pages/` | `revise`: drafted checks, Confluence page bodies | The person | Not cleared by the tools |
-| `revision/claims.md`, `revision/sweep/` | `revise`'s sweep at `prepare` step 2: the rules and documented claims it judges, and one `diff-probe` block per merged pull request (`pr-NNNN.md`) | `revise`, for the report's Practice section | Replaced at each revision |
+| `revision/claims.md`, `revision/merges.txt`, `revision/sweep/` | `revise`'s sweep at `prepare` step 2: the rules and documented claims it judges, `scripts/window_merges.py`'s printout with `--doc`, and one `diff-probe` block per merged pull request (`pr-NNNN.md`) | `revise`, for the report's Practice section, through `scripts/block_tally.py` | Replaced at each revision |
 | `revision/notes/` | The driver, before `revise` `prepare`: meeting or chat notes, pasted | `revise`, read as asks at `prepare` step 5 | Not cleared by the tools |
 | `revision/tickets/` | `revise` `apply`: each accepted `ticket/` proposal as a prompt (`<n>-<slug>.md`) | `ticket-draft`, given a prompt's path, one at a time | Replaced at each `apply` |
 | `revision/feedback/` | `revise`: a `skill-feedback` draft per procedure finding, from `prepare` step 2 and `correct` step 2 | `skill-feedback`, given a draft's path | Not cleared by the tools |

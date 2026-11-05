@@ -75,7 +75,7 @@ Markdown, so it is not the text verbatim.
 ```
 ## <key> — ticket
 Fields: <summary · type · status · priority · assignee · reporter · created · due · story points · components · epic>
-Sections: <the description's h1 and h2 headings in order, as `using-jira`'s format names them, Acceptance Criteria and Technical Requirements included, or what an older ticket has instead>
+Sections: <the description's h1 and h2 headings in order, as `${CLAUDE_PLUGIN_ROOT}/standards/ticket-format.md` names them, Acceptance Criteria and Technical Requirements included, or what an older ticket has instead>
 Description:
 <the description verbatim, exactly as fetched, markup included>
 Comments: <each: author, date, its text verbatim; past twenty, the twenty newest, any older one holding a `Departed:` line, and the count of the rest>

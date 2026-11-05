@@ -21,15 +21,23 @@ past thirty, the thirty whose records hold the most findings plus pointers under
 `reviews:` and `comments:` whose `by:` is not `bot`, the author's own included. First fetch
 `main` and run `python3 "<plugin root>/scripts/merge_commit.py" --repo . --ref origin/main` with
 each of those dumps' `pr.json`, which prints each pull request's merge commit, the one commit on
-`main`'s first-parent history whose subject names it; the `get` result carries none. Then all in
-one message, each given this repository's path, its dump `.review/harvest/threads/pr-NNNN/`, its
-record `.review/harvest/records/pr-NNNN.yaml`, its merge commit and the categories design,
-correctness, tests, naming, docs, scope, process and style. A pull request the script prints
+`main`'s first-parent history whose subject names it; the `get` result carries none. Then launch
+them in messages of at most twenty, Claude Code's limit on agents running together, each sent once
+the previous one's agents have all returned; every other launch of many agents in `revise` cites
+this. Each is given this repository's path, its dump `.review/harvest/threads/pr-NNNN/`, its
+record `.review/harvest/records/pr-NNNN.yaml`, its merge commit, the categories design,
+correctness, tests, naming, docs, scope, process and style, and the path
+`.review/harvest/analysis/pr-NNNN.md`, where it writes its block and returns `wrote <path>`. A pull request the script prints
 `none` for gets no analyst, since a guessed commit would put the `diff:` verdict on the wrong
-tree; an exit 2 stops the step with its line. Write each block to
-`.review/harvest/analysis/pr-NNNN.md` as returned. The pull requests past the cap or with no merge
-commit, the script's reason beside each, a block that is a `record mismatch` line, and each
-block's `Not read:` ids are what was not read.
+tree; an exit 2 stops the step with its line. Never repeat a block: an analyst that returns
+`write failed: <error>` could not write it, and you write the block that follows that line, without
+it, to its path. Then run `python3 "<plugin root>/scripts/block_tally.py" analysis
+.review/harvest/analysis/ <pr-NNNN ...>`, naming each pull request this step analyzed and each
+whose block the caller let stand in, since the directory keeps blocks from earlier runs; it
+counts the blocks and lists what they did not read, and an exit 2
+names the block that does not hold its form, to rerun that analyst. The pull requests past the cap or with no merge
+commit, the script's reason beside each, and the tally's `mismatch` and `not read` lines are what
+was not read.
 
 ## Clusters
 
@@ -46,13 +54,15 @@ For each drafted rule, draft its entry with `scope:` and `example:` lines as the
 `rule-bar.md` sets out, the not-on anchor at the merge commit of the fix its evidence pull request
 merged, and its wording, into `.review/backtest/R-NNN.entry.md`: as the entry's `> ` lines, or, where
 the ledger still links an instruction file, under a `### R-NNN · <title>` heading after the entry. If you cannot think of a case
-where the rule should not apply, say so rather than inventing one. Run `python3 "<plugin
+where the rule should not apply, say so on its `Do not flag:` line rather than inventing one. Run `python3 "<plugin
 root>/scripts/rule_lint.py" --entry <that file> --repo .` with a `--decisions` for each decisions
 file the caller names; an exit 2 (`CANNOT RUN`) stops the step with its line. Then one
-`rule-probe` per anchor of the `example:` line, all in one message, each given this repository's
-path, the drafted title, wording and `Do not flag:` line, and one anchor; write their blocks to
-`.review/backtest/R-NNN.md`. Under the proposal or candidate, in the caller's report: the drafted
+`rule-probe` per anchor of the `example:` line, launched as "Analysts" launches agents, each given this repository's
+path, the text `python3 "<plugin root>/scripts/probe_input.py" <that file>` prints, the drafted
+title, wording and `Do not flag:` line and never the entry file or its `example:` line, and one
+anchor, or one thread with its pull request's merge commit; an exit 2 stops the step with its
+line. Write their blocks to `.review/backtest/R-NNN.md`. Under the proposal or candidate, in the caller's report: the drafted
 `scope:` and `example:` lines, then `bar: ok` or the lint's lines, then `probe: <anchor>
-fires|silent; <anchor> fires|silent`. A rule a gate fails is held, with the failed check named,
+fires|silent|cannot read; <anchor> fires|silent|cannot read`. A rule a gate fails is held, with the failed check named,
 and never admitted or recommended a plain `accept`. A probe that disagrees with the example line
 is printed and holds nothing.

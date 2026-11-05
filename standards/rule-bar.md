@@ -23,7 +23,7 @@ touched.
 | fields (7, 10) | `rule_lint.py` | A new, reworded, promoted or broadened entry carries `scope:` and `example:` lines; a `repos:` line, in a standard covering several repositories, names only repositories it has a `profiles/` file for |
 | budget | `rule_lint.py` | For each repository the standard covers, the ledger as the build and review agents load it there (`standard_file.sh`'s assembly; a session loads only live rules' wording), check-tier entries and held candidates left out, fits the budget the ledger's header states, or the Rule budget Dial (`dials.md`) when it states none |
 
-`rule_lint.py` checks all seven and prints every failure; it fails the run for a rule it is
+`rule_lint.py` checks all seven and prints every failure, and under `--checks budget` a `budget ok` line for each repository within its budget; it fails the run for a rule it is
 told changed, and for every rule when it is told nothing. A budget failure names a repository, not
 a rule, and fails the run when a rule it is told changed counts toward that repository. `revise`'s `correct` mode runs only the gates
 of the lines a correction changes, unless it rewords the rule.

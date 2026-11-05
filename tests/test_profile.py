@@ -350,6 +350,7 @@ class Defaults(unittest.TestCase):
                 ("{name: triage, next: ticket-draft}", "{name: triage, next: ticket-draft, role: reviewed}",
                  "gives triage the role 'reviewed', not one of"),
                 ("location: someone/issues", "location: issues", "issue_tracker.location is owner/repo"),
+                ("location: someone/issues", "location: not yet recorded", "issue_tracker.location reads not yet recorded"),
                 ("  kind: github\n", "", "leaves out issue_tracker.kind"),
                 ("{name: triage, next: ticket-draft}", "{name: None, next: ticket-draft}", "has a label named none"),
             ):
