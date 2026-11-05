@@ -184,6 +184,12 @@ class TrackerPack(unittest.TestCase):
         issues = json.loads(self.call("jira_search", jql="key in (PROJ-57, PROJ-58) ORDER BY key")["content"][0]["text"])["issues"]
         self.assertEqual([i["key"] for i in issues], ["PROJ-57", "PROJ-58"])
 
+    def test_a_search_for_a_quoted_key_or_by_issue_returns_that_ticket(self):
+        for jql in ('key = "PROJ-57"', "key = 'PROJ-57'", "issue = PROJ-57", 'issue = "PROJ-57"'):
+            with self.subTest(jql=jql):
+                issues = json.loads(self.call("jira_search", jql=jql)["content"][0]["text"])["issues"]
+                self.assertEqual([i["key"] for i in issues], ["PROJ-57"])
+
     def test_get_issue_converts_headings_and_numbered_items_to_markdown(self):
         description = json.loads(self.call("jira_get_issue", issue_key="PROJ-57")["content"][0]["text"])["description"]
         self.assertIn("\n# Context\n", description)

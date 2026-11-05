@@ -25,8 +25,9 @@
 #   expect        what --check holds each run's summary.json to, all optional:
 #                   skills  Skill-tool calls that must appear
 #                   agents  subagent types the main session must spawn at least once
-#                   mcp     globs of MCP tool names, each matching one the run called at least
-#                           once, as the summary's `mcp` counts them: that a server answered
+#                   mcp     globs of MCP tool names, each matching a tool the run called at
+#                           least once, as the summary's `mcp` counts them, an errored or
+#                           denied call included
 #                   files   globs, relative to the clone, matching a file the run wrote
 #                   ends    the last turn's result subtype
 #                   max_cost  dollars, the run's total

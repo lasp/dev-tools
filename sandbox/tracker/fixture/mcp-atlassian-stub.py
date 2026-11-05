@@ -8,7 +8,7 @@ listed with `--read-only` and `READ_ONLY_MODE=true`, which it honors by having n
 
 `jira_search` returns the description as stored, in wiki markup; `jira_get_issue` returns a
 rough Markdown conversion of it, as the real server does. A search naming keys (`key = A`,
-`key in (A, B)`) returns those issues; any other query returns every issue in the project, Done
+`issue = "A"`, `key in (A, B)`) returns those issues; any other query returns every issue in the project, Done
 ones included, since no clause beyond the key is read. A key the project does not hold is an
 error result. Confluence holds no page. Stdlib only.
 """
@@ -57,7 +57,7 @@ def call(name: str, args: dict):
         return issue(ISSUES[key], converted=True)
     if name == "jira_search":
         jql = args.get("jql", "")
-        named = re.findall(r"\b(?:key|issuekey)\s*(?:=\s*[A-Z]+-\d+|in\s*\([^)]*\))", jql, re.I)
+        named = re.findall(r"\b(?:key|issuekey|issue)\s*(?:=\s*[\"']?[A-Z]+-\d+[\"']?|in\s*\([^)]*\))", jql, re.I)
         keys = re.findall(r"[A-Z]+-\d+", " ".join(named), re.I)
         found = [ISSUES[k.upper()] for k in keys if k.upper() in ISSUES] if keys else list(ISSUES.values())
         found = found[: int(args.get("limit") or 50)]
