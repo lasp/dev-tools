@@ -8,6 +8,7 @@ import io
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -391,6 +392,33 @@ class Rows(unittest.TestCase):
                 self.assertEqual(rc, 0, out)
                 self.assertIn("phase: ticket-draft\n", out)
                 self.assertIn(f"PROJ-7 is {status}, and no Jira workflow is recorded", out)
+
+    def test_a_github_tracker_routes_as_no_workflow_recorded(self):
+        plugin = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, plugin)
+        (plugin / "scripts").mkdir()
+        shutil.copy(ROOT / "scripts/profile.py", plugin / "scripts")
+        (plugin / "standards").mkdir()
+        shutil.copy(ROOT / "standards/default-profile.yaml", plugin / "standards")
+        repo = self.tmp / "github"
+        (repo / "standards").mkdir(parents=True)
+        (repo / "standards/profile.yaml").write_text(
+            "issue_tracker:\n  kind: github\n  statuses:\n    - {name: ready, next: implement-change, role: approved}\n  pr_statuses: [ready]\n")
+        git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@example.org"]
+        for args in (["init", "-q"], ["remote", "add", "origin", "git@github.com:example-org/github.git"], ["commit", "-q", "--allow-empty", "-m", "x"]):
+            subprocess.run(git + args, check=True)
+        old, cwd = next_phase.ROOT, os.getcwd()
+        self.addCleanup(setattr, next_phase, "ROOT", old)
+        self.addCleanup(os.chdir, cwd)
+        next_phase.ROOT = plugin
+        os.chdir(repo)
+        kind = subprocess.run([sys.executable, str(plugin / "scripts/profile.py"), "--defaults", "--field", "issue_tracker.kind"],
+                              capture_output=True, text=True)
+        self.assertEqual(kind.stdout, "github\n", kind.stderr)
+        rc, out = self.run_it(self.fields(context=""), None, "--ticket-status", "ready")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("phase: ticket-draft\n", out)
+        self.assertIn("PROJ-7 is ready, and no Jira workflow is recorded", out)
 
     def test_a_drafted_ticket_not_filed_stops_and_names_the_file_to_file(self):
         rc, out = self.run_it(self.fields(context="", ticket="", slug="retry-policy"))

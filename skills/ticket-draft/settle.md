@@ -2,14 +2,14 @@
 
 `ticket-draft settle <key>`, run whenever answers to a ticket's Open Questions arrive, from the
 estimation meeting, a comment or the person, or `settle <key> <thread id>`, run by `pr-fix` on a
-reopened design or a kept `ticket/` finding: fold answers into the ticket, as `using-jira`'s "The
-description format" sets out for Open Questions, and record a departure, below. It needs the
+reopened design or a kept `ticket/` finding: fold answers into the ticket, as `<plugin root>/standards/ticket-format.md` sets out for
+Open Questions, and record a departure, below. It needs the
 Atlassian server, as SKILL.md's Reads say.
 
 **A departure** is recorded, not folded in: work that left the ticket's design, criteria or scope
 and should keep doing so, from a reopened design, an agreed `ticket/` finding, or the person. The
 ticket goes on saying what was asked; the record says what was done instead and why, and a
-reader holds the item to it (`using-jira`, "The description format", Departures). Step 3 asks how it is recorded. A
+reader holds the item to it (`<plugin root>/standards/ticket-format.md`, Departures). Step 3 asks how it is recorded. A
 reopened design that changes the plan but leaves the ticket's design, criteria and scope as they
 are records nothing: the pass says so and ends.
 
@@ -21,7 +21,7 @@ are records nothing: the pass says so and ends.
    fetched is the text to settle: write it to `<ticket>.original.txt` as for a ticket settled
    before, create the context page with its heading, after its `Controlled:` line when the ticket was cleared, and only What changed, and say once that the draft's page
    was not on this machine.
-   A ticket not in the current format, `using-jira`'s "The description format", is asked first, unless the pass only records a departure as a comment, which leaves the description as it is: **Reformat and settle** (Recommended), which runs
+   A ticket not in the current format, `<plugin root>/standards/ticket-format.md`, is asked first, unless the pass only records a departure as a comment, which leaves the description as it is: **Reformat and settle** (Recommended), which runs
    `reformat.md` steps 2 and 3 before step 2 here, in one pass with one write plan, or **Settle
    in its layout**, which folds each answer into the sections the ticket has.
 2. **Gather the answers**: from the person in the session, from comments on the ticket since
@@ -35,7 +35,7 @@ are records nothing: the pass says so and ends.
    changed as a decision.
    A departure is asked first: **Comment on the ticket** (Recommended), a `Departed:` line in the
    `Session comment` with the description untouched; **Append to the description**, the same line
-   in its Departures section (`using-jira`, "The description format"), the text above it
+   in its Departures section (`<plugin root>/standards/ticket-format.md`), the text above it
    unchanged but the status line, for one a reader of the ticket must not miss; or **Rewrite the
    ticket**, folded in as above, only when the person says the ticket's intent was wrong.
 4. **Review and write**, as SKILL.md steps 7 and 8, the write plan included: step 1's ticket

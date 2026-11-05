@@ -38,15 +38,24 @@ does not cover it or that the schema refuses.
 Every one of these files takes the same schema. Any key, or any whole section, may read `not yet recorded`, which is
 printed as it stands: a value nobody has looked up is never guessed. The default profile and a
 standard's project settings also set sections a repository's own profile in a standard for several
-may not: `jira` (the workflow's statuses, each with the phase a ticket with no context page goes
-to and, for some, the role a generic skill names it by; and the statuses at which its pull request
-may exist) and `internal` (the domains no posted text may name, and the private repositories, by
-name: for one of those `public` is false, and a profile that sets it true is refused). Neither is
-printed for a repository. The default profile's `jira` reads `not yet recorded`, so where no
-standard records a workflow, a field under `jira` prints `not yet recorded`; a standard that
-records one sets both its fields. Each of the roles in `ROLES` is on exactly one status, and
-`--defaults` prints them as `jira.roles`, so `--defaults --field jira.roles.finished` prints the
-finished status's name.
+may not: `issue_tracker` (the tracker's `kind`, `jira` or `github`; for GitHub, the `location`
+whose issues the project's are, `owner/repo`, when not each repository's own; the workflow's
+statuses, a Jira status or a GitHub label each, each with the phase a ticket with no context page
+goes to and, for some, the role a generic skill names it by; and the statuses at which its pull
+request may exist) and `internal` (the domains no posted text may name, and the private
+repositories, by name: for one of those `public` is false, and a profile that sets it true is
+refused). Neither is printed for a repository. A file's `jira:` section is read as
+`issue_tracker:` with `kind: jira`, once the files are stacked; one that sets both, or a `kind` or
+`location` under `jira:`, is refused, and a refusal names its fields as `issue_tracker.<field>
+(jira:)`. With no `location`, it prints `none`. The default profile's
+`issue_tracker` reads `not yet recorded`, so where no standard records a workflow, a field under it
+prints `not yet recorded`; a standard that records one sets its `kind`, `statuses` and
+`pr_statuses`. For Jira, each of the roles in `ROLES` is on exactly one status; for GitHub, on at
+most one label, a role with none reading `none`, since an issue's own open and closed states stand
+for filed, finished and abandoned. `--defaults` prints them as `issue_tracker.roles`, so
+`--defaults --field issue_tracker.roles.finished` prints the finished status's name. `--field
+jira.<field>` reads `issue_tracker.<field>` when its kind is `jira`, and `not yet recorded`
+otherwise.
 
 With `--field a.b` it prints that one value: a scalar as it is, a list one item per line (a map
 item as JSON), a section as `key.path: value` lines. Without it, the whole profile as
@@ -59,10 +68,11 @@ The file is a small subset of YAML, read by the parser below: top-level keys, ma
 deep, scalars, flow lists, and block lists of scalars or one-line flow maps. A key the schema does not know, a value of the wrong shape, or a line the parser cannot
 read exits 1 naming it, as does a `ticket.pattern` or a `depth.light` entry's `hunk` that is not a
 regular expression, and a default profile under a standard's settings that leaves a key out, has a
-section other than `jira` reading `not yet recorded`, leaves a field of `jira`, `internal`,
-`attribution` or `surface` unrecorded, names a status twice or with spaces around it, gives a
-status a role not in `ROLES` or a role no status or two, names a pull request status that is not
-one of its statuses, names a domain that is not a bare host name, or a private repository that is
+section other than `issue_tracker` reading `not yet recorded`, leaves a field of
+`issue_tracker` but its `location`, `internal`, `attribution` or `surface` unrecorded, names a
+tracker kind other than `jira` or `github`, a location that is not `owner/repo` or one for Jira, a
+GitHub label `none`, names a status twice or with spaces around it, gives a status a role not in `ROLES`, gives a role two statuses or,
+for Jira, none, names a pull request status that is not one of its statuses, names a domain that is not a bare host name, or a private repository that is
 not a bare repository name. Stdlib only.
 """
 
@@ -104,19 +114,24 @@ DETECTED = "lasp-dev/detected"
 # A repository's own settings, or its pointer to the standard elsewhere, in its checkout.
 REPO_PROFILE = "standards/profile.yaml"
 POINTER = "standard"
-# Keys a repository's own profile in a standard for several does not set, the project's: its Jira
-# workflow, its internal hosts and its private repositories, by name whatever the owner; the
+# Keys a repository's own profile in a standard for several does not set, the project's: its issue
+# tracker's workflow, its internal hosts and its private repositories, by name whatever the owner; the
 # wordings beside the plugin's attribution line that mark a comment as AI-drafted (record.py); and
 # the enum classes whose members are data product identifiers (surface_diff.py).
 PROJECT_SCHEMA: dict = {
-    "jira": {"statuses": "statuses", "pr_statuses": "list"},
+    "issue_tracker": {"kind": "str", "location": "str", "statuses": "statuses", "pr_statuses": "list"},
     "internal": {"domains": "list", "private_repositories": "list"},
     "attribution": {"phrases": "list"},
     "surface": {"identifiers": "list"},
 }
 # The settings every repository a standard covers shares: in a standard for several, only its
 # profile.yaml sets them, and only its profiles/<repo>.yaml sets the rest.
-PROJECT_KEYS = ("ticket", "posted_text", "github_server", "jira", "internal", "attribution", "surface")
+# The name `issue_tracker` had when Jira was the only tracker; a file's `jira:` is read as
+# `issue_tracker:` with `kind: jira`.
+ALIAS = "jira"
+PROJECT_KEYS = ("ticket", "posted_text", "github_server", "issue_tracker", ALIAS, "internal", "attribution", "surface")
+# The issue_tracker fields a standard may leave out: with no location, each repository's own issues.
+OPTIONAL = {"issue_tracker.location"}
 # Set to 1, as a hook runs, to read a standard elsewhere only as already fetched.
 OFFLINE = "STANDARD_OFFLINE"
 # The source of a pointing repository read without its standard, the person's choice.
@@ -137,7 +152,9 @@ TEMPLATE = re.compile(r"[A-Za-z0-9_-]+")
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 HOST = re.compile(r"(?i)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+")
 
-CHOICES = {"posted_text": {"workflow", "plain"}}
+CHOICES = {"posted_text": {"workflow", "plain"}, "issue_tracker.kind": {"jira", "github"}}
+# The keys a file may set: the alias takes the section's shape, and `folded` refuses its kind and location.
+FILE_SCHEMA: dict = {**SCHEMA, **PROJECT_SCHEMA, ALIAS: PROJECT_SCHEMA["issue_tracker"]}
 LIGHT_KEYS = {"glob", "brief", "hunk"}
 
 
@@ -251,9 +268,10 @@ def check(data: dict, name: str, schema: dict = SCHEMA) -> None:
             if not isinstance(got, dict):
                 raise ProfileError(f"{name}: {key} is a section of {', '.join(shape)}, not {got!r}")
             for sub, v in got.items():
+                path = f"issue_tracker.{sub} ({ALIAS}:)" if key == ALIAS else f"{key}.{sub}"
                 if sub not in shape:
-                    raise ProfileError(f"{name}: unknown key '{key}.{sub}'")
-                check_leaf(f"{key}.{sub}", shape[sub], v, name)
+                    raise ProfileError(f"{name}: unknown key '{path}'")
+                check_leaf(path, shape[sub], v, name)
         else:
             check_leaf(key, shape, got, name)
 
@@ -425,10 +443,16 @@ def standard_directory(repo: str | None, root: Path) -> Path:
     return directory.resolve()
 
 
+def one_tracker(data: dict, name: str) -> None:
+    """Refuse a file that sets the tracker under both its names, in any form."""
+    if ALIAS in data and "issue_tracker" in data:
+        raise ProfileError(f"{name}: sets issue_tracker twice, as issue_tracker: and as {ALIAS}:, its alias; keep one")
+
+
 def settings(directory: Path, name: str, label: str, pointed: bool) -> tuple[dict, list[str]]:
     """The settings the standard in `directory` gives the repository `name`, and the files they
     came from, each named after `label`; `pointed` when another repository's pointer led here."""
-    schema = {**SCHEMA, **PROJECT_SCHEMA}
+    schema = FILE_SCHEMA
     sources: list[str] = []
     project: dict = {}
     if (directory / "profile.yaml").is_file():
@@ -436,6 +460,7 @@ def settings(directory: Path, name: str, label: str, pointed: bool) -> tuple[dic
         if POINTER in project:
             raise ProfileError(f"{label}profile.yaml names another standard; a pointer is followed one level")
         check(project, f"{label}profile.yaml", schema)
+        one_tracker(project, f"{label}profile.yaml")
         sources.append(f"{label}profile.yaml")
     if not (directory / "profiles").is_dir():
         if pointed:
@@ -456,6 +481,7 @@ def settings(directory: Path, name: str, label: str, pointed: bool) -> tuple[dic
     rel = f"{label}profiles/{mine[0].name}"
     data = parse(mine[0].read_text(), rel)
     check(data, rel, schema)
+    one_tracker(data, rel)
     misplaced = [k for k in data if k in PROJECT_KEYS]
     if misplaced:
         raise ProfileError(f"{rel} sets {', '.join(misplaced)}, which the project sets; it belongs in {label}profile.yaml")
@@ -569,44 +595,82 @@ def defaults_here(root: Path, mine=nothing) -> dict:
     return valid(stacked(data, values), " over ".join([*sources, DEFAULT_PROFILE]))
 
 
+def folded(data: dict, name: str) -> tuple[dict, bool]:
+    """`data` with a `jira:` section read as `issue_tracker:` with `kind: jira`, and whether it had one."""
+    if ALIAS not in data:
+        return data, False
+    rest = {k: v for k, v in data.items() if k != ALIAS}
+    jira = data[ALIAS]
+    if isinstance(jira, dict):
+        if "kind" in jira:
+            raise ProfileError(f"{name}: issue_tracker.kind ({ALIAS}:) is set by the alias; drop it, or write issue_tracker: to name another")
+        if "location" in jira:
+            raise ProfileError(f"{name}: issue_tracker.location ({ALIAS}:) names a GitHub repository; "
+                               "a Jira tracker's project is ticket.project")
+        jira = {"kind": "jira", **jira}
+    return {**rest, "issue_tracker": jira}, True
+
+
 def valid(data: dict, name: str) -> dict:
     """`data`, the values for every key named by `name`, the default profile under a standard's
-    settings, checked, with the roles added under `jira`, which may read `not yet recorded`."""
+    settings, checked, with the roles added under `issue_tracker`, which may read `not yet recorded`."""
     schema = {**SCHEMA, **PROJECT_SCHEMA}
+    data, aliased = folded(data, name)
     check(data, name, schema)
+    # A field of a section a file wrote as `jira:` is named as the section it is read as.
+    tag = f" ({ALIAS}:)" if aliased else ""
+
+    def field(sub: str) -> str:
+        return f"issue_tracker.{sub}{tag}"
+
     missing = [key for key in schema if key not in data]
-    missing += [f"{key}.{sub}" for key, shape in schema.items() if isinstance(shape, dict) and isinstance(data.get(key), dict) for sub in shape if sub not in data[key]]
+    missing += [field(sub) if key == "issue_tracker" else f"{key}.{sub}" for key, shape in schema.items()
+                if isinstance(shape, dict) and isinstance(data.get(key), dict)
+                for sub in shape if sub not in data[key] and f"{key}.{sub}" not in OPTIONAL]
     # A section must be written out, since a profile's own subkey merges into it; a field may read
     # `not yet recorded`.
     missing += [f"{key} (it reads {NOT_RECORDED})" for key, shape in schema.items()
-                if isinstance(shape, dict) and data.get(key) == NOT_RECORDED and key != "jira"]
+                if isinstance(shape, dict) and data.get(key) == NOT_RECORDED and key != "issue_tracker"]
     if missing:
         raise ProfileError(f"{name}: leaves out {', '.join(missing)}; the default profile sets every key, and a standard sets a section whole")
     # The project's fields are the facts a script acts on, so none may be left unrecorded.
-    unrecorded = [f"{key}.{sub}" for key in PROJECT_SCHEMA if isinstance(data[key], dict) for sub, v in data[key].items() if v == NOT_RECORDED]
+    unrecorded = [field(sub) if key == "issue_tracker" else f"{key}.{sub}"
+                  for key in PROJECT_SCHEMA if isinstance(data[key], dict) for sub, v in data[key].items() if v == NOT_RECORDED]
     if unrecorded:
         raise ProfileError(f"{name}: {', '.join(unrecorded)} reads {NOT_RECORDED}; a script acts on it, so it is recorded")
-    if data["jira"] != NOT_RECORDED:
-        names = [s["name"] for s in data["jira"]["statuses"]]
+    tracker = data["issue_tracker"]
+    if tracker != NOT_RECORDED:
+        kind = tracker["kind"]
+        location = tracker.get("location")
+        if location is not None and kind == "jira":
+            raise ProfileError(f"{name}: {field('location')} names a GitHub repository; a Jira tracker's project is ticket.project")
+        if location is not None and not OWNER_REPO.fullmatch(location):
+            raise ProfileError(f"{name}: {field('location')} is owner/repo, such as my_org/my_repo, not {location!r}")
+        names = [s["name"] for s in tracker["statuses"]]
         bad = [n for n in names if not n or n != n.strip()]
         if bad:
-            raise ProfileError(f"{name}: jira.statuses has a name that is empty or has spaces around it: {bad!r}")
+            raise ProfileError(f"{name}: {field('statuses')} has a name that is empty or has spaces around it: {bad!r}")
+        # A role with no label prints `none`, so no label may be named that.
+        if kind == "github" and any(n.lower() == "none" for n in names):
+            raise ProfileError(f"{name}: {field('statuses')} has a label named none, which reads as a role with no label")
         seen: set = set()
         twice = [n for n in names if n.lower() in seen or seen.add(n.lower())]
         if twice:
-            raise ProfileError(f"{name}: jira.statuses names {', '.join(twice)} twice")
-        for s in data["jira"]["statuses"]:
+            raise ProfileError(f"{name}: {field('statuses')} names {', '.join(twice)} twice")
+        for s in tracker["statuses"]:
             if s.get("role", ROLES[0]) not in ROLES:
-                raise ProfileError(f"{name}: jira.statuses gives {s['name']} the role {s['role']!r}, not one of {', '.join(ROLES)}")
+                raise ProfileError(f"{name}: {field('statuses')} gives {s['name']} the role {s['role']!r}, not one of {', '.join(ROLES)}")
         for role in ROLES:
-            holders = [s["name"] for s in data["jira"]["statuses"] if s.get("role") == role]
-            if len(holders) != 1:
-                raise ProfileError(f"{name}: jira.statuses gives the role {role} to {', '.join(holders) or 'no status'}; it takes exactly one")
-        stray = [s for s in data["jira"]["pr_statuses"] if s.lower() not in seen]
+            holders = [s["name"] for s in tracker["statuses"] if s.get("role") == role]
+            if len(holders) > 1 or not holders and kind == "jira":
+                raise ProfileError(f"{name}: {field('statuses')} gives the role {role} to {', '.join(holders) or 'no status'}; "
+                                   f"it takes {'exactly' if kind == 'jira' else 'at most'} one")
+        stray = [s for s in tracker["pr_statuses"] if s.lower() not in seen]
         if stray:
-            raise ProfileError(f"{name}: jira.pr_statuses names {', '.join(stray)}, not in jira.statuses")
-        roles = {s["role"]: s["name"] for s in data["jira"]["statuses"] if "role" in s}
-        data["jira"] = {**data["jira"], "roles": {role: roles[role] for role in ROLES}}
+            raise ProfileError(f"{name}: {field('pr_statuses')} names {', '.join(stray)}, not in {field('statuses')}")
+        roles = {s["role"]: s["name"] for s in tracker["statuses"] if "role" in s}
+        data["issue_tracker"] = {"kind": kind, "location": location or "none", "statuses": tracker["statuses"],
+                                 "pr_statuses": tracker["pr_statuses"], "roles": {role: roles.get(role, "none") for role in ROLES}}
     hosts = [d for d in data["internal"]["domains"] if not HOST.fullmatch(d)]
     if hosts:
         raise ProfileError(f"{name}: internal.domains has {hosts!r}, not a bare host name such as example.org")
@@ -680,8 +744,15 @@ def answer(args: argparse.Namespace, root: Path, found, mine) -> tuple[int, str,
         return 1, "", f"profile.py: {e}\n"
     if not args.field:
         return 0, "\n".join(lines("", profile)) + "\n", ""
-    v, shape = profile, {**SCHEMA, **PROJECT_SCHEMA, "jira": {**PROJECT_SCHEMA["jira"], "roles": dict.fromkeys(ROLES, "scalar")}}
-    for part in args.field.split("."):
+    tracker = {**PROJECT_SCHEMA["issue_tracker"], "roles": dict.fromkeys(ROLES, "scalar")}
+    v, shape = profile, {**SCHEMA, **PROJECT_SCHEMA, "issue_tracker": tracker}
+    parts = args.field.split(".")
+    if parts[0] == ALIAS and "issue_tracker" in profile:
+        # The old name reads the tracker only when it is Jira's.
+        given = profile["issue_tracker"]
+        jira = given if isinstance(given, dict) and given["kind"] == "jira" else NOT_RECORDED
+        v, shape = {**profile, ALIAS: jira}, {**shape, ALIAS: tracker}
+    for part in parts:
         # A field under a section that reads `not yet recorded` is not recorded either.
         if v == NOT_RECORDED and isinstance(shape, dict) and part in shape:
             shape = shape[part]

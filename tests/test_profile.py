@@ -182,13 +182,14 @@ class Defaults(unittest.TestCase):
                                 ("Under Development", "implement-change", "implementation"), ("In Review", "nothing", ""),
                                 ("Done", "nothing", "finished"), ("Abandoned", "nothing", "abandoned"))
             )
-            roles = "".join(f"jira.roles.{r}: {n}\n" for r, n in (("filed", "New"), ("approved", "To Do"), ("implementation", "Under Development"),
+            roles = "".join(f"issue_tracker.roles.{r}: {n}\n" for r, n in (("filed", "New"), ("approved", "To Do"), ("implementation", "Under Development"),
                                                                  ("finished", "Done"), ("abandoned", "Abandoned")))
             repository = run_in(repo, "someone/x")[1].replace("source: standards/profile.yaml\n", "")
             self.assertEqual(
                 out,
                 repository
-                + f"jira.statuses: [{statuses}]\njira.pr_statuses: [Under Development, In Review]\n{roles}internal.domains: [internal.example]\n"
+                + f"issue_tracker.kind: jira\nissue_tracker.location: none\nissue_tracker.statuses: [{statuses}]\nissue_tracker.pr_statuses: [Under Development, In Review]\n"
+                + f"{roles}internal.domains: [internal.example]\n"
                 + "internal.private_repositories: [secret, other_secret]\n"
                 + "attribution.phrases: [drafted with AI assistance]\nsurface.identifiers: [ProductId]\n",
             )
@@ -248,17 +249,17 @@ class Defaults(unittest.TestCase):
             for old, new, says in (
                 ("posted_text: workflow\n", "posted_text: workflow\nflavor: blue\n", "unknown key 'flavor'"),
                 ("posted_text: workflow\n", "posted_text: workflow\nlint: not yet recorded\n", "leaves out lint (it reads not yet recorded)"),
-                ("{name: Done, next: nothing, role: finished}", "{name: Done, next: rest, role: finished}", "jira.statuses should be statuses"),
-                ("pr_statuses: [Under Development,", "pr_statuses: [Blocked,", "jira.pr_statuses names Blocked, not in jira.statuses"),
+                ("{name: Done, next: nothing, role: finished}", "{name: Done, next: rest, role: finished}", "issue_tracker.statuses (jira:) should be statuses"),
+                ("pr_statuses: [Under Development,", "pr_statuses: [Blocked,", "issue_tracker.pr_statuses (jira:) names Blocked, not in issue_tracker.statuses (jira:)"),
                 ("domains: [internal.example]", "domains: not yet recorded", "internal.domains reads not yet recorded"),
-                ("pr_statuses: [Under Development, In Review]", "pr_statuses: not yet recorded", "jira.pr_statuses reads not yet recorded"),
-                ("    - {name: Abandoned, next: nothing, role: abandoned}\n", "    - {name: Abandoned, next: nothing, role: abandoned}\n    - {name: new, next: nothing}\n", "jira.statuses names new twice"),
+                ("pr_statuses: [Under Development, In Review]", "pr_statuses: not yet recorded", "issue_tracker.pr_statuses (jira:) reads not yet recorded"),
+                ("    - {name: Abandoned, next: nothing, role: abandoned}\n", "    - {name: Abandoned, next: nothing, role: abandoned}\n    - {name: new, next: nothing}\n", "issue_tracker.statuses (jira:) names new twice"),
                 ("{name: Done, next: nothing, role: finished}", "{name: ' Done', next: nothing, role: finished}", "empty or has spaces around it"),
-                ("{name: Done, next: nothing, role: finished}", "{name: Done, next: [nothing], role: finished}", "jira.statuses should be statuses"),
-                ("{name: Done, next: nothing, role: finished}", "{name: Done, next: nothing, role: closed}", "jira.statuses gives Done the role 'closed', not one of filed, approved, implementation, finished, abandoned"),
+                ("{name: Done, next: nothing, role: finished}", "{name: Done, next: [nothing], role: finished}", "issue_tracker.statuses (jira:) should be statuses"),
+                ("{name: Done, next: nothing, role: finished}", "{name: Done, next: nothing, role: closed}", "issue_tracker.statuses (jira:) gives Done the role 'closed', not one of filed, approved, implementation, finished, abandoned"),
                 ("{name: Done, next: nothing, role: finished}", "{name: Done, next: nothing}", "gives the role finished to no status; it takes exactly one"),
                 ("{name: Abandoned, next: nothing, role: abandoned}", "{name: Abandoned, next: nothing, role: finished}", "gives the role finished to Done, Abandoned; it takes exactly one"),
-                ("  pr_statuses:", "  roles: {finished: Done}\n  pr_statuses:", "unknown key 'jira.roles'"),
+                ("  pr_statuses:", "  roles: {finished: Done}\n  pr_statuses:", "unknown key 'issue_tracker.roles (jira:)'"),
                 ("domains: [internal.example]", "domains: ['https://internal.example']", "not a bare host name"),
                 ("domains: [internal.example]", "domains: ['']", "not a bare host name"),
                 ("domains: [internal.example]", "domains: ['*.internal.example']", "not a bare host name"),
@@ -291,6 +292,74 @@ class Defaults(unittest.TestCase):
             self.assertIn('{"name": "Upcoming", "next": "implement-change"}\n', run_in(repo, "--defaults", "--field", "jira.statuses")[1])
             self.assertEqual(run_in(repo, "--defaults", "--field", "jira.roles.reviewed")[0], 1)
             self.assertNotIn("jira", run_in(repo, "someone/x")[1])
+
+    def test_jira_is_read_as_a_jira_issue_tracker_and_both_together_are_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = own(tmp, PROJECT)
+            self.assertEqual(run_in(repo, "--defaults", "--field", "issue_tracker.kind"), (0, "jira\n", ""))
+            self.assertEqual(run_in(repo, "--defaults", "--field", "issue_tracker.roles.finished"),
+                             run_in(repo, "--defaults", "--field", "jira.roles.finished"))
+            self.assertEqual(run_in(repo, "--defaults", "--field", "jira.location"), (0, "none\n", ""))
+            renamed = PROJECT.replace("jira:\n", "issue_tracker:\n  kind: jira\n")
+            (repo / "standards/profile.yaml").write_text(renamed)
+            self.assertEqual(run_in(repo, "--defaults", "--field", "jira.roles.finished"), (0, "Done\n", ""))
+            for both in (renamed + "jira:\n  pr_statuses: []\n", "jira:\n  pr_statuses: []\n" + renamed,
+                         renamed + "jira: not yet recorded\n", PROJECT + "issue_tracker: not yet recorded\n"):
+                with self.subTest(both=both[-40:]):
+                    (repo / "standards/profile.yaml").write_text(both)
+                    rc, out, err = run_in(repo, "--defaults")
+                    self.assertEqual((rc, out), (1, ""))
+                    self.assertIn("standards/profile.yaml: sets issue_tracker twice, as issue_tracker: and as jira:, its alias; keep one", err)
+            for added, says in (
+                ("  kind: github\n", "issue_tracker.kind (jira:) is set by the alias; drop it"),
+                ("  location: someone/issues\n", "issue_tracker.location (jira:) names a GitHub repository"),
+            ):
+                with self.subTest(says=says):
+                    (repo / "standards/profile.yaml").write_text(PROJECT.replace("jira:\n", "jira:\n" + added))
+                    rc, out, err = run_in(repo, "--defaults")
+                    self.assertEqual((rc, out), (1, ""))
+                    self.assertIn(says, err)
+            (repo / "standards/profile.yaml").write_text(renamed.replace("  kind: jira\n", "  kind: jira\n  location: someone/issues\n"))
+            self.assertIn("issue_tracker.location names a GitHub repository", run_in(repo, "--defaults")[2])
+
+    def test_a_github_tracker_maps_at_most_one_label_to_each_role(self):
+        github = PROJECT.replace(
+            PROJECT[PROJECT.index("jira:\n"):PROJECT.index("internal:\n")],
+            "issue_tracker:\n  kind: github\n  location: someone/issues\n  statuses:\n"
+            "    - {name: ready, next: implement-change, role: approved}\n"
+            "    - {name: triage, next: ticket-draft}\n"
+            "  pr_statuses: [ready]\n",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = own(tmp, github)
+            self.assertEqual(
+                run_in(repo, "--defaults", "--field", "issue_tracker.roles")[1],
+                "issue_tracker.roles.filed: none\nissue_tracker.roles.approved: ready\nissue_tracker.roles.implementation: none\n"
+                "issue_tracker.roles.finished: none\nissue_tracker.roles.abandoned: none\n",
+            )
+            self.assertEqual(run_in(repo, "--defaults", "--field", "issue_tracker.location"), (0, "someone/issues\n", ""))
+            # The old name reads only a Jira tracker.
+            self.assertEqual(run_in(repo, "--defaults", "--field", "jira.roles.approved"), (0, "not yet recorded\n", ""))
+            (repo / "standards/profile.yaml").write_text(github.replace("  location: someone/issues\n", ""))
+            self.assertEqual(run_in(repo, "--defaults", "--field", "issue_tracker.roles.approved"), (0, "ready\n", ""))
+            self.assertEqual(run_in(repo, "--defaults", "--field", "issue_tracker.location"), (0, "none\n", ""))
+            for old, new, says in (
+                ("kind: github", "kind: linear", "issue_tracker.kind takes github, jira, not 'linear'"),
+                ("{name: triage, next: ticket-draft}", "{name: triage, next: ticket-draft, role: approved}",
+                 "gives the role approved to ready, triage; it takes at most one"),
+                ("{name: triage, next: ticket-draft}", "{name: triage, next: ticket-draft, role: reviewed}",
+                 "gives triage the role 'reviewed', not one of"),
+                ("location: someone/issues", "location: issues", "issue_tracker.location is owner/repo"),
+                ("  kind: github\n", "", "leaves out issue_tracker.kind"),
+                ("{name: triage, next: ticket-draft}", "{name: None, next: ticket-draft}", "has a label named none"),
+            ):
+                with self.subTest(says=says):
+                    changed = github.replace(old, new)
+                    self.assertNotEqual(changed, github)
+                    (repo / "standards/profile.yaml").write_text(changed)
+                    rc, out, err = run_in(repo, "--defaults")
+                    self.assertEqual((rc, out), (1, ""))
+                    self.assertIn(says, err)
 
     def test_a_private_repository_is_not_public_whatever_its_profile_leaves_out(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -685,6 +754,16 @@ class OwnAndElsewhere(unittest.TestCase):
         self.publish(self.PROJECT, member="posted_text: plain\n")
         self.fetch(repo)
         self.assertIn("profiles/member.yaml sets posted_text, which the project sets", self.refusal(repo))
+        workflow = "  statuses:\n    - {name: Closed, next: nothing, role: finished}\n  pr_statuses: []\n"
+        for key in ("issue_tracker:\n  kind: jira\n", "jira:\n"):
+            with self.subTest(key=key):
+                self.publish(self.PROJECT, member=key + workflow)
+                self.fetch(repo)
+                self.assertIn("profiles/member.yaml sets " + key.split(":")[0] + ", which the project sets", self.refusal(repo))
+        self.publish(self.PROJECT + "jira:\n  statuses:\n" + "".join(
+            f"    - {{name: {r.title()}, next: nothing, role: {r}}}\n" for r in profile.ROLES) + "  pr_statuses: []\n")
+        self.fetch(repo)
+        self.assertEqual(self.ask(repo, "--defaults", "--field", "jira.roles.finished"), (0, "Finished\n", ""))
 
     def test_its_own_standard_for_several_reads_its_own_profiles_file(self):
         repo = self.member({"standards/profile.yaml": self.PROJECT, "standards/profiles/member.yaml": self.MEMBER})
@@ -756,9 +835,9 @@ class OwnAndElsewhere(unittest.TestCase):
         repo = self.member({"standards/profile.yaml": "flavor: sweet\n"})
         self.assertIn("standards/profile.yaml: unknown key 'flavor'", self.refusal(repo))
         (repo / "standards/profile.yaml").write_text("jira:\n  statuses:\n    - {name: Open, next: nothing}\n")
-        self.assertIn("standards/profile.yaml over standards/default-profile.yaml: leaves out jira.pr_statuses", self.refusal(repo))
+        self.assertIn("standards/profile.yaml over standards/default-profile.yaml: leaves out issue_tracker.pr_statuses (jira:);", self.refusal(repo))
         (repo / "standards/profile.yaml").write_text("jira:\n  statuses:\n    - {name: Open, next: nothing}\n  pr_statuses: []\n")
-        self.assertIn("standards/profile.yaml over standards/default-profile.yaml: jira.statuses gives the role filed to no status", self.refusal(repo))
+        self.assertIn("standards/profile.yaml over standards/default-profile.yaml: issue_tracker.statuses (jira:) gives the role filed to no status", self.refusal(repo))
         self.publish("flavor: sweet\n")
         (repo / "standards/profile.yaml").write_text("standard: fam/shared\n")
         self.fetch(repo)
@@ -775,7 +854,7 @@ class OwnAndElsewhere(unittest.TestCase):
 
     def test_the_scripts_read_the_standards_values(self):
         repo = self.member({"standards/profile.yaml": self.OWN})
-        self.assertEqual(self.module(repo, "print(profile.defaults(ROOT)['jira']['pr_statuses'])"), "['Under Development']\n")
+        self.assertEqual(self.module(repo, "print(profile.defaults(ROOT)['issue_tracker']['pr_statuses'])"), "['Under Development']\n")
         self.assertEqual(self.module(repo, "print(profile.resolve('someone/member', ROOT)['tests']['command'])"), "pytest -q\n")
         repo = checkout(str(self.parent / "pointing"), "git@github.com:someone/member.git", self.POINTER)
         self.fetch(repo)
