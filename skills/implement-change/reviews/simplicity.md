@@ -12,7 +12,8 @@ The focus: code that is larger, more defensive or more roundabout than the chang
   marks the caller's `Notes:` line carries.
 - Dead code.
 - A defensive check nobody asked for, and an over-broad `except`. Validation where data enters,
-  which the review contract's "Fail loud" section asks for, is not one.
+  and a check the product's contract asks for, as the review contract's "The product's contract"
+  says, is not one.
 
 ## Leave to others
 

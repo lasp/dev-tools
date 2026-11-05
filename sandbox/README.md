@@ -33,13 +33,17 @@ rebasing over commits only the remote holds, print, when asked to push, a push o
 tracks main to the branch's own name and never to main, take the target's side of a file at a
 later stop without dropping a commit already replayed, and print the forced push of a published
 branch with its lease pinned,
+the review contract's product scenarios, `review-specified-retry`, whose review wave must not raise
+a retry the plan specifies, `review-fail-loud-decision`, whose wave raises a silent cache fallback
+under an adopted fail-loud decision, and `review-swallowed-exception`, whose wave raises a swallowed
+exception under the contract's floor alone,
 `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
 environment) with the TODO still in place, the `skill-feedback` previews,
 whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,
 and `pr-create-new-flow`, a description for a branch that adds a pipeline.
 The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
-skill, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
+skill, and a second, `trigger-<skill>-<suffix>`, where one request leaves a gap, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
 `notrigger-` scenario holds the other side, a request that must not reach a skill, named in its
 `must_not_run` as `Skill(...)`: a GitHub issue is not `ticket-draft`'s.
 `revise` and `ticket-audit` are not in it, since `disable-model-invocation` keeps them to their

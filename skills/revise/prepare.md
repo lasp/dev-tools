@@ -107,8 +107,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
      the ask and its outcome, and the change asked for when the ask names one. Under the heading,
      one line per draft, its path and the ask, then one line per settled finding, its id and the
      sha or `#n` that settled it; "none" when there were none.
-   - **Head**: the agree rate by severity, the share of findings left unanswered, and the share of
-     agreed findings the analyst marks `changed as asked`.
+   - **Head**: the agree rate by severity, the share of findings left unanswered, as the
+     Unanswered share Dial in `dials.md` takes it, and the share of agreed findings the analyst
+     marks `changed as asked`.
 
    **Sweep the diffs**, report only: it fills "Practice", and no Dial reads it, so no rule
    proposal rests on it; step 6 turns a break still on `main` into a `ticket/` proposal and a

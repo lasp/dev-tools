@@ -13,12 +13,10 @@ plan, build, review, pull request, and a standard that changes with what reviewe
 differs between teams is meant to live in each repository's standard, not in the plugin: the
 review rules and decisions, the Jira project and its workflow, the Confluence spaces, the pull
 request template, the test commands. It is not all there yet: Libera's names still appear in a
-number of skills and agents, and the review contract checks every repository's tickets against
-Libera's ticket headings. [`ROADMAP.md`](ROADMAP.md) tracks both, in "Neutral examples in generic
-skills" and "Libera content in the review contract". A repository keeps its standard in its own
-`standards/`, or points at a project's shared standard in another repository. Tools for one
-domain, such as flight software or engineering, belong in plugins of their own installed beside
-this one.
+number of skills and agents, which [`ROADMAP.md`](ROADMAP.md) tracks in "Neutral examples in
+generic skills". A repository keeps its standard in its own `standards/`, or points at a
+project's shared standard in another repository. Tools for one domain, such as flight software or
+engineering, belong in plugins of their own installed beside this one.
 
 ![The lasp-dev plugin reads a project's standard of rules, decisions, terms and settings; each repository holds its own standard or a pointer to one](docs/img/plugin-standard-repos.svg)
 
@@ -544,7 +542,7 @@ Once per repository. It needs:
 | File | Where it comes from |
 | --- | --- |
 | `standards/review-rules.md`, the ledger, each entry holding its rule's wording as `> ` lines | `onboard`'s step 6 drafts it into `.review/harvest/`; people cut and commit |
-| `standards/decisions.md`, optional | written by hand |
+| `standards/decisions.md`, optional | written by hand; a pipeline that produces a defined product adopts the fail-loud decision in `docs/standards.md`, "Example decision: fail loud" |
 | `.github/PULL_REQUEST_TEMPLATE.md` | copied byte for byte from the standard's `templates/<name>/`, in the directory `scripts/profile.py --standard` prints; `/lasp-dev:quickstart` reports drift |
 | `.review/` in `.gitignore` | the skills and hooks write their working files there |
 
@@ -734,7 +732,7 @@ session-start line or `work` says something unexpected, these files are what it 
 | `pr-<n>-review-submission.md` | `pr-review`, from step 3, zero findings included: `Head: <sha>`, `Posting: undecided, declined or posted`, its progress, the findings and, once drafted, the comments | `next_phase.py`, through `work`; `pr-review` on a re-review; the person, and the posted record | Replaced when the head moves; otherwise not cleared by the tools |
 | `pr-<n>-fix-plan.md` | `pr-fix`, from step 5: `Head: <sha>`, its progress, the dispositions with each thread's link and `fixed <sha>` mark, and from step 7 the draft plan, replaced by the approved one | The implementation reviewer, as its plan file; `pr-fix` on a later run | Started afresh on a new head, keeping the dispositions not yet posted and the `fixed <sha>` rows whose fix reply has not posted |
 | `fix/pr-<n>/` | `pr-fix` step 9's review wave: `wave-<N>.md` and each reviewer's `wave-<N>-<focus>.md`, as `build/` holds a build's | `pr-fix`, only for a finding it is fixing; the person | Emptied at the start of each `pr-fix` round on that pull request |
-| `pages/<owner>-<repo>/pr-NNNN/` | `hooks/save-page.sh`, through `scripts/save_page.py`, after each `pull_request_read`: the result as the server returned it, named as a dump's `pages/` | `pr-reader`, which copies each page a hook note names into its dump | Each page replaced by the next call of its name; never cleared |
+| `pages/<owner>-<repo>/pr-NNNN/` | `hooks/save-page.sh`, through `scripts/save_page.py`, after each `pull_request_read`: the result as the server returned it, named as a dump's `pages/` | `pr-reader`, which copies each page a hook note names into its dump | Each page replaced by the next call of its name; a pull request's folder removed by `pr-reader` before it fetches, and its `get_review_comments` pages by the hook at the first page |
 | `threads/pr-NNNN/` | `pr-reader`, the pull request's dump: `pages/`, the server's results as returned, and from them `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json` and `body.md`, and its `judged.json` | `scripts/record.py --state`; `github-pr-fix-planner`, for `pr-fix` | Rewritten at each state call |
 | `audit/` | `ticket-audit`: each sweep's report, and from Apply the write plan's texts (`<date>-send/`) and record (`<date>-writes.md`) | The person | Not cleared by the tools |
 | `onboard/survey.md` | `onboard`: the survey's table, `scripts/survey.py`'s printout and what the servers showed | The person | Replaced at each survey |

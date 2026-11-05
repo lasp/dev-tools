@@ -2,10 +2,12 @@
 """Count verdicts per rule over a log/ directory of review records, for revise step 1.
 
 Per rule: firings, agrees, disagrees, discusses, unanswered findings (unanswered and unparsed
-together), open contests (verdict `contested`), settled contests (`contested: true` beside a
-verdict), and the corrections the `correction-*.yaml` records name and the notes the
-`note-*.yaml` records name, both a count, never evidence. Firings count every finding; the unanswered and open-contest columns never enter a
-rate. A rule is the citation a
+together), unlabeled findings (`severity: unparsed`, whose severity label the record could not
+read, so whose replies were never read), open contests (verdict `contested`), settled contests
+(`contested: true` beside a verdict), and the corrections the `correction-*.yaml` records name
+and the notes the `note-*.yaml` records name, both a count, never evidence. Firings count every
+finding, an unlabeled one included; the unanswered, unlabeled and open-contest columns never
+enter a rate, and the unanswered share is over the firings less the unlabeled. A rule is the citation a
 finding key starts with: `R-012`, `D-008@my_repo`, `term/T-010`; any other key counts under
 its first segment (`ticket`, `other`, `test`). The older verdict words in `pr-0066.yaml` map to
 the current three: accepted to agree, declined to disagree, escalated to discuss.
@@ -57,7 +59,7 @@ WORDS = {"agree": "agree", "accepted": "agree", "disagree": "disagree", "decline
 WORDS |= {"discuss": "discuss", "escalated": "discuss"}
 WORDS |= {"unanswered": "unanswered", "unparsed": "unanswered", "contested": "open-contest"}
 COLUMNS = (
-    "firings", "agree", "disagree", "discuss", "unanswered", "open-contest", "contested", "distinct-prs-agreed",
+    "firings", "agree", "disagree", "discuss", "unanswered", "unlabeled", "open-contest", "contested", "distinct-prs-agreed",
     "corrections", "notes",
 )
 
@@ -68,7 +70,8 @@ def rule_of(key: str) -> str:
 
 
 def findings(text: str, name: str) -> list[dict]:
-    """The findings section's items, each as its key, verdict and contested flag."""
+    """The findings section's items, each as its key, verdict and contested flag; a finding with
+    `severity: unparsed` has the verdict `unlabeled`, whatever its verdict line says."""
     m = re.search(r"^findings:(.*?)(?=^\w|\Z)", text, re.M | re.S)
     if not m:
         return []
@@ -83,10 +86,11 @@ def findings(text: str, name: str) -> list[dict]:
         verdict = re.search(r"\bverdict:\s*(\w+)", item)
         if not key or not verdict or verdict.group(1) not in WORDS:
             raise ValueError(f"{name}: a finding without a readable key and verdict: {item.strip()[:80]}")
+        unlabeled = bool(re.search(r"^\s*severity:\s*unparsed\s*$", item, re.M))
         items.append(
             {
                 "rule": rule_of(key.group(1)),
-                "verdict": WORDS[verdict.group(1)],
+                "verdict": "unlabeled" if unlabeled else WORDS[verdict.group(1)],
                 # A settled contest; an open one is its verdict, counted under open-contest.
                 # Quoted text, such as a judged verdict's basis, is no field.
                 "contested": WORDS[verdict.group(1)] != "open-contest"
