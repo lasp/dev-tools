@@ -2,7 +2,7 @@
 """Write a pull request's thread dump from the GitHub MCP server's pages, as they were returned.
 
 `pr-reader` saves each `pull_request_read` result under the dump's `pages/` as it came back: the
-text the tool returned, or the file the harness saved a long result to, copied byte for byte.
+file `hooks/save-page.sh` saved from the text the tool returned, copied byte for byte.
 Never retyped, since a hand-built copy drops fields, such as a comment's line or a bot's review
 table, that nothing downstream would notice. This script joins and checks them:
 
@@ -14,7 +14,8 @@ an absent field where it needs one.
 - `get.json`, the `get` result: an object with `number`, `user.login`, `state`, `draft`, `merged`
   and `head.sha`.
 - `get_reviews-<n>.json` and `get_comments-<n>.json`, n from 1 with no gap, each a list, fetched
-  100 to a page: every page but the last holds 100, and the last fewer. A review carries `id`,
+  100 to a page, or the `--per-page <method>=<n>` given for a method fetched at a smaller
+  `perPage`: every page but the last holds that many, and the last fewer. A review carries `id`,
   `state`, `html_url` and `user.login`; a conversation comment
   `id`, `body`, `html_url`, `created_at` and `user.login`.
 - `get_review_comments-<n>.json`, n from 1 with no gap, each an object with `review_threads`,
@@ -38,6 +39,7 @@ import sys
 from pathlib import Path
 
 PER_PAGE = 100
+LISTS = ("get_reviews", "get_comments")
 REVIEW = ("id", "state", "html_url", "user.login")
 COMMENT = ("id", "body", "html_url", "created_at", "user.login")
 THREAD = ("id", "is_resolved", "is_outdated", "comments")
@@ -80,7 +82,7 @@ def pages(directory: Path, method: str) -> list[tuple[str, object]]:
     return [(found[n].name, load(found[n])) for n in sorted(found)]
 
 
-def listed(directory: Path, method: str, fields: tuple[str, ...]) -> list:
+def listed(directory: Path, method: str, fields: tuple[str, ...], per_page: int = PER_PAGE) -> list:
     """A list method's items over its pages, checking each page is a full one but the last."""
     got = pages(directory, method)
     items = []
@@ -88,7 +90,7 @@ def listed(directory: Path, method: str, fields: tuple[str, ...]) -> list:
         if not isinstance(page, list):
             raise Refused(f"{name} is not a list")
         last = i == len(got) - 1
-        if (len(page) >= PER_PAGE) if last else (len(page) != PER_PAGE):
+        if (len(page) >= per_page) if last else (len(page) != per_page):
             raise Refused(f"{name} holds {len(page)} items: the pages stop {'early' if last else 'short of a full page'}")
         for j, item in enumerate(page):
             check(item, fields, f"{name} item {j}")
@@ -115,16 +117,18 @@ def threads(directory: Path) -> list:
     return out
 
 
-def build(directory: Path) -> dict[str, str]:
-    """The dump's files and their text, from the pages under directory."""
+def build(directory: Path, per_page: dict[str, int] | None = None) -> dict[str, str]:
+    """The dump's files and their text, from the pages under directory, each list method's pages
+    of per_page[method] items, PER_PAGE when it is not given."""
+    per_page = per_page or {}
     get = directory / "get.json"
     pr = load(get)
     check(pr, PR, get.name)
     return {
         "pr.json": get.read_text(),
-        "reviews.json": json.dumps(listed(directory, "get_reviews", REVIEW), ensure_ascii=False, indent=1),
+        "reviews.json": json.dumps(listed(directory, "get_reviews", REVIEW, per_page.get("get_reviews", PER_PAGE)), ensure_ascii=False, indent=1),
         "comments.json": json.dumps({"review_threads": threads(directory)}, ensure_ascii=False, indent=1),
-        "issue-comments.json": json.dumps(listed(directory, "get_comments", COMMENT), ensure_ascii=False, indent=1),
+        "issue-comments.json": json.dumps(listed(directory, "get_comments", COMMENT, per_page.get("get_comments", PER_PAGE)), ensure_ascii=False, indent=1),
         "body.md": pr.get("body") or "",
     }
 
@@ -132,12 +136,25 @@ def build(directory: Path) -> dict[str, str]:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("dump", type=Path, help="the dump directory, .review/threads/pr-NNNN/ or .review/harvest/threads/pr-NNNN/")
+    p.add_argument(
+        "--per-page",
+        action="append",
+        default=[],
+        metavar="METHOD=N",
+        help=f"the perPage a list method ({', '.join(LISTS)}) was fetched at, when not {PER_PAGE}",
+    )
     args = p.parse_args(argv)
+    per_page = {}
+    for given in args.per_page:
+        method, _, n = given.partition("=")
+        if method not in LISTS or not n.isdigit() or not 1 <= int(n) <= PER_PAGE or method in per_page:
+            p.error(f"--per-page {given!r} is not one of {', '.join(LISTS)}=N, N from 1 to {PER_PAGE}, given once")
+        per_page[method] = int(n)
     try:
         number = re.fullmatch(r"pr-(\d+)", args.dump.name)
         if not number or args.dump.name != f"pr-{int(number[1]):04d}":
             raise Refused(f"{args.dump.name} is not pr-NNNN, the number padded to four digits")
-        files = build(args.dump / "pages")
+        files = build(args.dump / "pages", per_page)
     except Refused as e:
         print(f"thread_dump.py: {e}", file=sys.stderr)
         return 1

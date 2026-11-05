@@ -67,10 +67,10 @@ class Dump(unittest.TestCase):
     def page(self, name, data):
         (self.pages / name).write_text(json.dumps(data))
 
-    def run_it(self):
+    def run_it(self, *extra):
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            rc = thread_dump.main([str(self.dump)])
+            rc = thread_dump.main([str(self.dump), *extra])
         return rc, err.getvalue()
 
     def test_the_pages_join_into_the_dump_with_every_field_kept(self):
@@ -97,6 +97,21 @@ class Dump(unittest.TestCase):
         self.page("get_reviews-2.json", [])
         self.assertEqual(self.run_it()[0], 0)
         self.assertEqual(len(json.loads((self.dump / "reviews.json").read_text())), 100)
+
+    def test_reviews_fetched_at_a_smaller_page_size_are_checked_at_that_size(self):
+        self.page("get_reviews-1.json", [{**REVIEW, "id": n} for n in range(15)])
+        self.page("get_reviews-2.json", [{**REVIEW, "id": 15}])
+        self.assertEqual(self.run_it(), (1, "thread_dump.py: get_reviews-1.json holds 15 items: the pages stop short of a full page\n"))
+        self.assertEqual(self.run_it("--per-page", "get_reviews=15"), (0, ""))
+        self.assertEqual(len(json.loads((self.dump / "reviews.json").read_text())), 16)
+        (self.pages / "get_reviews-2.json").unlink()
+        self.assertEqual(self.run_it("--per-page", "get_reviews=15"), (1, "thread_dump.py: get_reviews-1.json holds 15 items: the pages stop early\n"))
+
+    def test_a_per_page_that_is_not_a_list_method_and_a_size_is_refused(self):
+        for given in (["get_review_comments=15"], ["get_reviews=0"], ["get_reviews=101"], ["get_reviews"], ["get_reviews=5", "get_reviews=6"]):
+            with self.subTest(given=given), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                thread_dump.main([str(self.dump), *(a for g in given for a in ("--per-page", g))])
+        self.assertFalse((self.dump / "pr.json").exists())
 
     def test_a_retyped_page_missing_a_field_is_refused_and_nothing_is_written(self):
         for name, data, says in (

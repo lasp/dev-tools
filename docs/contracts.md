@@ -261,7 +261,7 @@ Pinned by: tests/test_next_phase.py::test_an_agree_that_carries_its_response_is_
 
 ## The thread dump
 
-Version: 5
+Version: 6
 
 Fields: `.review/threads/pr-NNNN/` (and `.review/harvest/threads/pr-NNNN/`): `pages/`, each
 `pull_request_read` result as the server returned it, one file per call, from which
@@ -270,13 +270,16 @@ names; `pr.json`, the
 `pull_request_read` `get` result, with `draft`, `state` and `merged`, and `merged_at` once it
 merged, since the server leaves out an empty field rather than sending null (a review posted with
 a batch of thread replies has no `body`); `reviews.json`,
-`get_reviews`, paged 100 at a time into one list; `comments.json`, `get_review_comments`, whose
+`get_reviews`, paged 100 at a time, or at the smaller size `thread_dump.py --per-page` names, into one list; `comments.json`, `get_review_comments`, whose
 `review_threads` carry GitHub's `is_resolved` and `is_outdated` flags; `issue-comments.json`,
-`get_comments`, the conversation comments, paged 100 at a time into one list; `body.md`, the pull request body. As the GitHub MCP
+`get_comments`, the conversation comments, paged as `get_reviews` is into one list; `body.md`, the pull request body. As the GitHub MCP
 server returns them; each review in `reviews.json` carries its `html_url`, which `record.py`
 reads the repository from and refuses a review without. Version 2 added `issue-comments.json`;
 version 3 states the `html_url` requirement; version 4 added `pages/` and `thread_dump.py`'s
-checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`. Beside them, `judged.json`, "The
+checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`; version 6 lets a
+list be paged below 100, named by `--per-page`, and has `save_page.py` refuse a response that is
+not JSON, such as the harness's size-limit notice, and clear a pull request's
+`get_review_comments` pages at its first page. Beside them, `judged.json`, "The
 judgments", is `pr-reader`'s own.
 
 Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
