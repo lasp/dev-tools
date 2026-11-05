@@ -101,7 +101,7 @@ the share of AI-drafted threads in its own right, separate from which rules it d
    request #N`), have no record; `pr-reader` writes none for a pull request with no review, and a
    rebase merge names none. An analysis block already in
    `.review/harvest/analysis/` stands in for "Analysts" for its pull request, so that pull request
-   needs no dump. A sampled pull request with neither a block nor a dump under
+   needs no dump and is named to the tally only when sampled. A sampled pull request with neither a block nor a dump under
    `.review/harvest/threads/` cannot be analyzed: it leaves the sample as one that could not be
    read, below. Draw the sample from the records and report it against the three requirements
    above. Then run "Analysts" on the sample, its pull requests in place of every record. A pull
