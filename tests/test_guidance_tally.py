@@ -86,6 +86,12 @@ class Tally(unittest.TestCase):
         self.assertTrue(self.tally([COMMENT], {**ITEM, "quote": "no guards.", "signal": "none", "kind": "process"})[1][0]
                         .startswith("hold · "))
 
+    def test_a_data_convention_or_decision_that_cites_its_source_admits_and_a_rule_that_does_is_held(self):
+        for kind, word in (("data-convention", "admit"), ("decision", "admit"), ("rule", "hold"), ("process", "hold")):
+            with self.subTest(kind=kind):
+                lines = self.tally([COMMENT], {**ITEM, "quote": "no guards.", "signal": "cites a source", "kind": kind})[1]
+                self.assertTrue(lines[0].startswith(f"{word} · "), lines)
+
     def test_refuses_a_run_the_guidance_check_refuses(self):
         code, lines = self.tally([COMMENT], {**ITEM, "quote": "never said"})
         self.assertEqual(code, 1)

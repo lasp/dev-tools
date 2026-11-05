@@ -376,9 +376,9 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
 `<key>` being `s<n>-<i>`, the n-th slice given, from 1, and the item's index in it, from 0:
 
 - `admit · <key> · pr-NNNN · <comment id> · <author> · <kind> · <signal> · <url> · <quote>`: a
-  person's words (`authorship` `human`) with `covered_by` null, of kind `rule`, `agent-guidance`,
-  `data-convention`, `process` or `decision` with a `signal` of `states a principle`, `addresses
-  agents` or `names a habit`, or of kind `tool-config`, `exemplar`, `review-calibration` or
+  person's words (`authorship` `human`) with `covered_by` null, of kind `rule`, `agent-guidance`
+  or `process` with a `signal` of `states a principle`, `addresses agents` or `names a habit`, of
+  kind `data-convention` or `decision` with one of those or `cites a source`, or of kind `tool-config`, `exemplar`, `review-calibration` or
   `open-question` with any signal;
 - `covered · <key> · pr-NNNN · <comment id> · <author> · <kind> · <covered_by> · <url> · <quote>`:
   a person's general item a live rule, decision, agent guidance entry, data convention or the
@@ -409,7 +409,8 @@ Version: 2
 Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
 object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
 once; `kind`, the cluster's destination, one of the guidance items' nine kinds and, in a cluster
-with tally lines, the kind of at least one of them, as harvest.md's "Destinations" reads it
+with tally lines, the kind of at least one of its people's lines, or of a `support` line when it
+has no other, as harvest.md's "Destinations" reads it
 (version 2); `principle`, one sentence; `items`, the keys of the guidance tally's `admit`, `hold` and
 `support` lines it holds ("The guidance tally"); `notes`, other evidence, one line each, an
 analyst's ask as `pr-NNNN · <login> · <human|ai-drafted|bot> · <text>` or a pasted note as `pasted
@@ -423,7 +424,8 @@ refuses, one `refused · <where> · <why>` line each and exit 1, a file of any o
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
 no `--ledger`. Otherwise it
-prints per cluster `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
+prints per cluster, its `admit` count only the `admit` lines of its kind and any other counted as
+`hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, a `held · <id> · <title>`
 line when it continues one, a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each

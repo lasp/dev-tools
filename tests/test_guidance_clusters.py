@@ -120,6 +120,24 @@ class Clusters(unittest.TestCase):
         self.assertEqual(code, 0, lines)
         self.assertEqual([x.split(" · ")[2] for x in lines if x.startswith("cluster ·")], ["process", "open-question"])
 
+    def test_only_an_admit_line_of_its_own_kind_admits_a_cluster(self):
+        clusters = {"clusters": [
+            {"id": "C1", "kind": "rule", "principle": "Mostly held rules.", "items": ["s1-2", "s1-5"], "notes": [], "held": None},
+            {"id": "C2", "kind": "rule", "principle": "Rest.", "items": ["s1-0", "s1-3", "s1-4"], "notes": [], "held": None}]}
+        clusters["clusters"][0]["items"] = ["s1-2", "s1-0"]
+        clusters["clusters"][1]["items"] = ["s1-3", "s1-4", "s1-5"]
+        clusters["clusters"][1]["kind"] = "process"
+        code, lines = self.run_clusters(clusters)
+        self.assertEqual(code, 0, lines)
+        heads = [x for x in lines if x.startswith("cluster ·")]
+        self.assertIn("· rule · admit 1 · hold 1 · support 0 ·", heads[0])
+        self.assertIn("· process · admit 0 · hold 2 · support 1 ·", heads[1])
+
+    def test_a_cluster_of_agents_lines_alone_takes_their_kind(self):
+        clusters = self.two(items=["s1-0", "s1-2", "s1-4"])
+        clusters["clusters"].append({"id": "C3", "kind": "rule", "principle": "An agent's.", "items": ["s1-3"], "notes": [], "held": None})
+        self.assertEqual(self.run_clusters(clusters)[0], 0)
+
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {
             "'s1-1' is no admit, hold or support line": self.two(items=["s1-0", "s1-1", "s1-2", "s1-3", "s1-4"]),

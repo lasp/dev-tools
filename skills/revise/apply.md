@@ -11,8 +11,10 @@ meeting deferred everything: stop, there is nothing to write, and name the repor
 in a clone, its branch. Then, by mark:
 - A proposal not marked `accept` gets no archive entry, no diff line of its own and no ticket. A
   declined, escalated or blank admission, the last one the meeting deferred, returns to the held
-  candidates with its evidence and its quotes; a `question/` marked `answer:` is settled, and
-  one left blank returns.
+  candidates with its evidence and its quotes, a `question/` included, with `kind:
+  open-question`; one marked `answer:` is settled, and becomes a decision.
+- A held proposal whose held line says `no override` returns to the held candidates whatever its
+  mark.
 - A proposal held by the bar is accepted only by `accept, override: <reason>`. A held admission
   not so marked returns to the held candidates; a held rewording, promotion or broadening not so
   marked leaves its rule as it stands. A held proposal marked a plain `accept` stops `apply`,
@@ -50,12 +52,12 @@ in a clone, its branch. Then, by mark:
    `scope:` and `example:` lines verbatim from under its proposal. An admitted rule's `since:` is
    the month its entry reaches `main`, never the window's, since the Provisional expiry Dial counts
    from then. An accepted override goes on the entry's evidence line as `rule-bar.md` says. An
-   accepted `doc/<path>` proposal changes that document to say what its pull requests show, or,
-   for an exemplar, adds its pointer to the instruction file, in the same diff, and touches
-   nothing else in it.
+   accepted `doc/<path>` proposal changes that document to say what its pull requests show, in
+   the same diff, and touches nothing else in it; an accepted `exemplar/<path>` adds a pointer to
+   that code to the instruction file.
 
    The other destinations, as harvest.md's "Destinations" names them, each taking its drafted text
-   verbatim from under its proposal:
+   verbatim from its `entry:` lines in the report:
    - `A-NNN` and `F-NNN` entries go at the end of `<standard files>/agent-guidance.md` and
      `data-conventions.md`, each file started from `<plugin root>/standards/templates/` when the
      standard has none, their months the month the entry reaches `main`. A change to a live
@@ -63,13 +65,13 @@ in a clone, its branch. Then, by mark:
      `owner: <name> · <YYYY-MM>` goes on its `source:` line; marked a plain `accept`, it stops
      `apply`, naming it, as a held proposal does. Whatever the marks, each agent guidance entry the
      report's "Rules" lists as seen again takes its new `seen` month.
-   - `D-NNN` entries go at the end of `<standard files>/decisions.md`.
+   - `D-NNN` entries go at the end of `<standard files>/decisions.md`, and so does each answered
+     `question/`, as a provisional `D-NNN` stating the answer, numbered as harvest.md says, so a
+     later revision finds it covered.
    - `tool/<rule>` changes the lint configuration the repository's instruction files or CI name,
      in this repository's diff, enabling that rule and nothing else.
-   - `review/<topic>` adds its decision to `decisions.md`; one that names a rule is that rule's
-     rewording, linted with the rules.
-   - `question/<slug>` writes nothing and is never held: its `answer:` mark is the group's answer,
-     and the run's result lists each with its answer, for the driver to carry where it belongs.
+   - `tool/<rule>` paired with a `ticket/` for its violations writes the setting only when that
+     ticket is accepted too.
 
    Lint each changed agent guidance or data conventions file with `python3 "<plugin
    root>/scripts/entries_lint.py"` on its copy beside the ledger's; a refusal stops as the ledger's

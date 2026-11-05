@@ -37,30 +37,33 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
 - [ ] A-0NN · <the habit, and what to do instead> · <evidence pointers> | A-0NN · retire · seen <YYYY-MM>
   said: …
   Recommended: …
+  entry: the drafted entry, its lines indented under this one, which `apply` writes word for word
   bar: ok | <lint lines>
   Mark:
 ### Data conventions
 - [ ] F-0NN · <the fact> · source: <document or owner> · <evidence pointers> | F-0NN · change · <what> · owner: <source>
   said: …
   Recommended: … (a change to a live one: escalate: <its source>; it is accepted only marked accept, owner: <name>)
+  entry: the drafted entry or the changed one, indented
   bar: ok | <lint lines>
   Mark:
 ### Decisions
-- [ ] D-0NN · <the decision or practice> · <kind> · <evidence pointers>
+- [ ] D-0NN · <the decision, practice or review calibration> · <kind> · <evidence pointers>
   said: …
   Recommended: …
+  entry: the drafted decision, indented
   Mark:
 ### Tool configuration
 - [ ] tool/<rule> · <the linter's rule and the asks it answers> · <evidence pointers>
   Recommended: …
   Mark:
-### Review calibration                     one that names a rule is that rule's rewording, under Rules
-- [ ] review/<topic> · <the decision on what reviews raise, and at what severity> · <evidence pointers>
-  Recommended: …
-  Mark:
 ### Questions for the group
 - [ ] question/<slug> · <the question> · <evidence pointers>
-  Recommended: answer: <a proposed answer> | escalate: <who>
+  Recommended: answer: <a proposed answer>
+  Mark:
+### Exemplars
+- [ ] exemplar/<path> · <what the code shows, for the instruction file to point to> · <evidence pointers>
+  Recommended: …
   Mark:
 ### Context, tickets and documents
 - [ ] context/<name> · refresh · <source> · <old date> → <new date>
@@ -69,12 +72,12 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
 - [ ] ticket/<slug> · <the break or the unanswered ask, in a line> · <pull request, path:line or thread id>
   Recommended: …
   Mark:
-- [ ] doc/<path> · <claim C-n> · drift · <the pull requests that break it> | <the exemplar, its code's path> · <evidence pointers>
+- [ ] doc/<path> · <claim C-n> · drift · <the pull requests that break it>
   Recommended: …
   Mark:
 
 ### Held by the bar                         step 7; marked like any proposal
-- [ ] <R-0NN | A-0NN | F-0NN | D-0NN | tool/<rule> | doc/<path>> · … · <the check that failed>
+- [ ] <R-0NN | A-0NN | F-0NN | D-0NN | tool/<rule> | exemplar/<path>> · … · <the check that failed>, and `no override` where none accepts it
   Recommended: …
   Mark:
 

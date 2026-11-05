@@ -17,7 +17,7 @@
   },
   {
    "id": "C2",
-   "kind": "rule",
+   "kind": "agent-guidance",
    "principle": "Test data files stay small, trimmed to the records the test reads.",
    "items": [
     "s1-4",
@@ -147,7 +147,7 @@
   },
   {
    "id": "C13",
-   "kind": "rule",
+   "kind": "agent-guidance",
    "principle": "When a change makes a test fail, the expected values are derived independently, never edited, loosened or regenerated from the code under test.",
    "items": [
     "s1-30",
@@ -255,7 +255,7 @@
   },
   {
    "id": "C23",
-   "kind": "rule",
+   "kind": "agent-guidance",
    "principle": "A lookup that misses raises KeyError naming what was asked for, never returns None.",
    "items": [
     "s1-87",

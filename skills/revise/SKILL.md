@@ -95,13 +95,14 @@ else or invent a term or a decision to fill the gap; `correct` stops there.
 ## The marks
 
 Each proposal in the report is a checklist line, `- [ ] <R-0NN, A-0NN, F-0NN, D-0NN, tool/<rule>,
-review/<topic>, question/<slug>, context/<name>, ticket/<slug> or doc/<path>> · <proposal> · <the Dial that triggered it, for a rule> · <evidence>`, its detail beneath opening with a `Recommended:` line.
+exemplar/<path>, question/<slug>, context/<name>, ticket/<slug> or doc/<path>> · <proposal> · <the Dial that triggered it, for a rule> · <evidence>`, its detail beneath opening with a `Recommended:` line.
 The group writes its verdict on the proposal's `Mark:` line and ticks its box, one proposal at a
 time and never in bulk: `accept`,
 `decline: <reason>` or `escalate: <reason>`, and, on a proposal the bar held, `accept, override:
-<reason>`, the only mark that accepts it (`rule-bar.md` "Overrides"); on a change to a live data
+<reason>`, the only mark that accepts it (`rule-bar.md` "Overrides"), except one held `no
+override`, which no mark accepts; on a change to a live data
 convention, `accept, owner: <name>`, the only mark that accepts it, naming its owner; and on a
-`question/`, `answer: <the group's answer>`, which settles it, so it is neither written nor held.
+`question/`, `answer: <the group's answer>`, which settles it as a provisional decision.
 A `Recommended:` line is the
 report's, never a mark. A proposal whose `Mark:` line is empty is deferred. A draft pull request `prepare` opens on the
 report's branch is a place to discuss proposals; a verdict given there counts once it is on the

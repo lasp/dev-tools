@@ -123,6 +123,10 @@ class Lint(unittest.TestCase):
                 self.assertEqual(code, 1)
                 self.assertIn(why, "\n".join(lines))
 
+    def test_a_data_convention_its_owner_changed_keeps_one_source_line(self):
+        changed = CONVENTIONS.replace("source: the geolocation lead", "source: the geolocation lead · owner: dave · 2026-12")
+        self.assertEqual(self.run_lint(data_conventions_md=changed)[0], 0)
+
     def test_refuses_a_data_convention_out_of_form(self):
         cases = {
             "not exactly one `source:` line": CONVENTIONS.replace("source: the geolocation lead\n", ""),

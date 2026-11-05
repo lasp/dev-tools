@@ -8,10 +8,11 @@ Admission Dial in `standards/dials.md` read it:
 
 - `admit · <key> · pr-NNNN · <comment id> · <author> · <kind> · <signal> · <url> · <quote>`: a
   person's words (`authorship` `human`) that nothing live covers (`covered_by` null) and that meet
-  the part of their kind's bar the tally can read: for `rule`, `agent-guidance`,
-  `data-convention`, `process` and `decision`, a `signal` of `states a principle`, `addresses
-  agents` or `names a habit`; for `tool-config`, `exemplar`, `review-calibration` and
-  `open-question`, whose bar reads no signal, any. The rest of each kind's bar, and where it goes,
+  the part of their kind's bar the tally can read: for `rule`, `agent-guidance` and `process`, a
+  `signal` of `states a principle`, `addresses agents` or `names a habit`; for `data-convention`
+  and `decision`, those or `cites a source`, since a source is what their bar asks; for
+  `tool-config`, `exemplar`, `review-calibration` and `open-question`, whose bar reads no signal,
+  any. The rest of each kind's bar, and where it goes,
   is `skills/revise/harvest.md`'s "Destinations";
 - `covered · <key> · pr-NNNN · <comment id> · <author> · <kind> · <covered_by> · <url> · <quote>`:
   a person's general item a live rule, decision, agent guidance entry, data convention or the
@@ -43,6 +44,7 @@ from pathlib import Path
 
 SIGNALS = ("states a principle", "addresses agents", "names a habit")
 ANY_SIGNAL = ("tool-config", "exemplar", "review-calibration", "open-question")
+SOURCED = ("data-convention", "decision")
 
 
 def load_check():
@@ -59,7 +61,7 @@ def verdict(item: dict) -> tuple[str, str] | None:
     if item["authorship"] == "human":
         if item["covered_by"] is not None:
             return "covered", item["covered_by"]
-        if item["kind"] in ANY_SIGNAL or item["signal"] in SIGNALS:
+        if item["kind"] in ANY_SIGNAL or item["signal"] in SIGNALS or (item["kind"] in SOURCED and item["signal"] == "cites a source"):
             return "admit", item["signal"]
         if item["signal"] == "none":
             return "hold", "no signal of generality"

@@ -117,29 +117,33 @@ guidance tally has already read the part of the bar a statement's signal decides
 | `data-convention` | its source, the document with its version and section or the data's owner, named in the evidence or found by the driver | `F-NNN` | `data-conventions.md` |
 | `process` | practiced in two merged pull requests, its cluster's `prs` 2 or more, or stated as the team's way by a person, an `admit` line whose signal is `states a principle` | `D-NNN` | `decisions.md` |
 | `decision` | as `process` | `D-NNN` | `decisions.md` |
-| `tool-config` | the rule exists in the linter the repository configures, and its count of violations on `origin/main`, run with that rule alone, is shown under the proposal | `tool/<rule>` | the lint configuration, in this repository's diff |
-| `exemplar` | the code it points to is still at its path on `main`, by `git ls-files` | `doc/<path>`, the code's path | the instruction file |
-| `review-calibration` | as a rewording when it names a rule; none otherwise | `R-NNN`, rewording the rule's one `Do not flag:` line; otherwise `review/<topic>` | the rule's entry, held to "The bar"; otherwise a decision in `decisions.md` |
-| `open-question` | none | `question/<slug>` | nowhere: the group answers it |
+| `tool-config` | the rule exists in the linter the repository configures, and its count of violations on `origin/main`, run with that rule alone, is shown under the proposal; recommended a plain `accept` only at none, otherwise paired with a `ticket/` for the fixes | `tool/<rule>` | the lint configuration, in this repository's diff |
+| `exemplar` | the code it points to is still at its path on `main`, by `git ls-files` | `exemplar/<path>`, the code's path | the instruction file |
+| `review-calibration` | as a rewording when it names a rule; none otherwise | `R-NNN`, rewording the rule's one `Do not flag:` line; otherwise `D-NNN` | the rule's entry, held to "The bar"; otherwise `decisions.md` |
+| `open-question` | none | `question/<slug>` | `decisions.md`, as a `D-NNN` stating the group's answer |
 
 An `A-NNN` or `F-NNN` entry is drafted in the form `docs/contracts.md`'s "Agent guidance and data
 conventions" sets, numbered after the highest in the file and in `<archive>`, as a `D-NNN` is in `decisions.md`, its months the
 window's last until `apply` sets the month it reaches `main`, its `said:` lines the cluster's
-people's quotes, into `.review/backtest/<id>.entry.md`. Append it to a copy of the file, or of
+people's quotes, into `.review/backtest/<id>.entry.md`, and under its proposal in the report, as a rule's
+`scope:` and `example:` lines are. Append it to a copy of the file, or of
 `<plugin root>/standards/templates/<file>` when the standard has none, under `mktemp -d`, keeping
 the file's name, and run `python3 "<plugin root>/scripts/entries_lint.py"` on the copy; a `D-NNN`
 takes the form of `docs/standards.md`'s "Example decision: fail loud", its status `**provisional**`, since
 a rule that implements a decision carries its status, with a `repos:` line naming this repository
 in a standard with `profiles/`. A proposal whose bar or lint fails is held, the failed
 check named, and never recommended a plain `accept`; a data convention with no source is held
-`no source named`, which no override accepts, since its entry cannot be written without one.
+`no source named`, and agent guidance whose quotes are all pasted, with no link, `no quote with a
+link`; no override accepts either, nor a lint failure, since the entry cannot be written. An
+override accepts only a rule's gates and the `process` and `decision` count, its reason on a
+decision's date line as `override <YYYY-MM-DD>: <reason>`.
 
 A cluster a live entry of its kind already covers changes that entry: a rule is reworded, a
 decision superseded by a new `D-NNN`, an agent guidance entry seen again, and a data convention
 gets a proposal on its `F-NNN`, recommended `escalate: <its source>`, since only its owner changes
-it. A `covered` line naming an `A-NNN`, and
+it. A `covered` line naming an `A-NNN`, or
 a finding keyed `agent/A-NNN` in the window's records, is the habit seen again: that entry's
-`seen` month moves to the window's last.
+`seen` month moves to the window's last; either is enough.
 
 ## The bar
 

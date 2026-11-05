@@ -192,8 +192,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    `guidance_clusters.py` printout, when "Guidance" ran, each cluster's pull requests, people and
    `said` quotes as it prints them.
 
-   **Single statements.** A cluster admits on one guidance tally `admit` line alone, a person's
-   general statement, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
+   **Single statements.** A cluster admits on one guidance tally `admit` line of its own kind
+   alone, a person's general statement, the `admit` count `guidance_clusters.py` prints, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
    note admits the same way when a named person states a principle or asks for a change in it,
    cited `pasted <file>` with that person's name. Each admitted cluster is a proposal of its kind,
    with the id and destination harvest.md's "Destinations" gives it. A cluster with no `admit` line and a `hold`
@@ -212,7 +212,10 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    against the Dials, and propose each that now meets them. The rest
    go under "Held candidates", each with its updated evidence, its quotes, its kind and the
    criterion still failing, never as a proposal to mark; drop one under the Candidate drop Dial
-   and say so. A held candidate's kind is its `kind:` line, and one without is a rule. Then
+   and say so. A held candidate's kind is its `kind:` line; one without whose criterion reads `a
+   <kind> statement: revise proposes rules only`, as an earlier revision wrote it, is that kind,
+   re-judged without that criterion; any other without is a rule. A cluster that names a held
+   candidate takes the cluster's kind. Then
    consolidate: proposals acting on the same entry become one; candidates asking for the same
    change become one, with both sets of evidence; a candidate a live entry of its kind already
    covers changes that entry, as harvest.md's "Destinations" says, except a tally `covered` line,

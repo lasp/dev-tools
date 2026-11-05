@@ -450,8 +450,9 @@ The skills a person types, in the order they meet them:
   replies, and asks before it pushes or posts.
 
 **The standard**
-- `revise`: prepares the monthly revision from how reviews were answered, proposing rules to add,
-  reword or retire; `apply` drafts what the group accepted, and `correct` fixes a misreading between
+- `revise`: prepares the monthly revision from how reviews were answered and what reviewers said,
+  proposing rules to add, reword or retire, and agent guidance, data conventions, decisions, lint
+  settings and questions for the group; `apply` drafts what the group accepted, and `correct` fixes a misreading between
   revisions.
 
 **Docs**
@@ -546,7 +547,7 @@ Once per repository. It needs:
 | --- | --- |
 | `standards/review-rules.md`, the ledger, each entry holding its rule's wording as `> ` lines | `onboard`'s step 6 drafts it into `.review/harvest/`; people cut and commit |
 | `standards/decisions.md`, optional | written by hand; a pipeline that produces a defined product adopts the fail-loud decision in `docs/standards.md`, "Example decision: fail loud" |
-| `standards/agent-guidance.md` and `standards/data-conventions.md`, optional | copied from the plugin's `standards/templates/` and written by hand, as `docs/standards.md`, "Agent guidance and data conventions", says |
+| `standards/agent-guidance.md` and `standards/data-conventions.md`, optional | copied from the plugin's `standards/templates/`, written by hand or by `revise`'s `apply`, as `docs/standards.md`, "Agent guidance and data conventions", says |
 | `.github/PULL_REQUEST_TEMPLATE.md` | copied byte for byte from the standard's `templates/<name>/`, in the directory `scripts/profile.py --standard` prints; `/lasp-dev:quickstart` reports drift |
 | `.review/` in `.gitignore` | the skills and hooks write their working files there |
 
@@ -754,7 +755,7 @@ session-start line or `work` says something unexpected, these files are what it 
 | `diagrams/<slug>.drawio` | `drawio`, when its caller names no path | The person, pasting it into a draw.io macro | Not cleared by the tools |
 | `downstream/` | `downstream`: `surface.txt`, `report.md`, a `ripple-<consumer>.md` or `ci-<run>.md` prompt for `ticket-draft`, and a throwaway venv and `git clone --shared` checkout per consumer, read at its default branch | The person; `ticket-draft`, given a prompt | Not cleared by the tools |
 | `feedback/` | `skill-feedback`: the person's words (`words.txt`), and on the `gh` path the issue's title (`title.txt`) and body (`body.md`) | `scripts/transcript_excerpt.py --stdin`, for the words; `gh api`, for the title and body | Replaced at the next filing |
-| `backtest/` | `revise` and `onboard`, each proposal's drafted entry and probe blocks (`R-NNN.entry.md`, `R-NNN.md`); the `rule-probe` sandbox scenario, `calibration.md` | The month's driver | Not cleared by the tools |
+| `backtest/` | `revise` and `onboard`, each proposal's drafted entry and a rule's probe blocks (`<id>.entry.md`, `R-NNN.md`); the `rule-probe` sandbox scenario, `calibration.md` | The month's driver | Not cleared by the tools |
 | `harvest/threads/`, `harvest/records/` | `pr-reader` in `harvest` mode, for `revise` and `onboard`: each merged pull request's dump (`pages/`, `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json`, `body.md`, `judged.json`, and `comment-list.json`, every comment with its own authorship, from `scripts/comment_list.py`) and the record `scripts/record.py` rebuilt from it | `revise`, which copies the records into `standards/log/<repo>/` with `scripts/archive_records.py`; `thread-analyst`, for each record's authorship | Replaced at each harvest |
 | `harvest/analysis/` | `thread-analyst`, one `pr-NNNN.md` per merged pull request with a record, within the cap of `revise`'s `harvest.md`, for `revise` and `onboard` | `revise`, for the report's front page, through `scripts/block_tally.py`; never copied into the log | A pull request's block is replaced when it is analyzed again; not cleared by the tools |
 | `harvest/guidance/` | `guidance-extractor`, one `slice-<n>.json` per slice of about 300 comments, for `revise`, checked by `scripts/guidance_check.py` | `revise`, for the report's head, and through `scripts/guidance_tally.py` for its clusters, proposals and held candidates | Removed and rewritten at each revision |
