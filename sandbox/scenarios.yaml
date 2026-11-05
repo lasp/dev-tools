@@ -106,11 +106,12 @@ scenarios:
       one line per repository: widgets with R-001 and R-002, its threads read and diffs swept;
       gadgets with R-002, archived and counted, its threads not read; sprockets with no rule,
       archived only, not skipped. With no GitHub server the harvest stops as servers.md sets out,
-      and the last message repeats the scope and says no rule, decision or document changed.
+      and the last message gives the scope as planned at the start, the step it stopped at, and
+      that no rule, decision or document changed.
     expect:
       ends: success
-      says: ['(?i)gadgets[^\n]*(archiv|count|no analyst|not read)', '(?i)sprockets[^\n]*(archiv|count|no analyst|not read)', '(?i)widgets[^\n]*(swept|read|analy)']
-      not_says: ['(?i)sprockets[^\n]*(not harvest|skip)']
+      says: ['(?i)gadgets[^\n]*(archive|count|no analyst|not read)', '(?i)sprockets[^\n]*(archive|count|no analyst|not read)', '(?i)widgets[^\n]*(swept|analy|threads (are )?read)']
+      not_says: ['Harvest it too', '(?i)sprockets[^\n]*would count for nothing']
 
   - id: onboard-blanket-answer
     repo: widgets

@@ -64,7 +64,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    Established expiry Dial is proposed as the Dials' "Established and unfired at expiry" row
    says. Name every rule the Contested Dial catches and say what its disagreements had in common. A rule the Unanswered
    share Dial catches gets a proposed do-not-flag sentence or severity change. Into "Head": the
-   missing records and the records the script names as predating `merged:`, the corrections and
+   missing records, saying for another repository that they can include pull requests from
+   before its pointer merged (`revise`'s "The standard's repository"), and the records the script names as predating `merged:`, the corrections and
    notes as counts, never evidence, and the cost: median and longest open-to-merge time of the
    window's pull requests, and the count merged without a build, whose body has no Already checked
    block.
@@ -121,8 +122,7 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    and the claim in one line. Show the `C-` claims and ask once: **Sweep these** (Recommended),
    **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**. Then one
    `diff-probe` per merged pull request the script listed, past thirty the thirty merged most
-   recently, at most twenty at once, Claude Code's limit on agents: the first twenty in one
-   message; once they have all returned, the rest in one more message, each given this repository's path, its number and sha, the claims file
+   recently, launched as harvest.md's "Analysts" launches agents, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
    and every `C-` claim. Write each block to `.review/revision/sweep/pr-NNNN.md` as returned. Into
    "Practice", per claim: the pull requests it was judged on and how many follow it, break it,
@@ -233,8 +233,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     Then stop with the run's result, in this order, a table where items are compared. A run that
     stops at an earlier step, on the person's answer or a server it cannot reach, ends with the
     same result as far as it got: the scope, and what it changed and did not.
-    - **Scope**: where the standard is stored, the window, and the scope list from the start of
-      this file, each repository with what the run did there.
+    - **Scope**: where the standard is stored, the window, the scope list from the start of this
+      file, each repository with what the run does there as planned at the start, then the step
+      the run stopped at.
     - **Proposals**: how many, by priority, then a table of each, its id, what it proposes, what
       it applies to and where `apply` would change it, in the overview's order; the held by the
       bar and the held candidates as counts.

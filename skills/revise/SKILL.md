@@ -57,10 +57,14 @@ with `ratchet_counts.py --repo <name>`, and lints with
 repositories covered; the threads, the clusters, the sweep and the bar's `scope:` and `example:`
 checks read this repository's code alone, so another repository's records are archived and
 counted but its threads reach no analyst, which `prepare` says before it harvests. A repository's
-adoption date is the date of the first commit that adds, for this repository, the ledger or the
-`standard:` pointer to its `main` (`git log --diff-filter=A` of that file here) and, for another
-covered repository, its `profiles/<repo>.yaml` to the standard's repository (`git log
---diff-filter=A` of that file in the clone, or here when the standard is this repository's own). A proposal to reword, promote or
+adoption date is, for this repository, the day the ledger or the `standard:` pointer reached
+`main`: `git log origin/main --first-parent --diff-filter=A --reverse --format=%cs -- <file> |
+head -1` here, `<file>` being `standards/review-rules.md` or `standards/profile.yaml`. For
+another covered repository it is the earliest day the standard could apply there, the day its
+`profiles/<repo>.yaml` reached the standard's `main`: the same command on that file, in the clone
+against the clone's `origin/main`, or here when the standard is this repository's own. Its pointer
+may have merged later, so its pull requests between the two days count as missing records, which
+`prepare` says under "Head". A proposal to reword, promote or
 broaden a rule whose `repos:` line leaves this repository out runs only the bar's `fields`,
 `status` and `wording` gates here (`--checks`), and is marked "check from <a repository it
 names>" rather than held, since its `scope:` and `example:` are another repository's. Any other exit 1 from

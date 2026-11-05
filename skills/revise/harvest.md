@@ -22,8 +22,9 @@ past thirty, the thirty whose records hold the most findings plus pointers under
 `main` and run `python3 "<plugin root>/scripts/merge_commit.py" --repo . --ref origin/main` with
 each of those dumps' `pr.json`, which prints each pull request's merge commit, the one commit on
 `main`'s first-parent history whose subject names it; the `get` result carries none. Then launch
-them at most twenty at once, Claude Code's limit on agents running together: the first twenty in
-one message; once they have all returned, the rest in one more message, each given this repository's path, its dump `.review/harvest/threads/pr-NNNN/`, its
+them in messages of at most twenty, Claude Code's limit on agents running together, each sent once
+the previous one's agents have all returned; every other launch of many agents in `revise` cites
+this. Each is given this repository's path, its dump `.review/harvest/threads/pr-NNNN/`, its
 record `.review/harvest/records/pr-NNNN.yaml`, its merge commit and the categories design,
 correctness, tests, naming, docs, scope, process and style. A pull request the script prints
 `none` for gets no analyst, since a guessed commit would put the `diff:` verdict on the wrong
