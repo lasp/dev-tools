@@ -4,10 +4,9 @@ description: >
   Writes a Confluence page on how a system or codebase is built: its purpose, confirmed with you,
   its interfaces to the larger system and its users, and how it works, from the code and your
   description; publishes on your yes. `revise` brings a published page up to date with the code.
-  Use when asked to "document this system", "write a wiki page on this codebase", "explain how
-  this code is organized", "write an architecture page", "update the architecture doc" or "bring
-  this page up to date". Not for a change still to be designed (design-doc) or how a task is done
-  (process-doc).
+  Use when asked to "document this system", "write an architecture page", "update the architecture
+  doc" or "bring this page up to date". Not for a change still to be designed (design-doc), how a
+  task is done (process-doc) or an explanation in the conversation.
 argument-hint: "[revise] <repository | page ID | URL | file | text>"
 metadata:
   author: lasp-dev

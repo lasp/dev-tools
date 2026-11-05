@@ -2,10 +2,10 @@
 name: pr-review
 description: >
   Reviews a pull request and presents ranked findings at their lines; drafts comments when asked
-  and posts one review only on your yes. Use when asked to "review this PR", "check this pull
-  request", "is this PR ready to approve", "what's wrong with this PR", "review and post
-  comments", "submit a PR review" or "publish my review". Not for answering a review of your own
-  pull request (pr-fix) or a diff with no pull request (/code-review).
+  and posts one review only on your yes. Use when asked to "review this PR", "what's wrong with
+  this PR", "review and post comments", "submit a PR review" or "publish my review". Not for
+  answering a review of your own pull request (pr-fix) or a diff with no pull request
+  (/code-review).
 argument-hint: "[PR number or URL] [focus area]"
 metadata:
   author: lasp-dev

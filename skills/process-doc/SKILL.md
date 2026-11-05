@@ -2,11 +2,11 @@
 name: process-doc
 description: >
   Writes a Confluence page on how something is done: a team process such as development or review,
-  a how-to, an onboarding guide, or a user guide to a software or data product; its purpose,
-  readers and steps settled with you; publishes on your yes. `revise` brings a published page in
-  line with how things are done now. Use when asked to "document our process", "write up our
-  workflow", "write a how-to", "write a user guide" or "update the process page". Not for how a
-  system is built (architecture-doc) or a change still being designed (design-doc).
+  a how-to, or a user guide to a software or data product; its purpose, readers and steps settled
+  with you; publishes on your yes. `revise` brings a published page in line with how things are
+  done now. Use when asked to "document our process", "write up our workflow", "write a how-to",
+  "write a user guide" or "update the process page". Not for how a system is built
+  (architecture-doc) or a change still being designed (design-doc).
 argument-hint: "[revise] <page ID | URL | file | text>"
 metadata:
   author: lasp-dev

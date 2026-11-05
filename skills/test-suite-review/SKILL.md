@@ -1,10 +1,10 @@
 ---
 name: test-suite-review
 description: >
-  Judges a branch's or a diff's tests, read-only: whether they cover the change and its failure
-  path, whether existing tests were loosened, and their factoring. Use when asked "are these tests
-  any good", "is this well tested", "did this weaken the tests" or "review the test changes". Not
-  for running the tests.
+  Judges a branch's, a diff's or a whole suite's tests, read-only: whether they cover the change
+  and its failure path, whether existing tests were loosened, and their factoring. Use when asked
+  "are these tests any good", "is this well tested", "did this weaken the tests" or "review the
+  test changes". Not for running the tests.
 argument-hint: "[diff | branch | suite]"
 metadata:
   author: lasp-dev
