@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Score a harvest's reading of a month of review comments against a labelled answer key.
+"""Score a harvest's reading of a month of review comments against a labeled answer key.
 
 The benchmark `revise`'s reading of review comments is measured on (`sandbox/README.md`, "Harvest
 recall"). A fixture directory holds `comments/pr-NNNN.json`, comment lists in the form
