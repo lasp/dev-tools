@@ -63,7 +63,7 @@
     {
       "id": "T7",
       "name": "Comments say what the code does",
-      "principle": "A code comment describes the current behaviour of the code; rejected alternatives and history belong in the commit message or PR description.",
+      "principle": "A code comment describes the current behavior of the code; rejected alternatives and history belong in the commit message or PR description.",
       "prs": [
         102,
         107,
@@ -418,7 +418,7 @@
       "generality": "general",
       "signal": "states a principle",
       "theme": "T7",
-      "principle": "Comments describe current behaviour, not former implementations."
+      "principle": "Comments describe current behavior, not former implementations."
     },
     {
       "id": "L29",
@@ -437,12 +437,12 @@
       "comment_id": 5000125,
       "pr": 107,
       "author": "carol",
-      "quote": "findings about test helper names aren't worth a thread. Keep the bot on behaviour.",
+      "quote": "findings about test helper names aren't worth a thread. Keep the bot on behavior.",
       "kind": "review-calibration",
       "generality": "general",
       "signal": "states a principle",
       "theme": null,
-      "principle": "Automated review should report behaviour, not test helper naming."
+      "principle": "Automated review should report behavior, not test helper naming."
     },
     {
       "id": "L31",
@@ -533,12 +533,12 @@
       "comment_id": 5000155,
       "pr": 109,
       "author": "carol",
-      "quote": "the comment above a function should tell you its behaviour. Design alternatives we rejected go in the PR description or an ADR.",
+      "quote": "the comment above a function should tell you its behavior. Design alternatives we rejected go in the PR description or an ADR.",
       "kind": "rule",
       "generality": "general",
       "signal": "states a principle",
       "theme": "T7",
-      "principle": "A function's comment states its behaviour; rejected designs are recorded elsewhere."
+      "principle": "A function's comment states its behavior; rejected designs are recorded elsewhere."
     },
     {
       "id": "L39",
