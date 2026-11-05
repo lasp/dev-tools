@@ -76,7 +76,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    window's pull requests, and the count merged without a build, whose body has no Already checked
    block.
 2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 wrote; the report
-   cites thread ids. What it did not read goes under "Not read".
+   cites thread ids. Then run harvest.md's "Guidance" on this repository's comment lists; into
+   "Head", the guidance line from its check's printout, never counted by hand. What either did not
+   read goes under "Not read".
 
    From the blocks, leaving out lines with `asked: none`, the counts from harvest.md's
    `block_tally.py analysis` printout, never counted by hand:

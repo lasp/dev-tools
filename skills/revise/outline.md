@@ -20,6 +20,7 @@ records: <n> harvested · <n> missing (<the Missing-record alarm Dial, when it f
 cost: open-to-merge median <d>, longest <d> · <n> merged without a build · corrections: <n>, on <ids>
 agree rate by severity · share unanswered · share of agreed findings changed as asked
 counted: <verdicts, firings, contested, missing, from record.py and ratchet_counts.py>; read by the analyst: <categories, outcomes, procedure ids>
+guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general by kind: <kind> <n>, … | none read
 
 ## Overview                                 step 10: every proposal below, the held ones included, one line each
 | Priority | Proposal | Applies to | Impact | Rests on | Apply changes |
@@ -62,7 +63,7 @@ disagreements shared; rules held provisional for breadth and what would release 
 ### Graduation checks                       step 9
 ### Context                                 step 8: unreachable, unrefreshable, new pages
 ### Measures                                measures.md, only when it ran
-### Not read                                step 2: unanalysed pull requests, Not read: ids
+### Not read                                step 2: unanalysed pull requests, Not read: ids, unread guidance slices
 ```
 
 A held proposal is never recommended a plain `accept`. The meeting takes the proposals in the
