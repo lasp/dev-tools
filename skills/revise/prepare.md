@@ -86,7 +86,8 @@ step 1.
      the ask and its outcome, and the change asked for when the ask names one. Under the heading,
      one line per draft, its path and the ask, then one line per settled finding, its id and the
      sha or `#n` that settled it; "none" when there were none.
-   - **Head**: the agree rate by severity, the share of findings left unanswered, and the share of
+   - **Head**: the agree rate by severity, the share of findings left unanswered (of the firings less the
+     `unlabeled`, which are named apart), and the share of
      agreed findings the analyst marks `changed as asked`.
 
    **Sweep the diffs**, report only: it fills "Practice", and no Dial reads it, so no rule

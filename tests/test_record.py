@@ -788,9 +788,9 @@ class Adjudication(unittest.TestCase):
         self.assertIn("    thread: PRRT_2\n    verdict: agree\n", text)
         self.assertIn("adjudicated_by: bob", text)
         self.assertEqual(report, ["unparsed label: PRRT_1 R-001/x.py::f (first line: **Suggestion — a finding**)"])
-        # The rule's firing is still counted, its verdict with the unanswered.
+        # The rule's firing is still counted, its verdict apart from the unanswered.
         counted = ratchet_counts.findings(text + "\n", "pr-0001.yaml")
-        self.assertEqual([f["verdict"] for f in counted if f["rule"] == "R-001"], ["unanswered", "agree"])
+        self.assertEqual([f["verdict"] for f in counted if f["rule"] == "R-001"], ["unlabeled", "agree"])
 
     def test_an_uncited_finding_whose_label_is_not_one_of_the_four_is_an_unparsed_review_thread(self):
         th = self.bad_label(("bob", "Disagree."))

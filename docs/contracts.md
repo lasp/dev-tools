@@ -547,6 +547,8 @@ reads them.
   or `verdict: contested` while the author has not settled it. A finding whose first line is not
   one of the four severity lines has `severity: unparsed`, `verdict: unparsed` and `line:`, that
   first line; its replies are not read, since the severity decides how they read.
+  `scripts/ratchet_counts.py` counts it as a firing in its `unlabeled` column, not with the
+  unanswered.
 - `questions:`, every cited question: `q`, `key`, `at`, `thread`, and `a`, the answer, or
   `unanswered: true`.
 - `threads:`, a pointer to every other review thread: a person's, a bot's, or a finding posted
