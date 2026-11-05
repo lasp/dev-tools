@@ -123,8 +123,11 @@ without a yes to that write.
 
 ## The revision
 
-`revise` proposes rule changes from the evidence of merged pull requests: for a standard covering
-several repositories, from every repository it covers, so the whole project shapes each rule. For a
+`revise` proposes rule changes from the evidence of merged pull requests. For a standard covering
+several repositories, it counts each rule's findings in every repository the rule reaches, so the
+whole project shapes whether a rule stays; new rules come from the repository it runs in, whose
+threads it reads against that repository's code, and a run in another repository drafts that
+one's. For a
 standard elsewhere it writes into a clone of the standard's repository, and its accepted changes
 are one pull request there; for a repository's own standard, they are one pull request in it.
 

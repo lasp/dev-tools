@@ -66,7 +66,10 @@ in a clone, its branch. Then, by mark:
    into its clone. With a clone, ask: **Commit, push and open the standard's pull request**
    (Recommended: the code repository's pull request links it and it merges first), **Commit only**,
    naming the clone's path and branch, **Stop**, nothing committed and the clone's path named, or
-   **Let's discuss**. The diff for this
+   **Let's discuss**. When `prepare` opened the branch as a draft pull request, that one is the
+   standard's pull request: the first option pushes to it, replaces its description with one for
+   the accepted changes and marks it ready, rather than opening another; the question shows the
+   description as it will be sent. The diff for this
    repository stays in `.review/ratchet-proposal.diff` for the driver.
 3. **Hand over the tickets.** Whatever the answer above, clear `.review/revision/tickets/`, then
    write each accepted `ticket/` proposal, in the report's order, as

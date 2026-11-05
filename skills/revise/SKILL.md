@@ -11,7 +11,7 @@ argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | appl
 disable-model-invocation: true
 metadata:
   author: lasp-dev
-  version: 2.12.0
+  version: 2.13.0
 ---
 
 # Revise the standard
@@ -51,10 +51,12 @@ repository that is, and where each of its parts lives, is decided once, before a
 Its settings are the standard's too, as `profile.py` reads them. `<repo>` is a GitHub repository's name, and `<log>` names the
 records directory of each repository harvested. In either row a standard with
 `profiles/` covers several repositories: one run, in any one of them, revises it. `prepare`
-harvests every one, counts each with `ratchet_counts.py --repo <name>`, and lints with
+harvests this one and every other one a rule reaches, each from the later of the window's start and its adoption date, counts each
+with `ratchet_counts.py --repo <name>`, and lints with
 `rule_lint.py --profiles <standard files>/profiles/`, which checks each `repos:` tag against the
-repositories covered; the threads, the sweep and the bar's `scope:` and `example:` checks read
-this repository's code alone, which the report's "Not read" says. A proposal to reword, promote or
+repositories covered; the threads, the clusters, the sweep and the bar's `scope:` and `example:`
+checks read this repository's code alone, so another repository's records are archived and
+counted but admit no rule, which `prepare` says before it harvests. A proposal to reword, promote or
 broaden a rule whose `repos:` line leaves this repository out runs only the bar's `fields`,
 `status` and `wording` gates here (`--checks`), and is marked "check from <a repository it
 names>" rather than held, since its `scope:` and `example:` are another repository's. Any other exit 1 from
@@ -89,7 +91,9 @@ The group writes its verdict on the proposal's `Mark:` line and ticks its box, o
 time and never in bulk: `accept`,
 `decline: <reason>` or `escalate: <reason>`, and, on a proposal the bar held, `accept, override:
 <reason>`, the only mark that accepts it (`rule-bar.md` "Overrides"). A `Recommended:` line is the
-report's, never a mark. A proposal whose `Mark:` line is empty is deferred. A new or reworded rule is worded as `${CLAUDE_SKILL_DIR}/../writing/SKILL.md`
+report's, never a mark. A proposal whose `Mark:` line is empty is deferred. A draft pull request `prepare` opens on the
+report's branch is a place to discuss proposals; a verdict given there counts once it is on the
+`Mark:` line, which stays the record `apply` reads. A new or reworded rule is worded as `${CLAUDE_SKILL_DIR}/../writing/SKILL.md`
 "Conventions" says under Rule wording: a principle with no case in it.
 
 ## Files

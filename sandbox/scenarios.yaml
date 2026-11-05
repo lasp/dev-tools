@@ -84,6 +84,33 @@ scenarios:
       says: ['Rules, from standards/review-rules\.md', 'R-001 · [^\n]* · established · reviewer', 'R-002 · [^\n]* · provisional · reviewer', 'D-001 · [^\n]* · established', 'T-001 · `row`: record, line', 'a-topic\.md · A topic']
       not_says: ['^\s*\|.*\|\s*$']
 
+  - id: revise-prepare-scope
+    repo: widgets
+    setup:
+      - mkdir -p standards/profiles
+      - "awk '{print} /^scope:/{n++; print (n==1 ? \"repos: [widgets]\" : \"repos: [widgets, gadgets]\")}' \"$SBX_FIXTURES/standard-review-rules.md\" > standards/review-rules.md"
+      - "for r in widgets gadgets sprockets; do printf '# %s\\n' \"$r\" > \"standards/profiles/$r.yaml\"; done"
+      - git add standards && git -c user.name=Sandbox -c user.email=sandbox@example.com commit -qm "Adopt the standard"
+    origin: "#45, #63"
+    why: >-
+      Runs revise prepare in a repository whose own standard covers three, with R-001 tagged for
+      widgets and R-002 for widgets and gadgets, so before any harvest it says what the run does in
+      each: widgets read and swept, gadgets counted against R-002 only, sprockets not harvested
+      since no rule reaches it, and asks before going on.
+    turns:
+      - /lasp-dev:revise prepare
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)", "mcp__*", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
+    look_at: >-
+      The reply names the window and that the standard is this repository's standards/, then one
+      line per repository: widgets with R-001 and R-002, harvested, read and swept; gadgets with
+      R-002, harvested and counted, its threads reaching no analyst; sprockets with no rule, not
+      harvested, and why. It ends on Go on, Harvest it too, Stop here and Let's discuss, before any
+      pr-reader starts.
+    expect:
+      ends: success
+      agents_absent: [pr-reader]
+      says: ['(?i)sprockets[^\n]*(not harvest|skip)', '(?i)gadgets[^\n]*R-002', 'Recommended']
+
   - id: onboard-blanket-answer
     repo: widgets
     origin: "#9"

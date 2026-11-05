@@ -6,10 +6,29 @@ by name from the shared `dials.md`; a threshold the Dials do not state is not ap
 2, 5 and 7 run the sections of `<plugin root>/skills/revise/harvest.md` they name; read it at
 step 1.
 
-1. **Harvest the records.** Run harvest.md's "Records" from the window's first day, for each
-   other repository a standard covering several has a `profiles/` file for, in either row of
+**First, say what the run covers**, before anything is harvested: the window, where the standard
+is stored (this repository's `standards/`, or the repository its pointer names), and, for a
+standard whose `profiles/` covers several repositories, what the run does in each. A rule reaches
+a repository when its `repos:` line names it or it has none (`docs/contracts.md`, "The ledger's bar lines"):
+- **This repository** is harvested, its threads read and clustered and its merged diffs swept, so
+  its records can admit, reword, promote or retire a rule.
+- **Another repository some rule reaches** is harvested and its records archived and counted
+  against those rules alone. Its threads reach no analyst and no cluster, since those read this
+  repository's code, so no rule is admitted from its asks.
+- **Another repository no rule reaches** is not harvested: its records could count for no rule.
+  Its asks reach the standard when the revision runs there.
+
+Write it as a short list, one repository a line, each with the rules that reach it, what the run
+does there and why, such as "gadgets: no rule is tagged for it yet, so nothing of its is
+counted; not harvested". When a repository is not harvested, ask: **Go on** (Recommended: its
+records would count for nothing), **Harvest it too**, which archives its records and counts
+nothing, **Stop here**, or **Let's discuss**. Otherwise go on.
+
+1. **Harvest the records.** Run harvest.md's "Records" for each other repository the scope
+   harvests, from the later of the window's first day and that repository's adoption date (below),
+   since a pull request before it was reviewed against no standard, in either row of
    `revise`'s "The standard's repository", then for this
-   repository last, since each harvest starts its directories afresh, copying each repository's
+   repository last, from the window's first day, since each harvest starts its directories afresh, copying each repository's
    records into its `<log>` (`revise`'s "The standard's repository") before the next harvest
    starts, with `python3 "<plugin root>/scripts/archive_records.py" <its records> <its log>`, each
    replacing a record of the same number; the threads stay the source, and the copy lets the
@@ -36,8 +55,9 @@ step 1.
    several, "Rules" gives each repository's tables under its name. The adoption date is the date
    of the first commit adding the ledger, or the pointer, to that repository's `main`: from `git
    log` here, and for another repository from its commits touching that file through GitHub, as
-   `using-github` sets out; a date that cannot be read is said under "Head", and that repository's
-   pull requests are counted as baseline, never as missing; a pull request opened
+   `using-github` sets out; a date that cannot be read is said under "Head", that repository's
+   harvest starts at the window's first day, and its pull requests are counted as baseline, never
+   as missing; a pull request opened
    before it had no standard to be reviewed against and is counted as baseline, never as missing.
 
    From its output, into "Rules": the window's table and all records', and the `expiry` table,
@@ -91,7 +111,9 @@ step 1.
 
    **Sweep the diffs**, report only: it fills "Practice", and no Dial reads it, so no rule
    proposal rests on it; step 6 turns a break still on `main` into a `ticket/` proposal and a
-   `drift` into a `doc/` one. First remove `.review/revision/sweep/` and `.review/revision/claims.md`, which a
+   `drift` into a `doc/` one. It runs after step 1's harvest of this repository, never beside an
+   earlier one: `diff-probe` reads each description from that harvest's
+   `.review/harvest/threads/pr-NNNN/pr.json`, which every harvest empties. First remove `.review/revision/sweep/` and `.review/revision/claims.md`, which a
    last revision may have left. Run `python3 "<plugin root>/scripts/window_merges.py" --repo .
    --ref origin/main --since <the window's first day> --ledger <standard files>/review-rules.md`, which
    reads git only; the sweep fetches nothing, so it reads `origin/main` as the last fetch left it,
@@ -103,9 +125,10 @@ step 1.
    break, as `### C-n · <path>:<line> · every change` when it asks something of every pull request,
    or of every one that makes a kind of change, or `· code` when it governs how code is written,
    and the claim in one line. Show the `C-` claims and ask once: **Sweep these** (Recommended),
-   **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**. Then, all in one
-   message, one `diff-probe` per merged pull request the script listed, past thirty the thirty
-   merged most recently, each given this repository's path, its number and sha, the claims file
+   **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**. Then one
+   `diff-probe` per merged pull request the script listed, past thirty the thirty merged most
+   recently, at most twenty running at once, Claude Code's limit on agents: the first twenty in one
+   message, then one more as each returns, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
    and every `C-` claim. Write each block to `.review/revision/sweep/pr-NNNN.md` as returned. Into
    "Practice", per claim: the pull requests it was judged on and how many follow it, break it,
@@ -188,15 +211,46 @@ step 1.
     developers', or on a break still on `main`; low when it rests only on AI findings' agree
     rates, since a person's comment is more often about the design and a finding agreed to may
     have missed the mark; medium otherwise. No cap: the group takes them in order and leaves the
-    rest blank. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
+    rest blank. Each line also says what the proposal applies to: project-wide, for a rule with no
+    `repos:` line or a `context/` entry, or the repositories its `repos:` line names, or, for a
+    `ticket/` or `doc/`, the repository whose code or document it names; and where `apply` would
+    change it: the standard's repository, this repository's diff, or, for a `ticket/`, Jira through
+    `ticket-draft`. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
     diff and no archive entry. Ask, so `apply` can check the branch out: **Commit and push the
     branch** (Recommended: the group marks it on GitHub or in any checkout), **Commit only**,
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,
     or **Let's discuss**. Either commit answer commits the report in `<log>` with the records, in
     the clone; with no clone, nothing is committed and the question is not asked: the report and
-    the records stay in `<log>` here, as `revise`'s "The standard's repository" says. Then
-    stop, saying in one line how the group marks: in the meeting the driver writes each verdict
-    on its proposal's `Mark:` line and ticks the box, on that branch, on GitHub or in any checkout, and commits the marks there; when the branch was not
-    pushed, where it was committed; with no clone, in the report in this working tree, left
-    uncommitted for `apply`. When step 2 wrote drafts, a last line says how many, and that
-    `/lasp-dev:skill-feedback <path>` files each, shown whole before its yes.
+    the records stay in `<log>` here, as `revise`'s "The standard's repository" says. In the same
+    widget, a second question, which counts only with **Commit and push the branch**: open the
+    pushed branch as a draft pull request on the standard's repository, as `using-github` sets
+    out, so the group can discuss each proposal in its review before or during the meeting?
+    **Open a draft pull request** or **No pull request**, neither recommended, since it turns on
+    whether the group discusses before it meets. The question shows the title,
+    `Standards revision · <repo> · YYYY-MM`, and the body as they will be sent: the report's path
+    and the records' count; that nothing in the standard has changed yet; that a proposal is
+    discussed in a review comment on its line, and its verdict counts once it is on the proposal's
+    `Mark:` line in the report, written there on the branch or copied in by the driver, since
+    `apply` reads the report, not the threads; and the attribution line `pr-create` appends, at
+    the level `<plugin root>/skills/pr-review/comment-style.md`, "AI assistance level", sets.
+    Only an answer that names the pull request opens it.
+
+    Then stop with the run's result, in this order, a table where items are compared:
+    - **Scope**: where the standard is stored, the window, and the scope list from the start of
+      this file, each repository with what the run did there.
+    - **Proposals**: how many, by priority, then a table of each, its id, what it proposes, what
+      it applies to and where `apply` would change it, in the overview's order; the held by the
+      bar and the held candidates as counts.
+    - **What this run changed**: the records copied into each `<log>`, the report's path, and
+      what was committed, pushed or opened, with the branch, any clone's path and the pull
+      request's link; `.review/`'s working files in one line.
+    - **What it did not change**: no rule, decision, term, context entry or document, here or in
+      the standard; `apply` changes them from the marks, and commits, pushes or opens a pull
+      request only on its own yes.
+    - **Next**: one line on how the group marks: in the meeting the driver writes each verdict on
+      its proposal's `Mark:` line and ticks the box, on that branch, on GitHub or in any checkout,
+      and commits the marks there, copying in any verdict given in the draft pull request's
+      review; when the branch
+      was not pushed, where it was committed; with no clone, in the report in this working tree,
+      left uncommitted for `apply`. When step 2 wrote drafts, a last line says how many, and that
+      `/lasp-dev:skill-feedback <path>` files each, shown whole before its yes.
