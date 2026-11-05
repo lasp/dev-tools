@@ -280,8 +280,8 @@ the repo's instructions say it commits to its default branch, stay on it and say
 Work the steps in order, keeping the plan file's checkboxes current. On the bug path, run the
 first step's test before any fix and write its failure under that step in the plan file, `Red:
 <test> · <the failure line>`; a test that passes before the fix reproduces nothing, so go back to
-the person. Follow the conventions in the repo's instruction files and, where `.review/standard.md`
-holds them, its agent guidance and data conventions: habits not to repeat here, and facts about
+the person. Follow the conventions in the repo's instruction files and, in a repository with a
+standard, the agent guidance and data conventions in `.review/standard.md`: habits not to repeat here, and facts about
 the data the code must respect.
 
 Code, comments, docstrings, and docs describe the code as it now is. A comment can say why the
