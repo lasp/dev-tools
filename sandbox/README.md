@@ -54,6 +54,15 @@ checkouts, after a change to a skill's `description:`:
 sandbox/smoke.py --scenarios sandbox/triggers/scenarios.yaml --base ../dev-tools-main --head . --sandbox ~/sbx/1002 --repeat 3
 ```
 
+The tracker pack, `tracker/scenarios.yaml`, runs in `widgets` given its own standard with a Jira
+workflow, against a Jira project that `tracker/fixture/mcp-atlassian-stub.py` serves read-only from
+`jira.json`: `ticket-draft` drafting a new ticket and reformatting an older one through to the paste
+file, its format triage on a ticket in the older layout and one in the current format, and `work`
+routing a To Do ticket with no context page. Its `mcp.json` names the stub as
+`${SBX_FIXTURES}/mcp-atlassian-stub.py`, which `run.py` sets for the session, as the pack's header
+shows. The stub has no write tools, as a read-only server has none, so a write plan's gate is
+never reached: each run hands its writes over to paste.
+
 A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
 directory beside this file, given with `--scenarios`, with a README that lists its scenarios and

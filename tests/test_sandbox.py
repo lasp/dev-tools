@@ -126,6 +126,71 @@ class TriggerPack(unittest.TestCase):
 
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
+class TrackerPack(unittest.TestCase):
+    """sandbox/tracker/: scenarios against a Jira project the pack's read-only stub serves."""
+
+    PACK = ROOT / "sandbox" / "tracker" / "scenarios.yaml"
+    STUB = ROOT / "sandbox" / "tracker" / "fixture" / "mcp-atlassian-stub.py"
+    SERVER = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/mcp-atlassian-stub.py", "--read-only"],
+              "env": {"READ_ONLY_MODE": "true"}}
+
+    def setUp(self):
+        patch = mock.patch.object(run, "SCENARIOS", self.PACK)
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.known = run.scenarios()
+
+    def serve(self, *requests: dict) -> list[dict]:
+        lines = "".join(json.dumps({"jsonrpc": "2.0", **r}) + "\n" for r in requests)
+        out = subprocess.run([sys.executable, "-I", str(self.STUB), "--read-only"], input=lines,
+                             capture_output=True, text=True, check=True).stdout
+        return [json.loads(line) for line in out.splitlines()]
+
+    def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
+        self.assertEqual(len(self.known), 5)
+        well_formed(self, self.known, {"widgets"})
+        for s in self.known.values():
+            self.assertTrue(s["id"].startswith("tracker-"), s["id"])
+            for name in re.findall(r'"\$SBX_FIXTURES/([^"]+)"', " ".join(s.get("setup", []))):
+                self.assertTrue((run.fixture_dir() / name).is_file(), (s["id"], name))
+
+    def test_the_documented_server_gets_the_atlassian_rules_and_is_read_only(self):
+        self.assertIn(json.dumps(self.SERVER["args"][1]), self.PACK.read_text())
+        self.assertEqual(run.server_kind(self.SERVER), "atlassian")
+        sandbox = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, sandbox)
+        (sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"atlassian": self.SERVER}}))
+        run.write_settings(sandbox, ROOT)
+        allow = json.loads((sandbox / "settings.json").read_text())["permissions"]["allow"]
+        self.assertIn("mcp__atlassian", allow)
+
+    def test_the_stub_serves_a_ticket_as_stored_and_refuses_an_unknown_key(self):
+        listed, stored, missing = self.serve(
+            {"id": 1, "method": "tools/list"},
+            {"id": 2, "method": "tools/call", "params": {"name": "jira_search", "arguments": {"jql": "key = PROJ-57"}}},
+            {"id": 3, "method": "tools/call", "params": {"name": "jira_get_issue", "arguments": {"issue_key": "PROJ-99"}}},
+        )
+        names = {t["name"] for t in listed["result"]["tools"]}
+        self.assertIn("jira_get_issue", names)
+        self.assertFalse({n for n in names if re.match(r"(jira|confluence)_(create|update|delete|add|transition|link|assign|move|remove)", n)})
+        issues = json.loads(stored["result"]["content"][0]["text"])["issues"]
+        self.assertEqual([i["key"] for i in issues], ["PROJ-57"])
+        self.assertIn("\nh1. Context\n", issues[0]["description"])
+        self.assertTrue(missing["result"]["isError"])
+        self.assertIn("PROJ-99", missing["result"]["content"][0]["text"])
+
+    def test_the_pack_plants_no_credentials(self):
+        spec = importlib.util.spec_from_file_location("secret_scan_tests", ROOT / "tests" / "test_secret_scan.py")
+        scan = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(scan)
+        planted = scan.planted
+        pack = "sandbox/tracker/"
+        files = [str(p.relative_to(ROOT)) for p in (ROOT / pack).rglob("*") if p.is_file()]
+        self.assertTrue(files)
+        self.assertEqual(planted(files), {})
+
+
+@unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
 class Sandbox(unittest.TestCase):
     def setUp(self):
         self.sandbox = Path(tempfile.mkdtemp())
@@ -1170,6 +1235,16 @@ class Reuse(unittest.TestCase):
                 self.assertRaisesRegex(RuntimeError, "setup reached"):
             run.run_once(self.sandbox, scenario, self.plugin, self.sandbox / "runs" / "x", {})
         self.assertEqual(stop.call_args.args[0], "true")
+        self.assertEqual(stop.call_args.kwargs["env"]["SBX_FIXTURES"], str(self.sandbox / "pack" / "fixture"))
+
+    def test_a_packs_session_reads_the_packs_fixtures_for_its_mcp_json(self):
+        pack = self.sandbox / "pack" / "scenarios.yaml"
+        scenario = {**self.scenario, "repo": "gizmos", "setup": []}
+        stop = mock.Mock(side_effect=RuntimeError("session reached"))
+        with mock.patch.object(run, "SCENARIOS", pack), mock.patch.object(run, "child", stop), \
+                self.assertRaisesRegex(RuntimeError, "session reached"):
+            run.run_once(self.sandbox, scenario, self.plugin, self.sandbox / "runs" / "x", {})
+        self.assertEqual(Path(stop.call_args.args[0][0]).name, "sbx-claude")
         self.assertEqual(stop.call_args.kwargs["env"]["SBX_FIXTURES"], str(self.sandbox / "pack" / "fixture"))
 
     def test_list_reads_the_scenario_file_given_and_refuses_a_missing_one(self):

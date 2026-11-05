@@ -1,9 +1,10 @@
 # The tracker pack: scenarios that read a Jira project, served by fixture/mcp-atlassian-stub.py from
 # fixture/jira.json, in `widgets` with its own standard recording a Jira workflow. Build the sandbox
-# as the generic pack's README says, then point its mcp.json at the stub, by absolute path:
+# as the generic pack's README says, then write its mcp.json naming the stub through $SBX_FIXTURES,
+# which run.py sets for the session to this pack's fixture/:
 #
 #   {"mcpServers": {"atlassian": {"command": "python3",
-#     "args": ["-I", "<this directory>/fixture/mcp-atlassian-stub.py", "--read-only"],
+#     "args": ["-I", "${SBX_FIXTURES}/mcp-atlassian-stub.py", "--read-only"],
 #     "env": {"READ_ONLY_MODE": "true"}}}}
 #
 # The stub has no write tools, as a read-only mcp-atlassian has none, so each skill hands its Jira
@@ -34,6 +35,7 @@ scenarios:
       Markdown heading or bullet. The last message says the server is read-only, so everything is
       to paste.
     expect:
+      ends: success
       files: [".review/context/*.jira.txt"]
 
   - id: tracker-ticket-draft-reformat
@@ -58,6 +60,7 @@ scenarios:
       candidate a scope question; criterion 1 loses "observed by a unit test", which moves to For
       planning. .review/context/PROJ-57.jira.txt holds the description in wiki markup.
     expect:
+      ends: success
       files: [".review/context/PROJ-57.jira.txt", ".review/context/PROJ-57.original.txt"]
 
   - id: tracker-work-no-page

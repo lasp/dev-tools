@@ -8,7 +8,8 @@
 
 The scenario file is `scenarios.yaml` beside this script unless --scenarios names another, such as
 a project's own scenario pack kept outside the plugin; its fixtures are the `fixture/` directory
-beside it, which setup and verify commands read as `$SBX_FIXTURES`.
+beside it, which setup and verify commands, and the session, read as `$SBX_FIXTURES`, so
+`mcp.json` can name a server the pack serves as `${SBX_FIXTURES}/<file>`.
 
 A run resets both sandbox clones to their pins, runs the scenario's setup, then its turns in one
 session through `sbx-claude`, the second and later resuming the first, and stops at the first
@@ -176,7 +177,8 @@ def scenario_file() -> Path:
 
 
 def fixture_dir() -> Path:
-    """The scenario file's fixtures, which setup and verify commands read as $SBX_FIXTURES."""
+    """The scenario file's fixtures, which setup and verify commands and the session read as
+    $SBX_FIXTURES."""
     return scenario_file().parent / "fixture"
 
 
@@ -587,7 +589,7 @@ def run_once(sandbox: Path, scenario: dict, plugin: Path, out: Path, env: dict) 
     for turn, prompt in enumerate(scenario["turns"], 1):
         cmd = [str(HERE / "sbx-claude"), str(sandbox), scenario["repo"], str(log), *(["--resume", session] if session else [])]
         child([*cmd, "--", prompt], check=False, capture_output=True, text=True,
-              env={**os.environ, **env, "SBX_PLUGIN_DIR": str(plugin)})
+              env={**os.environ, **env, "SBX_PLUGIN_DIR": str(plugin), "SBX_FIXTURES": str(fixture_dir())})
         if tokens:
             in_files += file_leaks(repo, base, before, tokens, turn)
         ends = results(events(log))
