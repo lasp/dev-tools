@@ -320,7 +320,8 @@ a review comment whose `html_url` has no `#discussion_r<n>`, a review with a bod
 refuses.
 
 Writers: `scripts/comment_list.py`, run by harvest.md's "Records". Readers: `guidance-extractor`
-and `scripts/guidance_check.py`, through harvest.md's "Guidance".
+and `scripts/guidance_check.py`, through harvest.md's "Guidance"; `sandbox/harvest_recall.py`,
+whose fixture holds comment lists.
 
 Pinned by: tests/test_comment_list.py::test_lists_every_comment_with_its_own_authorship
 
@@ -360,7 +361,8 @@ It prints `slices: <n> · comments: <n> · items: <n> · general: <n> · pr-spec
 read as JSON is one, and leaves its pull requests in no slice while the other slices are checked.
 
 Writers: `guidance-extractor`, at the path harvest.md's "Guidance" gives it. Readers:
-`scripts/guidance_check.py`; `revise` `prepare`, through harvest.md.
+`scripts/guidance_check.py`; `revise` `prepare`, through harvest.md; `sandbox/harvest_recall.py`
+`--items`.
 
 Pinned by: tests/test_guidance_check.py::test_a_run_true_to_its_comments_passes
 
@@ -860,7 +862,7 @@ mismatch:` line with more after it, a line of no form above, or a `Procedure:`, 
 
 Writers: `thread-analyst`, at the path harvest.md's "Analysts" gives it. Readers:
 `scripts/block_tally.py`, run by harvest.md's "Analysts"; `revise` `prepare` step 2 and `onboard`'s
-first rules, for the asks.
+first rules, for the asks; `sandbox/harvest_recall.py` `--analyst`, through `block_tally.py`'s grammar.
 
 Pinned by: tests/test_block_tally.py::test_the_analysis_counts_asks_by_who_source_category_and_outcome
 
