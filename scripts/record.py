@@ -342,7 +342,7 @@ def pointer(thread: dict, pr_author: str, finding: dict | None = None, judgment:
         adjudicate(finding, pr_author, judgment)
         word = {"answered": finding.get("verdict", "answered")}.get(finding["state"], finding["state"])
         rest, by = finding.get("reason", ""), "review"
-        at = finding.get("decided") if finding["replies"] and finding["state"] != "unanswered" else None
+        at = finding["decided"] if finding["replies"] and finding["state"] != "unanswered" and finding["severity"] != "unparsed" else None
         judged = finding.get("judged")
     else:
         own = [i for i, c in enumerate(people) if c["author"] == pr_author]
