@@ -11,7 +11,8 @@ meeting deferred everything: stop, there is nothing to write, and name the repor
 in a clone, its branch. Then, by mark:
 - A proposal not marked `accept` gets no archive entry, no diff line of its own and no ticket. A
   declined, escalated or blank admission, the last one the meeting deferred, returns to the held
-  candidates with its evidence and its quotes.
+  candidates with its evidence and its quotes; a `question/` marked `answer:` is settled, and
+  one left blank returns.
 - A proposal held by the bar is accepted only by `accept, override: <reason>`. A held admission
   not so marked returns to the held candidates; a held rewording, promotion or broadening not so
   marked leaves its rule as it stands. A held proposal marked a plain `accept` stops `apply`,
@@ -42,7 +43,8 @@ in a clone, its branch. Then, by mark:
    a new one's under a `### R-NNN · <title>` heading with a `Wording:` link from its entry, since
    the lint refuses a ledger that mixes the two; a changed title changes that file's anchor, and
    the ledger's link changes with it. Whatever the marks, the diff also rewrites the
-   ledger's `## Candidates below the criteria` from the held candidates, of every kind, the admissions declined,
+   ledger's `## Candidates below the criteria` from the held candidates, of every kind, each
+   other than a rule with a `kind: <kind>` line, the admissions declined,
    escalated or deferred, and the held admissions not accepted with an override, each with its evidence, its
    quotes and the criterion or check it fails. An admitted, reworded, promoted or broadened entry takes its
    `scope:` and `example:` lines verbatim from under its proposal. An admitted rule's `since:` is
@@ -64,10 +66,10 @@ in a clone, its branch. Then, by mark:
    - `D-NNN` entries go at the end of `<standard files>/decisions.md`.
    - `tool/<rule>` changes the lint configuration the repository's instruction files or CI name,
      in this repository's diff, enabling that rule and nothing else.
-   - `review/<topic>` adds its `Do not flag:` or severity line to the rule it names, or its
-     decision to `decisions.md`.
-   - `question/<slug>` writes nothing: its mark is the group's answer, and the run's result lists
-     each with its answer, for the driver to carry where it belongs.
+   - `review/<topic>` adds its decision to `decisions.md`; one that names a rule is that rule's
+     rewording, linted with the rules.
+   - `question/<slug>` writes nothing and is never held: its `answer:` mark is the group's answer,
+     and the run's result lists each with its answer, for the driver to carry where it belongs.
 
    Lint each changed agent guidance or data conventions file with `python3 "<plugin
    root>/scripts/entries_lint.py"` on its copy beside the ledger's; a refusal stops as the ledger's

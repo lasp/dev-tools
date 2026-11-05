@@ -78,6 +78,14 @@ class Tally(unittest.TestCase):
             "items: 10 · admit: 3 · covered: 1 · hold: 2 · support: 1 · not listed: 3",
         ])
 
+    def test_a_kind_whose_bar_reads_no_signal_admits_without_one(self):
+        for kind in ("tool-config", "exemplar", "review-calibration", "open-question"):
+            with self.subTest(kind=kind):
+                code, lines = self.tally([COMMENT], {**ITEM, "quote": "no guards.", "signal": "none", "kind": kind})
+                self.assertEqual((code, lines[0].split(" · ")[:1] + lines[0].split(" · ")[5:7]), (0, ["admit", kind, "none"]))
+        self.assertTrue(self.tally([COMMENT], {**ITEM, "quote": "no guards.", "signal": "none", "kind": "process"})[1][0]
+                        .startswith("hold · "))
+
     def test_refuses_a_run_the_guidance_check_refuses(self):
         code, lines = self.tally([COMMENT], {**ITEM, "quote": "never said"})
         self.assertEqual(code, 1)
@@ -109,9 +117,12 @@ class Benchmark(unittest.TestCase):
         signaled = [i for i in labels["items"] if i["signal"] in guidance_tally.SIGNALS and not i.get("covered_by")]
         self.assertEqual([i["id"] for i in signaled if not words(i) & {"admit", "hold"}], [])
         self.assertEqual([i["id"] for i in labels["items"] if i.get("covered_by") and words(i) != {"covered"}], [])
-        routed = [i["kind"] for i in labels["items"] if ("admit", i["kind"]) in read(i)]
-        self.assertEqual({k: routed.count(k) for k in ("data-convention", "process", "tool-config")},
-                         {"data-convention": 8, "process": 4, "tool-config": 4})
+        astray = {"L25", "L46"}  # tool-checkable asks the recorded run's extractor read as process and agent guidance
+        for kind in ("data-convention", "process", "tool-config"):
+            with self.subTest(kind=kind):
+                labeled = {i["id"] for i in labels["items"] if i["kind"] == kind}
+                routed = {i["id"] for i in labels["items"] if i["kind"] == kind and ("admit", kind) in read(i)}
+                self.assertEqual(labeled - routed, labeled & astray)
         self.assertEqual([i["id"] for i in labels["items"] if "hold" in words(i) and i["signal"] in guidance_tally.SIGNALS], [])
         admitted = {int(cells[3]) for cells in lines if cells[0] == "admit"}
         self.assertEqual([n for n in labels["negatives"] if n in admitted], [])

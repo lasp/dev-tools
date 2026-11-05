@@ -109,6 +109,17 @@ class Clusters(unittest.TestCase):
             with self.subTest(title=title):
                 self.assertEqual(self.run_clusters(self.two(held=title))[0], 0)
 
+    def test_a_kind_is_one_its_lines_carry_or_any_for_notes_alone(self):
+        minority = self.two(items=["s1-0", "s1-2", "s1-3", "s1-4"])
+        minority["clusters"][0]["items"].append("s1-5")
+        minority["clusters"][0]["kind"] = "process"
+        minority["clusters"].pop()
+        minority["clusters"].append({"id": "C2", "kind": "open-question", "principle": "Who owns the image?",
+                                     "items": [], "notes": ["pasted notes-1.md · erin · who owns the image"], "held": None})
+        code, lines = self.run_clusters(minority)
+        self.assertEqual(code, 0, lines)
+        self.assertEqual([x.split(" · ")[2] for x in lines if x.startswith("cluster ·")], ["process", "open-question"])
+
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {
             "'s1-1' is no admit, hold or support line": self.two(items=["s1-0", "s1-1", "s1-2", "s1-3", "s1-4"]),

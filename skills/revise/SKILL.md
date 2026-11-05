@@ -1,9 +1,10 @@
 ---
 name: revise
 description: >
-  Prepares the monthly standards revision: from merged pull requests' review records, proposes
-  rules to retire, reword, graduate or add, tickets for problems still in the code and fixes to
-  documents practice has left behind, for the group to mark, and reports where merged diffs
+  Prepares the monthly standards revision: from merged pull requests' review records and what
+  reviewers said, proposes rules to retire, reword, graduate or add, agent guidance, data
+  conventions, decisions, lint settings and questions for the group, tickets for problems still in
+  the code and fixes to documents practice has left behind, for the group to mark, and reports where merged diffs
   follow or break the rules and the documented practice; `apply` drafts what it
   accepted, and `correct` fixes a misreading in the corpus between revisions. Not for
   disagreeing with a rule, which goes through Disagree and the revision.
@@ -93,12 +94,15 @@ else or invent a term or a decision to fill the gap; `correct` stops there.
 
 ## The marks
 
-Each proposal in the report is a checklist line, `- [ ] <R-0NN, context/<name>, ticket/<slug>
-or doc/<path>> · <proposal> · <the Dial that triggered it, for a rule> · <evidence>`, its detail beneath opening with a `Recommended:` line.
+Each proposal in the report is a checklist line, `- [ ] <R-0NN, A-0NN, F-0NN, D-0NN, tool/<rule>,
+review/<topic>, question/<slug>, context/<name>, ticket/<slug> or doc/<path>> · <proposal> · <the Dial that triggered it, for a rule> · <evidence>`, its detail beneath opening with a `Recommended:` line.
 The group writes its verdict on the proposal's `Mark:` line and ticks its box, one proposal at a
 time and never in bulk: `accept`,
 `decline: <reason>` or `escalate: <reason>`, and, on a proposal the bar held, `accept, override:
-<reason>`, the only mark that accepts it (`rule-bar.md` "Overrides"). A `Recommended:` line is the
+<reason>`, the only mark that accepts it (`rule-bar.md` "Overrides"); on a change to a live data
+convention, `accept, owner: <name>`, the only mark that accepts it, naming its owner; and on a
+`question/`, `answer: <the group's answer>`, which settles it, so it is neither written nor held.
+A `Recommended:` line is the
 report's, never a mark. A proposal whose `Mark:` line is empty is deferred. A draft pull request `prepare` opens on the
 report's branch is a place to discuss proposals; a verdict given there counts once it is on the
 `Mark:` line, which stays the record `apply` reads. A new or reworded rule is worded as `${CLAUDE_SKILL_DIR}/../writing/SKILL.md`
@@ -112,14 +116,15 @@ In `<log>`:
   `${CLAUDE_SKILL_DIR}/outline.md` outlines it; marked by the group, read by `apply`.
 - `correction-YYYY-MM-DD-<id>.yaml` and `note-YYYY-MM-DD-<id>.yaml`, from `correct`.
 
-In `<archive>` and `<context>`, from `apply`: `R-NNN.md` entries and accepted `context/` refreshes.
+In `<archive>` and `<context>`, from `apply`: `<id>.md` entries, `R-NNN`, `D-NNN`, `A-NNN` or
+`F-NNN`, and accepted `context/` refreshes.
 
 In this repository's `.review/`:
 - `harvest/analysis/pr-NNNN.md`, each `thread-analyst` block, written by the analyst.
 - `harvest/guidance/slice-<n>.json`, each `guidance-extractor` run, written by the extractor.
 - `harvest/guidance/tally.txt`, the guidance tally, and `harvest/clusters.json`, the driver's clusters
   of it, checked by `scripts/guidance_clusters.py`.
-- `backtest/R-NNN.entry.md` and `backtest/R-NNN.md`, a proposal's drafted entry and its
+- `backtest/<id>.entry.md`, a proposal's drafted entry, and `backtest/R-NNN.md`, a rule's
   `rule-probe` blocks.
 - `revision/claims.md`, the rules and documented claims the sweep judges, and
   `revision/sweep/pr-NNNN.md`, each `diff-probe` block, written by the probe.

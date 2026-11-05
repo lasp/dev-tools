@@ -24,7 +24,7 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
 
 ## Overview                                 step 10: every proposal below, the held ones included, one line each
 | Priority | Proposal | Applies to | Impact | Rests on | Apply changes |
-| high | ticket/<slug> | <project-wide | <repo>, …> | <n> pull requests, <n> files | <people's asks, a break on main, findings' agree rates> | <the standard's repository | this repository's diff | Jira, through ticket-draft> |
+| high | ticket/<slug> | <project-wide | <repo>, …> | <n> pull requests, <n> files | <people's asks, a break on main, findings' agree rates> | <the standard's repository | this repository's diff | Jira, through ticket-draft | nothing> |
 
 ## Proposals                                steps 3 to 8: one section per destination, harvest.md's "Destinations", each in the overview's order; a section with none is left out
 ### Rules
@@ -54,8 +54,8 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
 - [ ] tool/<rule> · <the linter's rule and the asks it answers> · <evidence pointers>
   Recommended: …
   Mark:
-### Review calibration
-- [ ] review/<topic> · <the severity or do-not-flag change, and the rule it is on> · <evidence pointers>
+### Review calibration                     one that names a rule is that rule's rewording, under Rules
+- [ ] review/<topic> · <the decision on what reviews raise, and at what severity> · <evidence pointers>
   Recommended: …
   Mark:
 ### Questions for the group
@@ -74,7 +74,7 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
   Mark:
 
 ### Held by the bar                         step 7; marked like any proposal
-- [ ] R-0NN · … · <the check that failed>
+- [ ] <R-0NN | A-0NN | F-0NN | D-0NN | tool/<rule> | doc/<path>> · … · <the check that failed>
   Recommended: …
   Mark:
 

@@ -956,7 +956,7 @@ Pinned by: tests/test_standard_file.sh::"the ledger stops before its held candid
 
 ## Agent guidance and data conventions
 
-Version: 1
+Version: 2
 
 Fields: the entries of a standard's `agent-guidance.md` and `data-conventions.md`, each a `###
 A-NNN · <title>` or `### F-NNN · <title>` heading, numbered in order, one series per file. Under
@@ -970,7 +970,11 @@ the file's own, with no heading of level two or three, and a code fence shows an
 leaves the file for the standard's `archive/`. `standards/templates/` holds a starting copy of each
 file.
 
-Writers: a person, from the templates. Readers: `scripts/entries_lint.py`, which checks the form;
+A data convention's owner may follow its source, `source: <document or owner> · owner: <name> ·
+<YYYY-MM>`, when a revision wrote a change the owner accepted (version 2).
+
+Writers: a person, from the templates; `revise` `apply`, which adds entries, moves an agent
+guidance entry's `seen` month and writes an accepted change to a data convention. Readers: `scripts/entries_lint.py`, which checks the form;
 `scripts/standard_file.sh`, which loads both files into the standard every build and review reads,
 after the terminology; `scripts/standard_index.py`, which lists each entry's id, title and, for
 agent guidance, its `seen` month.

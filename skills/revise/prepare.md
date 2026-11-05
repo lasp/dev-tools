@@ -197,8 +197,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    note admits the same way when a named person states a principle or asks for a change in it,
    cited `pasted <file>` with that person's name. Each admitted cluster is a proposal of its kind,
    with the id and destination harvest.md's "Destinations" gives it. A cluster with no `admit` line and a `hold`
-   line is held with the tally's criterion. A `covered` line supports the live rule, decision or
-   instruction it names, listed under it in "Rules", and is no candidate. A `support` line, an agent's statement the author
+   line is held with the tally's criterion. A `covered` line supports the live rule, decision,
+   agent guidance entry, data convention or instruction it names, listed under it in "Rules", and
+   is no candidate. A `support` line, an agent's statement the author
    changed as asked, never admits; it is listed under its cluster. Every line the tally prints
    reaches the report, as a proposal's evidence, a rule's support or a held candidate, never
    dropped.
@@ -209,11 +210,13 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
 6. **Merge the held candidates.** Merge this window's clusters into the ledger's "Candidates below
    the criteria", a cluster whose `held` line names a candidate into that one, re-judge each
    against the Dials, and propose each that now meets them. The rest
-   go under "Held candidates", each with its updated evidence, its quotes, and the criterion
-   still failing, never as a proposal to mark; drop one under the Candidate drop Dial and say so.
-   Then consolidate: proposals acting on the same rule become one; candidates asking for the same
-   change become one, with both sets of evidence; a candidate a live rule already covers becomes a
-   proposal to reword that rule, except a tally `covered` line, which only supports it.
+   go under "Held candidates", each with its updated evidence, its quotes, its kind and the
+   criterion still failing, never as a proposal to mark; drop one under the Candidate drop Dial
+   and say so. A held candidate's kind is its `kind:` line, and one without is a rule. Then
+   consolidate: proposals acting on the same entry become one; candidates asking for the same
+   change become one, with both sets of evidence; a candidate a live entry of its kind already
+   covers changes that entry, as harvest.md's "Destinations" says, except a tally `covered` line,
+   which only supports it.
 
    **Tickets and documents.** Two kinds of proposal no Dial governs, marked like any other, and
    made below the Revision floor too, since they rest on no count of records:
@@ -251,8 +254,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     medium when it rests on one person's statement in one pull request; low when it rests only on AI findings' agree
     rates, since a person's comment is more often about the design and a finding agreed to may
     have missed the mark; medium otherwise. No cap: the group takes them in order and leaves the
-    rest blank. Each line also says what the proposal applies to: project-wide, for a rule with no
-    `repos:` line or a `context/` entry, or the repositories its `repos:` line names, or, for a
+    rest blank. Each line also says what the proposal applies to: project-wide, for a rule,
+    decision or entry with no `repos:` line or a `context/` entry, or the repositories its
+    `repos:` line names, or, for a
     `ticket/`, `doc/` or `tool/`, the repository whose code, document or configuration it names;
     and where `apply` would change it: the standard's repository, this repository's diff, Jira
     through `ticket-draft` for a `ticket/`, or nothing for a `question/`, which the group answers. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
