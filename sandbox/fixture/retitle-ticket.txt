@@ -1,4 +1,4 @@
-PROJ-51 · Refuse a negative count in by_part
+PROJ-57 · Refuse a negative count in by_part
 Task · New · no estimate · epic: none · reporter: bob, 2026-02-02 · Original request comment: no
 
 ticket-draft: drafted 2026-02-02 by bob · open questions: 0
@@ -11,10 +11,10 @@ A count below zero in an inventory file is a typing mistake, and by_part passes 
 h1. Driving Requirements
 by_part refuses an inventory that holds a negative count.
 
-h1. Technical Requirements
+h2. Technical Requirements
 * by_part raises ValueError for a count below zero, as it does for a part listed twice
 
-h1. Acceptance Criteria
+h2. Acceptance Criteria
 # An inventory with a negative count raises ValueError from by_part
 # An inventory with no negative count returns the same mapping as now
 

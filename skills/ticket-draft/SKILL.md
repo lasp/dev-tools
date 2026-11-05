@@ -340,11 +340,13 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
    answered in session and each assumption taken, then the questions kept open, those answered
    for now marked so. For an existing ticket, Removed names every fact of the original the draft
    no longer holds, with its reason, and Reworded every one whose words changed or that moved to a
-   field, a link or For planning. When the description of an existing ticket changes, read its
-   summary against the revised Driving Requirements: one that no longer says what they ask, or
-   names work now out of scope, gets a new summary proposed, as `using-jira`'s "Copy-paste output"
-   sets it, shown now and after as a field change and listed under Reworded; one that still fits
-   is kept. This is the page's What changed and the ticket's `Session comment`. Show
+   field, a link or For planning. This is the page's What changed and the ticket's `Session
+   comment`. When the description of an existing ticket changes, read its summary against the
+   revised Driving Requirements, whose main point a summary names, not each requirement: one that
+   no longer names it, or names work now out of scope, gets a new summary proposed in the form
+   `using-jira`'s "Copy-paste output" sets, shown now and after as a field change and listed under
+   Reworded. One that still names it is kept as it reads, whatever its form: a summary is not
+   replaced for its form alone. Show
    the draft as it now stands, each kept-open question's drafted reason and effect named as
    theirs to keep or correct, and ask: **Looks right** (Recommended), which writes the files,
    step 8's page, context copy and paste file; **Change it**, folded in and asked again;

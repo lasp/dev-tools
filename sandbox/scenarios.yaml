@@ -236,6 +236,8 @@ scenarios:
       not_says: ["0\\.137", "291\\.4", "\\bK7\\b"]
 
   - id: ticket-draft-retitle
+    # Unlike the rest of the pack, these two scenarios check what step 8 writes, after the
+    # skill's gates: the last turn is spare, for a run that asks one more round.
     repo: widgets
     setup:
       - cp "$SBX_FIXTURES/retitle-ticket.txt" ticket.txt
@@ -245,23 +247,25 @@ scenarios:
       a new summary as a field change rather than keeping a title that no longer fits.
     turns:
       - >-
-        /lasp-dev:ticket-draft refine PROJ-51. Jira is not connected: the ticket as it stands is
+        /lasp-dev:ticket-draft refine PROJ-57. Jira is not connected: the ticket as it stands is
         in ticket.txt. The work has changed since it was filed: negative counts are fine, since
         returns are entered as negative counts. What we need now is for by_part to accept a part
         listed twice and sum its counts, instead of raising ValueError.
       - Right. Draft this ticket.
       - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
       - Looks right. Paste it all.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
     must_not_run: ["mcp__*", "Bash(git push*)"]
     look_at: >-
       What changed lists the summary under Reworded, now and after, and the field changes and
-      PROJ-51.jira.txt's Summary line carry one about summing a part listed twice.
+      PROJ-57.jira.txt's Summary line carry one about summing a part listed twice.
     verify:
-      - test -f .review/context/PROJ-51.jira.txt
-      - "! grep -qE '^Summary: *Refuse a negative count in by_part *$' .review/context/PROJ-51.jira.txt"
+      - test -f .review/context/PROJ-57.jira.txt
+      - "grep -qiE '^[ *-]*Summary\\b' .review/context/PROJ-57.jira.txt"
+      - "grep -iE '^[ *-]*Summary\\b' .review/context/PROJ-57.jira.txt | grep -qiE '\\b(sums?|summing|twice|duplicate)\\b'"
     expect:
       ends: success
-      files: [".review/context/PROJ-51.jira.txt"]
+      files: [".review/context/PROJ-57.jira.txt"]
 
   - id: ticket-draft-retitle-control
     repo: widgets
@@ -273,20 +277,21 @@ scenarios:
       summary and proposes no field change for it.
     turns:
       - >-
-        /lasp-dev:ticket-draft refine PROJ-51. Jira is not connected: the ticket as it stands is
-        in ticket.txt. One addition: the ValueError message names the part and its count, so the
-        person fixing the file can find the line.
+        /lasp-dev:ticket-draft refine PROJ-57. Jira is not connected: the ticket as it stands is
+        in ticket.txt. The point has grown: by_part refuses every negative count in the inventory
+        at once, one ValueError naming each part that holds one, not only the first it meets.
       - Right. Draft this ticket.
       - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
       - Looks right. Paste it all.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
     must_not_run: ["mcp__*", "Bash(git push*)"]
     look_at: The summary is kept, and no field change names it.
     verify:
-      - test -f .review/context/PROJ-51.jira.txt
-      - "grep -qE '^Summary: *Refuse a negative count in by_part *$' .review/context/PROJ-51.jira.txt"
+      - test -f .review/context/PROJ-57.jira.txt
+      - "! grep -iE '^[ *-]*Summary\\b' .review/context/PROJ-57.jira.txt | grep -qvE 'Refuse a negative count in by_part *$'"
     expect:
       ends: success
-      files: [".review/context/PROJ-51.jira.txt"]
+      files: [".review/context/PROJ-57.jira.txt"]
 
   - id: design-doc-controlled-two-items
     repo: widgets
