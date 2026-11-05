@@ -289,6 +289,41 @@ Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
 
 Pinned by: tests/test_record.py::test_a_comment_without_its_date_is_refused_naming_its_position
 
+## The comment list
+
+Version: 1
+
+Fields: `.review/harvest/threads/pr-NNNN/comment-list.json`, a JSON object: `pr`, the pull
+request's number, and `comments`, every comment in its dump, ordered by `created` then `id` and
+empty when no one commented: each review thread's opening comment and
+every reply in it, each review whose summary is not blank, and each conversation comment, a bot's
+and the pull request author's included. Each item has exactly these keys: `pr`, the number; `id`,
+the comment's number (a review comment's from its `html_url`'s `#discussion_r<n>`); `url`;
+`author`, the login; `authorship`, `human`, `ai-drafted` or `bot`, as "The record"'s "Authorship"
+reads this comment alone; `kind`, `thread`, `reply`, `review` or `comment`; `thread`, the review
+thread's id, null for a review or a conversation comment; `path` and `line`, where the comment
+anchors, `line` its `original_line`, the line in the commit it was made on, else `line`, null at
+file level, both null for a review or a conversation comment; `created`,
+GitHub's timestamp (`created_at`, or a review's `submitted_at`); and `body`, the text unchanged.
+
+Every comment is listed, a reply as much as the comment that opened its thread: guidance is read
+per comment, apart from how a thread was settled, which the record and `thread-analyst` judge per
+thread.
+
+`scripts/comment_list.py <dump> [...]` writes it from a dump `scripts/thread_dump.py` wrote, and
+prints `wrote <path>: <n> comments, <n> human, <n> ai-drafted, <n> bot` per dump. An `id` is
+unique in the list, since a reader names a comment by its number alone. It exits 1 with the
+reason, writing nothing for any dump given, for a dump directory not named `pr-NNNN`, one of
+`comments.json`, `reviews.json` and `issue-comments.json` missing or not JSON,
+a review comment whose `html_url` has no `#discussion_r<n>`, a review with a body but no
+`submitted_at`, an id given twice, across kinds as well as within one, or a profile `record.py`
+refuses.
+
+Writers: `scripts/comment_list.py`, run by harvest.md's "Records". Readers: none in the plugin;
+it is the input a guidance extraction reads.
+
+Pinned by: tests/test_comment_list.py::test_lists_every_comment_with_its_own_authorship
+
 ## The judgments
 
 Version: 1

@@ -14,6 +14,11 @@ emptied first, so the caller copies those records away before the next harvest a
 repository last; the sections below read this repository's records alone, since they read its
 code.
 
+Then run `python3 "<plugin root>/scripts/comment_list.py"` with each of this repository's dumps,
+`.review/harvest/threads/pr-NNNN/`, which writes `comment-list.json` in each: every comment,
+replies and review summaries included, with its own authorship (`docs/contracts.md`, "The
+comment list"). An exit 1 stops the step with its line.
+
 ## Analysts
 
 Run one `thread-analyst` per merged pull request the harvest wrote a record for, at most thirty:
