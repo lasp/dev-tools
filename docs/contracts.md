@@ -717,15 +717,18 @@ naming the file's pull request; then one line per ask, `<source> <id> · <opener
 correctness, tests, naming, docs, scope, process and style, `outcome` `changed as asked`,
 `changed differently`, `declined: "<reason>"`, `discussed, no change`, `unanswered` or `none`, and
 `diff` `addresses it`, `does not` or `cannot tell`; then one each of `Procedure: <ids or none>`,
-`Not read: <ids or none>` and `Read: <files>`. `scripts/block_tally.py analysis <dir>` prints
-`blocks: <n> · asks: <n> · asked none: <n> · mismatches: <n>`; one line per combination
-of the asks other than `asked: none`, `count · <by> · <source> · <category> · <outcome> · <n>`, a
-`declined` outcome without its reason, in the orders above; `unanswered · pr-NNNN · <source> <id>
-· by: <by> · diff: <diff>`; `procedure · pr-NNNN · <the Procedure: text>` and `not read · pr-NNNN ·
-<the Not read: text>` for each not `none`; and `mismatch · pr-NNNN · <ids>`. It exits 2 with a
-`CANNOT RUN` line, printing nothing, on a file not named `pr-NNNN.md`, a heading missing or naming
-another pull request, a line of no form above, or a `Procedure:`, `Not read:` or `Read:` line
-missing or repeated.
+`Not read: <ids or none>` and `Read: <files>`. `scripts/block_tally.py analysis <dir> pr-NNNN
+[...]` reads the named pull requests' blocks only, since the directory keeps blocks from earlier
+runs, and prints `blocks: <n> · asks: <n> · asked none: <n> · mismatches: <n>`; one line per
+combination of the asks other than `asked: none`, `count · <by> · <source> · <category> · <outcome>
+· <n>`, a `declined` outcome without its reason, in the orders above; `outcome unanswered ·
+pr-NNNN · <source> <id> · by: <by> · diff: <diff>` for each ask the analyst read as unanswered,
+which is not the record's verdict; `procedure · pr-NNNN · <the Procedure: text>` and `not read ·
+pr-NNNN · <the Not read: text>` for each not `none`; and `mismatch · pr-NNNN · <ids>`. It exits 2
+with a `CANNOT RUN` line, printing nothing, on a named block missing, a pull request named twice or
+not as `pr-NNNN`, an empty block, a heading missing or naming another pull request, a `record
+mismatch:` line with more after it, a line of no form above, or a `Procedure:`, `Not read:` or
+`Read:` line missing or repeated.
 
 Writers: `thread-analyst`, at the path harvest.md's "Analysts" gives it. Readers:
 `scripts/block_tally.py`, run by harvest.md's "Analysts"; `revise` `prepare` step 2 and `onboard`'s
@@ -741,13 +744,14 @@ Fields: `.review/revision/sweep/pr-NNNN.md`, one `diff-probe` block, its blank l
 heading `## pr-NNNN · <sha, 7 characters>` naming the file's pull request; one line per claim,
 `<id> · follows · <place>`, `<id> · breaks · <place> · "<the line>" · <why>`, `<id> · not
 touched` or `<id> · not judged · no description`, `id` an `R-NNN` or `C-n`, each id once; then
-`Not read: <paths or none>`. `scripts/block_tally.py sweep <dir>` prints `blocks: <n>`; per claim,
+`Not read: <paths or none>`. `scripts/block_tally.py sweep <dir> pr-NNNN [...]` reads the named
+pull requests' blocks only and prints `blocks: <n>`; per claim,
 rules first, `claim · <id> · judged <n> · follows <n> · breaks <n> · not touched <n> · not judged
 <n>`, with ` · drift` when breaks are more than half of follows and breaks together; `break ·
 <id> · pr-NNNN · <place>` per break; and `not read · pr-NNNN · <paths>` for each not `none`. It
-exits 2 with a `CANNOT RUN` line, printing nothing, on a file not named `pr-NNNN.md`, a heading
-missing or naming another pull request, a line of no form above, a claim judged twice, or a
-`Not read:` line missing or repeated.
+exits 2 with a `CANNOT RUN` line, printing nothing, on a named block missing, a pull request named
+twice or not as `pr-NNNN`, a heading missing or naming another pull request, a line of no form
+above, a claim judged twice, or a `Not read:` line missing or repeated.
 
 Writers: `diff-probe`, at the path `revise` `prepare` step 2 gives it. Readers:
 `scripts/block_tally.py`, run by `prepare` step 2 for "Practice".
@@ -761,10 +765,13 @@ Version: 1
 Fields: `scripts/probe_input.py`'s printout from one drafted entry, `.review/backtest/R-NNN.entry.md`:
 `R-NNN · <title>`, then the wording, one line each, the entry's `> ` lines without the marker or,
 when the entry is followed by a second `### R-NNN · <title>` heading of the same id and title, that
-heading's lines, then the entry's one `Do not flag:` line. Nothing else of the entry is printed, its
+heading's lines, then the entry's one `Do not flag:` line. Each block ends at the next heading of
+level one to three, as `scripts/rule_lint.py` reads it. Nothing else of the entry is printed, its
 `example:` line least of all, since the probe tests it. The script exits 2 with a `CANNOT RUN` line
-on an entry with no heading or more than two, a second heading that differs, no wording, wording in
-both places, or other than one `Do not flag:` line.
+on an entry with no heading or more than two, a second heading that differs, a first of two
+headings with no `scope:` or `example:` line under it, no wording, wording in both places, other
+than one `Do not flag:` line, or a line to print opening `example:`, `scope:`, `tier:` or
+`Wording:`.
 
 Writers: `scripts/probe_input.py`. Readers: `rule-probe`, given the printout by harvest.md's "The
 bar", run by `revise` and `onboard`.

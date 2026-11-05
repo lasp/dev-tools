@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Count the blocks revise's agents wrote, so the report's numbers come from the files.
 
-`analysis <dir>` reads each `pr-NNNN.md` a `thread-analyst` wrote under
-`.review/harvest/analysis/`; `sweep <dir>` each one a `diff-probe` wrote under
-`.review/revision/sweep/`. docs/contracts.md's "The analysis blocks" and "The sweep blocks" give
-both forms and both printouts.
+`analysis <dir> pr-NNNN [...]` reads the named pull requests' `pr-NNNN.md`, each a `thread-analyst`
+wrote under `.review/harvest/analysis/`; `sweep <dir> pr-NNNN [...]` each a `diff-probe` wrote
+under `.review/revision/sweep/`. Any other file in the directory, such as a block an earlier run
+left, is not read. docs/contracts.md's "The analysis blocks" and "The sweep blocks" give both forms
+and both printouts.
 
-Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the directory is missing or
-a block does not hold its form: a heading missing or naming another pull request than its file,
+Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the directory or a named
+block is missing, a pull request is named twice or not as `pr-NNNN`, or a block does not hold its
+form: a heading missing or naming another pull request than its file,
 a line of no form the block takes, a `Procedure:`, `Not read:` or `Read:` line missing or
 repeated, or a claim judged twice in one sweep block. Stdlib only.
 """
@@ -20,7 +22,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-BY = ("human", "ai-drafted", "bot")
+BY = ("human", "bot", "ai-drafted")
 SOURCES = ("thread", "review", "comment")
 CATEGORIES = ("design", "correctness", "tests", "naming", "docs", "scope", "process", "style")
 OUTCOMES = ("changed as asked", "changed differently", "declined", "discussed, no change", "unanswered", "none")
@@ -45,16 +47,22 @@ class CannotRun(Exception):
     """A block does not hold its form."""
 
 
-def blocks(folder: Path) -> list[tuple[str, list[str]]]:
-    """Each `pr-NNNN.md` under folder, its pull request and its non-blank lines, in number order."""
+def blocks(folder: Path, prs: list[str]) -> list[tuple[str, list[str]]]:
+    """Each named pull request's `pr-NNNN.md` under folder, with its non-blank lines, in number order."""
     if not folder.is_dir():
         raise CannotRun(f"no directory {folder}")
-    found = list(folder.glob("pr-*.md"))
-    for path in found:
-        if not re.fullmatch(r"pr-\d+", path.stem):
-            raise CannotRun(f"{path}: not named pr-NNNN.md")
-    found.sort(key=lambda p: int(p.stem[3:]))
-    return [(p.stem, [line.rstrip() for line in p.read_text().splitlines() if line.strip()]) for p in found]
+    for pr in prs:
+        if not re.fullmatch(r"pr-\d+", pr):
+            raise CannotRun(f"{pr}: not a pull request as pr-NNNN")
+    if len(set(prs)) != len(prs):
+        raise CannotRun(f"a pull request named twice: {' '.join(sorted(p for p in set(prs) if prs.count(p) > 1))}")
+    out = []
+    for pr in sorted(prs, key=lambda p: int(p[3:])):
+        path = folder / f"{pr}.md"
+        if not path.is_file():
+            raise CannotRun(f"{pr}: no block {path}")
+        out.append((pr, [line.rstrip() for line in path.read_text().splitlines() if line.strip()]))
+    return out
 
 
 def claim_order(cid: str) -> tuple[bool, int]:
@@ -77,11 +85,11 @@ def tails(pr: str, lines: list[str], names: tuple[str, ...]) -> dict[str, str]:
     return got
 
 
-def analysis(folder: Path) -> list[str]:
+def analysis(folder: Path, prs: list[str]) -> list[str]:
     counts: Counter = Counter()
     asks = none = mismatches = 0
     unanswered, procedure, not_read, mismatched = [], [], [], []
-    found = blocks(folder)
+    found = blocks(folder, prs)
     for pr, lines in found:
         if not lines:
             raise CannotRun(f"{pr}: empty")
@@ -109,7 +117,7 @@ def analysis(folder: Path) -> list[str]:
             outcome = "declined" if a["outcome"].startswith("declined") else a["outcome"]
             counts[(a["by"], a["source"], a["category"], outcome)] += 1
             if outcome == "unanswered":
-                unanswered.append(f"unanswered · {pr} · {a['source']} {a['id']} · by: {a['by']} · diff: {a['diff']}")
+                unanswered.append(f"outcome unanswered · {pr} · {a['source']} {a['id']} · by: {a['by']} · diff: {a['diff']}")
         if tail["Procedure:"] != "none":
             procedure.append(f"procedure · {pr} · {tail['Procedure:']}")
         if tail["Not read:"] != "none":
@@ -125,11 +133,11 @@ def analysis(folder: Path) -> list[str]:
     ]
 
 
-def sweep(folder: Path) -> list[str]:
+def sweep(folder: Path, prs: list[str]) -> list[str]:
     verdicts: dict[str, Counter] = {}
     breaks: list[tuple[str, str]] = []
     not_read = []
-    found = blocks(folder)
+    found = blocks(folder, prs)
     for pr, lines in found:
         head = SWEEP_HEAD.match(lines[0]) if lines else None
         if not head:
@@ -170,9 +178,10 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("kind", choices=("analysis", "sweep"), help="thread-analyst blocks or diff-probe blocks")
     p.add_argument("folder", type=Path, help="the directory holding the pr-NNNN.md blocks")
+    p.add_argument("prs", nargs="+", help="the pull requests whose blocks to count, as pr-NNNN")
     args = p.parse_args(argv)
     try:
-        lines = (analysis if args.kind == "analysis" else sweep)(args.folder)
+        lines = (analysis if args.kind == "analysis" else sweep)(args.folder, args.prs)
     except CannotRun as e:
         print(f"CANNOT RUN: {e}", file=sys.stderr)
         return 2

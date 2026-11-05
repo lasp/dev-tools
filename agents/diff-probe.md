@@ -1,8 +1,9 @@
 ---
 name: diff-probe
 description: >
-  Run by revise; not for direct use. Returns, per rule or documented claim, whether one merged
-  pull request's diff, commits and description follow it, break it or leave it untouched.
+  Run by revise; not for direct use. Writes a block saying, per rule or documented claim, whether
+  one merged pull request's diff, commits and description follow it, break it or leave it
+  untouched.
 tools:
   - Read
   - Grep
@@ -83,8 +84,8 @@ Write exactly this block, and nothing else, to the path the caller gave:
 Not read: <paths, or none>
 ```
 
-Then return one line, `wrote <the path>`. If the write fails, return the block in its place, its
-first line naming the error.
+Then return one line, `wrote <the path>`. If the write fails, return the line `write failed:
+<the error>`, then the block exactly as it would have been written.
 
 ## Never
 

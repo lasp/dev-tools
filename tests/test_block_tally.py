@@ -16,6 +16,7 @@ ANALYSIS_7 = """## pr-0007 — threads read
 thread PRRT_a1 · alice · by: human · correctness · asked: check the path where it enters · outcome: changed as asked · diff: addresses it
 thread PRRT_a2 · bob · by: human · correctness · asked: raise on an empty table · outcome: declined: "the caller · checks it" · diff: does not
 thread PRRT_a3 · lasp-dev · by: ai-drafted · tests · asked: test the failure path · outcome: unanswered · diff: does not
+thread PRRT_a4 · linter-bot · by: bot · style · asked: wrap the long line · outcome: changed as asked · diff: addresses it
 review 101 · carol · by: human · process · asked: bump the version before release · outcome: changed as asked · diff: cannot tell
 comment 202 · alice · by: human · design · asked: none · outcome: none · diff: cannot tell
 Procedure: none
@@ -45,6 +46,21 @@ C-1 · not judged · no description
 Not read: docs/big.md
 """
 
+ANALYSIS_WANT = [
+    "blocks: 3 · asks: 7 · asked none: 1 · mismatches: 1",
+    "count · human · thread · correctness · changed as asked · 2",
+    "count · human · thread · correctness · declined · 1",
+    "count · human · thread · tests · unanswered · 1",
+    "count · human · review · process · changed as asked · 1",
+    "count · bot · thread · style · changed as asked · 1",
+    "count · ai-drafted · thread · tests · unanswered · 1",
+    "outcome unanswered · pr-0007 · thread PRRT_a3 · by: ai-drafted · diff: does not",
+    "outcome unanswered · pr-0012 · thread PRRT_b2 · by: human · diff: cannot tell",
+    "procedure · pr-0012 · PRRT_b2",
+    "not read · pr-0012 · comment 303",
+    "mismatch · pr-0009 · PRRT_x9",
+]
+
 
 class Tally(unittest.TestCase):
     def setUp(self):
@@ -55,39 +71,41 @@ class Tally(unittest.TestCase):
     def write(self, name, text):
         (self.dir / name).write_text(text)
 
-    def run_it(self, kind, folder=None):
+    def run_it(self, kind, *prs, folder=None):
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = block_tally.main([kind, str(folder or self.dir)])
+            code = block_tally.main([kind, str(folder or self.dir), *prs])
         return code, out.getvalue().splitlines(), err.getvalue()
 
     def test_the_analysis_counts_asks_by_who_source_category_and_outcome(self):
         self.write("pr-0007.md", ANALYSIS_7)
         self.write("pr-0012.md", ANALYSIS_12)
         self.write("pr-0009.md", "record mismatch: PRRT_x9\n")
-        code, out, _ = self.run_it("analysis")
+        code, out, _ = self.run_it("analysis", "pr-0012", "pr-0007", "pr-0009")
         self.assertEqual(code, 0)
-        self.assertEqual(
-            out,
-            [
-                "blocks: 3 · asks: 6 · asked none: 1 · mismatches: 1",
-                "count · human · thread · correctness · changed as asked · 2",
-                "count · human · thread · correctness · declined · 1",
-                "count · human · thread · tests · unanswered · 1",
-                "count · human · review · process · changed as asked · 1",
-                "count · ai-drafted · thread · tests · unanswered · 1",
-                "unanswered · pr-0007 · thread PRRT_a3 · by: ai-drafted · diff: does not",
-                "unanswered · pr-0012 · thread PRRT_b2 · by: human · diff: cannot tell",
-                "procedure · pr-0012 · PRRT_b2",
-                "not read · pr-0012 · comment 303",
-                "mismatch · pr-0009 · PRRT_x9",
-            ],
-        )
+        self.assertEqual(out, ANALYSIS_WANT)
+
+    def test_a_block_an_earlier_run_left_is_not_counted(self):
+        self.write("pr-0007.md", ANALYSIS_7)
+        self.write("pr-0012.md", ANALYSIS_12)
+        self.write("pr-0009.md", "record mismatch: PRRT_x9\n")
+        self.write("pr-0003.md", ANALYSIS_12.replace("pr-0012", "pr-0003"))
+        self.write("pr-0004.md", "not a block at all\n")
+        code, out, _ = self.run_it("analysis", "pr-0007", "pr-0009", "pr-0012")
+        self.assertEqual((code, out), (0, ANALYSIS_WANT))
+
+    def test_a_block_returned_after_a_failed_write_counts_once_its_first_line_is_dropped(self):
+        returned = "write failed: permission denied\n" + ANALYSIS_7
+        self.write("pr-0007.md", returned.split("\n", 1)[1])
+        code, out, _ = self.run_it("analysis", "pr-0007")
+        self.assertEqual(code, 0)
+        self.assertEqual(out[0], "blocks: 1 · asks: 5 · asked none: 1 · mismatches: 0")
 
     def test_the_sweep_counts_each_claim_and_marks_drift(self):
         self.write("pr-0007.md", SWEEP_7)
         self.write("pr-0012.md", SWEEP_12)
-        code, out, _ = self.run_it("sweep")
+        self.write("pr-0002.md", SWEEP_12.replace("pr-0012", "pr-0002"))
+        code, out, _ = self.run_it("sweep", "pr-0007", "pr-0012")
         self.assertEqual(code, 0)
         self.assertEqual(
             out,
@@ -103,14 +121,22 @@ class Tally(unittest.TestCase):
             ],
         )
 
-    def test_an_empty_folder_counts_nothing(self):
-        self.assertEqual(self.run_it("sweep"), (0, ["blocks: 0"], ""))
-
     def refused(self, kind, name, text, says):
         self.write(name, text)
-        code, out, err = self.run_it(kind)
+        code, out, err = self.run_it(kind, name[:-3])
         self.assertEqual((code, out), (2, []))
         self.assertIn(says, err)
+
+    def test_a_named_block_that_is_missing_is_refused(self):
+        self.write("pr-0007.md", SWEEP_7)
+        code, out, err = self.run_it("sweep", "pr-0007", "pr-0012")
+        self.assertEqual((code, out), (2, []))
+        self.assertIn("pr-0012: no block", err)
+
+    def test_a_pull_request_named_twice_or_not_as_pr_nnnn_is_refused(self):
+        self.write("pr-0007.md", SWEEP_7)
+        self.assertIn("named twice", self.run_it("sweep", "pr-0007", "pr-0007")[2])
+        self.assertIn("not a pull request", self.run_it("sweep", "7")[2])
 
     def test_a_line_of_no_verdict_form_is_refused(self):
         self.refused("sweep", "pr-0007.md", SWEEP_7.replace("C-1 · not touched", "C-1 · breaks, judged as follows on the evidence"), "not a verdict line: C-1")
@@ -131,13 +157,25 @@ class Tally(unittest.TestCase):
         self.refused("analysis", "pr-0007.md", ANALYSIS_7 + "Procedure: PRRT_a1\n", "two `Procedure:` lines")
 
     def test_an_analysis_block_opening_with_a_write_error_is_refused(self):
-        self.refused("analysis", "pr-0007.md", "Write failed: permission denied\n" + ANALYSIS_7, "the first line is not")
+        self.refused("analysis", "pr-0007.md", "write failed: permission denied\n" + ANALYSIS_7, "the first line is not")
 
-    def test_a_file_not_named_for_a_pull_request_is_refused(self):
-        self.refused("analysis", "pr-seven.md", ANALYSIS_7, "not named pr-NNNN.md")
+    def test_an_analysis_heading_for_another_pull_request_is_refused(self):
+        self.refused("analysis", "pr-0008.md", ANALYSIS_7, "the heading names pr-0007")
+
+    def test_an_analysis_block_without_its_read_line_is_refused(self):
+        self.refused("analysis", "pr-0007.md", ANALYSIS_7.replace("Read: pkg/loader.py\n", ""), "no `Read:` line")
+
+    def test_an_analysis_block_without_its_not_read_line_is_refused(self):
+        self.refused("analysis", "pr-0007.md", ANALYSIS_7.replace("Not read: none\n", ""), "no `Not read:` line")
+
+    def test_an_empty_analysis_block_is_refused(self):
+        self.refused("analysis", "pr-0007.md", "\n", "pr-0007: empty")
+
+    def test_a_record_mismatch_followed_by_more_lines_is_refused(self):
+        self.refused("analysis", "pr-0007.md", "record mismatch: PRRT_a1\n" + ANALYSIS_7, "the first line is not")
 
     def test_a_missing_folder_is_refused(self):
-        code, out, err = self.run_it("analysis", self.dir / "absent")
+        code, out, err = self.run_it("analysis", "pr-0007", folder=self.dir / "absent")
         self.assertEqual((code, out), (2, []))
         self.assertIn("no directory", err)
 

@@ -27,10 +27,12 @@ record `.review/harvest/records/pr-NNNN.yaml`, its merge commit, the categories 
 correctness, tests, naming, docs, scope, process and style, and the path
 `.review/harvest/analysis/pr-NNNN.md`, where it writes its block and returns `wrote <path>`. A pull request the script prints
 `none` for gets no analyst, since a guessed commit would put the `diff:` verdict on the wrong
-tree; an exit 2 stops the step with its line. Never repeat a block: an analyst that returns its
-block in place of `wrote <path>` could not write it, and only that block is written to its path
-by you. Then run `python3 "<plugin root>/scripts/block_tally.py" analysis
-.review/harvest/analysis/`, which counts the blocks and lists what they did not read; an exit 2
+tree; an exit 2 stops the step with its line. Never repeat a block: an analyst that returns
+`write failed: <error>` could not write it, and you write the block that follows that line, without
+it, to its path. Then run `python3 "<plugin root>/scripts/block_tally.py" analysis
+.review/harvest/analysis/ <pr-NNNN ...>`, naming each pull request this step analyzed and each
+whose block the caller let stand in, since the directory keeps blocks from earlier runs; it
+counts the blocks and lists what they did not read, and an exit 2
 names the block that does not hold its form, to rerun that analyst. The pull requests past the cap or with no merge
 commit, the script's reason beside each, and the tally's `mismatch` and `not read` lines are what
 was not read.

@@ -62,9 +62,10 @@ step 1.
    - **What review asked for**: a table of category by outcome, with counts and a source column
      (`thread`, `review`, `comment`), from its `count` lines; under it, the asks step 5 finds recurring, each with its pull
      requests and each ask's source and id, joining step 5's candidates marked `from people's
-     threads`. Then each thread the record holds as `unanswered`, by its analyst line: `diff:
-     addresses it` counts as answered in code, `does not` as ignored, `cannot tell` apart, with
-     its thread id.
+     threads`. Then each thread the record holds as `unanswered`, the record's verdict, by its
+     analyst line in the block: `diff: addresses it` counts as answered in code, `does not` as
+     ignored, `cannot tell` apart, with its thread id. The tally's `outcome unanswered` lines are
+     the analyst's reading of the replies and choose nothing here; they count only in the table.
    - **About the procedure**: every `Procedure:` id with its ask, each correction in a record's
      `inner.procedure` line, and every `kind: procedure` note. Each is about the plugin, not this
      repository, so it becomes a `skill-feedback` draft, never a `ROADMAP.md` row, unless it is
@@ -109,9 +110,10 @@ step 1.
    merged most recently, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
    and every `C-` claim, and the path `.review/revision/sweep/pr-NNNN.md`, where it writes its
-   block and returns `wrote <path>`. Never repeat a block: only one returned in place of that line,
-   since its write failed, is written to its path by you. Then run `python3 "<plugin
-   root>/scripts/block_tally.py" sweep .review/revision/sweep/`; an exit 2 names the block that
+   block and returns `wrote <path>`. Never repeat a block: a probe that returns `write failed:
+   <error>` could not write it, and you write the block that follows that line, without it, to its
+   path. Then run `python3 "<plugin root>/scripts/block_tally.py" sweep .review/revision/sweep/
+   <pr-NNNN ...>`, naming each pull request probed; an exit 2 names the block that
    does not hold its form, to rerun that probe. Into "Practice", from its `claim` and `break` lines,
    per claim: the pull requests it was judged on and how many follow it, break it,
    leave it untouched and could not be judged for want of a description, each break with its pull request and place; `drift` beside a claim broken

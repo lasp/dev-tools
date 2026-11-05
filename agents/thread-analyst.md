@@ -1,9 +1,9 @@
 ---
 name: thread-analyst
 description: >
-  Run by revise and onboard; not for direct use. Returns, per review thread of a
-  merged pull request, what it asked and whether the diff addresses it; in defect mode, what
-  should have caught a fixed defect.
+  Run by revise and onboard; not for direct use. Writes a report saying, per review thread of a
+  merged pull request, what it asked and whether the diff addresses it; in defect mode, returns
+  what should have caught a fixed defect.
 tools:
   - Read
   - Grep
@@ -106,7 +106,8 @@ Name a rule only when its wording, outside its do-not-flag cases, covers the int
 
 Write this and nothing else to the path the caller gave, one line per thread and per review or
 comment ask, no recommendation, then return one line, `wrote <the path>`. If the write fails,
-return the report in its place, its first line naming the error. Defect mode writes nothing and
+return the line `write failed: <the error>`, then the report exactly as it would have been
+written. Defect mode writes nothing and
 returns its line. A line opens with its source and id: `thread PRRT_...`, `review 12345`,
 `comment 67890`.
 
