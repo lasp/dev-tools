@@ -128,6 +128,9 @@ Told `Judge: no` (`onboard`'s first rules), write `[]` and do not run `--undecid
   author, wrote in a thread, a review summary or a conversation comment, or one with a thread the
   author opened in their own words. One with neither exits
   1 with a reason ending `nothing was reviewed`, writes no record, and its line says `no review`.
+  A record whose last line counts any `label(s) unparsed` has findings whose severity label the
+  script could not read, written with that thread `unparsed`: its line says `record · <n>
+  label(s) unparsed`, and the count goes into the summary.
   A line says `built` when `body.md` has an Already checked block, and `not built` otherwise. Every merged pull request is listed with
   its created and merged dates; which of them count toward missing records is the caller's rule
   to apply.
@@ -146,8 +149,8 @@ In `harvest` mode, one block for the whole run:
 
 ```
 ## harvest — <owner/repo> since <date>
-merged: <n>; records written: <n>
-pr-NNNN · created <date> · merged <date> · built | not built · record | no review | <the script's reason on a non-zero exit, verbatim>[ · judgments refused: <the script's reason>]
+merged: <n>; records written: <n>; labels unparsed: <n>
+pr-NNNN · created <date> · merged <date> · built | not built · record[ · <n> label(s) unparsed] | no review | <the script's reason on a non-zero exit, verbatim>[ · judgments refused: <the script's reason>]
 <one line per merged pull request, by number>
 ```
 

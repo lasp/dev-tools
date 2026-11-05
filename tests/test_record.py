@@ -138,7 +138,7 @@ class RecordFromFixture(unittest.TestCase):
 
     def test_date_is_the_first_review_in_local_time_and_merged_the_utc_merge_day(self):
         lines, _ = record.build(PR, [REVIEW, {**REVIEW, "id": 2, "submitted_at": "2026-09-27T00:10:00Z"}], [], BODY, "o/r", "abc1234", issue_comments=[])
-        self.assertEqual(lines[0], "contract: 11")
+        self.assertEqual(lines[0], "contract: 12")
         self.assertIn("date: 2026-09-25\nmerged: 2026-09-27\n", "\n".join(lines) + "\n")
         # 03:00 UTC is the evening before in Denver; the harvest's merged:>= qualifier reads UTC.
         lines, _ = record.build({**PR, "merged_at": "2026-10-01T03:00:00Z"}, [REVIEW], [], BODY, "o/r", "abc1234", issue_comments=[])
@@ -716,12 +716,6 @@ class Adjudication(unittest.TestCase):
         with self.assertRaisesRegex(record.Unsupported, "no --standards-sha"):
             record.build(PR, [REVIEW], [], BODY, "o/r", None, issue_comments=[])
 
-    def test_a_finding_with_an_unknown_label_is_refused(self):
-        th = thread("Should fix")
-        th["comments"][0]["body"] = th["comments"][0]["body"].replace("**Should fix**", "**Nitpick**")
-        with self.assertRaisesRegex(record.Unsupported, "PRRT_1.*'Nitpick'"):
-            record.build(PR, [REVIEW], [th], BODY, "o/r", "abc1234", issue_comments=[])
-
     def with_key(self, line: str, *replies: tuple[str, str], above: str = "") -> dict:
         th = thread("Should fix", *replies)
         body = th["comments"][0]["body"].replace("key: `R-001/x.py::f`", line)
@@ -775,6 +769,65 @@ class Adjudication(unittest.TestCase):
         self.assertEqual(rows["PRRT_2"][1:2] + rows["PRRT_2"][5:6], ["R-001/x.py::f", "agree"])
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaisesRegex(record.Unsupported, "thread PRRT_1 is a finding with no readable 'key:' line"):
             record.build(PR, [REVIEW], [broken, cited], BODY, "o/r", "abc1234", issue_comments=[])
+
+    def bad_label(self, *replies: tuple[str, str]) -> dict:
+        th = self.with_key("key: `R-001/x.py::f`", *replies)
+        th["comments"][0]["body"] = th["comments"][0]["body"].replace("**Should fix** — a finding", "**Suggestion — a finding**")
+        return th
+
+    def test_a_finding_whose_label_is_not_one_of_the_four_is_recorded_unparsed(self):
+        cited = thread("Suggestion", ("bob", "Agree."))
+        cited |= {"id": "PRRT_2", "is_resolved": False, "is_outdated": False}
+        lines, report = record.build(PR, [REVIEW], [self.bad_label(("bob", "Agree.")), cited], BODY, "o/r", "abc1234", issue_comments=[])
+        text = "\n".join(lines)
+        self.assertIn(
+            '  - key: "R-001/x.py::f"\n    severity: unparsed\n    at: "x.py:3"\n    thread: PRRT_1\n    verdict: unparsed\n'
+            '    line: "**Suggestion — a finding**"\n',
+            text,
+        )
+        self.assertIn("    thread: PRRT_2\n    verdict: agree\n", text)
+        self.assertIn("adjudicated_by: bob", text)
+        self.assertEqual(report, ["unparsed label: PRRT_1 R-001/x.py::f (first line: **Suggestion — a finding**)"])
+        # The rule's firing is still counted, its verdict with the unanswered.
+        counted = ratchet_counts.findings(text + "\n", "pr-0001.yaml")
+        self.assertEqual([f["verdict"] for f in counted if f["rule"] == "R-001"], ["unanswered", "agree"])
+
+    def test_an_uncited_finding_whose_label_is_not_one_of_the_four_is_an_unparsed_review_thread(self):
+        th = self.bad_label(("bob", "Disagree."))
+        th["comments"][0]["body"] = th["comments"][0]["body"].replace("key: `R-001/x.py::f`", "key: other/x.py::f")
+        text, report = self.run_build(th)
+        self.assertIn("findings: []", text)
+        self.assertIn("    by: review\n    authorship: ai-drafted\n    severity: unparsed\n", text)
+        self.assertIn('    replies: 1\n    verdict: unparsed\n    line: "**Suggestion — a finding**"\n', text)
+        self.assertEqual(report, ["unparsed label: PRRT_1 (first line: **Suggestion — a finding**)"])
+
+    def test_an_unparsed_label_is_not_judged_and_is_refused_by_state(self):
+        th = self.bad_label(("bob", "Yes, that's a bug."))
+        self.assertEqual(record.undecided([th], "alice"), [])
+        with self.assertRaisesRegex(record.Unsupported, r"thread PRRT_1 is a finding with the label '\*\*Suggestion — a finding\*\*', not one of the four"):
+            record.state({**PR, "head": {"ref": "b", "sha": "c" * 40}}, [REVIEW], [th], BODY, "o/r")
+
+    def test_the_cli_counts_the_unparsed_labels(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            (tmp / "pr.json").write_text(json.dumps(PR))
+            (tmp / "reviews.json").write_text(json.dumps([REVIEW]))
+            (tmp / "comments.json").write_text(json.dumps([self.bad_label(("bob", "Agree."))]))
+            (tmp / "issue.json").write_text("[]")
+            (tmp / "body.md").write_text(BODY)
+            args = ["--pr", tmp / "pr.json", "--reviews", tmp / "reviews.json", "--comments", tmp / "comments.json"]
+            args += ["--issue-comments", tmp / "issue.json", "--body", tmp / "body.md", "--repo", "o/r", "--standards-sha", "abc1234"]
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                self.assertEqual(record.main([str(a) for a in [*args, "--out", tmp / "pr-0001.yaml"]]), 0)
+            self.assertTrue((tmp / "pr-0001.yaml").exists())
+            self.assertTrue(err.getvalue().endswith(": 1 finding(s) unsettled, 1 label(s) unparsed\n"))
+
+    def test_a_finding_with_an_unparsed_label_and_an_unreadable_key_is_still_refused(self):
+        th = self.bad_label(("bob", "Agree."))
+        th["comments"][0]["body"] = th["comments"][0]["body"].replace("key: `R-001/x.py::f`", "key: true")
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaisesRegex(record.Unsupported, "no readable 'key:' line"):
+            self.run_build(th)
 
     def test_a_persons_thread_is_not_a_finding(self):
         th = {"id": "PRRT_2", "comments": [{"body": "**Nitpick** — a person's own label", "author": "bob"}]}
