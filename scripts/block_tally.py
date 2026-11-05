@@ -2,17 +2,18 @@
 """Count the blocks revise's agents wrote, so the report's numbers come from the files.
 
 `analysis <dir> pr-NNNN [...]` reads the named pull requests' `pr-NNNN.md`, each a `thread-analyst`
-wrote under `.review/harvest/analysis/`; `sweep --claims <claims.md> <dir> pr-NNNN [...]` each a
-`diff-probe` wrote under `.review/revision/sweep/`, every block judging every `C-n` claim the
-claims file heads. Any other file in the directory, such as a block an earlier run left, is not
+wrote under `.review/harvest/analysis/`; `sweep --claims <claims.md> [--merges <file>] <dir>
+pr-NNNN [...]` each a `diff-probe` wrote under `.review/revision/sweep/`, every block judging every
+`C-n` claim the claims file heads, except an `every change` claim whose document's `doc` line in
+`--merges`, `scripts/window_merges.py`'s printout, does not name that pull request. Any other file in the directory, such as a block an earlier run left, is not
 read. docs/contracts.md's "The analysis blocks" and "The sweep blocks" give both forms and both
 printouts.
 
 Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the directory, a named block
-or the sweep's claims file is missing, a pull request is named twice or not as `pr-NNNN`, or a
+or the sweep's claims or merges file is missing, a pull request is named twice or not as `pr-NNNN`, or a
 block does not hold its form: a heading missing or naming another pull request than its file,
 a line of no form the block takes, a `Procedure:`, `Not read:` or `Read:` line missing or
-repeated, a claim judged twice in one sweep block, or a sweep block missing a `C-n` claim.
+repeated, a claim judged twice in one sweep block, or a sweep block missing a `C-n` claim it owes.
 Stdlib only.
 """
 
@@ -135,10 +136,29 @@ def analysis(folder: Path, prs: list[str]) -> list[str]:
     ]
 
 
-def sweep(folder: Path, prs: list[str], claims: Path | None) -> list[str]:
+def opened_after(merges: Path) -> dict[str, set[str]]:
+    """Each document's pull requests from window_merges' `doc <path>: pr-NNNN [...]` and `doc <path>: none` lines."""
+    after: dict[str, set[str]] = {}
+    for line in merges.read_text().splitlines():
+        m = re.match(r"doc (.+?): (pr-\d{4,}(?: pr-\d{4,})*|none|not on \S+)$", line)
+        if m:
+            after.setdefault(m[1], set()).update(m[2].split() if m[2].startswith("pr-") else ())
+    return after
+
+
+def sweep(folder: Path, prs: list[str], claims: Path | None, merges: Path | None = None) -> list[str]:
     if claims is None or not claims.is_file():
         raise CannotRun(f"no claims file {claims}" if claims else "the sweep needs --claims <claims.md>")
-    documented = re.findall(r"^### (C-\d+)\b", claims.read_text(), re.M)
+    if merges is not None and not merges.is_file():
+        raise CannotRun(f"no merges file {merges}")
+    text = claims.read_text()
+    documented = re.findall(r"^### (C-\d+) · (.+?):\d+ · (every change|code)$", text, re.M)
+    if len(documented) != len(re.findall(r"^### C-\d+\b", text, re.M)):
+        raise CannotRun(f"{claims}: a `### C-n` heading is not `### C-n · <path>:<line> · every change|code`")
+    after = opened_after(merges) if merges else None
+    for cid, path, kind in documented:
+        if after is not None and kind == "every change" and path not in after:
+            raise CannotRun(f"{cid}: {merges} has no `doc {path}` line")
     verdicts: dict[str, Counter] = {}
     breaks: list[tuple[str, str]] = []
     not_read = []
@@ -164,9 +184,10 @@ def sweep(folder: Path, prs: list[str], claims: Path | None) -> list[str]:
             verdicts.setdefault(v["id"], Counter())[word] += 1
             if word == "breaks":
                 breaks.append((v["id"], f"break · {v['id']} · {pr} · {v['place']}"))
-        missing = [c for c in documented if c not in seen]
+        owed = [c for c, path, kind in documented if after is None or kind == "code" or pr in after[path]]
+        missing = [c for c in owed if c not in seen]
         if missing:
-            raise CannotRun(f"{pr}: no line for {', '.join(missing)}, which every pull request is judged on")
+            raise CannotRun(f"{pr}: no line for {', '.join(missing)}, which it is judged on")
         if tail["Not read:"] != "none":
             not_read.append(f"not read · {pr} · {tail['Not read:']}")
     rows = []
@@ -188,12 +209,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("folder", type=Path, help="the directory holding the pr-NNNN.md blocks")
     p.add_argument("prs", nargs="+", help="the pull requests whose blocks to count, as pr-NNNN")
     p.add_argument("--claims", type=Path, help="sweep only, and required there: .review/revision/claims.md")
+    p.add_argument("--merges", type=Path, help="sweep only: window_merges.py's printout with --doc, .review/revision/merges.txt")
     args = p.parse_args(argv)
     try:
         if args.kind == "analysis":
             lines = analysis(args.folder, args.prs)
         else:
-            lines = sweep(args.folder, args.prs, args.claims)
+            lines = sweep(args.folder, args.prs, args.claims, args.merges)
     except CannotRun as e:
         print(f"CANNOT RUN: {e}", file=sys.stderr)
         return 2

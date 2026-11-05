@@ -71,6 +71,32 @@ class Archive(unittest.TestCase):
         self.assertIn("pr-0067.yaml: a finding without a readable key and verdict", err)
         self.assertFalse((self.log / "pr-0068.yaml").exists())
 
+    def test_a_first_harvest_makes_the_log_directory_under_an_existing_standards(self):
+        self.log = self.log.parent / "standards" / "log" / "new_repo"
+        self.log.parent.parent.mkdir()
+        (self.records / "pr-0066.yaml").write_text(LEGACY)
+        rc, out, _ = self.run_it()
+        self.assertEqual((rc, out), (0, ["copied pr-0066", "copied pr-0067", "copied pr-0068"]))
+        self.assertEqual((self.log / "pr-0066.yaml").read_text(), LEGACY)
+
+    def test_a_missing_log_outside_an_existing_standards_or_a_dangling_link_is_refused(self):
+        base = self.log.parent
+        (base / "elsewhere").mkdir()
+        (base / "other" / "log").mkdir(parents=True)
+        (base / "kept" / "standards" / "log").mkdir(parents=True)
+        (base / "kept" / "standards" / "log" / "linked").symlink_to(base / "gone")
+        (base / "kept" / "standards" / "log" / "live").symlink_to(self.log)
+        for log in (base / "standards" / "log" / "new_repo", base / "elsewhere" / "new_repo",
+                    base / "other" / "log" / "new_repo", base / "kept" / "standards" / "log" / "linked",
+                    base / "kept" / "standards" / "log" / "live"):
+            self.log = log
+            rc, out, err = self.run_it()
+            self.assertEqual((rc, out), (1, []), log)
+            self.assertIn(f"{log} is not a directory", err)
+            self.assertEqual(log.exists(), log.name == "live")
+        self.assertEqual(sorted(p.name for p in (base / "log").iterdir()), ["pr-0066.yaml", "pr-0067.yaml"])
+        self.assertFalse((base / "standards").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

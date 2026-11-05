@@ -3,6 +3,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 import os
 import subprocess
 import tempfile
@@ -134,6 +135,62 @@ class WindowMerges(unittest.TestCase):
             rc = window_merges.main(["--repo", str(root), "--ref", "main", "--since", "2026-09-01"])
         self.assertEqual(rc, 0)
         self.assertRegex(out.getvalue(), r"^pr-0001 [0-9a-f]{40} 2026-09-02 a[.]py\n$")
+
+    def with_docs(self):
+        """The template reaches main with #70; #71 opens as it does; #72 adds a document none was opened after."""
+        self.commit("Add the template (#70)", {".github/pull_request_template.md": "Ticket:"}, "2026-10-05T12:00:00+00:00")
+        self.commit("Fix (#71)", {"pkg/f.py": "1"}, "2026-10-06")
+        self.commit("Late docs (#72)", {"docs/late.md": "1"}, "2026-10-07")
+        self.git("rm", "-q", "README.md")
+        self.git("commit", "-q", "-m", "Drop the readme", day="2026-10-08")
+        self.commit("Restore the readme", {"README.md": "y"}, "2026-10-09")
+        dumps = self.tmp / "threads"
+        for n, created in ((67, "2026-10-02T13:00:00Z"), (70, "2026-10-01T09:00:00Z"), (71, "2026-10-05T12:00:00Z"), (72, "2026-10-06T09:00:00Z")):
+            (dumps / f"pr-{n:04d}").mkdir(parents=True)
+            (dumps / f"pr-{n:04d}" / "pr.json").write_text(json.dumps({"number": n, "created_at": created}))
+        return dumps
+
+    def test_a_document_judges_only_the_pull_requests_opened_after_it_reached_main(self):
+        dumps = self.with_docs()
+        docs = [".github/pull_request_template.md", "docs/guide.md", "docs/late.md", "README.md", "missing.md"]
+        rc, out, err = self.run_it("--ledger", str(self.ledger), "--dumps", str(dumps), *[a for d in docs for a in ("--doc", d)])
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(out[-13:], [
+            "doc .github/pull_request_template.md: pr-0071 pr-0072",
+            "doc .github/pull_request_template.md: predates pr-0067 pr-0070",
+            "doc .github/pull_request_template.md: no opened day pr-0066",
+            # Added on a side branch: it reaches main with the merge on 2026-10-03, after #67 opened.
+            "doc docs/guide.md: pr-0071 pr-0072",
+            "doc docs/guide.md: predates pr-0067 pr-0070",
+            "doc docs/guide.md: no opened day pr-0066",
+            "doc docs/late.md: none",
+            "doc docs/late.md: predates pr-0067 pr-0070 pr-0071 pr-0072",
+            "doc docs/late.md: no opened day pr-0066",
+            # Deleted and added again: dated from its return, after every pull request opened.
+            "doc README.md: none",
+            "doc README.md: predates pr-0067 pr-0070 pr-0071 pr-0072",
+            "doc README.md: no opened day pr-0066",
+            "doc missing.md: not on main",
+        ])
+        self.assertEqual(out[-14], "R-003 not swept: no scope")
+
+    def test_a_document_the_root_commit_adds_is_on_main_whatever_log_showroot_says(self):
+        self.git("config", "log.showRoot", "false")
+        self.assertEqual(window_merges.reached(self.repo, "main", "README.md"), int(self.git("log", "--format=%ct", "--root", "main", "--", "README.md").split()[-1]))
+
+    def test_a_doc_without_dumps_or_an_unreadable_opened_day_cannot_run(self):
+        dumps = self.with_docs()
+        rc, out, err = self.run_it("--doc", "docs/guide.md")
+        self.assertEqual((rc, out), (2, []))
+        self.assertIn("--doc needs --dumps", err)
+        rc, out, err = self.run_it("--doc", "docs/guide.md", "--dumps", str(self.tmp / "no-threads"))
+        self.assertEqual((rc, out), (2, []))
+        self.assertIn("no-threads is not a directory", err)
+        for text in ("not json", json.dumps({"number": 71}), json.dumps({"created_at": "2026-10-05"})):
+            (dumps / "pr-0071" / "pr.json").write_text(text)
+            rc, out, err = self.run_it("--doc", "docs/guide.md", "--dumps", str(dumps))
+            self.assertEqual((rc, out), (2, []), text)
+            self.assertIn("pr-0071/pr.json: no created_at", err)
 
     def test_a_bad_ref_a_bad_date_or_an_unreadable_ledger_cannot_run(self):
         no_status = self.tmp / "no-status.md"

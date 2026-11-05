@@ -2,8 +2,8 @@
 """Check a repository's rules against the seven gates of `standards/rule-bar.md`.
 
 Reads the ledger (`--ledger`, a standard's `review-rules.md`), whose entries hold each rule's
-wording as the `> ` lines of the entry, the decisions (`--decisions`, repeatable: the standard's
-and the shared `decisions.md`), and the repository itself (`--repo`, for `git ls-files` and `git
+wording as the `> ` lines of the entry, the decisions (`--decisions`, repeatable: a standard's
+`decisions.md`; the plugin ships none), and the repository itself (`--repo`, for `git ls-files` and `git
 show`). A ledger whose wording is still in an instruction file names it with `--instructions`, the
 file whose `## Review Rules` section holds each rule under its `### R-NNN · <title>` heading, and
 each entry links it on a `Wording:` line. With `--entry <file>` in place of the ledger, it reads
@@ -54,8 +54,10 @@ entry's lines and not its wording.
 
 Each failure is one line, `<check>: R-NNN: <what>`, or for the budget
 `budget: <repository>: <what>`, the repository `ledger` for a standard without `profiles/`, and
-every failure is printed; a block whose `repos:` line is not a list of names is a budget failure
-on that block's id, no repository's budget is counted, and with `--changed` the failure fails
+every failure is printed. With `--checks` naming budget, each covered repository within its
+budget is printed first too, `budget ok: <repository>: <total> of <limit> lines`, so a run in
+which every repository fits says so; a run of all seven by default prints only failures. A block
+whose `repos:` line is not a list of names is a budget failure on that block's id, no repository's budget is counted, and with `--changed` the failure fails
 the run whichever rule is named. Exit 1 when a failure is on a rule `--changed` names, a budget failure
 when a rule it counts is named, or on any failure when `--changed` is not given; 0 otherwise. Exit 2 with one `CANNOT RUN` line when an input file, the `## Review Rules` heading, or
 git in `--repo` is missing, when the ledger holds no `### R-NNN` entry, when `--changed` names an
@@ -225,6 +227,7 @@ class Lint:
         self.profiles = profiles
         self.failures: list[tuple[str, str, str]] = []
         self.counted: dict[str, set[str]] = {}
+        self.fits: list[str] = []
         self.default: str | None = None
         files = git(repo, "ls-files")
         if files.returncode:
@@ -415,6 +418,8 @@ class Lint:
             self.counted[label] = kept
             if total > limit:
                 self.fail("budget", label, f"{total} lines over a budget of {limit}; retire, merge or narrow a rule, or raise the budget in the ledger's header with the reason")
+            else:
+                self.fits.append(f"budget ok: {label}: {total} of {limit} lines")
 
 
 def fixture_repo(fixture: Path, dest: Path) -> Path:
@@ -520,6 +525,9 @@ def run(args) -> int:
     for c in changed or ():
         if not re.fullmatch(r"R-\d+", c) or c not in entries:
             raise CannotRun(f"--changed names {c!r}, which is not an R-NNN id the ledger holds")
+    if args.checks and "budget" in checks:
+        for line in lint.fits:
+            print(line)
     for check, rid, what in lint.failures:
         print(f"{check}: {rid}: {what}")
     return 1 if any(changed is None or rid in changed or (changed & lint.counted.get(rid, set()) if check == "budget" else False) for check, rid, _ in lint.failures) else 0
@@ -530,7 +538,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--ledger", type=Path, help="the repository's standards/review-rules.md")
     p.add_argument("--instructions", type=Path, help="for a ledger whose wording is still in an instruction file: the file whose ## Review Rules section holds it")
     p.add_argument("--repo", type=Path, default=Path("."), help="the repository git ls-files and git show run in")
-    p.add_argument("--decisions", type=Path, action="append", help="a decisions.md; repeat for the repository's and the shared one")
+    p.add_argument("--decisions", type=Path, action="append", help="a standard's decisions.md; repeatable")
     p.add_argument("--changed", help="R-NNN[,R-NNN...]: the rules whose failures fail the run")
     p.add_argument("--entry", type=Path, help="one drafted entry and its wording, in place of --ledger")
     p.add_argument("--profiles", type=Path, help="the standard's profiles/ directory, by default beside --ledger")
