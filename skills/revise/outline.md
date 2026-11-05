@@ -26,7 +26,7 @@ counted: <verdicts, firings, contested, missing, from record.py and ratchet_coun
 ## Proposals                                steps 3 to 8, in the overview's order
 - [ ] R-0NN · <proposal> · <Dial> · <evidence pointers>
   Recommended: <accept | accept, override: <reason> | decline: <reason> | escalate: <reason>> — <the evidence that decides it>
-  scope: … / example: … / bar: ok | <lint lines> / probe: … fires|silent; … fires|silent
+  scope: … / example: … / bar: ok | <lint lines> / probe: … fires|silent|cannot read; … fires|silent|cannot read
   Mark:
 - [ ] context/<name> · refresh · <source> · <old date> → <new date>
   Recommended: …
