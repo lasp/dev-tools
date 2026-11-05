@@ -49,8 +49,65 @@ WANT = [
     "Do not flag: a path validated by its caller, when the docstring says so.",
 ]
 
+# Two ledger shapes with a wrapped Do not flag paragraph: R-001's runs straight into its scope:
+# line, R-009's runs four lines; both open with repos: and R-001 is marked needs a second.
+R001_STATUS = """### R-001 · Validate a name where it is constructed
+repos: [widgets]
+
+tier: reviewer · status: provisional · since: 2026-09 · evidence: pr-0012 (asked twice) · **one pull request, needs a second**
+"""
+R001_WORDING = [
+    "An invalid name is rejected by the constructor that receives it,",
+    "so the failure reaches the caller who can fix it.",
+]
+R001_FLAG = """Do not flag: a validator deliberately deferred because it needs data the constructor does
+not have, when the docstring says so.
+scope: widgets/*.py
+"""
+R009_STATUS = """### R-009 · Comments describe the code as it is
+repos: [widgets]
+
+tier: reviewer · status: provisional · since: 2026-09 · evidence: pr-0037, pr-0058 · widened to names 2026-10-06
+"""
+R009_WORDING = [
+    "A comment or a name describes the code as it is, not how it got there,",
+    "and reads correctly with only the code around it.",
+]
+R009_FLAG = """Do not flag: a tagged deferred-work marker such as `TODO[PROJ-1234]`, which is
+forward-looking; a comment citing an external
+document that the code implements; a name that tells apart two versions the code keeps side by
+side on purpose.
+scope: widgets/*.py, tests/*.py
+"""
+
+
+def inline_form(status, wording, flag):
+    return status + "\n" + "".join(f"> {line}\n" for line in wording) + "\n" + flag
+
+
+def linked_form(status, wording, flag):
+    heading = status.splitlines()[0]
+    return status + "\nWording: [the instruction file](../instructions.md#r)\n\n" + flag + "\n" + heading + "\n\n" + "\n".join(wording) + "\n"
+
 
 class ProbeInput(unittest.TestCase):
+    def test_a_wrapped_do_not_flag_paragraph_is_given_whole_and_stops_at_the_next_field(self):
+        for status, wording, flag in ((R001_STATUS, R001_WORDING, R001_FLAG), (R009_STATUS, R009_WORDING, R009_FLAG)):
+            want = [status.splitlines()[0][4:], *wording, *flag.splitlines()[:-1]]
+            for form in (inline_form, linked_form):
+                with self.subTest(rule=want[0][:5], form=form.__name__):
+                    code, out, err = self.run_it(form(status, wording, flag))
+                    self.assertEqual((code, err), (0, ""))
+                    self.assertEqual(out.splitlines(), want)
+                    for field in ("scope:", "repos:", "tier:", "needs a second"):
+                        self.assertNotIn(field, out)
+
+    def test_a_wrapped_do_not_flag_paragraph_under_the_wording_heading_stays_out_of_the_wording(self):
+        text = R009_STATUS + "\nscope: widgets/*.py\n\n### R-009 · Comments describe the code as it is\n\n" + "\n".join(R009_WORDING) + "\n\n" + R009_FLAG.rsplit("scope:", 1)[0]
+        code, out, _ = self.run_it(text)
+        self.assertEqual(code, 0)
+        self.assertEqual(out.splitlines(), ["R-009 · Comments describe the code as it is", *R009_WORDING, *R009_FLAG.splitlines()[:-1]])
+
     def run_it(self, text):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "R-004.entry.md"

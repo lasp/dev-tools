@@ -765,7 +765,9 @@ Version: 1
 Fields: `scripts/probe_input.py`'s printout from one drafted entry, `.review/backtest/R-NNN.entry.md`:
 `R-NNN · <title>`, then the wording, one line each, the entry's `> ` lines without the marker or,
 when the entry is followed by a second `### R-NNN · <title>` heading of the same id and title, that
-heading's lines, then the entry's one `Do not flag:` line. Each block ends at the next heading of
+heading's lines, then the entry's one `Do not flag:` line and its paragraph, as written: the lines
+after it up to a blank line, a heading or a line opening `scope:`, `example:`, `repos:`, `tier:`,
+`Check:`, `Reasoning:` or `Wording:`, which a wrapped line may run straight into. Each block ends at the next heading of
 level one to three, as `scripts/rule_lint.py` reads it. Nothing else of the entry is printed, its
 `example:` line least of all, since the probe tests it. The script exits 2 with a `CANNOT RUN` line
 on an entry with no heading or more than two, a second heading that differs, a first of two
@@ -776,7 +778,7 @@ than one `Do not flag:` line, or a line to print opening `example:`, `scope:`, `
 Writers: `scripts/probe_input.py`. Readers: `rule-probe`, given the printout by harvest.md's "The
 bar", run by `revise` and `onboard`.
 
-Pinned by: tests/test_probe_input.py::test_an_inline_entry_gives_its_title_wording_and_do_not_flag_line_and_never_its_example
+Pinned by: tests/test_probe_input.py::test_a_wrapped_do_not_flag_paragraph_is_given_whole_and_stops_at_the_next_field
 
 ## The coupling baseline
 

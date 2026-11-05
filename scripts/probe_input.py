@@ -9,7 +9,9 @@ example line and must not be shown it.
 
 Each block ends at the next heading of level one to three, as `rule_lint.py` reads it, so what
 follows the wording is not read. Prints `R-NNN · <title>`, the wording one line each, then the
-`Do not flag:` line. Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the file
+`Do not flag:` line's paragraph as written: that line and the lines after it up to a blank line,
+a heading, or a line opening `scope:`, `example:`, `repos:`, `tier:`, `Check:`, `Reasoning:` or
+`Wording:`. Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the file
 is missing, holds no entry heading or more than two, a second heading whose id or title differs
 from the entry's, a first heading of two with no `scope:` or `example:` line under it, no wording,
 wording both in `> ` lines and under a second heading, not exactly one `Do not flag:` line, or a
@@ -28,6 +30,7 @@ DO_NOT_FLAG = re.compile(r"^Do not flag:.*$", re.M)
 END = re.compile(r"^#{1,3} ", re.M)
 FIELD = re.compile(r"^(scope|example):", re.M)
 LEAK = re.compile(r"^(example|scope|tier|Wording):")
+STOP = re.compile(r"^(scope|example|repos|tier|Check|Reasoning|Wording):")
 
 
 class CannotRun(Exception):
@@ -38,6 +41,24 @@ def block(text: str, start: int) -> str:
     """The text from start to the next heading of level one to three, where rule_lint's blocks end."""
     end = END.search(text, start)
     return text[start : end.start() if end else len(text)]
+
+
+def split_flags(text: str) -> tuple[list[str], list[list[str]]]:
+    """text's lines outside any `Do not flag:` paragraph, and each such paragraph's lines: its
+    opening line and the lines after it up to a blank line, a heading or a line opening a field."""
+    rest: list[str] = []
+    paragraphs: list[list[str]] = []
+    inside = False
+    for line in text.splitlines():
+        if DO_NOT_FLAG.match(line):
+            paragraphs.append([line.rstrip()])
+            inside = True
+        elif inside and line.strip() and not line.startswith("#") and not STOP.match(line):
+            paragraphs[-1].append(line.rstrip())
+        else:
+            inside = False
+            rest.append(line)
+    return rest, paragraphs
 
 
 def probe_input(text: str) -> list[str]:
@@ -59,16 +80,16 @@ def probe_input(text: str) -> list[str]:
         if quoted:
             raise CannotRun(f"{rid} has wording in its `> ` lines and under a second heading; it lives in one place")
         below = block(text, heads[1].end() + 1)
-        wording = [line for line in below.splitlines() if line.strip() not in ("", "---") and not DO_NOT_FLAG.match(line)]
+        wording = [line for line in split_flags(below)[0] if line.strip() not in ("", "---")]
     else:
         below = ""
         wording = quoted
     if not wording:
         raise CannotRun(f"{rid} has no wording")
-    flags = DO_NOT_FLAG.findall(entry + "\n" + below)
+    flags = split_flags(entry + "\n" + below)[1]
     if len(flags) != 1:
         raise CannotRun(f"{rid} has {len(flags)} `Do not flag:` lines; the probe is given one")
-    lines = [f"{rid} · {title}", *wording, flags[0].rstrip()]
+    lines = [f"{rid} · {title}", *wording, *flags[0]]
     leaked = [line for line in lines if LEAK.match(line)]
     if leaked:
         raise CannotRun(f"{rid} would show the probe {leaked[0]!r}")
