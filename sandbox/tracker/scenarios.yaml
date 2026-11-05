@@ -80,3 +80,44 @@ scenarios:
     expect:
       ends: success
       says: ["implement-change"]
+
+  - id: tracker-ticket-draft-triage-old
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - cp "$SBX_FIXTURES/standard-tracker.md" standards/tracker.md
+    origin: "#71: the ticket format moved to standards/ticket-format.md, and using-jira maps it to wiki markup"
+    why: >-
+      Drafts PROJ-57, detailed but in the older layout, so step 1's triage finds it not in the
+      current format and asks whether to reformat it or draft it again, before any reader runs.
+    turns:
+      - /lasp-dev:ticket-draft PROJ-57
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__atlassian__jira_create*", "mcp__atlassian__jira_update*", "mcp__atlassian__jira_add*", "mcp__atlassian__jira_transition*"]
+    look_at: >-
+      The opening block for PROJ-57, then "This ticket is already detailed: reformat it, or draft it
+      again?", Reformat it recommended. No ticket-investigator runs.
+    expect:
+      ends: success
+      agents_absent: [ticket-investigator]
+      says: ["(?i)reformat"]
+
+  - id: tracker-ticket-draft-triage-current
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - cp "$SBX_FIXTURES/standard-tracker.md" standards/tracker.md
+    origin: "#71: the ticket format moved to standards/ticket-format.md, and using-jira maps it to wiki markup"
+    why: >-
+      Drafts PROJ-58, already in the current format, so step 1's triage asks no reformat question
+      and goes on to the readers and step 3's widget.
+    turns:
+      - /lasp-dev:ticket-draft PROJ-58
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__atlassian__jira_create*", "mcp__atlassian__jira_update*", "mcp__atlassian__jira_add*", "mcp__atlassian__jira_transition*"]
+    look_at: >-
+      The opening block for PROJ-58 with no reformat question, then the readers, Placement and step
+      3's widget: the goal, and how to go on.
+    expect:
+      ends: success
+      agents: [ticket-investigator]
