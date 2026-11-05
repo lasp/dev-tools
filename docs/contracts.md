@@ -319,10 +319,50 @@ a review comment whose `html_url` has no `#discussion_r<n>`, a review with a bod
 `submitted_at`, an id given twice, across kinds as well as within one, or a profile `record.py`
 refuses.
 
-Writers: `scripts/comment_list.py`, run by harvest.md's "Records". Readers: none in the plugin;
-it is the input a guidance extraction reads.
+Writers: `scripts/comment_list.py`, run by harvest.md's "Records". Readers: `guidance-extractor`
+and `scripts/guidance_check.py`, through harvest.md's "Guidance".
 
 Pinned by: tests/test_comment_list.py::test_lists_every_comment_with_its_own_authorship
+
+## The guidance items
+
+Version: 1
+
+Fields: `.review/harvest/guidance/slice-<n>.json`, one `guidance-extractor` run, a JSON object:
+`prs`, the pull request numbers whose comment lists it read, each once; `comments_read`, the
+comments those lists hold; and `items`, one object per statement of guidance, in the lists' order,
+each with exactly these keys:
+
+| Key | Value |
+|---|---|
+| `pr`, `comment_id`, `url`, `author`, `authorship` | the comment's, as its entry in "The comment list" gives them |
+| `quote` | the words that carry the guidance, one passage of 1 to 40 words of the comment's own words: its `body` without the lines that open `>` |
+| `generality` | `general` or `pr-specific` |
+| `signal` | `addresses agents`, `states a principle`, `names a habit`, `cites a source` or `none`; `none` on a `pr-specific` item |
+| `kind` | `rule`, `agent-guidance`, `data-convention`, `process`, `decision`, `tool-config`, `exemplar`, `review-calibration` or `open-question` |
+| `principle` | one sentence in the extractor's words |
+| `rationale` | the comment's own reason, one passage of 1 to 40 of its own words, or `null` |
+| `covered_by` | `R-<n>`, `D-<n>`, `instruction file`, or `null` |
+| `outcome` | `changed as asked`, `changed differently`, `declined`, `discussed` or `unanswered` |
+
+`scripts/guidance_check.py <slice> [...] --comments <comment-list.json> [...]`, given every slice
+of a run and every comment list it read, holds them to this form: every list's pull request in
+exactly one slice, and every slice's among the lists; a slice of more than 300 comments only when
+it holds one pull request; every key present and no other, each value of its form;
+`comments_read` the comments a slice's lists hold; each item on a comment its `pr`'s list holds,
+its `pr` one of its slice's, with that comment's `url`, `author` and `authorship`; and each
+`quote`, and each `rationale` that is not null, found in that comment's own words, within one
+run of its lines between those that open `>`, a run of whitespace read as one space, never starting
+or ending inside a word, and nothing else forgiven.
+It prints `slices: <n> · comments: <n> · items: <n> · general: <n> · pr-specific: <n>`, then
+`kind · <kind> · <general> · <pr-specific>` for each kind with an item, and exits 0; otherwise one
+`refused · <where> · <why>` line per fault, every fault found, and exit 1: a slice that cannot be
+read as JSON is one, and leaves its pull requests in no slice while the other slices are checked.
+
+Writers: `guidance-extractor`, at the path harvest.md's "Guidance" gives it. Readers:
+`scripts/guidance_check.py`; `revise` `prepare`, through harvest.md.
+
+Pinned by: tests/test_guidance_check.py::test_a_run_true_to_its_comments_passes
 
 ## The judgments
 

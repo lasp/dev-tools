@@ -44,6 +44,30 @@ names the block that does not hold its form, to rerun that analyst. The pull req
 commit, the script's reason beside each, and the tally's `mismatch` and `not read` lines are what
 was not read.
 
+## Guidance
+
+Read every comment for guidance, apart from how its thread was settled. First remove
+`.review/harvest/guidance/`, since its slices are numbered afresh. Then cut this repository's
+comment lists, each `.review/harvest/threads/pr-NNNN/comment-list.json` "Records" wrote, into
+slices of whole pull requests in order of number, each slice adding pull requests until the next
+would take it past 300 comments; a pull request of more than 300 is a slice alone. Run one
+`guidance-extractor` per slice, launched as "Analysts" launches agents, each given its slice's
+comment lists, the standard's ledger, its decisions file and the instruction file, each path or
+`none`, and the path `.review/harvest/guidance/slice-<n>.json`, n from 1. Never repeat a slice's
+JSON: an extractor that returns `write failed: <error>` could not write it, and you write the JSON
+that follows that line, without it, to its path.
+
+Then run `python3 "<plugin root>/scripts/guidance_check.py" <every slice> --comments <every comment
+list>` once. A `refused` line naming a comment list is a fault in "Records", and stops the step
+with its line. A `refused` line naming a slice sends that slice's extractor back once, given its
+lines. A `pr <n> · in no slice` line sends back the slice the cut gave pull request n, or, when no
+slice was given it, is a cut to make again, as is a slice too large. Then check again. A slice
+still refused, after it went back once, is not read: check again without it and its comment
+lists, and name its pull requests and its lines with what was not read. The printout of the
+check that passes is the guidance's count, and the slices' items are what the caller reads. With
+no comment list, or none left once the unread slices are set aside, no check runs, and the count
+is `none read`.
+
 ## Clusters
 
 Group by what was asked: the analysts' `asked:` lines from threads (people's, bots' and a review's
