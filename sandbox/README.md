@@ -37,6 +37,8 @@ the review contract's product scenarios, `review-specified-retry`, whose review 
 a retry the plan specifies, `review-fail-loud-decision`, whose wave raises a silent cache fallback
 under an adopted fail-loud decision, and `review-swallowed-exception`, whose wave raises a swallowed
 exception under the contract's floor alone,
+`review-agent-guidance`, whose wave loads a standard's agent guidance and data conventions and raises
+a deprecated alias under its agent guidance against compatibility shims,
 `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
 environment) with the TODO still in place, the `skill-feedback` previews,
 whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,

@@ -105,10 +105,13 @@ class Counts(unittest.TestCase):
             log = Path(tmp)
             (log / "pr-0001.yaml").write_text(
                 'pr: 1\nfindings:\n  - key: "R-003/x.py::f"\n    verdict: agree\n'
-                '  - key: "term/T-010/x.py::g"\n    verdict: disagree\nquestions: []\n'
+                '  - key: "term/T-010/x.py::g"\n    verdict: disagree\n'
+                '  - key: "agent/A-002/x.py::h"\n    verdict: agree\n'
+                '  - key: "data/F-001/x.py::k"\n    verdict: discuss\nquestions: []\n'
             )
             table = ratchet_counts.count(log)
             self.assertEqual((table["R-003"]["agree"], table["term/T-010"]["disagree"]), (1, 1))
+            self.assertEqual((table["agent/A-002"]["agree"], table["data/F-001"]["discuss"]), (1, 1))
 
     def test_corrections_are_counted_per_rule_beside_the_verdicts(self):
         table = ratchet_counts.count(ROOT / "tests" / "fixtures" / "corrections")

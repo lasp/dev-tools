@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Prints the standard every build and review agent loads, as one file: the review contract from
-# the plugin this script ships in, then the standard's review rules, decisions and terminology,
-# each under a `# <path>` heading and otherwise verbatim. The ledger stops before its
-# held-candidates heading, so a reviewer never loads a rule the team has not admitted; that heading
-# at any other level or with a suffix exits 1. In a standard covering several
-# repositories, a rule or decision tagged `repos: [...]` loads only in the repositories it names;
-# a `repos:` line that is not that list of names exits 1, naming the rule or decision.
+# the plugin this script ships in, then the standard's review rules, decisions, terminology, agent
+# guidance and data conventions, each under a `# <path>` heading and otherwise verbatim. The ledger
+# stops before its held-candidates heading, so a reviewer never loads a rule the team has not
+# admitted; that heading at any other level or with a suffix exits 1. In a standard covering
+# several repositories, a rule, decision, agent guidance or data convention tagged `repos: [...]`
+# loads only in the repositories it names; a `repos:` line that is not that list of names exits 1,
+# naming the entry.
 # Run from the code repository's top level; the skills redirect it to .review/standard.md.
 #
 # The standard is the repository's own standards/, or, when its standards/profile.yaml is the one
@@ -20,7 +21,8 @@
 # A standard elsewhere with neither review-rules.md nor decisions.md is empty, and a plugin missing
 # its contract is broken: each exits 1 naming the file and prints nothing, so the standard is
 # written whole or not at all. Decisions with no ledger are a standard with no rules yet. Any other
-# repository gets the contract and whichever of its own ledger, decisions and terminology exist.
+# repository gets the contract and whichever of its own ledger, decisions, terminology, agent
+# guidance and data conventions exist.
 #
 # With --rules, as the session-start hook runs it, it prints instead only the wording of the
 # rules that apply to the repository, each live reviewer-tier rule's heading and its `> ` lines,
@@ -105,7 +107,7 @@ fi
 shared="$plugin/standards"
 [ -f "$shared/review-contract.md" ] || { echo "standard_file.sh: no review-contract.md in $shared" >&2; exit 1; }
 
-# A standard with profiles/ covers several repositories: a rule or decision whose `repos:` line
+# A standard with profiles/ covers several repositories: an entry whose `repos:` line
 # does not name this one, ignoring case, is left out of what it loads.
 # A heading inside a code fence is not one, and only a block's first `repos:` line counts, as
 # rule_lint.py, which refuses a second, reads it.
@@ -119,7 +121,7 @@ for_repo() {
   awk -v repo="$mine" -v file="$1" '
     function flush() { if (keep) printf "%s", buf; buf = "" }
     { sub(/\r$/, "") }
-    fence == "" && /^(#|##|###) / { flush(); block = ($0 ~ /^### [RD]-[0-9]+/); keep = 1; tagged = 0; id = $2 }
+    fence == "" && /^(#|##|###) / { flush(); block = ($0 ~ /^### [RDAF]-[0-9]+/); keep = 1; tagged = 0; id = $2 }
     /^(```|~~~)/ {
       match($0, /^(`+|~+)/); mark = substr($0, 1, RLENGTH)
       if (fence == "") fence = mark
@@ -167,4 +169,6 @@ section "dev-tools/standards/review-contract.md" "$shared/review-contract.md"
 for f in ${own[@]+"${own[@]}"}; do
   if [ "$f" = review-rules.md ]; then ledger "$label/$f" "$dir/$f"; else section "$label/$f" "$dir/$f"; fi
 done
-if [ -f "$dir/terminology.md" ]; then section "$label/terminology.md" "$dir/terminology.md"; fi
+for f in terminology.md agent-guidance.md data-conventions.md; do
+  if [ -f "$dir/$f" ]; then section "$label/$f" "$dir/$f"; fi
+done

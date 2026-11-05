@@ -16,7 +16,7 @@ else in the skill stands.
   "<plugin root>/scripts/standard_file.sh" > .review/standard.md.tmp && mv
   .review/standard.md.tmp .review/standard.md`, so a failure keeps the last good file. It holds
   the review contract, the repository's rules and decisions, or with a pointer those the script
-  fetches from the repository it names, and the plugin's shared decisions and terminology. Exit 1
+  fetches from the repository it names, with their terminology, agent guidance and data conventions. Exit 1
   names the missing file, which stops the build; a standard that cannot be fetched stops it too,
   and the person may choose to go on without it, `git config lasp-dev.standard none`, which
   lasts until `git config --unset lasp-dev.standard`; say so to the person and in a sentence of

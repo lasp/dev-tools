@@ -8,7 +8,7 @@ description: >
 argument-hint: "[file | ticket key | issue | description]"
 metadata:
   author: llm-tooling
-  version: 1.17.2
+  version: 1.18.0
 ---
 
 # Implement Change
@@ -280,7 +280,9 @@ the repo's instructions say it commits to its default branch, stay on it and say
 Work the steps in order, keeping the plan file's checkboxes current. On the bug path, run the
 first step's test before any fix and write its failure under that step in the plan file, `Red:
 <test> · <the failure line>`; a test that passes before the fix reproduces nothing, so go back to
-the person. Follow the conventions in the repo's instruction files.
+the person. Follow the conventions in the repo's instruction files and, where `.review/standard.md`
+holds them, its agent guidance and data conventions: habits not to repeat here, and facts about
+the data the code must respect.
 
 Code, comments, docstrings, and docs describe the code as it now is. A comment can say why the
 code works this way, but not how it got there: no mention of this session, the plan, options you

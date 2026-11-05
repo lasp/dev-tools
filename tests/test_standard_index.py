@@ -79,6 +79,34 @@ _2026-10 · **established** · source: fix#6_
 | T-003 | `x` | - |
 | T-004 | `y` |  |
 | T-005 | `flags` | `a \| b`, either |
+
+# example/standard/standards/agent-guidance.md
+
+# Agent guidance
+
+```markdown
+### A-099 · An example in a fence
+```
+
+### A-001 · Fix the environment, not the import
+repos: [widgets]
+
+_2026-09 · seen 2026-11_
+habit: guards the import of a dependency the image lacks
+> Install a missing dependency; never guard its import.
+said: "put it in the image" — alice, https://example.com/1
+
+### A-002 · A malformed date line
+
+_2026-09_
+
+# example/standard/standards/data-conventions.md
+
+### F-001 · Fill values differ by field
+
+_2026-10_
+> Read each field's fill value from its attributes.
+source: the product's interface document, section 4
 """
 
 EXPECTED = [
@@ -100,6 +128,11 @@ EXPECTED = [
     "  T-003 · `x`",
     "  T-004 · `y`",
     "  T-005 · `flags`: `a \\| b`, either",
+    "Agent guidance, from example/standard/standards/agent-guidance.md: 2 entries",
+    "  A-001 · Fix the environment, not the import · seen 2026-11 · repos: widgets",
+    "  A-002 · A malformed date line",
+    "Data conventions, from example/standard/standards/data-conventions.md: 1 entry",
+    "  F-001 · Fill values differ by field",
 ]
 
 
@@ -113,6 +146,11 @@ def run(argv, stdin=""):
 class Render(unittest.TestCase):
     def test_each_rule_and_decision_gets_its_number_title_status_and_source(self):
         self.assertEqual(standard_index.render(ASSEMBLED).splitlines(), EXPECTED)
+
+    def test_agent_guidance_or_data_conventions_with_no_entries_say_none(self):
+        out = standard_index.render("# own/standards/agent-guidance.md\n\n# Agent guidance\n")
+        self.assertIn("Agent guidance, from own/standards/agent-guidance.md: 0 entries\n  none\n", out)
+        self.assertTrue(out.endswith("No standard: no rules or decisions apply here.\n"))
 
     def test_a_two_column_terminology_table_lists_the_code_name_alone(self):
         text = "# own/standards/terminology.md\n\n| ID | Code name |\n| --- | --- |\n| T-001 | `obsid` |\n"

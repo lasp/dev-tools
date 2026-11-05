@@ -12,6 +12,10 @@ a `# <path>` heading naming the file they came from, and prints one block per ki
       D-NNN · <title> · <status>[ · repos: <names>]
     Terminology, from <path>: <n> term(s)
       T-NNN · <code name>[: <also called>]
+    Agent guidance, from <path>: <n> entr(y|ies)
+      A-NNN · <title> · seen <YYYY-MM>[ · repos: <names>]
+    Data conventions, from <path>: <n> entr(y|ies)
+      F-NNN · <title>[ · repos: <names>]
     Context, from <dir>: <n> entr(y|ies)    per --context, a standard's context/ directory
       <file> · <title>
 
@@ -24,7 +28,9 @@ not read, and each section starts outside one. A section with no entries prints 
 and `  none`. A term's line carries its table row's third column, the names it is also called,
 after a colon, and leaves it out when that cell is empty or a dash; an escaped `\\|` stays in its
 cell. A context entry's title is its file's first `# ` heading, its file name otherwise; README.md
-is not an entry, and a directory that does not exist prints `Context: no <dir>`.
+is not an entry, and a directory that does not exist prints `Context: no <dir>`. An agent guidance
+entry's `seen` month is its date line's, as `entries_lint.py` reads it, and left out when the line
+is not of that form.
 
 A source line ending `@none` is a standard the person chose not to read, with `git config
 lasp-dev.standard none`: it prints `Standard: <owner>/<repo>, not read` and the command that
@@ -43,7 +49,10 @@ import re
 import sys
 from pathlib import Path
 
-SECTION = re.compile(r"^# (.+/(review-contract|review-rules|decisions|terminology)\.md)\s*$")
+SECTION = re.compile(r"^# (.+/(review-contract|review-rules|decisions|terminology|agent-guidance|data-conventions)\.md)\s*$")
+ENTRY = re.compile(r"^### ([AF]-\d+)\b[ \t]*(?:·[ \t]*)?(.*?)\s*$")
+SEEN = re.compile(r"^_\d{4}-\d{2} · seen (\d{4}-\d{2})_\s*$")
+KINDS = {"agent-guidance": "Agent guidance", "data-conventions": "Data conventions"}
 DECISION = re.compile(r"^### (D-\d+)\b[ \t]*(?:·[ \t]*)?(.*?)\s*$")
 TERM = re.compile(r"^\|\s*(T-\d+)\s*\|\s*((?:\\\||[^|])*?)\s*\|(?:\s*((?:\\\||[^|])*?)\s*\|)?")
 REPOS = re.compile(r"^repos:\s*\[(.*)\]\s*$")
@@ -111,6 +120,24 @@ def decision_lines(text: str) -> list[str]:
     return out
 
 
+def entry_lines(text: str) -> list[str]:
+    lines = text.splitlines()
+    out = []
+    for i, line in enumerate(lines):
+        m = ENTRY.match(line)
+        if not m:
+            continue
+        seen, repos = "", ""
+        for x in lines[i + 1 :]:
+            if re.match(r"^#{1,3} ", x):
+                break
+            s, r = SEEN.match(x), REPOS.match(x)
+            seen = seen or (f" · seen {s.group(1)}" if s else "")
+            repos = repos or (names(r.group(1)) if r else "")
+        out.append(f"  {m.group(1)} · {m.group(2)}{seen}" + (f" · repos: {repos}" if repos else ""))
+    return out
+
+
 def context_lines(directory: Path) -> list[str]:
     if not directory.is_dir():
         return [f"Context: no {directory}"]
@@ -146,6 +173,10 @@ def render(text: str, source: str = "", contexts: list[Path] | None = None) -> s
             found = True
             out.append(f"Decisions, from {path}:")
             out.extend(decision_lines(body) or ["  none"])
+        elif kind in KINDS:
+            entries = entry_lines(body)
+            out.append(f"{KINDS[kind]}, from {path}: {len(entries)} entr{'y' if len(entries) == 1 else 'ies'}")
+            out.extend(entries or ["  none"])
         else:
             terms = [m for m in (TERM.match(x) for x in body.splitlines()) if m]
             out.append(f"Terminology, from {path}: {len(terms)} term{'' if len(terms) == 1 else 's'}")

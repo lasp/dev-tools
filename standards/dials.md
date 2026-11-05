@@ -29,6 +29,7 @@ no threshold.
 | Low agree rate | below 50% at the minimum: propose a rewording; still below at the next revision: propose retirement (starting value) | 40%; 60% |
 | Established expiry | 40 checked merged pull requests and no firing (`checked-since-fired`; starting value) | 30; 50 |
 | Established and unfired at expiry | propose demotion to the prose tier, as `skills/revise/apply.md` step 1 writes it, or a check, before retirement (starting value) | — |
+| Agent guidance expiry | 12 months after an entry's `seen` month with no review seeing the habit again: propose retiring it (`docs/standards.md`, "Agent guidance and data conventions"; starting value) | 6 months; 18 months |
 | Recurring ask | the same concern in 2 merged pull requests, accumulated across revisions; a cluster that admits on a single statement does not need it (starting value) | 1; 3 |
 | Candidate drop | no new evidence in 6 months (starting value) | 4 months; 8 months |
 | Revision floor | 5 records since the last revision; below it the report only (starting value) | 3; 7 |

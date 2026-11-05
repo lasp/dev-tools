@@ -62,6 +62,8 @@ scenarios:
       - cp "$SBX_FIXTURES/standard-review-rules.md" standards/review-rules.md
       - cp "$SBX_FIXTURES/standard-decisions.md" standards/decisions.md
       - cp "$SBX_FIXTURES/standard-terminology.md" standards/terminology.md
+      - cp "$SBX_FIXTURES/shim-agent-guidance.md" standards/agent-guidance.md
+      - cp "$SBX_FIXTURES/shim-data-conventions.md" standards/data-conventions.md
       - "mkdir -p standards/context && printf '# A topic\\n\\nText.\\n' > standards/context/a-topic.md"
     origin: "the transparent-standard plan of 2026-11-02: a person can see what the plugin enforces in their repository, where each rule lives, and whether it is current"
     why: >-
@@ -76,12 +78,13 @@ scenarios:
       shows the listing: R-001
       established and R-002 provisional, both reviewer-tier, under standards/review-rules.md;
       D-001 established under standards/decisions.md; T-001 with what it is also called under
-      standards/terminology.md; and a-topic.md under standards/context, each one line, with no
+      standards/terminology.md; A-001 seen 2026-10 under standards/agent-guidance.md; F-001 under
+      standards/data-conventions.md; and a-topic.md under standards/context, each one line, with no
       table. One line says each changes by a pull request to this repository, as
       README "How the corpus grows" says. No file outside .review/ is written.
     expect:
       ends: success
-      says: ['Rules, from standards/review-rules\.md', 'R-001 · [^\n]* · established · reviewer', 'R-002 · [^\n]* · provisional · reviewer', 'D-001 · [^\n]* · established', 'T-001 · `row`: record, line', 'a-topic\.md · A topic']
+      says: ['Rules, from standards/review-rules\.md', 'R-001 · [^\n]* · established · reviewer', 'R-002 · [^\n]* · provisional · reviewer', 'D-001 · [^\n]* · established', 'T-001 · `row`: record, line', 'A-001 · [^\n]* · seen 2026-10', 'F-001 · A count of -1 means not counted', 'a-topic\.md · A topic']
       not_says: ['^\s*\|.*\|\s*$']
 
   - id: revise-prepare-scope
@@ -373,6 +376,42 @@ scenarios:
       ends: success
       agents: [implementation-reviewer]
       says: ["(?i)swallow|except Exception|silently|broad except|skip"]
+
+  - id: review-agent-guidance
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - mkdir -p standards && printf '# Decisions\n' > standards/decisions.md && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/shim-agent-guidance.md" standards/agent-guidance.md
+      - cp "$SBX_FIXTURES/shim-data-conventions.md" standards/data-conventions.md
+      - cp "$SBX_FIXTURES/shim-old-fetch.py" src/widgets/fetch.py
+      - git add src && git commit -qm "Fetch the inventory from the warehouse service"
+      - git checkout -q -B rename-fetch
+      - cp "$SBX_FIXTURES/shim-fetch.py" src/widgets/fetch.py
+      - cp "$SBX_FIXTURES/shim-test_fetch.py" tests/test_fetch.py
+      - git add src tests && git commit -qm "Rename get_inventory to fetch"
+      - mkdir -p .review && cp "$SBX_FIXTURES/shim-plan.md" .review/implementation-plan-rename-fetch.md
+    origin: "#81"
+    why: >-
+      Resumes a finished build that renames a function and keeps the old name as a deprecated
+      alias, in a repository whose standard holds agent guidance A-001 against compatibility shims
+      before the code has users, and a data convention, so the standard every reviewer loads holds
+      both files and the wave raises the alias under A-001.
+    turns:
+      - /lasp-dev:implement-change
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(git commit*)"]
+    look_at: >-
+      implement-change resumes at step 8, writes .review/standard.md with the agent guidance and
+      data conventions sections in it and runs the wave. A reviewer raises the get_inventory alias
+      as a should-fix keyed agent/A-001, proposing to drop it and its test; the wave's loop may fix
+      it before step 9's gate, and the reply says so.
+    verify:
+      - grep -q '^# standards/agent-guidance.md$' .review/standard.md
+      - grep -q '^# standards/data-conventions.md$' .review/standard.md
+    expect:
+      ends: success
+      agents: [implementation-reviewer]
+      says: ["A-001"]
 
   - id: pr-create-new-flow
     repo: widgets
