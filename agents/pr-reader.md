@@ -62,8 +62,9 @@ the report, and the harvest goes on.
 
 A result too long for the tool is fetched again in smaller pages. Remove that method's pages from
 the dump's `pages/`, then fetch it again from page 1 at half the `perPage` that was too long, or
-at 20 for a `get_review_comments` fetched without one, halving again while a page is too long,
-the whole method at the one size, until every page saves. `get` has no pages, so a `get` too
+at 20 for a `get_review_comments` fetched without one, halving again, rounded down, while a page
+is too long, the whole method at the one size, until every page saves. A page still too long at
+`perPage` 1 cannot be dumped, as a `not saved` note says. `get` has no pages, so a `get` too
 long cannot be dumped.
 
 - `pages/get.json`: `pull_request_read` `get`.

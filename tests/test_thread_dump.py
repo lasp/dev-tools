@@ -98,14 +98,17 @@ class Dump(unittest.TestCase):
         self.assertEqual(self.run_it()[0], 0)
         self.assertEqual(len(json.loads((self.dump / "reviews.json").read_text())), 100)
 
-    def test_reviews_fetched_at_a_smaller_page_size_are_checked_at_that_size(self):
-        self.page("get_reviews-1.json", [{**REVIEW, "id": n} for n in range(15)])
-        self.page("get_reviews-2.json", [{**REVIEW, "id": 15}])
-        self.assertEqual(self.run_it(), (1, "thread_dump.py: get_reviews-1.json holds 15 items: the pages stop short of a full page\n"))
-        self.assertEqual(self.run_it("--per-page", "get_reviews=15"), (0, ""))
-        self.assertEqual(len(json.loads((self.dump / "reviews.json").read_text())), 16)
-        (self.pages / "get_reviews-2.json").unlink()
-        self.assertEqual(self.run_it("--per-page", "get_reviews=15"), (1, "thread_dump.py: get_reviews-1.json holds 15 items: the pages stop early\n"))
+    def test_a_list_fetched_at_a_smaller_page_size_is_checked_at_that_size(self):
+        for method, item, out in (("get_reviews", REVIEW, "reviews.json"), ("get_comments", ISSUE, "issue-comments.json")):
+            with self.subTest(method=method):
+                self.setUp()
+                self.page(f"{method}-1.json", [{**item, "id": n} for n in range(15)])
+                self.page(f"{method}-2.json", [{**item, "id": 15}])
+                self.assertEqual(self.run_it(), (1, f"thread_dump.py: {method}-1.json holds 15 items: the pages stop short of a full page\n"))
+                self.assertEqual(self.run_it("--per-page", f"{method}=15"), (0, ""))
+                self.assertEqual(len(json.loads((self.dump / out).read_text())), 16)
+                (self.pages / f"{method}-2.json").unlink()
+                self.assertEqual(self.run_it("--per-page", f"{method}=15"), (1, f"thread_dump.py: {method}-1.json holds 15 items: the pages stop early\n"))
 
     def test_a_per_page_that_is_not_a_list_method_and_a_size_is_refused(self):
         for given in (["get_review_comments=15"], ["get_reviews=0"], ["get_reviews=101"], ["get_reviews"], ["get_reviews=5", "get_reviews=6"]):

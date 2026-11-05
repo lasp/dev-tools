@@ -104,6 +104,8 @@ class SavePage(unittest.TestCase):
         self.call("get_review_comments", self.page("B", True), after="A")
         self.call("get_review_comments", self.page("C", False), after="B")
         self.call("get_reviews", "[]")
+        self.assertTrue(self.call("get_review_comments", "Error: result exceeds maximum allowed tokens").startswith("not saved: "))
+        self.assertEqual(len(list(self.folder.glob("get_review_comments-*.json"))), 3)
         self.call("get_review_comments", self.page("B", False))
         self.assertEqual(sorted(p.name for p in self.folder.iterdir()), ["get_review_comments-1.json", "get_reviews-1.json"])
         self.assertEqual(self.call("get_review_comments", self.page("D", False), after="B"), f"saved get_review_comments as {self.folder}/get_review_comments-2.json")

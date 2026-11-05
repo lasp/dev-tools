@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
     per_page = {}
     for given in args.per_page:
         method, _, n = given.partition("=")
-        if method not in LISTS or not n.isdigit() or not 1 <= int(n) <= PER_PAGE or method in per_page:
+        if method not in LISTS or not re.fullmatch(r"\d+", n) or not 1 <= int(n) <= PER_PAGE or method in per_page:
             p.error(f"--per-page {given!r} is not one of {', '.join(LISTS)}=N, N from 1 to {PER_PAGE}, given once")
         per_page[method] = int(n)
     try:
