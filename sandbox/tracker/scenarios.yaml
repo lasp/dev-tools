@@ -1,0 +1,82 @@
+# The tracker pack: scenarios that read a Jira project, served by fixture/mcp-atlassian-stub.py from
+# fixture/jira.json, in `widgets` with its own standard recording a Jira workflow. Build the sandbox
+# as the generic pack's README says, then point its mcp.json at the stub, by absolute path:
+#
+#   {"mcpServers": {"atlassian": {"command": "python3",
+#     "args": ["-I", "<this directory>/fixture/mcp-atlassian-stub.py", "--read-only"],
+#     "env": {"READ_ONLY_MODE": "true"}}}}
+#
+# The stub has no write tools, as a read-only mcp-atlassian has none, so each skill hands its Jira
+# writes over to paste and asks no write plan's gate. The fields are those of ../scenarios.yaml.
+
+scenarios:
+  - id: tracker-ticket-draft-new
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - cp "$SBX_FIXTURES/standard-tracker.md" standards/tracker.md
+    origin: "#71: the ticket format moved to standards/ticket-format.md, and using-jira maps it to wiki markup"
+    why: >-
+      Drafts a new ticket on a Jira project through to its paste file, so the description's
+      sections, their order and their wiki markup can be compared between two plugin versions.
+    turns:
+      - "/lasp-dev:ticket-draft add a low-stock report to the inventory: list each part whose count is under a minimum the caller gives, so the warehouse team sees what to reorder before the nightly restock run"
+      - The goal is right. Draft this ticket.
+      - Take the recommended answer on every question.
+      - Looks right. Write the files.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__atlassian__jira_create*", "mcp__atlassian__jira_update*", "mcp__atlassian__jira_add*", "mcp__atlassian__jira_transition*"]
+    look_at: >-
+      .review/context/<slug>.jira.txt holds the field block (Summary, Issue type, Component/s from
+      the live list, Epic Link, Priority, Due date, Links), then the description in wiki markup:
+      the status line, h1. Motivation, h1. Driving Requirements, h2. Technical Requirements, h2.
+      Acceptance Criteria as # items, h1. The code today with *Touches:* and *Used by:*, and no
+      Markdown heading or bullet. The last message says the server is read-only, so everything is
+      to paste.
+    expect:
+      files: [".review/context/*.jira.txt"]
+
+  - id: tracker-ticket-draft-reformat
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - cp "$SBX_FIXTURES/standard-tracker.md" standards/tracker.md
+    origin: "#71: the ticket format moved to standards/ticket-format.md, and using-jira maps it to wiki markup"
+    why: >-
+      Reformats PROJ-57, a ticket in the older layout (Context, Where it fits, Not this ticket, a
+      criterion with its check), through to its paste file, so the mapping and the wiki markup can
+      be compared between two plugin versions.
+    turns:
+      - /lasp-dev:ticket-draft reformat PROJ-57
+      - Take the recommended option on every question.
+      - Looks right. Write the files.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__atlassian__jira_create*", "mcp__atlassian__jira_update*", "mcp__atlassian__jira_add*", "mcp__atlassian__jira_transition*"]
+    look_at: >-
+      Context becomes Motivation and The code today; Where it fits becomes the epic PROJ-10 and a
+      depends on PROJ-31 link; Not this ticket's PROJ-44 becomes Related Out of Scope Tickets and its
+      candidate a scope question; criterion 1 loses "observed by a unit test", which moves to For
+      planning. .review/context/PROJ-57.jira.txt holds the description in wiki markup.
+    expect:
+      files: [".review/context/PROJ-57.jira.txt", ".review/context/PROJ-57.original.txt"]
+
+  - id: tracker-work-no-page
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - cp "$SBX_FIXTURES/standard-tracker.md" standards/tracker.md
+    origin: "#71: next_phase.py reads the workflow from issue_tracker, with jira: as its alias"
+    why: >-
+      Works PROJ-42, a To Do ticket with no context page, so work reads its status from Jira and the
+      profile's workflow routes it to implement-change, and stops to ask.
+    turns:
+      - /lasp-dev:work PROJ-42
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)", "mcp__atlassian__jira_create*", "mcp__atlassian__jira_update*", "mcp__atlassian__jira_transition*"]
+    look_at: >-
+      work reads PROJ-42's status, To Do, and next_phase.py routes it: Next: implement-change, with
+      PROJ-42 as its argument, then asks whether to continue. No pull request is read, since To Do
+      is not among the pull request statuses.
+    expect:
+      ends: success
+      says: ["implement-change"]
