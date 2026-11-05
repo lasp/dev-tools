@@ -123,8 +123,11 @@ without a yes to that write.
 
 ## The revision
 
-`revise` proposes rule changes from the evidence of merged pull requests: for a standard covering
-several repositories, from every repository it covers, so the whole project shapes each rule. For a
+`revise` proposes rule changes from the evidence of merged pull requests. For a standard covering
+several repositories, it counts each rule's findings in every repository the rule reaches, so the
+whole project shapes whether a rule stays. It archives every covered repository's records, but
+reads only the threads of the repository it runs in, against that repository's code, so new rules
+come from that repository alone; ROADMAP.md tracks reading the others'. For a
 standard elsewhere it writes into a clone of the standard's repository, and its accepted changes
 are one pull request there; for a repository's own standard, they are one pull request in it.
 

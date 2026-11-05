@@ -640,7 +640,7 @@ Version: 1
 Fields: the first line of `<log>/ratchet-YYYY-MM.md`, `window: <from>..<to>`, the
 first and last days the report covers, each `YYYY-MM-DD`. `<from>` is the day after the previous
 report's `<to>`, the newest report in any `<log>` of the standard, or before the first report the
-day the ledger, or the `standard:` pointer, reached the repository's `main`, and is the `--since` day `ratchet_counts.py` is given. The lines after it,
+repository's adoption date, as `skills/revise/SKILL.md` "The standard's repository" defines it, and is the `--since` day `ratchet_counts.py` is given. The lines after it,
 one per caveat that applies, hold the report's caveats, as `skills/revise/outline.md`
 lists them.
 

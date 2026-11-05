@@ -14,14 +14,16 @@ window: <from YYYY-MM-DD>..<to YYYY-MM-DD>
 # Standards revision · <repo> · YYYY-MM
 
 ## Head                                     steps 1, 2
+standard: <where it is stored>
+scope, one line per repository covered: <repo> · <the rules that reach it> · <threads read and diffs swept | archived and counted, threads not read | archived only, no rule reaches it>
 records: <n> harvested · <n> missing (<the Missing-record alarm Dial, when it fires>) · <n> baseline
 cost: open-to-merge median <d>, longest <d> · <n> merged without a build · corrections: <n>, on <ids>
 agree rate by severity · share unanswered · share of agreed findings changed as asked
 counted: <verdicts, firings, contested, missing, from record.py and ratchet_counts.py>; read by the analyst: <categories, outcomes, procedure ids>
 
 ## Overview                                 step 10: every proposal below, the held ones included, one line each
-| Priority | Proposal | Impact | Rests on |
-| high | ticket/<slug> | <n> pull requests, <n> files | <people's asks, a break on main, findings' agree rates> |
+| Priority | Proposal | Applies to | Impact | Rests on | Apply changes |
+| high | ticket/<slug> | <project-wide | <repo>, …> | <n> pull requests, <n> files | <people's asks, a break on main, findings' agree rates> | <the standard's repository | this repository's diff | Jira, through ticket-draft> |
 
 ## Proposals                                steps 3 to 8, in the overview's order
 - [ ] R-0NN · <proposal> · <Dial> · <evidence pointers>

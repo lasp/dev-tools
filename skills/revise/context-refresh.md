@@ -11,7 +11,8 @@ entry, from the `Source:` and `Read:` lines `context/README.md` defines:
   entry missing from the results, run the blindness check `using-confluence` sets on its ID, and
   where search is blind take the version and date from the `page` task below instead. When the version is above the
   entry's `version`, or the date is later than its "page last updated" date, run one
-  `source-reader` with the task `page <id>`, one per stale entry in one message, and draft a
+  `source-reader` with the task `page <id>`, one per stale entry, launched as
+  `<plugin root>/skills/revise/harvest.md`'s "Analysts" launches agents, and draft a
   candidate paragraph from its block, with the new dates and version, into
   `.review/harvest/context-refresh.md` beside the entry's current paragraph.
   A page the block lists as `Withheld:` gets no candidate paragraph: its question goes to the

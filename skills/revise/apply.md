@@ -63,10 +63,15 @@ in a clone, its branch. Then, by mark:
 
    Write the diff to `.review/ratchet-proposal.diff`, in `git diff` form with `a/` and `b/` paths
    relative to this repository, and the side in the standard's repository, when that is another,
-   into its clone. With a clone, ask: **Commit, push and open the standard's pull request**
+   into its clone. With a clone, first check, as `pr-create` step 4 does, for an open pull request
+   on the standard's repository whose head is the branch, `revision/<repo>-YYYY-MM`, the draft
+   `prepare` may have opened. Then ask: **Commit, push and open the standard's pull request**
    (Recommended: the code repository's pull request links it and it merges first), **Commit only**,
    naming the clone's path and branch, **Stop**, nothing committed and the clone's path named, or
-   **Let's discuss**. The diff for this
+   **Let's discuss**. When that pull request exists, the first option reads **Commit, push and
+   update pull request #N**: it pushes to it and replaces its description with one for the
+   accepted changes, shown in the question as it will be sent, rather than opening another; the
+   run ends by saying that marking it ready for review is the person's step. The diff for this
    repository stays in `.review/ratchet-proposal.diff` for the driver.
 3. **Hand over the tickets.** Whatever the answer above, clear `.review/revision/tickets/`, then
    write each accepted `ticket/` proposal, in the report's order, as

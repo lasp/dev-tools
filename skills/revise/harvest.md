@@ -21,8 +21,10 @@ past thirty, the thirty whose records hold the most findings plus pointers under
 `reviews:` and `comments:` whose `by:` is not `bot`, the author's own included. First fetch
 `main` and run `python3 "<plugin root>/scripts/merge_commit.py" --repo . --ref origin/main` with
 each of those dumps' `pr.json`, which prints each pull request's merge commit, the one commit on
-`main`'s first-parent history whose subject names it; the `get` result carries none. Then all in
-one message, each given this repository's path, its dump `.review/harvest/threads/pr-NNNN/`, its
+`main`'s first-parent history whose subject names it; the `get` result carries none. Then launch
+them in messages of at most twenty, Claude Code's limit on agents running together, each sent once
+the previous one's agents have all returned; every other launch of many agents in `revise` cites
+this. Each is given this repository's path, its dump `.review/harvest/threads/pr-NNNN/`, its
 record `.review/harvest/records/pr-NNNN.yaml`, its merge commit, the categories design,
 correctness, tests, naming, docs, scope, process and style, and the path
 `.review/harvest/analysis/pr-NNNN.md`, where it writes its block and returns `wrote <path>`. A pull request the script prints
@@ -55,7 +57,7 @@ the ledger still links an instruction file, under a `### R-NNN · <title>` headi
 where the rule should not apply, say so on its `Do not flag:` line rather than inventing one. Run `python3 "<plugin
 root>/scripts/rule_lint.py" --entry <that file> --repo .` with a `--decisions` for each decisions
 file the caller names; an exit 2 (`CANNOT RUN`) stops the step with its line. Then one
-`rule-probe` per anchor of the `example:` line, all in one message, each given this repository's
+`rule-probe` per anchor of the `example:` line, launched as "Analysts" launches agents, each given this repository's
 path, the text `python3 "<plugin root>/scripts/probe_input.py" <that file>` prints, the drafted
 title, wording and `Do not flag:` line and never the entry file or its `example:` line, and one
 anchor, or one thread with its pull request's merge commit; an exit 2 stops the step with its
