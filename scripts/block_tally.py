@@ -13,7 +13,7 @@ Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the directo
 or the sweep's claims or merges file is missing, a pull request is named twice or not as `pr-NNNN`, or a
 block does not hold its form: a heading missing or naming another pull request than its file,
 a line of no form the block takes, a `Procedure:`, `Not read:` or `Read:` line missing or
-repeated, a claim judged twice in one sweep block, or a sweep block missing a `C-n` claim.
+repeated, a claim judged twice in one sweep block, or a sweep block missing a `C-n` claim it owes.
 Stdlib only.
 """
 
@@ -140,7 +140,7 @@ def opened_after(merges: Path) -> dict[str, set[str]]:
     """Each document's pull requests from window_merges' `doc <path>: pr-NNNN [...]` and `doc <path>: none` lines."""
     after: dict[str, set[str]] = {}
     for line in merges.read_text().splitlines():
-        m = re.match(r"doc (.+?): (pr-\d{4}(?: pr-\d{4})*|none|not on \S+)$", line)
+        m = re.match(r"doc (.+?): (pr-\d{4,}(?: pr-\d{4,})*|none|not on \S+)$", line)
         if m:
             after.setdefault(m[1], set()).update(m[2].split() if m[2].startswith("pr-") else ())
     return after

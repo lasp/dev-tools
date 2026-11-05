@@ -94,7 +94,7 @@ step 1.
 
    **Sweep the diffs**, report only: it fills "Practice", and no Dial reads it, so no rule
    proposal rests on it; step 6 turns a break still on `main` into a `ticket/` proposal and a
-   `drift` into a `doc/` one. First remove `.review/revision/sweep/` and `.review/revision/claims.md`, which a
+   `drift` into a `doc/` one. First remove `.review/revision/sweep/`, `.review/revision/claims.md` and `.review/revision/merges.txt`, which a
    last revision may have left. Run `python3 "<plugin root>/scripts/window_merges.py" --repo .
    --ref origin/main --since <the window's first day> --ledger <standard files>/review-rules.md`, which
    reads git only; the sweep fetches nothing, so it reads `origin/main` as the last fetch left it,
