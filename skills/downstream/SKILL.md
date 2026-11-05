@@ -7,7 +7,7 @@ description: >
 argument-hint: "[check [branch | symbol] | ci <run> | release <version>]"
 metadata:
   author: lasp-dev
-  version: 1.1.0
+  version: 1.1.1
 ---
 
 ## When to run
@@ -78,7 +78,7 @@ so a verdict never names a sha its lane did not run at.
      argument) or from `.review/downstream/self-<branch>`, a `git clone --shared` of this
      repository checked out at the branch;
    - run the consumer's unit lane, its profile's `tests.command` or the lane its instruction
-     files name, never a lane that needs the network, through `pytest-runner`, given the
+     files name, never a lane that needs the network, through `test-runner`, given the
      venv's interpreter and `src-<consumer>` as the top level.
    An install that fails is reported as that, never as a break. Then compare `git -C ../<consumer>
    status --porcelain --ignored` with what step 3 recorded: any difference is a stop that names the

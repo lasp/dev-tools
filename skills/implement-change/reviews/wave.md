@@ -42,7 +42,7 @@ a `.md` or `.rst` file, or anything under `doc/` or `docs/`.
 
 **One suite run per wave.** The coverage run is the implementation reviewer's suite run: it gets
 `Coverage: <the profile's coverage.command>` in place of `Tests:`, runs it through one
-`pytest-runner` in coverage mode, takes the pass or fail from it, and raises each changed line
+`test-runner` in coverage mode, takes the pass or fail from it, and raises each changed line
 the run did not execute as `test/uncovered`. With that command empty or not recorded, the
 coverage command the instruction files name; with none there, it runs `Tests:` and the merge
 says no coverage ran. An untested `raise` is the tests reviewer's `test/failure-path`; the

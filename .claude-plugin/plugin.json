@@ -1,6 +1,6 @@
 {
   "name": "lasp-dev",
-  "description": "Skills and sub-agents for planning, implementing and verifying changes, committing, opening, reviewing and fixing pull requests, and running pytest; plus the standards workflow: drafting a repository's standard, ticket context, standards review and records, and the monthly revision.",
+  "description": "Skills and sub-agents for planning, implementing and verifying changes, committing, opening, reviewing and fixing pull requests, and running a repository's tests; plus the standards workflow: drafting a repository's standard, ticket context, standards review and records, and the monthly revision.",
   "author": {
     "name": "LASP"
   },

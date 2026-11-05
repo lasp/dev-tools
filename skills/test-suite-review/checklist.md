@@ -10,7 +10,7 @@ it there; `pr-review`'s reviewer applies it to a pull request.
 | --- | --- | --- |
 | `test/loosened` | an existing test that no longer catches what it caught, with no reason in the code | must-fix |
 | `test/failure-path` | a `raise` the diff adds that no test asserts | must-fix |
-| `test/uncovered` | a changed line no test runs, from a `pytest-runner` list | should-fix |
+| `test/uncovered` | a changed line no test runs, from a `test-runner` list | should-fix |
 | `test/mock` | a test whose mocks replace the code the diff changed | should-fix |
 | `test/assert` | a smoke-only assertion, or a downstream aggregate asserted in place of the step | should-fix |
 | `test/lane` | a test in a lane its dependencies do not belong to | should-fix |
@@ -51,7 +51,7 @@ a science claim made silently, and a must-fix.
   diff adds needs a test asserting it, a must-fix keyed `test/failure-path`: an untested raise
   is an unenforced contract.
 - **Changed lines no test runs**, keyed `test/uncovered`, listed as `file:line`. They come from
-  `pytest-runner` in its coverage mode, given the repository's coverage command and the
+  `test-runner` in its coverage mode, given the repository's coverage command and the
   base ref; the reviewer never runs it. Never a percentage: a percentage produces tests written
   to the metric.
 - **Assert the value**, keyed `test/assert`. A test that only checks nothing raised passes when
@@ -115,5 +115,5 @@ describes the repository; it is not a finding.
 
 ## Applied by a reviewer
 
-Raise `test/uncovered` only from a `pytest-runner` list the caller passes; with none, raise none
+Raise `test/uncovered` only from a `test-runner` list the caller passes; with none, raise none
 and do not estimate. The caller's format and caps replace the skill's Output and Bounds.
