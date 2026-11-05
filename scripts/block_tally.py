@@ -2,16 +2,18 @@
 """Count the blocks revise's agents wrote, so the report's numbers come from the files.
 
 `analysis <dir> pr-NNNN [...]` reads the named pull requests' `pr-NNNN.md`, each a `thread-analyst`
-wrote under `.review/harvest/analysis/`; `sweep <dir> pr-NNNN [...]` each a `diff-probe` wrote
-under `.review/revision/sweep/`. Any other file in the directory, such as a block an earlier run
-left, is not read. docs/contracts.md's "The analysis blocks" and "The sweep blocks" give both forms
-and both printouts.
+wrote under `.review/harvest/analysis/`; `sweep --claims <claims.md> <dir> pr-NNNN [...]` each a
+`diff-probe` wrote under `.review/revision/sweep/`, every block judging every `C-n` claim the
+claims file heads. Any other file in the directory, such as a block an earlier run left, is not
+read. docs/contracts.md's "The analysis blocks" and "The sweep blocks" give both forms and both
+printouts.
 
-Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the directory or a named
-block is missing, a pull request is named twice or not as `pr-NNNN`, or a block does not hold its
-form: a heading missing or naming another pull request than its file,
+Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the directory, a named block
+or the sweep's claims file is missing, a pull request is named twice or not as `pr-NNNN`, or a
+block does not hold its form: a heading missing or naming another pull request than its file,
 a line of no form the block takes, a `Procedure:`, `Not read:` or `Read:` line missing or
-repeated, or a claim judged twice in one sweep block. Stdlib only.
+repeated, a claim judged twice in one sweep block, or a sweep block missing a `C-n` claim.
+Stdlib only.
 """
 
 from __future__ import annotations
@@ -133,7 +135,10 @@ def analysis(folder: Path, prs: list[str]) -> list[str]:
     ]
 
 
-def sweep(folder: Path, prs: list[str]) -> list[str]:
+def sweep(folder: Path, prs: list[str], claims: Path | None) -> list[str]:
+    if claims is None or not claims.is_file():
+        raise CannotRun(f"no claims file {claims}" if claims else "the sweep needs --claims <claims.md>")
+    documented = re.findall(r"^### (C-\d+)\b", claims.read_text(), re.M)
     verdicts: dict[str, Counter] = {}
     breaks: list[tuple[str, str]] = []
     not_read = []
@@ -159,6 +164,9 @@ def sweep(folder: Path, prs: list[str]) -> list[str]:
             verdicts.setdefault(v["id"], Counter())[word] += 1
             if word == "breaks":
                 breaks.append((v["id"], f"break · {v['id']} · {pr} · {v['place']}"))
+        missing = [c for c in documented if c not in seen]
+        if missing:
+            raise CannotRun(f"{pr}: no line for {', '.join(missing)}, which every pull request is judged on")
         if tail["Not read:"] != "none":
             not_read.append(f"not read · {pr} · {tail['Not read:']}")
     rows = []
@@ -179,9 +187,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("kind", choices=("analysis", "sweep"), help="thread-analyst blocks or diff-probe blocks")
     p.add_argument("folder", type=Path, help="the directory holding the pr-NNNN.md blocks")
     p.add_argument("prs", nargs="+", help="the pull requests whose blocks to count, as pr-NNNN")
+    p.add_argument("--claims", type=Path, help="sweep only, and required there: .review/revision/claims.md")
     args = p.parse_args(argv)
     try:
-        lines = (analysis if args.kind == "analysis" else sweep)(args.folder, args.prs)
+        if args.kind == "analysis":
+            lines = analysis(args.folder, args.prs)
+        else:
+            lines = sweep(args.folder, args.prs, args.claims)
     except CannotRun as e:
         print(f"CANNOT RUN: {e}", file=sys.stderr)
         return 2

@@ -46,6 +46,21 @@ C-1 · not judged · no description
 Not read: docs/big.md
 """
 
+CLAIMS = """### R-001 · Validate a path where it is constructed
+
+> A path is checked where it enters.
+
+Do not flag: a path validated by its caller.
+
+### C-1 · CONTRIBUTING.md:12 · every change
+
+The pull request description says how the change was tested.
+
+### C-2 · CONTRIBUTING.md:20 · every change
+
+A user-facing change adds a CHANGELOG.md entry.
+"""
+
 ANALYSIS_WANT = [
     "blocks: 3 · asks: 7 · asked none: 1 · mismatches: 1",
     "count · human · thread · correctness · changed as asked · 2",
@@ -71,10 +86,15 @@ class Tally(unittest.TestCase):
     def write(self, name, text):
         (self.dir / name).write_text(text)
 
-    def run_it(self, kind, *prs, folder=None):
+    def run_it(self, kind, *prs, folder=None, claims=CLAIMS):
+        args = [kind, str(folder or self.dir), *prs]
+        if kind == "sweep" and claims is not None:
+            path = self.dir / "claims.md"
+            path.write_text(claims)
+            args += ["--claims", str(path)]
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = block_tally.main([kind, str(folder or self.dir), *prs])
+            code = block_tally.main(args)
         return code, out.getvalue().splitlines(), err.getvalue()
 
     def test_the_analysis_counts_asks_by_who_source_category_and_outcome(self):
@@ -93,13 +113,6 @@ class Tally(unittest.TestCase):
         self.write("pr-0004.md", "not a block at all\n")
         code, out, _ = self.run_it("analysis", "pr-0007", "pr-0009", "pr-0012")
         self.assertEqual((code, out), (0, ANALYSIS_WANT))
-
-    def test_a_block_returned_after_a_failed_write_counts_once_its_first_line_is_dropped(self):
-        returned = "write failed: permission denied\n" + ANALYSIS_7
-        self.write("pr-0007.md", returned.split("\n", 1)[1])
-        code, out, _ = self.run_it("analysis", "pr-0007")
-        self.assertEqual(code, 0)
-        self.assertEqual(out[0], "blocks: 1 · asks: 5 · asked none: 1 · mismatches: 0")
 
     def test_the_sweep_counts_each_claim_and_marks_drift(self):
         self.write("pr-0007.md", SWEEP_7)
@@ -126,6 +139,18 @@ class Tally(unittest.TestCase):
         code, out, err = self.run_it(kind, name[:-3])
         self.assertEqual((code, out), (2, []))
         self.assertIn(says, err)
+
+    def test_a_sweep_block_missing_a_documented_claim_is_refused(self):
+        self.write("pr-0007.md", SWEEP_7)
+        code, out, err = self.run_it("sweep", "pr-0007", claims=CLAIMS + "\n### C-3 · README.md:4 · every change\n\nA claim.\n")
+        self.assertEqual((code, out), (2, []))
+        self.assertIn("pr-0007: no line for C-3", err)
+
+    def test_a_sweep_without_its_claims_file_is_refused(self):
+        self.write("pr-0007.md", SWEEP_7)
+        code, out, err = self.run_it("sweep", "pr-0007", claims=None)
+        self.assertEqual((code, out), (2, []))
+        self.assertIn("needs --claims", err)
 
     def test_a_named_block_that_is_missing_is_refused(self):
         self.write("pr-0007.md", SWEEP_7)

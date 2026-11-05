@@ -744,14 +744,16 @@ Fields: `.review/revision/sweep/pr-NNNN.md`, one `diff-probe` block, its blank l
 heading `## pr-NNNN · <sha, 7 characters>` naming the file's pull request; one line per claim,
 `<id> · follows · <place>`, `<id> · breaks · <place> · "<the line>" · <why>`, `<id> · not
 touched` or `<id> · not judged · no description`, `id` an `R-NNN` or `C-n`, each id once; then
-`Not read: <paths or none>`. `scripts/block_tally.py sweep <dir> pr-NNNN [...]` reads the named
-pull requests' blocks only and prints `blocks: <n>`; per claim,
+`Not read: <paths or none>`; every `C-n` claim `.review/revision/claims.md` heads has a line in
+every block. `scripts/block_tally.py sweep --claims <claims.md> <dir> pr-NNNN [...]` reads the
+named pull requests' blocks only and prints `blocks: <n>`; per claim,
 rules first, `claim · <id> · judged <n> · follows <n> · breaks <n> · not touched <n> · not judged
 <n>`, with ` · drift` when breaks are more than half of follows and breaks together; `break ·
 <id> · pr-NNNN · <place>` per break; and `not read · pr-NNNN · <paths>` for each not `none`. It
-exits 2 with a `CANNOT RUN` line, printing nothing, on a named block missing, a pull request named
-twice or not as `pr-NNNN`, a heading missing or naming another pull request, a line of no form
-above, a claim judged twice, or a `Not read:` line missing or repeated.
+exits 2 with a `CANNOT RUN` line, printing nothing, on a named block or the claims file missing, a
+pull request named twice or not as `pr-NNNN`, a heading missing or naming another pull request, a
+line of no form above, a claim judged twice, a block with no line for a `C-n` claim, or a `Not
+read:` line missing or repeated.
 
 Writers: `diff-probe`, at the path `revise` `prepare` step 2 gives it. Readers:
 `scripts/block_tally.py`, run by `prepare` step 2 for "Practice".

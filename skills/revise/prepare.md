@@ -105,15 +105,17 @@ step 1.
    break, as `### C-n · <path>:<line> · every change` when it asks something of every pull request,
    or of every one that makes a kind of change, or `· code` when it governs how code is written,
    and the claim in one line. Show the `C-` claims and ask once: **Sweep these** (Recommended),
-   **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**. Then, all in one
+   **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**, removing from
+   the claims file every `C-` claim the answer drops. Then, all in one
    message, one `diff-probe` per merged pull request the script listed, past thirty the thirty
    merged most recently, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
    and every `C-` claim, and the path `.review/revision/sweep/pr-NNNN.md`, where it writes its
    block and returns `wrote <path>`. Never repeat a block: a probe that returns `write failed:
    <error>` could not write it, and you write the block that follows that line, without it, to its
-   path. Then run `python3 "<plugin root>/scripts/block_tally.py" sweep .review/revision/sweep/
-   <pr-NNNN ...>`, naming each pull request probed; an exit 2 names the block that
+   path. Then run `python3 "<plugin root>/scripts/block_tally.py" sweep --claims
+   .review/revision/claims.md .review/revision/sweep/ <pr-NNNN ...>`, naming each pull request
+   probed; an exit 2 names the block that
    does not hold its form, to rerun that probe. Into "Practice", from its `claim` and `break` lines,
    per claim: the pull requests it was judged on and how many follow it, break it,
    leave it untouched and could not be judged for want of a description, each break with its pull request and place; `drift` beside a claim broken
