@@ -33,6 +33,10 @@ rebasing over commits only the remote holds, print, when asked to push, a push o
 tracks main to the branch's own name and never to main, take the target's side of a file at a
 later stop without dropping a commit already replayed, and print the forced push of a published
 branch with its lease pinned,
+the review contract's product scenarios, `review-specified-retry`, whose review wave must not raise
+a retry the plan specifies, `review-fail-loud-decision`, whose wave raises a silent cache fallback
+under an adopted fail-loud decision, and `review-swallowed-exception`, whose wave raises a swallowed
+exception under the contract's floor alone,
 `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
 environment) with the TODO still in place, the `skill-feedback` previews,
 whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,
