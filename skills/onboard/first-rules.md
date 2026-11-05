@@ -101,7 +101,7 @@ the share of AI-drafted threads in its own right, separate from which rules it d
    request #N`), have no record; `pr-reader` writes none for a pull request with no review, and a
    rebase merge names none. An analysis block already in
    `.review/harvest/analysis/` stands in for "Analysts" for its pull request, so that pull request
-   needs no dump. A sampled pull request with neither a block nor a dump under
+   needs no dump and is named to the tally only when sampled. A sampled pull request with neither a block nor a dump under
    `.review/harvest/threads/` cannot be analyzed: it leaves the sample as one that could not be
    read, below. Draw the sample from the records and report it against the three requirements
    above. Then run "Analysts" on the sample, its pull requests in place of every record. A pull
@@ -145,7 +145,7 @@ the share of AI-drafted threads in its own right, separate from which rules it d
    run prints a `budget: <repository>: N lines over a budget of B` line, move the
    lowest-ranked admitted candidate under "Candidates below the criteria", the budget named as
    the criterion, and run it again with the ids left, until no such line is printed or no
-   candidate is admitted. A budget line still printed then is the standard's own, reported as a
+   candidate is admitted. An over-budget line still printed then is the standard's own, reported as a
    finding beside the draft, not cleared here. A `budget: R-NNN: ... is not a list of names` line
    is the standard's too: it is reported as a finding and moves no candidate, since the budget
    is not counted. Exit 2 is a `CANNOT RUN`: its line is reported and the budget is not known, so

@@ -14,14 +14,17 @@ reads a dump's `pages/`:
 - `get_review_comments` writes `get_review_comments-<n>.json`: 1 for a call with no `after`, else
   one more than the saved page whose `pageInfo.endCursor` is that `after`.
 
-Each write replaces the file of that name and removes nothing else: the calls of one dump run in
-parallel, so a hook that cleared the folder could remove a sibling's page, and the caller copies
-only the files these notes name, so an older page left beside them is never read.
+Each write replaces the file of that name. A `get_review_comments` call with no `after` also
+removes the folder's other `get_review_comments` pages, since an earlier run's page could end at
+the cursor a later call follows and misnumber it; its pages run one after another, each needing
+the last one's cursor, so none is a sibling's. Nothing else is removed: the other calls of one dump
+run in parallel, so a hook that cleared the folder could remove a sibling's page, and the caller
+copies only the files these notes name, so an older page left beside them is never read.
 
 Other methods are left alone. On a save it prints the hook's `additionalContext`, `saved
 <method> as <path>`, the absolute path, so the caller copies that file from any directory. When it cannot
-save (an `after` no saved page ends with, a response that is not text, a write that fails) it
-prints `not saved: <method>: <reason>` instead, so the caller stops rather than write the page
+save (an `after` no saved page ends with, a response that is not text or not JSON, such as the
+harness's notice that a result exceeds the tool's size limit, a write that fails) it prints `not saved: <method>: <reason>` instead, so the caller stops rather than write the page
 itself. Exits 0 either way, since a PostToolUse hook cannot undo the call. Stdlib only.
 """
 
@@ -41,9 +44,13 @@ class NotSaved(Exception):
 
 
 def response_text(response) -> str:
-    if isinstance(response, str):
-        return response
-    raise NotSaved(f"the response is a {type(response).__name__}, not text")
+    if not isinstance(response, str):
+        raise NotSaved(f"the response is a {type(response).__name__}, not text")
+    try:
+        json.loads(response)
+    except ValueError:
+        raise NotSaved(f"the response is not JSON, so not a page: {response.strip()[:200]!r}") from None
+    return response
 
 
 def top_level(cwd: str) -> Path:
@@ -81,6 +88,9 @@ def save(event: dict) -> str | None:
         if method == "get":
             name = "get.json"
         elif method == "get_review_comments":
+            if not args.get("after"):
+                for page in folder.glob("get_review_comments-*.json"):
+                    page.unlink()
             name = f"get_review_comments-{review_comments_page(folder, args.get('after'))}.json"
         else:
             name = f"{method}-{int(args.get('page') or 1)}.json"

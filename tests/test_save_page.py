@@ -92,6 +92,24 @@ class SavePage(unittest.TestCase):
         self.assertEqual(self.call("get", "{}", cwd=outside), f"not saved: get: {outside} is not in a git repository")
         self.assertFalse((outside / ".review").exists())
 
+    def test_a_size_limit_notice_is_not_saved_as_a_page(self):
+        self.call("get_reviews", "[]", perPage=100, page=1)
+        notice = "Error: result (61,204 tokens) exceeds maximum allowed tokens (25,000). Use pagination."
+        note = self.call("get_reviews", notice, perPage=100, page=1)
+        self.assertEqual(note, f"not saved: get_reviews: the response is not JSON, so not a page: {notice!r}")
+        self.assertEqual((self.folder / "get_reviews-1.json").read_text(), "[]")
+
+    def test_a_first_review_comments_page_removes_an_earlier_runs_pages(self):
+        self.call("get_review_comments", self.page("A", True))
+        self.call("get_review_comments", self.page("B", True), after="A")
+        self.call("get_review_comments", self.page("C", False), after="B")
+        self.call("get_reviews", "[]")
+        self.assertTrue(self.call("get_review_comments", "Error: result exceeds maximum allowed tokens").startswith("not saved: "))
+        self.assertEqual(len(list(self.folder.glob("get_review_comments-*.json"))), 3)
+        self.call("get_review_comments", self.page("B", False))
+        self.assertEqual(sorted(p.name for p in self.folder.iterdir()), ["get_review_comments-1.json", "get_reviews-1.json"])
+        self.assertEqual(self.call("get_review_comments", self.page("D", False), after="B"), f"saved get_review_comments as {self.folder}/get_review_comments-2.json")
+
     def test_a_write_that_fails_says_so(self):
         self.folder.parent.mkdir(parents=True)
         self.folder.write_text("in the way")

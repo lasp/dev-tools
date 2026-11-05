@@ -13,9 +13,11 @@ harvest did not write, is refused, so a kept record is always one the threads ca
 so is one whose harvested record holds findings, per rule, the log's lacks, since keeping it would
 drop those instead.
 
-Prints `copied pr-NNNN` or `kept pr-NNNN · <n> finding(s) the threads do not carry` per record.
-A record either side whose findings cannot be read, or a directory that is not one, exits 1 with
-the reason. Stdlib only.
+A log directory that does not exist yet, on a repository's first harvest, is made, with its
+`log/` parent, when it is `standards/log/<repo>/` under an existing `standards/`; any other
+missing log, or a symbolic link where the log should be, is refused. Prints `copied pr-NNNN` or `kept pr-NNNN · <n> finding(s) the threads do not carry` per
+record. A record either side whose findings cannot be read, or a directory that is not one, exits
+1 with the reason. Stdlib only.
 """
 
 from __future__ import annotations
@@ -45,11 +47,19 @@ def dropped(old: Path, new: Path) -> Counter:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("records", type=Path, help="the harvest's .review/harvest/records/")
-    p.add_argument("log", type=Path, help="the standards/<repo>/log/ directory")
+    p.add_argument("log", type=Path, help="the standards/log/<repo>/ directory")
     p.add_argument("--keep", type=int, action="append", default=[], help="a pull request whose log record stays as it is")
     args = p.parse_args(argv)
     try:
-        for d in (args.records, args.log):
+        if args.log.is_symlink():
+            raise ValueError(f"{args.log} is not a directory")
+        new = (
+            not args.log.exists()
+            and args.log.parent.name == "log"
+            and args.log.parent.parent.name == "standards"
+            and args.log.parent.parent.is_dir()
+        )
+        for d in (args.records, *([] if new else [args.log])):
             if not d.is_dir():
                 raise ValueError(f"{d} is not a directory")
         harvested = sorted(args.records.glob("pr-*.yaml"))
@@ -68,14 +78,16 @@ def main(argv: list[str] | None = None) -> int:
             if gained:
                 counts = ", ".join(f"{rule} ×{n}" for rule, n in sorted(gained.items()))
                 raise ValueError(f"--keep {name[3:7].lstrip('0')}: the harvested {name} holds findings the log's does not, which keeping it would drop: {counts}")
+        refused = {name: lost for name, lost in losses.items() if name not in kept}
+        if refused:
+            for name, lost in sorted(refused.items()):
+                counts = ", ".join(f"{rule} ×{n}" for rule, n in sorted(lost.items()))
+                print(f"refused {name[:-5]} · the log's record holds findings the harvested one does not: {counts}")
+            return 1
+        if new:
+            args.log.mkdir(parents=True)
     except (ValueError, OSError) as e:
         print(f"archive_records.py: {e}", file=sys.stderr)
-        return 1
-    refused = {name: lost for name, lost in losses.items() if name not in kept}
-    if refused:
-        for name, lost in sorted(refused.items()):
-            counts = ", ".join(f"{rule} ×{n}" for rule, n in sorted(lost.items()))
-            print(f"refused {name[:-5]} · the log's record holds findings the harvested one does not: {counts}")
         return 1
     for path in harvested:
         if path.name in kept:

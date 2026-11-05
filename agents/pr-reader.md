@@ -48,24 +48,37 @@ none in any state, return `pull request: none`, which means the branch never had
 ## The dump
 
 The dump is `.review/threads/pr-NNNN/` (in `harvest` mode, `.review/harvest/threads/pr-NNNN/`).
-Remove it with `rm -rf` first, then put every result under its `pages/` exactly as the tool
+Remove it with `rm -rf` first, and the hook's folder for the pull request,
+`.review/pages/<owner>-<repo>/pr-NNNN/` at the repository's top level, so no earlier run's page
+is there. Then put every result under its `pages/` exactly as the tool
 returned it, one file per call. The plugin's hook saves each `pull_request_read` result for you
 and says after the call `saved <method> as <path>`: `cp` that file to the name below. Never write
-a page yourself, with the Write tool, in Python or by hand: a copy written out drops or changes
-text, and nothing downstream would notice. When a call's note reads `not saved: …`, or no note
-names a file, that pull request cannot be dumped: in `state` mode return the note verbatim, in
-`harvest` mode it is that pull request's reason on its line of the report, and the harvest goes on.
+a page yourself, with the Write tool, in Python or by hand, and never copy a file the harness
+saved a long result to: a copy written out drops or changes text, and nothing downstream would
+notice. When a call's note reads `not saved: …`, or no note names a file, that pull request
+cannot be dumped, unless the result says it exceeds the tool's maximum allowed tokens: in `state`
+mode return the note verbatim, in `harvest` mode it is that pull request's reason on its line of
+the report, and the harvest goes on.
+
+A result too long for the tool is fetched again in smaller pages. Remove that method's pages from
+the dump's `pages/`, then fetch it again from page 1 at half the `perPage` that was too long, or
+at 20 for a `get_review_comments` fetched without one, halving again, rounded down, while a page
+is too long, the whole method at the one size, until every page saves. A page still too long at
+`perPage` 1 cannot be dumped, as a `not saved` note says. `get` has no pages, so a `get` too
+long cannot be dumped.
 
 - `pages/get.json`: `pull_request_read` `get`.
 - `pages/get_reviews-<n>.json`: `get_reviews`, `perPage: 100` and `page` n from 1 until a page
-  comes back with fewer than 100. Each batch of thread replies posts a review of its own, so an
+  comes back with fewer than `perPage`. Each batch of thread replies posts a review of its own, so an
   unpaged call drops the later reviews, the closing summaries among them.
 - `pages/get_review_comments-<n>.json`: `get_review_comments`, n from 1, each call given the
   previous page's `endCursor` as `after`, until `hasNextPage` is false.
 - `pages/get_comments-<n>.json`: `get_comments`, the conversation comments, paged as
   `get_reviews` is.
 
-Then run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/thread_dump.py <the dump>`, which checks the
+Then run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/thread_dump.py <the dump>`, adding `--per-page
+get_reviews=<n>` or `--per-page get_comments=<n>` for a method fetched at a `perPage` below 100,
+which checks the
 pages and writes `pr.json`, `reviews.json`, `comments.json` (every page's `review_threads` in one
 list), `issue-comments.json` and `body.md` beside them. `judged.json` is your judgments, under
 "Judging"; `[]` when nothing is undecided or you do not judge.
@@ -128,6 +141,9 @@ Told `Judge: no` (`onboard`'s first rules), write `[]` and do not run `--undecid
   author, wrote in a thread, a review summary or a conversation comment, or one with a thread the
   author opened in their own words. One with neither exits
   1 with a reason ending `nothing was reviewed`, writes no record, and its line says `no review`.
+  A record whose last line counts any `label(s) unparsed` has findings whose severity label the
+  script could not read, written with that thread `unparsed`: its line says `record · <n>
+  label(s) unparsed`, and the count goes into the summary.
   A line says `built` when `body.md` has an Already checked block, and `not built` otherwise. Every merged pull request is listed with
   its created and merged dates; which of them count toward missing records is the caller's rule
   to apply.
@@ -146,8 +162,8 @@ In `harvest` mode, one block for the whole run:
 
 ```
 ## harvest — <owner/repo> since <date>
-merged: <n>; records written: <n>
-pr-NNNN · created <date> · merged <date> · built | not built · record | no review | <the script's reason on a non-zero exit, verbatim>[ · judgments refused: <the script's reason>]
+merged: <n>; records written: <n>; labels unparsed: <n>
+pr-NNNN · created <date> · merged <date> · built | not built · record[ · <n> label(s) unparsed] | no review | <the script's reason on a non-zero exit, verbatim>[ · judgments refused: <the script's reason>]
 <one line per merged pull request, by number>
 ```
 

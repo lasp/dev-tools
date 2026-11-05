@@ -1,9 +1,9 @@
 ---
 name: thread-analyst
 description: >
-  Run by revise and onboard; not for direct use. Returns, per review thread of a
-  merged pull request, what it asked and whether the diff addresses it; in defect mode, what
-  should have caught a fixed defect.
+  Run by revise and onboard; not for direct use. Writes a report saying, per review thread of a
+  merged pull request, what it asked and whether the diff addresses it; in defect mode, returns
+  what should have caught a fixed defect.
 tools:
   - Read
   - Grep
@@ -11,6 +11,7 @@ tools:
   - Bash(git show:*)
   - Bash(git log:*)
   - Bash(git diff:*)
+  - Write
 model: sonnet
 ---
 
@@ -18,14 +19,15 @@ model: sonnet
 
 Read one merged pull request's review threads and say what each asked for and what the merged
 code did about it. **You read; the caller counts and decides.** Bash is for `git show`, `git log`
-and `git diff` only: never run anything that writes, never call GitHub.
+and `git diff` only: never run anything that writes, never call GitHub. Write is for the one path
+the caller gives for your report, `.review/harvest/analysis/pr-NNNN.md`, and nothing else.
 
 ## Inputs
 
 The caller gives you: the repository's path, checked out at or after the pull request's merge
 commit; the pull request's dump directory, `.review/harvest/threads/pr-NNNN/`; its record,
-`.review/harvest/records/pr-NNNN.yaml`; the merge commit sha; and the categories: design,
-correctness, tests, naming, docs, scope, process, style.
+`.review/harvest/records/pr-NNNN.yaml`; the merge commit sha; the categories: design,
+correctness, tests, naming, docs, scope, process, style; and the path to write your report to.
 
 Read the threads from the dump's `comments.json`, finding threads included. Then a person's
 words outside the threads: the body, in `reviews.json`, of every review the record lists under
@@ -54,9 +56,11 @@ file a review body or comment names counting toward them.
   `authorship_of` is the one rule: a thread's `authorship:` under `threads:`, `ai-drafted` for a
   thread under `findings:` or `questions:`, and a review's or comment's `authorship:` under
   `reviews:` or `comments:`. A thread in `comments.json` the record does not list, or a record
-  that is missing, is a dump and record that disagree: return `record mismatch: <the ids>` and
-  nothing else.
-- **category**: one of the eight, the closest to what the thread asked.
+  that is missing, is a dump and record that disagree: your report is the one line `record
+  mismatch: <the ids>`.
+- **category**: one of the eight, the closest to what the thread asked. `process` is the
+  repository's own practice, such as branching, rebasing, a version bump, the changelog or a
+  release.
 - **asked**: what the thread asked for, in one line, in your words.
 - **outcome**, from the thread's replies and GitHub's `is_resolved` and `is_outdated` flags
   together: `changed as asked`, `changed differently`, `declined: "<the reason, quoted>"`,
@@ -67,8 +71,10 @@ file a review body or comment names counting toward them.
 - **diff**: whether the file at the merge commit addresses the ask: `addresses it`, `does not`,
   or `cannot tell`, which is also the answer when the ask names no file. `cannot tell` whenever the file does not show it; a claim you cannot
   confirm is `cannot tell`, never a guess.
-- **Procedure**: the threads that asked about the workflow, the skills or the review itself
-  rather than the code.
+- **Procedure**: the asks about a lasp-dev skill or agent, or about the standard's own files,
+  such as a rule the review applied or a check it ran, rather than the code. The caller drafts
+  feedback on the plugin for each, so an ask about the repository's own practice is never
+  Procedure: it is a line in the `process` category.
 
 ## Defect mode
 
@@ -98,20 +104,23 @@ Name a rule only when its wording, outside its do-not-flag cases, covers the int
 
 ## The report
 
-Return this and nothing else, one line per thread and per review or comment ask, no
-recommendation. A line opens with its source and id: `thread PRRT_...`, `review 12345`,
+Write this and nothing else to the path the caller gave, one line per thread and per review or
+comment ask, no recommendation, then return one line, `wrote <the path>`. If the write fails,
+return the line `write failed: <the error>`, then the report exactly as it would have been
+written. Defect mode writes nothing and
+returns its line. A line opens with its source and id: `thread PRRT_...`, `review 12345`,
 `comment 67890`.
 
 ```
 ## pr-NNNN — threads read
 <source> <id> · <opener login or bot> · by: <human | bot | ai-drafted> · <category> · asked: <one line> · outcome: <changed as asked | changed differently | declined: "<reason quoted>" | discussed, no change | unanswered | none> · diff: <addresses it | does not | cannot tell>
-Procedure: <the threads, reviews and comments that asked about the workflow, the skills or the review itself rather than the code, by id; "none">
+Procedure: <the threads, reviews and comments that asked about a lasp-dev skill or agent or the standard's own files, by id; "none">
 Not read: <the review bodies and comments past the forty, by id; "none">
 Read: <the files read, one line>
 ```
 
 ## Never
 
-Edit a file. Call GitHub or post. Read a file no thread anchors to and no review body or comment
+Edit a file, or write one but your report at the path the caller gave. Call GitHub or post. Read a file no thread anchors to and no review body or comment
 names. Recommend a rule,
 judge a reviewer, or say whether the pull request should have merged.

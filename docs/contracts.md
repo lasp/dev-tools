@@ -261,7 +261,7 @@ Pinned by: tests/test_next_phase.py::test_an_agree_that_carries_its_response_is_
 
 ## The thread dump
 
-Version: 5
+Version: 6
 
 Fields: `.review/threads/pr-NNNN/` (and `.review/harvest/threads/pr-NNNN/`): `pages/`, each
 `pull_request_read` result as the server returned it, one file per call, from which
@@ -270,13 +270,16 @@ names; `pr.json`, the
 `pull_request_read` `get` result, with `draft`, `state` and `merged`, and `merged_at` once it
 merged, since the server leaves out an empty field rather than sending null (a review posted with
 a batch of thread replies has no `body`); `reviews.json`,
-`get_reviews`, paged 100 at a time into one list; `comments.json`, `get_review_comments`, whose
+`get_reviews`, paged 100 at a time, or at the smaller size `thread_dump.py --per-page` names, into one list; `comments.json`, `get_review_comments`, whose
 `review_threads` carry GitHub's `is_resolved` and `is_outdated` flags; `issue-comments.json`,
-`get_comments`, the conversation comments, paged 100 at a time into one list; `body.md`, the pull request body. As the GitHub MCP
+`get_comments`, the conversation comments, paged as `get_reviews` is into one list; `body.md`, the pull request body. As the GitHub MCP
 server returns them; each review in `reviews.json` carries its `html_url`, which `record.py`
 reads the repository from and refuses a review without. Version 2 added `issue-comments.json`;
 version 3 states the `html_url` requirement; version 4 added `pages/` and `thread_dump.py`'s
-checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`. Beside them, `judged.json`, "The
+checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`; version 6 lets a
+list be paged below 100, named by `--per-page`, and has `save_page.py` refuse a response that is
+not JSON, such as the harness's size-limit notice, and clear a pull request's
+`get_review_comments` pages at its first page. Beside them, `judged.json`, "The
 judgments", is `pr-reader`'s own.
 
 Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
@@ -534,10 +537,10 @@ Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_t
 
 ## The record
 
-Version: 11
+Version: 12
 
 Fields: `<log>/pr-NNNN.yaml`, `<log>` the records directory `revise`'s "The standard's repository"
-names, first line `contract: 11`. This section is the one
+names, first line `contract: 12`. This section is the one
 place the fields are defined; the records directory's own README says how the revision
 reads them.
 
@@ -582,12 +585,17 @@ reads them.
   `unanswered` with `why: "disagree with no reason"`; an unparsed finding carries `line:`, the
   first line of the reply that left it open; a finding two reviewers answered differently carries
   `contested: true` and both original lines, `lines:`, beside the verdict the author settled on,
-  or `verdict: contested` while the author has not settled it.
+  or `verdict: contested` while the author has not settled it. A finding whose first line is not
+  one of the four severity lines has `severity: unparsed`, `verdict: unparsed` and `line:`, that
+  first line; its replies are not read, since the severity decides how they read.
+  `scripts/ratchet_counts.py` counts it as a firing in its `unlabeled` column, not with the
+  unanswered.
 - `questions:`, every cited question: `q`, `key`, `at`, `thread`, and `a`, the answer, or
   `unanswered: true`.
 - `threads:`, a pointer to every other review thread: a person's, a bot's, or a finding posted
   with no key. Each carries `thread`; `by`, its opener, `bot` for a bot or `review` for an uncited
-  finding, which also carries its `severity`; `authorship` (`human`, `bot`, or `ai-drafted` when
+  finding, which also carries its `severity`, `unparsed` with `verdict: unparsed` and `line:` as
+  on a finding; `authorship` (`human`, `bot`, or `ai-drafted` when
   the opening comment carries the review's attribution line or one of the
   `attribution.phrases` of the repository's standard, Libera's being D-013's "drafted with AI assistance" and the loop review's attribution line); `at`; `opened`, the day; `resolved` and `outdated`, GitHub's flags; `replies`,
   the count from people; `verdict`, an uncited finding's read as a finding's, otherwise the pull
@@ -619,6 +627,8 @@ author opened in their own words, by which a pull request whose only review is t
 has a record. Version 10: `standards_sha` may end ` + uncommitted`; a record of an earlier
 version without it may still have run on uncommitted standards. Version 11: in a repository whose
 standard is elsewhere, `standards_sha` is the named repository's commit, not this one's.
+Version 12: a finding whose severity label is not one of the four is recorded with `severity:
+unparsed`, where earlier versions refused the record of its pull request.
 
 A harvested record reaches the log through `scripts/archive_records.py`, which refuses to
 replace a record whose findings, counted per rule, the harvested one falls short of, unless told
@@ -671,7 +681,7 @@ Version: 1
 Fields: the first line of `<log>/ratchet-YYYY-MM.md`, `window: <from>..<to>`, the
 first and last days the report covers, each `YYYY-MM-DD`. `<from>` is the day after the previous
 report's `<to>`, the newest report in any `<log>` of the standard, or before the first report the
-day the ledger, or the `standard:` pointer, reached the repository's `main`, and is the `--since` day `ratchet_counts.py` is given. The lines after it,
+repository's adoption date, as `skills/revise/SKILL.md` "The standard's repository" defines it, and is the `--since` day `ratchet_counts.py` is given. The lines after it,
 one per caveat that applies, hold the report's caveats, as `skills/revise/outline.md`
 lists them.
 
@@ -710,7 +720,7 @@ Pinned by: tests/test_rule_lint.py::test_the_anchor_form_parses
 
 ## The window's merges
 
-Version: 1
+Version: 2
 
 Fields: `scripts/window_merges.py`'s printout. One line per pull request merged into `--ref` from
 `--since` on, oldest first, `pr-NNNN <full sha> <YYYY-MM-DD> <path> [<path> ...]`, the merge's
@@ -718,12 +728,18 @@ committer date as a UTC day, as GitHub's `merged_at` reads, and the files it cha
 first parent; with `--ledger`, then one line per live reviewer-tier rule in
 ledger order: `R-NNN pr-NNNN [pr-NNNN ...]`, `R-NNN none`, `R-NNN predates pr-NNNN [...]` and
 `R-NNN not swept: no scope`. A pull request is named by its merge subject as
-`scripts/merge_commit.py`'s `pr_numbers` reads it.
+`scripts/merge_commit.py`'s `pr_numbers` reads it. With `--doc` and `--dumps`, then per document
+in the order given: `doc <path>: pr-NNNN [...]` or `doc <path>: none`, the pull requests opened,
+by their `pr.json`'s `created_at`, at or after the latest commit on `--ref`'s first-parent history
+that adds the document; `doc <path>: predates pr-NNNN [...]`, those opened before; `doc <path>: no
+opened day pr-NNNN [...]`, those with no `pr.json`; or `doc <path>: not on <ref>` alone (version 2).
+A `--dumps` that is not a directory exits 2.
 
 Writers: `scripts/window_merges.py`. Readers: `revise` `prepare` step 2, which gives each
-`diff-probe` the rules whose line names its pull request.
+`diff-probe` the rules whose line names its pull request, and each `every change` claim whose
+document's `doc` line names it.
 
-Pinned by: tests/test_window_merges.py::test_each_live_reviewer_rule_gets_the_pull_requests_its_scope_matches
+Pinned by: tests/test_window_merges.py::test_a_document_judges_only_the_pull_requests_opened_after_it_reached_main
 
 ## The ledger's held-candidates heading
 
@@ -745,6 +761,87 @@ window's clusters into it; `scripts/ratchet_counts.py` and `scripts/rule_lint.py
 `parse_entries`.
 
 Pinned by: tests/test_standard_file.sh::"the ledger stops before its held candidates, headed as onboard's first rules and revise's apply head them"
+
+## The analysis blocks
+
+Version: 1
+
+Fields: `.review/harvest/analysis/pr-NNNN.md`, one `thread-analyst` report, its blank lines
+ignored. Either the one line `record mismatch: <ids>`, or the heading `## pr-NNNN — threads read`
+naming the file's pull request; then one line per ask, `<source> <id> · <opener> · by: <by> ·
+<category> · asked: <one line> · outcome: <outcome> · diff: <diff>`, where `source` is `thread`,
+`review` or `comment`, `by` is `human`, `bot` or `ai-drafted`, `category` one of design,
+correctness, tests, naming, docs, scope, process and style, `outcome` `changed as asked`,
+`changed differently`, `declined: "<reason>"`, `discussed, no change`, `unanswered` or `none`, and
+`diff` `addresses it`, `does not` or `cannot tell`; then one each of `Procedure: <ids or none>`,
+`Not read: <ids or none>` and `Read: <files>`. `scripts/block_tally.py analysis <dir> pr-NNNN
+[...]` reads the named pull requests' blocks only, since the directory keeps blocks from earlier
+runs, and prints `blocks: <n> · asks: <n> · asked none: <n> · mismatches: <n>`; one line per
+combination of the asks other than `asked: none`, `count · <by> · <source> · <category> · <outcome>
+· <n>`, a `declined` outcome without its reason, in the orders above; `outcome unanswered ·
+pr-NNNN · <source> <id> · by: <by> · diff: <diff>` for each ask the analyst read as unanswered,
+which is not the record's verdict; `procedure · pr-NNNN · <the Procedure: text>` and `not read ·
+pr-NNNN · <the Not read: text>` for each not `none`; and `mismatch · pr-NNNN · <ids>`. It exits 2
+with a `CANNOT RUN` line, printing nothing, on a named block missing, a pull request named twice or
+not as `pr-NNNN`, an empty block, a heading missing or naming another pull request, a `record
+mismatch:` line with more after it, a line of no form above, or a `Procedure:`, `Not read:` or
+`Read:` line missing or repeated.
+
+Writers: `thread-analyst`, at the path harvest.md's "Analysts" gives it. Readers:
+`scripts/block_tally.py`, run by harvest.md's "Analysts"; `revise` `prepare` step 2 and `onboard`'s
+first rules, for the asks.
+
+Pinned by: tests/test_block_tally.py::test_the_analysis_counts_asks_by_who_source_category_and_outcome
+
+## The sweep blocks
+
+Version: 1
+
+Fields: `.review/revision/sweep/pr-NNNN.md`, one `diff-probe` block, its blank lines ignored: the
+heading `## pr-NNNN · <sha, 7 characters>` naming the file's pull request; one line per claim,
+`<id> · follows · <place>`, `<id> · breaks · <place> · "<the line>" · <why>`, `<id> · not
+touched` or `<id> · not judged · no description`, `id` an `R-NNN` or `C-n`, each id once; then
+`Not read: <paths or none>`; every `C-n` claim `.review/revision/claims.md` heads, as `### C-n ·
+<path>:<line> · every change|code`, has a line in every block, except an `every change` claim whose
+document's `doc <path>:` line in `.review/revision/merges.txt`, `scripts/window_merges.py`'s
+printout with `--doc`, does not name that pull request. `scripts/block_tally.py sweep --claims
+<claims.md> [--merges <merges.txt>] <dir> pr-NNNN [...]` reads the named pull requests' blocks only
+and prints `blocks: <n>`; per claim,
+rules first, `claim · <id> · judged <n> · follows <n> · breaks <n> · not touched <n> · not judged
+<n>`, with ` · drift` when breaks are more than half of follows and breaks together; `break ·
+<id> · pr-NNNN · <place>` per break; and `not read · pr-NNNN · <paths>` for each not `none`. It
+exits 2 with a `CANNOT RUN` line, printing nothing, on a named block, the claims file or a named
+merges file missing, a `### C-n` heading not in its form, an `every change` claim's document with
+no `doc` line in the merges file, a pull request named twice or not as `pr-NNNN`, a heading missing or naming another pull request, a
+line of no form above, a claim judged twice, a block with no line for a `C-n` claim it owes, or a `Not
+read:` line missing or repeated.
+
+Writers: `diff-probe`, at the path `revise` `prepare` step 2 gives it. Readers:
+`scripts/block_tally.py`, run by `prepare` step 2 for "Practice".
+
+Pinned by: tests/test_block_tally.py::test_the_sweep_counts_each_claim_and_marks_drift
+
+## The probe's input
+
+Version: 1
+
+Fields: `scripts/probe_input.py`'s printout from one drafted entry, `.review/backtest/R-NNN.entry.md`:
+`R-NNN · <title>`, then the wording, one line each, the entry's `> ` lines without the marker or,
+when the entry is followed by a second `### R-NNN · <title>` heading of the same id and title, that
+heading's lines, then the entry's one `Do not flag:` line and its paragraph, as written: the lines
+after it up to a blank line, a heading or a line opening `scope:`, `example:`, `repos:`, `tier:`,
+`Check:`, `Reasoning:` or `Wording:`, which a wrapped line may run straight into. Each block ends at the next heading of
+level one to three, as `scripts/rule_lint.py` reads it. Nothing else of the entry is printed, its
+`example:` line least of all, since the probe tests it. The script exits 2 with a `CANNOT RUN` line
+on an entry with no heading or more than two, a second heading that differs, a first of two
+headings with no `scope:` or `example:` line under it, no wording, wording in both places, other
+than one `Do not flag:` line, or a line to print opening `example:`, `scope:`, `tier:` or
+`Wording:`.
+
+Writers: `scripts/probe_input.py`. Readers: `rule-probe`, given the printout by harvest.md's "The
+bar", run by `revise` and `onboard`.
+
+Pinned by: tests/test_probe_input.py::test_a_wrapped_do_not_flag_paragraph_is_given_whole_and_stops_at_the_next_field
 
 ## The coupling baseline
 
