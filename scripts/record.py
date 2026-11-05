@@ -55,7 +55,11 @@ conversation comment is not a thread, the author's reply to it has no fixed plac
 The unanswered, unparsed and contested findings, and the unparsed people's threads, are printed
 on stderr, and recorded with that verdict. A finding whose Standard block has no readable key is
 named on stderr; --state lists it with the key `-` and its verdict, and a record of its pull
-request is refused.
+request is refused. A finding with a Standard block whose first line is not one of the four
+severity lines is recorded, where its key places it, with `severity: unparsed`, `verdict:
+unparsed` and `line:`, that first line, its replies unread, since its severity decides how they
+read; it is printed on stderr as `unparsed label:`, the last line counts such labels, --undecided
+does not list it and --state refuses it.
 
 A verdict is read from its word first. --undecided prints, as JSON, the threads the words leave
 open (a finding unparsed, held by a reasonless Disagree or still in discussion, a person's thread
@@ -76,7 +80,7 @@ review with no `html_url` or one on a repository other than --repo, or an input 
 JSON, exits 1 with the reason; nothing is guessed. Stdlib only, so the
 plugin needs no environment.
 
-A record's first line is `contract: 11` and the --state printout's `contract: 6`: the version
+A record's first line is `contract: 12` and the --state printout's `contract: 6`: the version
 of each interface as `docs/contracts.md` defines it.
 
 With --state it writes nothing and prints where the pull request stands: the head, then
@@ -121,7 +125,7 @@ ATTRIBUTIONS = ("AI-assisted comment, posted by @", "AI-assisted comment, review
 SEVERITIES = {"must fix before merge": "must-fix", "should fix": "should-fix", "suggestion": "suggestion", "question": "question"}
 # The versions of the --state printout and of the record, as docs/contracts.md defines them.
 CONTRACT = 6
-RECORD_CONTRACT = 11
+RECORD_CONTRACT = 12
 # What a judgment may say a reply means, as docs/contracts.md "The judgments" defines it.
 JUDGED = (*VERDICTS, "answered", "unclear")
 # The Already checked lines a built pull request's body must carry; pr-create's body.md writes them.
@@ -273,24 +277,19 @@ def standards_line(review: dict) -> str | None:
 
 def parse_finding(thread: dict) -> dict | None:
     """The finding a thread's first comment carries, or None for a thread that is not one. A
-    reply from a person with an empty body is refused: it has no first line to read a verdict
-    from."""
+    finding with a Standard block whose first line is not one of the four severity lines has the
+    severity `unparsed` and that line as its `label`. A reply from a person with an empty body is
+    refused: it has no first line to read a verdict from."""
     for c in thread["comments"][1:]:
         if not is_bot(c["author"]) and not c["body"].strip():
             raise Unsupported(f"thread {thread['id']} has a reply by {c['author']} with an empty body")
     first = thread["comments"][0]
     standard = "<summary>Standard</summary>" in first["body"]
     m = LABEL.match(first["body"])
-    if standard and not m:
-        label = re.match(r"\*\*([^*]+)\*\*", first["body"])
-        raise Unsupported(
-            f"thread {thread['id']} is a finding with the label "
-            f"{label.group(1) if label else first['body'].splitlines()[0]!r}, not one of the four"
-        )
     if standard and not any(a in first["body"] for a in ATTRIBUTIONS):
         raise Unsupported(f"thread {thread['id']} is a finding with no attribution line")
-    # Without a severity line and the review's attribution, it is a person's or a bot's thread.
-    if not m or not any(a in first["body"] for a in ATTRIBUTIONS):
+    # Without a Standard block or a severity line, and the review's attribution, it is a person's or a bot's thread.
+    if not (m or standard) or not any(a in first["body"] for a in ATTRIBUTIONS):
         return None
     key, unreadable = None, False
     if standard:
@@ -311,8 +310,9 @@ def parse_finding(thread: dict) -> dict | None:
     line = first.get("original_line") or first.get("line")
     return {
         "thread": thread["id"],
-        "severity": SEVERITIES[m.group(1).lower()],
-        "title": m.group(2).strip(),
+        "severity": SEVERITIES[m.group(1).lower()] if m else "unparsed",
+        "title": m.group(2).strip() if m else first_line(first["body"]),
+        "label": None if m else first_line(first["body"]),
         "key": key,
         "unreadable": unreadable,
         "at": f"{first['path']}:{line}" if line is not None else first["path"],
@@ -342,7 +342,7 @@ def pointer(thread: dict, pr_author: str, finding: dict | None = None, judgment:
         adjudicate(finding, pr_author, judgment)
         word = {"answered": finding.get("verdict", "answered")}.get(finding["state"], finding["state"])
         rest, by = finding.get("reason", ""), "review"
-        at = finding["decided"] if finding["replies"] and finding["state"] != "unanswered" else None
+        at = finding["decided"] if finding["replies"] and finding["state"] != "unanswered" and finding["severity"] != "unparsed" else None
         judged = finding.get("judged")
     else:
         own = [i for i, c in enumerate(people) if c["author"] == pr_author]
@@ -401,6 +401,10 @@ def adjudicate(f: dict, pr_author: str, judgment: dict | None = None) -> dict:
     Discuss settlements and the rival check run on it as on a word; when it decides the thread,
     f['judged'] holds it, and an unclear judgment's basis is f['unclear']."""
     replies = f["replies"]
+    # With no severity nothing settles it: whether a Disagree needs a reason, or a reply is an answer, is unknown.
+    if f["severity"] == "unparsed":
+        f["state"], f["line"] = "unparsed", f["label"]
+        return f
     if judgment and judgment["verdict"] == "unclear":
         f["unclear"] = judgment["basis"]
     if not replies:
@@ -526,7 +530,7 @@ def undecided(threads: list[dict], pr_author: str) -> list[dict]:
         first = th["comments"][0]
         people = [c for c in th["comments"][1:] if not is_bot(c["author"])]
         if f is not None:
-            if f["severity"] == "question":
+            if f["severity"] in ("question", "unparsed"):
                 continue
             adjudicate(f, pr_author)
             open_ = f["state"] == "unparsed" or f.get("why") == "disagree with no reason" or (
@@ -836,6 +840,8 @@ def state(pr: dict, reviews: list, threads: list, body: str, repo: str, judged: 
                 str(t["replies_after"]), str(t["outdated"]).lower(), t["after"],
                 judged_cell(t["judged"], pr["user"]["login"], t["unclear"]),
             ]
+        elif f["severity"] == "unparsed":
+            raise Unsupported(f"thread {th['id']} is a finding with the label {f['label']!r}, not one of the four")
         else:
             adjudicate(f, pr["user"]["login"], judged.get(th["id"]))
             verdict = {"answered": f.get("verdict", "answered"), "contested": f.get("word")}.get(f["state"], f["state"])
@@ -1062,8 +1068,13 @@ def build(
             continue
         detail = {"unparsed": f"first line: {f.get('line', '')}", "unanswered": f.get("why", "no reply from a person")}
         detail["contested"] = " | ".join(f.get("contested", []))
-        report.append(f"{f['state']}: {f['thread']} {f['key']} ({detail[f['state']]})")
-    report += [f"unparsed: {t['thread']} (first line: {t['line']})" for t in pointers if t["verdict"] == "unparsed"]
+        said = "unparsed label" if f["severity"] == "unparsed" else f["state"]
+        report.append(f"{said}: {f['thread']} {f['key']} ({detail[f['state']]})")
+    report += [
+        f"unparsed{' label' if t['severity'] == 'unparsed' else ''}: {t['thread']} (first line: {t['line']})"
+        for t in pointers
+        if t["verdict"] == "unparsed"
+    ]
     return out, report
 
 
@@ -1151,7 +1162,8 @@ def main(argv: list[str] | None = None) -> int:
     args.out.write_text("\n".join(lines) + "\n")
     for line in report:
         print(line, file=sys.stderr)
-    print(f"wrote {args.out}: {len(report)} finding(s) unsettled", file=sys.stderr)
+    labels = sum(line.startswith("unparsed label: ") for line in report)
+    print(f"wrote {args.out}: {len(report)} finding(s) unsettled, {labels} label(s) unparsed", file=sys.stderr)
     return 0
 
 
