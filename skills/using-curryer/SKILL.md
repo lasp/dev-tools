@@ -2,12 +2,12 @@
 name: using-curryer
 description: >
   Who consumes curryer and libera_utils, where a change breaks, and whether code belongs in
-  curryer. Applies to any change to a curryer public API, to SPICE, frame, kernel or time code,
-  or to a libera_utils interface.
+  curryer. Applies to any change to a curryer public API, to SPICE, frame, kernel or time code in
+  curryer or a repository that depends on it, or to a libera_utils interface.
 user-invocable: false
 metadata:
   author: lasp-dev
-  version: 1.0.5
+  version: 1.0.6
 ---
 
 ## The constellation
@@ -27,7 +27,7 @@ It is read only where the checkout's standard holds it: when `--standard` exits 
 repository has no standard", or the standard has no D-006, say in one line that the decision was
 not read and go on with this file; any other exit 1 is a refusal, shown to the person, and the
 decision is not read.
-`references/downstream.md` is how to map them. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
+`references/downstream.md` adds curryer's particulars to `downstream`'s method for mapping them. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
 
 ## The blast radius
 
@@ -42,7 +42,9 @@ A change breaks where its consumers import it:
   the three algorithm repositories, and libera_cdk, whose infrastructure reads the processing
   step names.
 
-When the break lands depends on the consumer's pin, which `references/downstream.md` reads: a
+When the break lands depends on the consumer's pin, which
+`${CLAUDE_PLUGIN_ROOT}/skills/downstream/consumers.md` section 3 reads, with
+`references/downstream.md`'s packages: a
 released range breaks at the release that falls inside it; a commit pin or an editable install
 breaks when the pin moves, or at once.
 As read on 2026-10-03: libera_utils and libera_rad pin `lasp-curryer >= 0.5.2, <1.0`, libera_rad

@@ -28,29 +28,36 @@ What the hook scans:
   on, reviewed, merged, closed or reopened; a gist, release or repository created or edited; or
   `gh api` with fields or a body): the command's text and the
   files it sends (`--body-file`, `--notes-file`, `-F`, `--input`, `field=@file`, a gist's files).
-- Any tool of a GitHub server (a server whose name holds `github`) but a read, and any Jira or
-  Confluence tool but a read: every string in the call's input, named by its field.
+- A server tool but a read, read as `server_write` says: every string in the call's input, named
+  by its field. A tool named `jira_*` or `confluence_*` is scanned, as is a tool of a server whose
+  name holds `github` or whose configuration in `.claude.json` or `.mcp.json` shows GitHub's or
+  Atlassian's, and a finding in it is denied. A tool of a server with no configuration there, such
+  as a claude.ai connector, a plugin's server or one `--mcp-config` names, or whose configuration
+  shows neither kind, is not scanned.
 
 Untracked files over 1 MB are taken for data and skipped. The scan stops at its own budget, well
-inside the hook's 5 s timeout, since a hook that times out lets the call through; past it, the
-hook asks.
+inside the hook's 5 s timeout.
 
 Exit codes, for `files` and `diff`: 0 nothing found, 1 a finding, 2 the scan could not run (a file
 unreadable, git failing). `hook` always exits 0 and decides in its output:
 - `deny` when what the call would carry holds a finding, naming where and what kind;
-- `ask` when it cannot scan (input it cannot parse, a repository it cannot resolve, git failing,
-  the budget spent), saying so, so a broken scan stops for the person rather than passing a call
-  nobody checked;
-- nothing, which lets the call through, for any other call.
+- nothing, which lets the call through, for any other call. A call the scan cannot read in full
+  (a repository or file it cannot resolve, git failing, the budget spent) is judged on the parts it
+  could read, the command's text, the other commits and the other files, and passes when they hold
+  no finding. A command it cannot split is judged on its text alone when it mentions a commit or a
+  `gh` write. A payload it cannot parse, and a tool of a server it cannot place, pass. The person
+  stays responsible for what they commit and post, and the scan blocks only a credential it finds.
 """
 import collections
 import json
 import os
+import pathlib
 import re
 import shlex
 import subprocess
 import sys
 import time
+import urllib.parse
 
 PATTERNS = [
     ("private key", re.compile(r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----")),
@@ -76,7 +83,8 @@ PATTERNS = [
         r"\bBearer\s+(?=[A-Za-z0-9._~+/\-]*[0-9])(?=[A-Za-z0-9._~+/\-]*[A-Za-z])[A-Za-z0-9._~+/\-]{30,}=*")),
 ]
 
-# A tool of a GitHub or Atlassian server that only reads; every other tool of theirs is a write.
+# A server tool that only reads, a Jira or Confluence one by ATLASSIAN_READ and any other by
+# GITHUB_READ; every other server tool is a write.
 GITHUB_READ = re.compile(r"(?:get_|list_|search_)|.*_read$|run_secret_scanning$")
 ATLASSIAN_READ = re.compile(r"(?:jira|confluence)_(?:get_|search|list_|check_|download_|batch_get_)")
 
@@ -104,7 +112,8 @@ GH_WRITES = {("issue", "create"), ("issue", "comment"), ("issue", "edit"), ("iss
              ("issue", "reopen"), ("pr", "create"), ("pr", "comment"), ("pr", "edit"), ("pr", "review"),
              ("pr", "merge"), ("pr", "close"), ("pr", "reopen"), ("gist", "create"), ("gist", "edit"),
              ("release", "create"), ("release", "edit"), ("repo", "create"), ("repo", "edit")}
-# A command that may be a gh write, read from its text when the command cannot be split.
+# A command that may commit or be a gh write, read from its text when the command cannot be split.
+GIT_COMMIT_TEXT = re.compile(r"\bgit(?:\s+-\S+(?:\s+[^-\s]\S*)?)*\s+commit\b")
 GH_WRITE_TEXT = re.compile(r"\bgh\s+(?:(?:-R|--repo)[\s=]\S+\s+)?(?:api\b|"
                            + "|".join(rf"{a}\s+{b}\b" for a, b in sorted(GH_WRITES)) + ")")
 
@@ -151,12 +160,12 @@ def scan_text(text, where, first_line=1):
 
 def scan_file(path, where=None, budget=None):
     try:
+        if budget:
+            budget.spend(os.path.getsize(path))
         with open(path, "rb") as f:
             data = f.read()
     except OSError as e:
         raise ScanError(f"cannot read {path}: {e.strerror}") from None
-    if budget:
-        budget.spend(len(data))
     if b"\0" in data:
         return []
     return scan_text(data.decode("utf-8", "replace"), where or path)
@@ -861,59 +870,76 @@ def add_scope(args):
     return None
 
 
-def scan_commit(command, cwd, budget):
-    """The findings in what the git commits in `command` would carry, or None when it runs no
-    commit. Raises ScanError when a commit's repository cannot be resolved or read."""
-    steps = plan(command, cwd, budget)
-    commits, adds = [], []
-    for step in steps:
+def scan_commit(command, cwd, budget, found):
+    """Add to `found` the findings in what the git commits in `command` would carry. The command's
+    own text is scanned once, at the first `git commit` or the first subcommand that may be an
+    alias, before the alias is looked up. Each commit and `git add` is then scanned on its own, so
+    one the scan cannot read leaves the others and the findings already made; the first such
+    failure, or one raised while the commands are found, is raised as a ScanError after the
+    findings made before it are in `found`."""
+    commits, adds, unread, text_scanned = [], [], [], False
+    for step in plan(command, cwd, budget):
         if step[0] != "git":
             continue
         _, at, env, args, via_xargs = step
         repo, sub, rest, config = git_call(at, env, args)
         if sub is None:
             continue
+        if (sub == "commit" or sub not in GIT_COMMANDS) and not text_scanned:
+            text_scanned = True
+            found += [f + " (command text)" for f in scan_text(command, "command")]
         alias = alias_of(repo, sub, budget, config)
-        if alias and alias[0] == "!":
-            if "commit" in alias:
-                raise ScanError(f"`git {sub}` is a shell alias that commits, which the scan cannot follow")
-            continue
-        if alias:
+        shell_commit = bool(alias) and alias[0] == "!" and "commit" in alias
+        if alias and alias[0] != "!":
             sub, rest = alias[0], alias[1:] + rest
-        if sub == "commit":
+        if shell_commit:
+            unread.append(ScanError(f"`git {sub}` is a shell alias that commits, which the scan cannot follow"))
+        elif alias and alias[0] == "!":
+            continue
+        elif sub == "commit":
             if repo is None:
-                raise ScanError("the scan cannot tell which repository this commit is in")
-            commits.append((repo, rest + ["-a"] if via_xargs else rest))
+                unread.append(ScanError("the scan cannot tell which repository this commit is in"))
+            else:
+                commits.append((repo, rest + ["-a"] if via_xargs else rest))
         elif sub == "add":
             # The paths xargs passes are not in the command, so the add may take any file.
             adds.append((repo, rest + ["-A"] if via_xargs else rest))
-    if not commits:
-        return None
-    if any(repo is None for repo, _ in adds):
-        raise ScanError("the scan cannot tell which repository a `git add` in this command is in")
-    found = [f + " (command text)" for f in scan_text(command, "command")]
+    if not commits and not unread:
+        return
     own = written_here(command)
-    for repo, rest in commits:
+
+    def scan_commit_of(repo, rest):
         scope = commit_scope(rest)
         if scope is None:
-            continue
+            return
         unstaged, files = scope
         check_repository(repo, budget)
-        found += scan_staged(repo, budget)
+        found.extend(scan_staged(repo, budget))
         if unstaged is not None:
-            found += scan_unstaged(repo, None if unstaged == "all" else unstaged, budget)
+            found.extend(scan_unstaged(repo, None if unstaged == "all" else unstaged, budget))
         for f in files:
-            found += [x + " (message file)" for x in scan_existing(repo[0], f, budget, own)]
-    for repo, rest in adds:
+            found.extend(x + " (message file)" for x in scan_existing(repo[0], f, budget, own))
+
+    def scan_add(repo, rest):
+        if repo is None:
+            raise ScanError("the scan cannot tell which repository a `git add` in this command is in")
         scope = add_scope(rest)
         if scope is None:
-            continue
+            return
         paths, untracked, ignored = scope
         check_repository(repo, budget)
-        found += scan_unstaged(repo, paths, budget)
+        found.extend(scan_unstaged(repo, paths, budget))
         if untracked:
-            found += scan_untracked(repo, paths, ignored, budget)
-    return sorted(set(found))
+            found.extend(scan_untracked(repo, paths, ignored, budget))
+
+    for scan, items in ((scan_commit_of, commits), (scan_add, adds)):
+        for repo, rest in items:
+            try:
+                scan(repo, rest)
+            except ScanError as e:
+                unread.append(e)
+    if unread:
+        raise unread[0]
 
 
 def gh_words(args):
@@ -959,9 +985,12 @@ def gh_files(args, api):
     return files
 
 
-def scan_gh(command, cwd, budget):
-    """The findings in what the `gh` writes in `command` would send, or None when it sends none."""
-    found, writes = [], False
+def scan_gh(command, cwd, budget, found):
+    """Add to `found` the findings in what the `gh` writes in `command` would send. The command's
+    own text is scanned as soon as a write is seen, and each file it sends on its own, so one the
+    scan cannot resolve leaves the others; the first such failure is raised as a ScanError once
+    the rest are scanned."""
+    writes, unread = False, []
     own = written_here(command)
     for step in plan(command, cwd, budget):
         if step[0] != "gh":
@@ -976,13 +1005,16 @@ def scan_gh(command, cwd, budget):
                 continue
         elif gh_words(args) not in GH_WRITES:
             continue
-        writes = True
+        if not writes:
+            writes = True
+            found += [f + " (command text)" for f in scan_text(command, "command")]
         for f in gh_files(args, api):
-            found += [x + " (file the command sends)" for x in scan_existing(at, f, budget, own)]
-    if not writes:
-        return None
-    found += [f + " (command text)" for f in scan_text(command, "command")]
-    return sorted(set(found))
+            try:
+                found += [x + " (file the command sends)" for x in scan_existing(at, f, budget, own)]
+            except ScanError as e:
+                unread.append(e)
+    if unread:
+        raise unread[0]
 
 
 # --- The hook ------------------------------------------------------------------------------------
@@ -1004,13 +1036,87 @@ def decide(decision, reason):
         "hookEventName": "PreToolUse", "permissionDecision": decision, "permissionDecisionReason": reason}}))
 
 
-def is_write(tool):
+def server_config(name, project):
+    """The configuration Claude Code holds for MCP server `name`, from the first of: the local scope
+    in `.claude.json` for `project` or a parent, a `.mcp.json` in `project` or a parent, the user
+    scope in `.claude.json`. A key matches `name` once each character outside `[A-Za-z0-9_-]` is read
+    as `_`, as Claude Code names the server's tools. None when none of them defines it, when a file
+    that exists cannot be read or nests too deep to parse, or when the entry is not an object, its
+    `command` or `url` not a string, or its `args` not a list of strings."""
+    home = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~")
+    places = [os.path.abspath(project), *map(str, pathlib.Path(os.path.abspath(project)).parents)]
+
+    def load(path):
+        if not os.path.exists(path):
+            return {}
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            raise ValueError(path)
+        return data
+
+    try:
+        user = load(os.path.join(home, ".claude.json"))
+        projects = user.get("projects") or {}
+        scopes = [(projects.get(d) or {}).get("mcpServers") or {} for d in places]
+        scopes += [load(os.path.join(d, ".mcp.json")).get("mcpServers") or {} for d in places]
+        scopes.append(user.get("mcpServers") or {})
+        found = next((v for s in scopes if isinstance(s, dict) for k, v in s.items()
+                      if re.sub(r"[^A-Za-z0-9_-]", "_", k) == name), None)
+    except (OSError, ValueError, AttributeError, RecursionError):
+        return None
+    if (not isinstance(found, dict) or not all(isinstance(found.get(k, ""), str) for k in ("command", "url"))
+            or not isinstance(found.get("args", []), list) or not all(isinstance(a, str) for a in found.get("args", []))):
+        return None
+    return found
+
+
+def url_host(text):
+    try:
+        return urllib.parse.urlparse(text).hostname or ""
+    except ValueError:
+        return ""
+
+
+def server_kind(server):
+    """`atlassian` for an mcp-atlassian command or a server at `mcp.atlassian.com`; `github` for a
+    server at `api.githubcopilot.com`, a `copilot-api.` host or a `.ghe.com` host, or one whose
+    command or an argument names `github-mcp-server` or `@modelcontextprotocol/server-github`, or
+    whose argument is the image `mcp/github`, with or without a registry, a tag or a digest;
+    otherwise None. A host is read from `url` and from each argument that is an http(s) URL, as
+    `mcp-remote` takes one. The sandbox's classifier covers the forms `sandbox.sh` writes, a subset
+    of these, and must not disagree with this one on them."""
+    words = [str(x) for x in [server.get("command"), *(server.get("args") or [])]]
+    hosts = [url_host(str(server.get("url") or ""))]
+    hosts += [url_host(w) for w in words if re.match(r"https?://", w, re.I)]
+    if "mcp.atlassian.com" in hosts or any("mcp-atlassian" in w for w in words):
+        return "atlassian"
+    if (any(h == "api.githubcopilot.com" or h.startswith("copilot-api.") or h.endswith(".ghe.com") for h in hosts)
+            or any("github-mcp-server" in w or "@modelcontextprotocol/server-github" in w
+                   or re.fullmatch(r"(?:[\w.-]+(?::\d+)?/)?mcp/github(?::[\w.-]+)?(?:@sha256:[0-9a-f]{64})?", w) for w in words)):
+        return "github"
+    return None
+
+
+def server_write(tool, project):
+    """`deny`, the decision a finding in the input of server tool `tool` gets, for a write of a
+    GitHub or Atlassian server: a Jira or Confluence tool but a read, or any other tool but a read
+    of a server whose name holds `github` or whose configuration shows GitHub's or Atlassian's.
+    None, so the input is not scanned and the call passes, for a read and for any other server: one
+    whose configuration cannot be found or read, as a claude.ai connector's cannot, or shows neither
+    kind, a `${` Claude Code would expand included. `project` is where the configuration lookup
+    starts."""
     if not tool.startswith("mcp__") or "__" not in tool[5:]:
-        return False
+        return None
     server, op = tool[5:].rsplit("__", 1)
     if re.match(r"(?:jira|confluence)_", op):
-        return not ATLASSIAN_READ.match(op)
-    return "github" in server.lower() and not GITHUB_READ.match(op)
+        return None if ATLASSIAN_READ.match(op) else "deny"
+    if GITHUB_READ.match(op):
+        return None
+    if "github" in server.lower():
+        return "deny"
+    config = server_config(server, project)
+    return "deny" if config is not None and server_kind(config) is not None else None
 
 
 def hook(payload, budget=None):
@@ -1020,50 +1126,43 @@ def hook(payload, budget=None):
         tool = event["tool_name"]
         tool_input = event.get("tool_input") or {}
     except (ValueError, KeyError, TypeError):
-        decide("ask", "The secret scan could not read this call, so nothing was checked for credentials. "
-                      "Allow it only if you know it carries none.")
         return
     if tool == "Bash":
         command = tool_input.get("command", "")
         if not isinstance(command, str):
             return
         cwd = event.get("cwd") or os.getcwd()
-        try:
-            commit = scan_commit(command, cwd, budget)
-            sent = scan_gh(command, cwd, budget)
-        except ValueError:
-            if re.search(r"\bgit\b[\s\S]*\bcommit\b", command) or GH_WRITE_TEXT.search(command):
-                decide("ask", "The secret scan could not read this command (an unclosed quote, perhaps), "
-                              "so a commit or post in it was not checked for credentials. Allow it only "
-                              "if you know it carries none.")
-            return
-        except ScanError as e:
-            decide("ask", f"The secret scan could not check this command: {e}. "
-                          "Allow it only if you know it carries no credential.")
-            return
-        if commit is None and sent is None:
-            return
-        found = (commit or []) + (sent or [])
-        what = "This command"
-    elif is_write(tool):
+        found = []
+        for scan in (scan_commit, scan_gh):
+            try:
+                scan(command, cwd, budget, found)
+            except ValueError:
+                # A command the shell runs but the scan cannot split: its own text is still read
+                # when it may commit or post.
+                if GIT_COMMIT_TEXT.search(command) or GH_WRITE_TEXT.search(command):
+                    found += [f + " (command text)" for f in scan_text(command, "command")]
+            except ScanError:
+                pass
+        found = sorted(set(found))
+        what, elsewhere = "This command", "commit or post it outside Claude"
+    elif server_write(tool, os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd()):
         op = tool.rsplit("__", 1)[-1]
+        found = []
         try:
-            found = []
             for where, text in strings(tool_input):
                 budget.spend(len(text))
                 found += scan_text(text, where)
-        except ScanError as e:
-            decide("ask", f"The secret scan could not check this {op} call: {e}. "
-                          "Allow it only if you know it carries no credential.")
-            return
-        what = f"This {op} call"
+        except ScanError:
+            pass
+        what, elsewhere = f"This {op} call", "send it outside Claude"
     else:
         return
-    if found:
-        listed = "; ".join(found[:10]) + (f"; and {len(found) - 10} more" if len(found) > 10 else "")
-        decide("deny", f"{what} would carry what looks like a credential: {listed}. Remove it, and "
-                       "rotate it if it was ever pushed or posted. If it is not a credential, the "
-                       "person can commit or post it outside Claude.")
+    if not found:
+        return
+    listed = "; ".join(found[:10]) + (f"; and {len(found) - 10} more" if len(found) > 10 else "")
+    decide("deny", f"{what} would carry what looks like a credential: {listed}. Remove it, and "
+                   "rotate it if it was ever pushed or posted. If it is not a credential, the "
+                   f"person can {elsewhere}.")
 
 
 def main(argv):

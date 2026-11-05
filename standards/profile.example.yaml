@@ -14,7 +14,7 @@ downstream: [<repository>, <repository>] # ticket-draft, downstream: the reposit
 tests:
   command: '<the command a pull request runs, or empty>' # the wave, to implementation-reviewer: the suite a pull request runs
 coverage:
-  command: '<the coverage command, or empty>' # the wave, to pytest-runner in coverage mode
+  command: '<the coverage command, or empty>' # the wave, to test-runner in coverage mode
 lint:
   command: '<the linters, followed by the changed files>' # a light round, to implementation-reviewer: the linters on the changed files
   regex: '<ERE matching the lint command>' # build-record.sh: a Bash command that counts as a lint gate

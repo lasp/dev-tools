@@ -57,10 +57,12 @@ So the review can judge consistency with project norms. Read any that exist at t
 
 Where they conflict, prefer the more specific file.
 
-When the repository is curryer, or the diff is SPICE-, frame-, kernel- or time-shaped, also read
-`${CLAUDE_PLUGIN_ROOT}/skills/using-curryer/SKILL.md` and its `references/capability-map.md`, and
-hold the diff to them: a reimplementation of a curryer function, a SPICE mistake, or code on the
-wrong side of the curryer line is a finding.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/using-curryer/SKILL.md` and its `references/capability-map.md`
+in the library that map describes, and, when the diff is SPICE-, frame-, kernel- or time-shaped,
+in any other covered upstream or a repository that depends on one, as
+`${CLAUDE_PLUGIN_ROOT}/skills/downstream/SKILL.md` defines both above its `check`. Hold the diff to
+them: a reimplementation of a function the library provides, a SPICE mistake, or code on the
+wrong side of its line is a finding. In any other repository, that map does not apply.
 
 ## Step 3: GitHub Tool Access
 

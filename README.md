@@ -107,8 +107,16 @@ Which model the build and its reviewers run on is a session setting, not a plugi
 "Models" below.
 
 Start Claude Code in the repository you are changing. The build's lock and record go into the
-`.review/` of the session's working directory, so a session started in one repository and used
-to change another records the build in the wrong place.
+`.review/` of the session's working directory. A build whose session makes or tries a Write,
+Edit or NotebookEdit in another repository records its gates and tokens as `not recorded` rather
+than as counts, naming that repository by its directory's name. Not seen: a change made there only
+through shell commands, and edits made after the session's working directory moves into it. While the build's session also holds the lock, the build hook refuses
+such edits in each other repository, so the person can stop or go on unrecorded, until a refused
+edit there is made again; that edit and every later one there are allowed. A `pr-fix` session, with no build open,
+is not refused. A repository inside the session's, such as a submodule, one the session's sits in,
+a worktree of the same repository, and a repository holding Claude Code's own directory
+(`~/.claude`, or `CLAUDE_CONFIG_DIR`), for a file in that directory, are not another repository;
+a repository cloned inside that directory, such as an installed plugin, is.
 
 ### MCP servers
 
@@ -188,15 +196,15 @@ on `gh`, `pr-fix` stops at its start and `pr-review` posts only a pull request's
 
 | Server | Skills |
 | --- | --- |
-| GitHub | `work`, `pr-create`, `pr-review`, `pr-fix`, `ticket-draft`, `ticket-audit`, `revise`, `skill-feedback`; `implement-change` when its source is a GitHub issue; `downstream`, for `ci <run>`; `onboard`, when connected, and its first rules |
+| GitHub | `work`, `pr-create`, `pr-review`, `pr-fix`, `ticket-draft`, `ticket-audit`, `revise`, `skill-feedback`; `implement-change` when its source is a GitHub issue; `downstream`, for `ci <run>`; `onboard`, when connected, and its first rules; `rebase`, when connected, for the pull request's base |
 | Jira | `ticket-draft`, `design-doc`, `architecture-doc` and `process-doc` (only the tickets you or a page name), `ticket-audit`, `revise` (with `measures`, for an epic it adds or a context entry reads, or for an issue `correct` cites); `pr-review`, for the ticket when no context page holds it; `work`, for a ticket's status when it has no context page here; `implement-change` when its source is a ticket; `onboard`, when connected, and its first rules |
 | Confluence | `design-doc` (your notes, the area's pages, and the publish), `architecture-doc` (the system's page, the area's pages, and the publish), `process-doc` (your notes, the pages you point at, and the publish), `ticket-draft` (the year plan, and `investigate`), `revise` (the context refresh, or a page `correct` cites), `ticket-audit` (the year plan); `onboard`, when connected, and its first rules |
-| Neither | `commit`, `drawio`, `architecture-doc` and `process-doc` until they publish, `implement-change` from a file or a description, `test-suite-review`, `writing`, `quickstart`, `onboard` with no server connected, the repository alone |
+| Neither | `commit`, `rebase` with no GitHub server connected, `drawio`, `architecture-doc` and `process-doc` until they publish, `implement-change` from a file or a description, `test-suite-review`, `writing`, `quickstart`, `onboard` with no server connected, the repository alone |
 
 The hidden reference skills load when another skill needs them: `using-jira` and
 `using-confluence` by `source-reader`, `using-github` by every skill and agent that reaches
-GitHub, and `using-curryer` by the planner, `github-pr-reviewer`, `ticket-draft` and
-`downstream`.
+GitHub, and `using-curryer` by the planner, `github-pr-reviewer` and `downstream`, only in
+curryer and the repositories that depend on it.
 
 #### When a server is missing or failing
 
@@ -257,11 +265,12 @@ which one answers:
    `.claude/CLAUDE.local.md`: in the repositories you use it in, `lasp-dev` is the first
    choice when a task matches one of its skills and another tool's.
 
-Agents overlap the same way. A personal agent such as a `test-runner` and this plugin's
-`pytest-runner` both fit "run the tests", and Claude Code picks between them by description when
-you ask in words. The skills here start their own agents by name, so the overlap reaches only what
-you ask for directly: name the agent in the request, or name the preferred one in the
-instruction line in item 4 above.
+Agents overlap the same way. A personal agent that runs tests and this plugin's `test-runner`
+both fit "run the tests", and Claude Code picks between them by description when you ask in words.
+The skills here start their own agents by name, so the overlap reaches only what you ask for
+directly: name the agent in the request, or name the preferred one in the instruction line in
+item 4 above. A personal agent with the same name as one here, such as a personal `test-runner`,
+can be started in its place when a skill names it, so give the personal one another name.
 
 ### Permissions
 
@@ -326,20 +335,28 @@ file or field, the line and the kind but never the value:
 - a `gh` command that creates, edits, comments on, reviews, merges, closes or reopens an issue or
   pull request, creates or edits a gist, release or repository, or `gh api` with fields or a body:
   its text and the files it sends;
-- any tool of a GitHub server (one whose name holds `github`) or of the Atlassian server but a
-  read: every string in its input.
+- a server tool but a read: a tool named `jira_*` or `confluence_*`, and a tool of a server whose
+  name holds `github` or whose configuration (its URL, its command or an argument) shows GitHub's
+  or Atlassian's, looked up from the session's project directory. It scans every string in the
+  input. A tool of a server whose configuration cannot be found or read, such as a claude.ai
+  connector, or that shows neither kind, a `${` variable in its URL, command or an argument
+  included, passes like any call the scan cannot place.
 
 It knows a fixed list of forms (`scripts/secret_scan.py`): private keys, AWS, GitHub, GitLab,
 Slack, Atlassian Cloud, Anthropic and Google keys, JSON web tokens, bearer headers and a value
 assigned to a token variable these servers name. An Atlassian Data Center token has no form of its
-own, so it is found only when assigned to such a variable. When it cannot scan (a repository it
-cannot resolve, such as `cd "$DIR"`, a shell alias that commits, git failing, or more than it can
-check inside the hook's timeout), it asks rather than letting the call through. A variable the
-same command sets once, on its own after the start, `;` or `&&` (an `&&` chain is read as running
+own, so it is found only when assigned to such a variable. What it cannot read passes: a repository
+it cannot resolve, such as `cd "$DIR"`, a shell alias that commits, a file it cannot name, git
+failing, more than it can check inside the hook's timeout, or no `python3`. The rest of the call
+is still read, the command's text, its other commits and the other files it sends, and a
+credential found there is still stopped. A command it cannot split, such as one with an unclosed
+quote, is judged on its text alone when it mentions a commit or a `gh` write. The person stays
+responsible for what they commit and post; the gate stops only a credential it finds, and never
+asks. A variable the same command sets once, on its own after the start, `;` or `&&` (an `&&` chain is read as running
 through), to a literal value, as `S=/tmp/x; git commit -F $S/msg` or `C=/repo && git -C $C commit`,
 is read as that value; one set any other way is not, and none is after control flow, `eval` or
 `source`. In a message or body file's name it is read so only when the command writes no file
-with `>`. A message or body file it cannot name, such as `-F "$M"`, is asked about too, unless the
+with `>`. A message or body file it cannot name, such as `-F "$M"`, is not read, unless the
 same command writes it with `>` only from its own text: a bare `cat` reading a heredoc that
 expands nothing, or `echo` or `printf` whose words expand nothing, and named nowhere else in the
 command but the option that reads it, after the write, since the scan reads that text as the
@@ -446,6 +463,8 @@ The skills a person types, in the order they meet them:
 
 **Supporting**
 - `commit`: chooses what belongs in a commit and writes the message; never pushes.
+- `rebase`: rebases the branch onto its target, resolving the clear conflicts and asking at the
+  rest; never pushes, and prints the push command for you to run.
 - `test-suite-review`: judges test changes for loosening, missed failure paths and factoring; reads
   only.
 - `downstream`: says which consuming repositories a change breaks, why a CI run went red, and which
@@ -485,6 +504,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `revise` | typed only | Monthly: prepare the revision report before the meeting, with `measures` adding tickets, escaped defects and build yield; a sweep of the window's merged diffs reports where they follow or break the rules and the documented practice; `apply` drafts what the group accepted; `correct`, between revisions, corrects something the shared standards got wrong, everywhere it is carried, while a disagreement with a rule goes through Disagree and the revision |
 | | `ticket-audit` | typed only | Sweeps across the project's Jira, written to `.review/audit/`, then the actions they propose applied in Jira through one write plan on your yes |
 | | `skill-feedback` | typed or asked | File a complaint about a skill or agent as a `skill-feedback` issue here, in your words, with the session's last turns attached when you choose, or a draft `revise` wrote for a procedure finding; you see the whole issue before your yes |
+| | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts with one objectively clear resolution and stop at any where the two sides differ in intent or approach, showing both with a recommendation; never pushes, and prints the push command, its destination explicit and any `--force-with-lease` pinned to the commit it fetched |
 
 `implement-change`, `commit`, `pr-create`, `pr-review` and `pr-fix` began from upstream and have
 since been rewritten; the rest were written here.
@@ -497,7 +517,7 @@ since been rewritten; the rest were written here.
 | `focused-reviewer` | sonnet | One focus of the build's review wave (simplicity, documentation or tests), from a brief in `skills/implement-change/reviews/`; never edits the change |
 | `github-pr-reviewer` | inherit | Run by `pr-review`: reviews one pull request's head and writes the findings, organized by concept, for `pr-review` to deduplicate, draft and post |
 | `github-pr-fix-planner` | inherit | Run by `pr-fix`: assesses each review thread against the pull request with a recommended disposition, and names where a person's comment and an AI finding conflict, then plans a response to each agreed one, people's comments first; never edits or posts |
-| `pytest-runner` | sonnet | Runs pytest and summarizes the result |
+| `test-runner` | sonnet | Runs a repository's test suite in any language and summarizes the result; in coverage mode, lists the changed lines no test runs |
 | `prose-reviewer` | inherit | Reviews a long document for `writing` in two phases: a plan of changes and questions, then only the approved edits |
 | `ticket-investigator` | sonnet | Reads one repository for `ticket-draft`, `design-doc`, `architecture-doc`, `process-doc` and `downstream`: what the goal touches there, its callers, whether the source's claims hold, and scope beyond the goal; reads only |
 | `pr-reader` | sonnet | Fetches a pull request's reviews, threads, conversation comments and body for `work`, `pr-review`, `pr-fix`, `ticket-draft` and `ticket-audit`, saves them under `.review/threads/`, judges the replies written in a person's own words, and returns what `scripts/record.py` prints: where the pull request stands, or, for `revise` and `onboard`, the records it rebuilt from the merged pull requests; never posts |

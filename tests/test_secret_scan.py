@@ -16,6 +16,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 GATE = ROOT / "hooks" / "secret-gate.sh"
@@ -75,6 +76,14 @@ def git(cwd, *args):
 def run_gate(payload, env=None):
     r = subprocess.run(["bash", str(GATE)], input=payload, capture_output=True, text=True, check=True, env=env)
     return json.loads(r.stdout)["hookSpecificOutput"] if r.stdout.strip() else None
+
+
+def hook_output(event, budget):
+    """What the hook prints for this event, run in this process on this budget."""
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        secret_scan.hook(json.dumps(event), budget)
+    return out.getvalue()
 
 
 def new_repo():
@@ -184,6 +193,12 @@ class Commit(unittest.TestCase):
             self.assertIn(part, out["permissionDecisionReason"])
         self.assertNotIn(A36, out["permissionDecisionReason"])
 
+    def assertPassesUnread(self, command, reason, cwd=None):
+        """The scan cannot read this command, for this reason, and the gate lets it through."""
+        self.assertIsNone(self.bash(command, cwd))
+        with self.assertRaisesRegex(secret_scan.ScanError, reason):
+            secret_scan.scan_commit(command, str(cwd or self.repo), secret_scan.Budget(), [])
+
     def test_clean_commit_passes(self):
         self.stage("x = 2\n")
         self.assertIsNone(self.bash("git commit -m two"))
@@ -255,9 +270,7 @@ class Commit(unittest.TestCase):
                         "git commit --allow-empty -F \"$M\"; cat > \"$M\" <<'EOF'\nx\nEOF",
                         "M=a; cat > \"$M\" <<'EOF'\nx\nEOF\nM=notes.txt; git commit --allow-empty -F \"$M\""):
             with self.subTest(command=command):
-                out = self.bash(command)
-                self.assertEqual(out["permissionDecision"], "ask")
-                self.assertIn("cannot tell which file", out["permissionDecisionReason"])
+                self.assertPassesUnread(command, "cannot tell which file")
 
     def test_the_repository_is_the_one_the_command_names(self):
         other = new_repo()
@@ -272,12 +285,11 @@ class Commit(unittest.TestCase):
         self.assertIsNone(self.bash("git commit -m x"))
         self.assertDenied(self.bash(f"git -C {other.parent} -C {other.name} commit -m x"), "a.py:1")
 
-    def test_a_repository_it_cannot_resolve_is_asked_about(self):
+    def test_a_repository_it_cannot_resolve_passes(self):
+        self.stage(TOKEN + "\n")
         for command in ('cd "$TARGET" && git commit -m x', "GIT_DIR=/x/.git git commit -m x", "popd; git commit -m x"):
             with self.subTest(command=command):
-                out = self.bash(command)
-                self.assertEqual(out["permissionDecision"], "ask")
-                self.assertIn("cannot tell which repository", out["permissionDecisionReason"])
+                self.assertPassesUnread(command, "cannot tell which repository")
 
     def test_a_variable_the_command_sets_to_a_path_is_followed(self):
         other = new_repo()
@@ -341,13 +353,9 @@ class Commit(unittest.TestCase):
                         "M=/a/m.txt; cat > $M <<EOF\n$(cat x)\nEOF\ngit commit --allow-empty -F $M",
                         "S=/" + "a" * 5000 + "; git commit --allow-empty -F $S/m.txt"):
             with self.subTest(command=command[:80]):
-                out = self.bash(command)
-                self.assertEqual(out["permissionDecision"], "ask")
-                self.assertIn("cannot tell which file", out["permissionDecisionReason"])
-        out = self.bash("cd() ( : ); C=/a; cd $C; git commit -m x")
-        self.assertIn("cannot tell which repository", out["permissionDecisionReason"])
-        out = self.bash("export GIT_DIR=/x/.git; git commit -m x")
-        self.assertIn("cannot tell which repository", out["permissionDecisionReason"])
+                self.assertPassesUnread(command, "cannot tell which file")
+        self.assertPassesUnread("cd() ( : ); C=/a; cd $C; git commit -m x", "cannot tell which repository")
+        self.assertPassesUnread("export GIT_DIR=/x/.git; git commit -m x", "cannot tell which repository")
 
     def test_a_file_a_variable_names_is_not_followed_when_the_command_writes_a_file(self):
         for command in ("S=/a; git diff > $S/p.patch; git commit --allow-empty -F $S/m.txt",
@@ -360,9 +368,7 @@ class Commit(unittest.TestCase):
                         'S=/a; bash -c "cat x > m"; git commit --allow-empty -F $S/m.txt',
                         'S=/a; : "$(cat x > m)"; git commit --allow-empty -F $S/m.txt'):
             with self.subTest(command=command):
-                out = self.bash(command)
-                self.assertEqual(out["permissionDecision"], "ask")
-                self.assertIn("cannot tell which file", out["permissionDecisionReason"])
+                self.assertPassesUnread(command, "cannot tell which file")
         self.assertIsNone(self.bash("S=/a; git log 2>&1 >/dev/null; git commit --allow-empty -F $S/m.txt"))
 
     def test_a_message_file_is_read_when_a_write_to_it_may_not_run(self):
@@ -377,19 +383,44 @@ class Commit(unittest.TestCase):
         git(self.repo, "config", "alias.sci", "!git commit")
         self.stage(TOKEN + "\n")
         self.assertDenied(self.bash("git ci -m x"), "a.py:1")
-        self.assertEqual(self.bash("git sci -m x")["permissionDecision"], "ask")
+        self.assertPassesUnread("git sci -m x", "shell alias that commits")
 
-    def test_an_unreadable_command_is_asked_about_only_when_it_may_commit(self):
-        self.assertEqual(self.bash("git commit -m 'unclosed")["permissionDecision"], "ask")
-        self.assertIsNone(self.bash("echo 'unclosed"))
+    def test_a_command_it_cannot_split_is_judged_on_its_text(self):
+        self.stage(TOKEN + "\n")
+        for command in ("git commit -m 'unclosed", "echo 'unclosed",
+                        f'echo "$(echo "it\'s")" {TOKEN}; git log --grep commit'):
+            with self.subTest(command=command):
+                self.assertIsNone(self.bash(command))
+        for command in (f"git commit -m '{TOKEN}", f'git commit -m "a $(echo "b\'c") {TOKEN}"',
+                        f'git commit -m "`echo "\'"` {TOKEN}"'):
+            with self.subTest(command=command):
+                with self.assertRaises(ValueError):
+                    secret_scan.scan_commit(command, str(self.repo), secret_scan.Budget(), [])
+                self.assertDenied(self.bash(command), "(command text)")
+        self.assertDenied(self.bash("git commit -m 'closed'"), "a.py:1")
 
-    def test_outside_a_repository_is_asked_about_in_a_line(self):
+    def test_outside_a_repository_passes(self):
         tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, tmp)
-        out = self.bash("git commit -m two", cwd=tmp)
-        self.assertEqual(out["permissionDecision"], "ask")
-        self.assertIn("is not in a git repository", out["permissionDecisionReason"])
-        self.assertLess(len(out["permissionDecisionReason"]), 400)
+        self.assertPassesUnread("git commit -m two", "is not in a git repository", cwd=tmp)
+
+    def test_a_finding_before_the_scan_stops_is_denied(self):
+        self.stage(TOKEN + "\n")
+        self.assertDenied(self.bash('git commit -m x && cd "$D" && git commit -m y'), "a.py:1")
+        self.assertDenied(self.bash('(cd "$D" && git commit -m y); git commit -m x'), "a.py:1")
+        self.assertDenied(self.bash('(cd "$D" && git add .); git commit -m x'), "a.py:1")
+        self.stage("x = 2\n")
+        self.assertDenied(self.bash(f'cd "$D" && git commit -m "{TOKEN}"'), "(command text)")
+        git(self.repo, "config", "alias.sci", "!git commit")
+        self.assertDenied(self.bash(f'git sci -m "{TOKEN}"'), "(command text)")
+
+    def test_a_finding_before_the_budget_is_spent_is_denied(self):
+        self.stage(TOKEN + "\n")
+        event = {"tool_name": "Bash", "tool_input": {"command": "git commit -a -m x"}, "cwd": str(self.repo)}
+        with mock.patch.object(secret_scan, "scan_unstaged", side_effect=secret_scan.BudgetSpent("spent")):
+            out = json.loads(hook_output(event, secret_scan.Budget()))["hookSpecificOutput"]
+        self.assertEqual(out["permissionDecision"], "deny")
+        self.assertIn("a.py:1", out["permissionDecisionReason"])
 
     def test_a_comment_hides_no_command(self):
         self.stage(TOKEN + "\n")
@@ -459,21 +490,12 @@ class Commit(unittest.TestCase):
         secret_scan.scan_diff(diff, budget=Counting())
         self.assertGreaterEqual(Counting.calls, 2)
 
-    def hook_with(self, budget):
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out):
-            secret_scan.hook(json.dumps({"tool_name": "Bash", "tool_input": {"command": "git commit -m x"},
-                                         "cwd": str(self.repo)}), budget)
-        return json.loads(out.getvalue())["hookSpecificOutput"]
-
-    def test_a_scan_past_its_budget_is_asked_about(self):
-        self.stage("x = 2\n" * 50)
-        out = self.hook_with(secret_scan.Budget(size=10))
-        self.assertEqual(out["permissionDecision"], "ask")
-        self.assertIn("more text than the scan can check", out["permissionDecisionReason"])
-        out = self.hook_with(secret_scan.Budget(seconds=0))
-        self.assertEqual(out["permissionDecision"], "ask")
-        self.assertIn("ran out of time", out["permissionDecisionReason"])
+    def test_a_scan_past_its_budget_passes(self):
+        self.stage(TOKEN + "\n" + "x = 2\n" * 50)
+        for budget in (secret_scan.Budget(size=10), secret_scan.Budget(seconds=0)):
+            with self.subTest(budget=vars(budget)):
+                self.assertEqual(hook_output({"tool_name": "Bash", "tool_input": {"command": "git commit -m x"},
+                                              "cwd": str(self.repo)}, budget), "")
 
 
 class Gh(unittest.TestCase):
@@ -511,10 +533,14 @@ class Gh(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertEqual(self.bash(command)["permissionDecision"], "deny")
 
-    def test_a_file_it_cannot_resolve_is_asked_about(self):
-        out = self.bash('gh pr comment 1 --body-file "$NOTES"')
-        self.assertEqual(out["permissionDecision"], "ask")
-        self.assertIn("cannot tell which file", out["permissionDecisionReason"])
+    def assertPassesUnread(self, command, reason):
+        """The scan cannot read this command, for this reason, and the gate lets it through."""
+        self.assertIsNone(self.bash(command))
+        with self.assertRaisesRegex(secret_scan.ScanError, reason):
+            secret_scan.scan_gh(command, str(self.tmp), secret_scan.Budget(), [])
+
+    def test_a_file_it_cannot_resolve_passes(self):
+        self.assertPassesUnread('gh pr comment 1 --body-file "$NOTES"', "cannot tell which file")
 
     def test_a_body_file_in_a_variable_the_command_sets_is_read(self):
         (self.tmp / "leak.md").write_text(TOKEN + "\n")
@@ -523,17 +549,30 @@ class Gh(unittest.TestCase):
         for command in ("S=/a; cat x > $S/m.md; gh pr comment 1 --body-file=$S/m.md",
                         "S=/a; cat x > $S/m.md; gh api repos/o/r/issues -F body=@$S/m.md"):
             with self.subTest(command=command):
-                self.assertIn("cannot tell which file", self.bash(command)["permissionDecisionReason"])
+                self.assertPassesUnread(command, "cannot tell which file")
 
     def test_a_body_file_the_command_writes_from_its_own_text_passes(self):
         self.assertIsNone(self.bash('echo body > "$NOTES" && gh pr comment 1 --body-file "$NOTES"'))
-        out = self.bash('echo "$X" > "$NOTES" && gh pr comment 1 --body-file "$NOTES"')
-        self.assertEqual(out["permissionDecision"], "ask")
-        self.assertIn("cannot tell which file", out["permissionDecisionReason"])
+        self.assertPassesUnread('echo "$X" > "$NOTES" && gh pr comment 1 --body-file "$NOTES"',
+                                "cannot tell which file")
 
-    def test_an_unreadable_command_is_asked_about_only_when_it_may_write(self):
-        self.assertEqual(self.bash("gh pr comment 1 --body 'unclosed")["permissionDecision"], "ask")
-        self.assertIsNone(self.bash("gh pr view 1; echo 'unclosed"))
+    def test_a_command_it_cannot_split_is_judged_on_its_text(self):
+        for command in ("gh pr comment 1 --body 'unclosed", "gh pr view 1; echo 'unclosed",
+                        f"gh pr view 1; echo '{TOKEN}"):
+            with self.subTest(command=command):
+                self.assertIsNone(self.bash(command))
+        for command in (f"gh pr comment 1 --body '{TOKEN}", f'gh pr comment 1 --body "a $(echo "b\'c") {TOKEN}"'):
+            with self.subTest(command=command):
+                self.assertEqual(self.bash(command)["permissionDecision"], "deny")
+
+    def test_a_finding_before_the_scan_stops_is_denied(self):
+        for command in ('gh pr create --title t --body-file body.md && gh issue create --title t --body-file "$X"',
+                        'gh issue create --title t --body-file "$X" && gh pr create --title t --body-file body.md',
+                        "GIT_DIR=/x/.git git commit -m x; gh pr comment 1 --body-file body.md"):
+            with self.subTest(command=command):
+                out = self.bash(command)
+                self.assertEqual(out and out["permissionDecision"], "deny", out)
+                self.assertIn("body.md:2", out["permissionDecisionReason"])
 
     def test_reads_and_clean_writes_pass(self):
         for command in ("gh pr view 1", "gh api repos/o/r/pulls", f"gh pr list --search {TOKEN}",
@@ -543,8 +582,26 @@ class Gh(unittest.TestCase):
 
 
 class Writes(unittest.TestCase):
-    def call(self, tool, tool_input):
-        return run_gate(json.dumps({"tool_name": tool, "tool_input": tool_input, "cwd": "/"}))
+    """A server's kind comes from its configuration in `.mcp.json` or `.claude.json`, here in a
+    project directory and a config directory of the test's own."""
+
+    def setUp(self):
+        self.project = Path(tempfile.mkdtemp()).resolve()
+        self.config = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.project)
+        self.addCleanup(shutil.rmtree, self.config)
+        self.servers({"other": {"command": "other-mcp"}})
+
+    def servers(self, servers):
+        (self.project / ".mcp.json").write_text(json.dumps({"mcpServers": servers}))
+
+    def call(self, tool, tool_input, cwd=None, project_dir=None):
+        env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
+        env["CLAUDE_CONFIG_DIR"] = str(self.config)
+        if project_dir is not None:
+            env["CLAUDE_PROJECT_DIR"] = str(project_dir)
+        return run_gate(json.dumps({"tool_name": tool, "tool_input": tool_input, "cwd": str(cwd or self.project)}),
+                        env=env)
 
     def test_github_write_with_a_secret_is_denied_by_field(self):
         out = self.call("mcp__github-x__push_files",
@@ -564,6 +621,95 @@ class Writes(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertIsNone(self.call(tool, body))
 
+    def test_a_github_server_is_told_by_what_it_is_or_by_its_name(self):
+        body = {"body": TOKEN}
+        self.servers({"corp-code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"},
+                      "gh": {"command": "docker", "args": ["run", "-i", "ghcr.io/github/github-mcp-server"]},
+                      "npx-code": {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"]},
+                      "hub": {"command": "docker", "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
+                                                            "mcp/github"]},
+                      "hub-tagged": {"command": "docker", "args": ["run", "-i", "mcp/github:latest"]},
+                      "hub-registry": {"command": "docker", "args": ["run", "-i", "docker.io/mcp/github"]},
+                      "hub-digest": {"command": "docker", "args": ["run", "-i", "mcp/github@sha256:" + "0" * 64]},
+                      "remote": {"command": "npx", "args": ["-y", "mcp-remote", "HTTPS://api.githubcopilot.com/mcp/"]},
+                      "ghe": {"type": "http", "url": "https://copilot-api.corp.ghe.com/mcp/"},
+                      "github-mirror": {"type": "http", "url": "https://code.example.org/mcp"},
+                      "github": {"command": "an-unrecognized-binary"}})
+        for tool in ("mcp__corp-code__add_issue_comment", "mcp__gh__create_pull_request",
+                     "mcp__npx-code__create_issue", "mcp__hub__create_issue", "mcp__hub-tagged__create_issue",
+                     "mcp__hub-registry__create_issue", "mcp__hub-digest__create_issue",
+                     "mcp__remote__create_issue", "mcp__ghe__add_issue_comment",
+                     "mcp__github-mirror__add_issue_comment", "mcp__github__push_files"):
+            with self.subTest(tool=tool):
+                self.assertEqual(self.call(tool, body)["permissionDecision"], "deny")
+
+    def test_a_variable_outside_the_fields_that_tell_the_kind_does_not_hide_it(self):
+        self.servers({"hosted": {"type": "http", "url": "https://api.githubcopilot.com/mcp/",
+                                 "headers": {"Authorization": "Bearer ${GITHUB_PAT}"}},
+                      "local": {"command": "docker", "args": ["run", "-i", "ghcr.io/github/github-mcp-server"],
+                                "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PAT}"}},
+                      "in-args": {"command": "docker", "args": ["run", "-i", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN=${GH_PAT}",
+                                                                "ghcr.io/github/github-mcp-server"]}})
+        for tool in ("mcp__hosted__add_issue_comment", "mcp__local__add_issue_comment", "mcp__in-args__add_issue_comment"):
+            with self.subTest(tool=tool):
+                self.assertEqual(self.call(tool, {"body": TOKEN})["permissionDecision"], "deny")
+
+    def test_atlassian_s_hosted_server_is_atlassian_s(self):
+        self.servers({"rovo": {"type": "http", "url": "https://mcp.atlassian.com/v1/sse"}})
+        self.assertEqual(self.call("mcp__rovo__addCommentToJiraIssue", {"body": TOKEN})["permissionDecision"], "deny")
+
+    def test_a_key_is_matched_as_claude_code_names_its_tools(self):
+        self.servers({"corp.code host": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}})
+        self.assertEqual(self.call("mcp__corp_code_host__add_issue_comment", {"body": TOKEN})["permissionDecision"],
+                         "deny")
+
+    def test_the_local_scope_wins_over_the_project_and_user_scopes(self):
+        elsewhere = {"type": "http", "url": "https://code.example.org/mcp"}
+        self.servers({"code": elsewhere})
+        (self.config / ".claude.json").write_text(json.dumps({
+            "mcpServers": {"code": elsewhere},
+            "projects": {str(self.project): {"mcpServers": {
+                "code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}}}}))
+        self.assertEqual(self.call("mcp__code__add_issue_comment", {"body": TOKEN})["permissionDecision"], "deny")
+
+    def test_a_server_found_only_in_the_user_scope_or_a_parent_is_read(self):
+        (self.config / ".claude.json").write_text(json.dumps({"mcpServers": {
+            "user-code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}}))
+        self.assertEqual(self.call("mcp__user-code__add_issue_comment", {"body": TOKEN})["permissionDecision"], "deny")
+        self.servers({"up": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"},
+                      "other": {"command": "other-mcp"}})
+        self.project = self.project / "sub" / "dir"
+        self.project.mkdir(parents=True)
+        self.assertEqual(self.call("mcp__up__add_issue_comment", {"body": TOKEN})["permissionDecision"], "deny")
+        self.assertIsNone(self.call("mcp__other__create_thing", {"body": TOKEN}))
+
+    def test_a_server_of_unknown_kind_passes(self):
+        body = {"body": TOKEN}
+        self.servers({"vars": {"type": "http", "url": "${CODE_MCP_URL}"}})
+        for tool in ("mcp__unconfigured__add_comment", "mcp__vars__add_comment"):
+            with self.subTest(tool=tool):
+                self.assertIsNone(self.call(tool, body))
+        deep = '{"mcpServers": ' + '{"x": ' * 100000 + "1" + "}" * 100001
+        for malformed in ("{not json", json.dumps({"mcpServers": {"other": ["not", "a", "server"]}}),
+                          json.dumps({"mcpServers": ["other"]}), json.dumps({"mcpServers": {"other": {"args": 5}}}),
+                          json.dumps({"mcpServers": {"other": {"command": "x", "args": [["nested"]]}}}), deep):
+            with self.subTest(malformed=malformed[:60]):
+                (self.project / ".mcp.json").write_text(malformed)
+                self.assertIsNone(self.call("mcp__other__create_thing", body))
+                self.assertEqual(self.call("mcp__github__create_thing", body)["permissionDecision"], "deny")
+
+    def test_the_lookup_starts_at_the_project_directory_not_the_session_cwd(self):
+        elsewhere = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(shutil.rmtree, elsewhere)
+        (self.config / ".claude.json").write_text(json.dumps({"projects": {str(self.project): {"mcpServers": {
+            "local-code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}}}}}))
+        self.servers({"code": {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}})
+        for tool in ("mcp__local-code__add_issue_comment", "mcp__code__add_issue_comment"):
+            with self.subTest(tool=tool):
+                out = self.call(tool, {"body": TOKEN}, cwd=elsewhere, project_dir=self.project)
+                self.assertEqual(out["permissionDecision"], "deny")
+                self.assertIsNone(self.call(tool, {"body": TOKEN}, cwd=elsewhere))
+
     def test_clean_github_write_passes(self):
         self.assertIsNone(self.call("mcp__github-x__add_issue_comment", {"body": "Looks good."}))
 
@@ -572,12 +718,21 @@ class Writes(unittest.TestCase):
         self.assertEqual(self.call("mcp__atl__jira_add_comment", body)["permissionDecision"], "deny")
         self.assertIsNone(self.call("mcp__atl__jira_get_issue", body))
 
-    def test_unparsable_payload_is_asked_about(self):
-        self.assertEqual(run_gate("not json")["permissionDecision"], "ask")
+    def test_unparsable_payload_passes(self):
+        self.assertIsNone(run_gate("not json"))
+
+    def test_a_finding_before_the_budget_is_spent_is_still_denied(self):
+        event = {"tool_name": "mcp__github__add_issue_comment", "cwd": "/",
+                 "tool_input": {"a": "see " + TOKEN, "b": "x" * 100}}
+        out = json.loads(hook_output(event, secret_scan.Budget(size=len(event["tool_input"]["a"]) + 10)))
+        self.assertEqual(out["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("a:1: GitHub token", out["hookSpecificOutput"]["permissionDecisionReason"])
+        event["tool_input"] = {"a": "x" * 100, "b": "see " + TOKEN}
+        self.assertEqual(hook_output(event, secret_scan.Budget(size=10)), "")
 
 
 class NoPython(unittest.TestCase):
-    """The gate on a machine with no python3: it asks about what it would have scanned."""
+    """The gate on a machine with no python3: nothing is scanned, so every call passes."""
 
     def setUp(self):
         self.bin = Path(tempfile.mkdtemp())
@@ -591,17 +746,17 @@ class NoPython(unittest.TestCase):
                            check=True, env={"PATH": str(self.bin)})
         return json.loads(r.stdout)["hookSpecificOutput"]["permissionDecision"] if r.stdout.strip() else None
 
-    def test_it_asks_about_commits_posts_and_writes(self):
-        self.assertEqual(self.gate("Bash", {"command": "git commit -m x"}), "ask")
-        self.assertEqual(self.gate("Bash", {"command": "gh pr comment 1 --body x"}), "ask")
-        self.assertEqual(self.gate("mcp__github-example__add_issue_comment", {"body": "x"}), "ask")
-        self.assertEqual(self.gate("mcp__atl__jira_add_comment", {"comment": "x"}), "ask")
-
-    def test_it_lets_the_rest_through(self):
+    def test_every_call_passes(self):
+        self.assertIsNone(self.gate("Bash", {"command": f"git commit -m '{TOKEN}'"}))
+        self.assertIsNone(self.gate("Bash", {"command": "gh pr comment 1 --body x"}))
+        self.assertIsNone(self.gate("mcp__github-example__add_issue_comment", {"body": TOKEN}))
+        self.assertIsNone(self.gate("mcp__atl__jira_add_comment", {"comment": "x"}))
         self.assertIsNone(self.gate("Bash", {"command": "git status"}))
         self.assertIsNone(self.gate("mcp__atl__jira_get_issue", {"issue_key": "X-1"}))
         self.assertIsNone(self.gate("mcp__github__get_me", {}))
         self.assertIsNone(self.gate("mcp__github__pull_request_read", {}))
+        self.assertIsNone(self.gate("mcp__claude-in-chrome__navigate", {"url": "x"}))
+        self.assertIsNone(self.gate("mcp__corp-code__add_issue_comment", {"body": "x"}))
 
 
 class Registration(unittest.TestCase):
@@ -617,8 +772,8 @@ class Registration(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertTrue(m.match(tool))
 
-    def test_hooks_json_spares_other_servers(self):
-        self.assertFalse(self.matcher().match("mcp__spicedocs__get_page"))
+    def test_hooks_json_sends_it_a_server_whatever_its_name(self):
+        self.assertTrue(self.matcher().match("mcp__corp-code__create_pull_request"))
 
     def test_gate_is_executable(self):
         self.assertTrue(os.access(GATE, os.X_OK))
