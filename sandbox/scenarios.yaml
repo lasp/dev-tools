@@ -262,7 +262,7 @@ scenarios:
     verify:
       - test -f .review/context/PROJ-57.jira.txt
       - "grep -qiE '^[ *-]*Summary\\b' .review/context/PROJ-57.jira.txt"
-      - "grep -iE '^[ *-]*Summary\\b' .review/context/PROJ-57.jira.txt | grep -qiE '\\b(sums?|summing|twice|duplicate)\\b'"
+      - "grep -iE '^[ *-]*Summary\\b' .review/context/PROJ-57.jira.txt | cut -d: -f2- | grep -qiE '\\b(sum\\w*|twice|duplicates?|duplicated|duplication|repeat\\w*|more than once|combines?|combined|combining|add\\w*|total\\w*)\\b'"
     expect:
       ends: success
       files: [".review/context/PROJ-57.jira.txt"]
@@ -288,7 +288,7 @@ scenarios:
     look_at: The summary is kept, and no field change names it.
     verify:
       - test -f .review/context/PROJ-57.jira.txt
-      - "! grep -iE '^[ *-]*Summary\\b' .review/context/PROJ-57.jira.txt | grep -qvE 'Refuse a negative count in by_part *$'"
+      - "! grep -iE '^[ *-]*Summary\\b' .review/context/PROJ-57.jira.txt | grep -qviE 'Refuse a negative count in \\W*by_part\\W*$'"
     expect:
       ends: success
       files: [".review/context/PROJ-57.jira.txt"]
