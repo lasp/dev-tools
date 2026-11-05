@@ -553,7 +553,7 @@ class Budget(unittest.TestCase):
 
     def test_bold_budget_in_a_rule_s_prose_is_not_a_stated_budget(self):
         text = "# Review rules\n\n" + entry("R-001", 8).replace("> Line 1.", "> Keep the **budget** of a loop small.")
-        self.assertEqual(self.lint(text)[0], 0)
+        self.assertEqual(self.lint(text), (0, ["budget ok: ledger: 10 of 300 lines"]))
 
     def test_a_run_of_every_gate_prints_no_budget_ok_line(self):
         out = io.StringIO()

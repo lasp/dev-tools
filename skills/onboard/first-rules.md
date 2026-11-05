@@ -145,7 +145,7 @@ the share of AI-drafted threads in its own right, separate from which rules it d
    run prints a `budget: <repository>: N lines over a budget of B` line, move the
    lowest-ranked admitted candidate under "Candidates below the criteria", the budget named as
    the criterion, and run it again with the ids left, until no such line is printed or no
-   candidate is admitted. A budget line still printed then is the standard's own, reported as a
+   candidate is admitted. An over-budget line still printed then is the standard's own, reported as a
    finding beside the draft, not cleared here. A `budget: R-NNN: ... is not a list of names` line
    is the standard's too: it is reported as a finding and moves no candidate, since the budget
    is not counted. Exit 2 is a `CANNOT RUN`: its line is reported and the budget is not known, so
