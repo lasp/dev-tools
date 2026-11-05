@@ -395,7 +395,7 @@ not listed: <n>`.
 Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
 "Clusters" and `revise` `prepare` step 5, for the Admission Dial's single statements.
 
-Pinned by: tests/test_guidance_tally.py::test_a_persons_signalled_statement_admits_and_the_rest_is_held_or_supports
+Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admits_and_the_rest_is_held_or_supports
 
 ## The judgments
 
