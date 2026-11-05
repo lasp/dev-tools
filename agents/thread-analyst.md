@@ -56,7 +56,9 @@ file a review body or comment names counting toward them.
   `reviews:` or `comments:`. A thread in `comments.json` the record does not list, or a record
   that is missing, is a dump and record that disagree: return `record mismatch: <the ids>` and
   nothing else.
-- **category**: one of the eight, the closest to what the thread asked.
+- **category**: one of the eight, the closest to what the thread asked. `process` is the
+  repository's own practice, such as branching, rebasing, a version bump, the changelog or a
+  release.
 - **asked**: what the thread asked for, in one line, in your words.
 - **outcome**, from the thread's replies and GitHub's `is_resolved` and `is_outdated` flags
   together: `changed as asked`, `changed differently`, `declined: "<the reason, quoted>"`,
@@ -67,8 +69,10 @@ file a review body or comment names counting toward them.
 - **diff**: whether the file at the merge commit addresses the ask: `addresses it`, `does not`,
   or `cannot tell`, which is also the answer when the ask names no file. `cannot tell` whenever the file does not show it; a claim you cannot
   confirm is `cannot tell`, never a guess.
-- **Procedure**: the threads that asked about the workflow, the skills or the review itself
-  rather than the code.
+- **Procedure**: the asks about a lasp-dev skill or agent, or about the standard's own files,
+  such as a rule the review applied or a check it ran, rather than the code. The caller drafts
+  feedback on the plugin for each, so an ask about the repository's own practice is never
+  Procedure: it is a line in the `process` category.
 
 ## Defect mode
 
@@ -105,7 +109,7 @@ recommendation. A line opens with its source and id: `thread PRRT_...`, `review 
 ```
 ## pr-NNNN — threads read
 <source> <id> · <opener login or bot> · by: <human | bot | ai-drafted> · <category> · asked: <one line> · outcome: <changed as asked | changed differently | declined: "<reason quoted>" | discussed, no change | unanswered | none> · diff: <addresses it | does not | cannot tell>
-Procedure: <the threads, reviews and comments that asked about the workflow, the skills or the review itself rather than the code, by id; "none">
+Procedure: <the threads, reviews and comments that asked about a lasp-dev skill or agent or the standard's own files, by id; "none">
 Not read: <the review bodies and comments past the forty, by id; "none">
 Read: <the files read, one line>
 ```
