@@ -1,12 +1,14 @@
 ---
 name: commit
 description: >
-  Decides what in the working tree belongs in a commit, writes the message as Conventional
-  Commits or in the style the person or repository asks for, and commits locally; never pushes. Use when asked to "commit this", "commit my
-  changes" or "write a commit message".
+  Commits the working tree locally: decides what belongs in the commit, asks before committing to
+  the default branch, and writes the message as Conventional Commits or in the style the person or
+  repository asks for; never pushes. Use whenever asked to commit or check in changes, such as
+  "commit this", "commit my changes", "check this in" or "write a commit message", rather than
+  running git commit directly.
 metadata:
   author: llm-tooling
-  version: 6.2.0
+  version: 6.2.1
 ---
 
 # Commit

@@ -1,14 +1,15 @@
 ---
 name: writing
 description: >
-  Reviews or rewrites prose a person reads (tickets, pull request and commit bodies, docs) for
-  structure and clarity without changing a fact. Use when asked to "review this doc", "tighten
-  this README", "make this clearer" or "check the wording". Not for review comments, docstrings
-  or code comments.
+  Reviews or rewrites prose a person reads (READMEs, docs, tickets, pull request and commit
+  bodies) for structure and clarity without changing a fact, showing the changes before applying
+  them. Use whenever asked to improve prose for its reader: "review this doc", "tighten this
+  README", "make this clearer", "clean up the wording" or "check the wording". Not for review
+  comments, docstrings or code comments.
 argument-hint: "[text | file]"
 metadata:
   author: lasp-dev
-  version: 1.2.1
+  version: 1.2.2
 ---
 
 # Writing for a reader
