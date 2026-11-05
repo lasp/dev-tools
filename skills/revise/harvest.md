@@ -64,14 +64,18 @@ lines. A `pr <n> · in no slice` line sends back the slice the cut gave pull req
 slice was given it, is a cut to make again, as is a slice too large. Then check again. A slice
 still refused, after it went back once, is not read: check again without it and its comment
 lists, and name its pull requests and its lines with what was not read. The printout of the
-check that passes is the guidance's count, and the slices' items are what the caller reads. With
+check that passes is the guidance's count. Then run `python3 "<plugin root>/scripts/guidance_tally.py"`
+with the same slices and lists: its `admit`, `covered`, `hold` and `support` lines, each with the
+comment's own words, are what "Clusters" and the caller read (`docs/contracts.md`, "The guidance
+tally"). With
 no comment list, or none left once the unread slices are set aside, no check runs, and the count
 is `none read`.
 
 ## Clusters
 
 Group by what was asked: the analysts' `asked:` lines from threads (people's, bots' and a review's
-uncited findings), review bodies and conversation comments, leaving out `asked: none`, with
+uncited findings), review bodies and conversation comments, leaving out `asked: none`, and the
+guidance tally's `admit`, `hold` and `support` lines, a cluster keeping each line's quote, with
 whatever else the caller adds. From people's threads, review bodies and conversation comments,
 count only the lines whose analyst `by:` is `human` (the analyst's word, not the record's login),
 the pull request author's own included; a cluster whose lines are all AI-drafted is not admitted

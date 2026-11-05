@@ -361,10 +361,41 @@ It prints `slices: <n> · comments: <n> · items: <n> · general: <n> · pr-spec
 read as JSON is one, and leaves its pull requests in no slice while the other slices are checked.
 
 Writers: `guidance-extractor`, at the path harvest.md's "Guidance" gives it. Readers:
-`scripts/guidance_check.py`; `revise` `prepare`, through harvest.md; `sandbox/harvest_recall.py`
-`--items`.
+`scripts/guidance_check.py` and `scripts/guidance_tally.py`; `revise` `prepare`, through harvest.md;
+`sandbox/harvest_recall.py` `--items`.
 
 Pinned by: tests/test_guidance_check.py::test_a_run_true_to_its_comments_passes
+
+## The guidance tally
+
+Version: 1
+
+Fields: what `scripts/guidance_tally.py <slice> [...] --comments <comment-list.json> [...]` prints,
+given a run's slices and lists as `guidance_check.py` takes them, and refusing, with that check's
+lines and exit 1, any run the check refuses. One line per `general` item, in the slices' order,
+`<key>` being `s<n>-<i>`, the n-th slice given, from 1, and the item's index in it, from 0:
+
+- `admit · <key> · pr-NNNN · <comment id> · <author> · rule · <signal> · <url> · <quote>`: a
+  person's words (`authorship` `human`) of kind `rule` whose `signal` is `states a principle`,
+  `addresses agents` or `names a habit`, with `covered_by` null;
+- `covered · <key> · pr-NNNN · <comment id> · <author> · <kind> · <covered_by> · <url> · <quote>`:
+  a person's general item a live rule, decision or the instruction file already says;
+- `hold · <key> · pr-NNNN · <comment id> · <author> · <kind> · <criterion> · <url> · <quote>`: a
+  person's other general items, the criterion `no signal of generality` for signal `none`,
+  `signal <signal>, not one that admits`, or `a <kind> statement: revise proposes rules only` for
+  one of another kind that would otherwise admit;
+- `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
+  general item the pull request's author changed as asked.
+
+An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
+is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
+before it. A last line reads `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> ·
+not listed: <n>`.
+
+Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
+"Clusters" and `revise` `prepare` step 5, for the Admission Dial's single statements.
+
+Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admits_and_the_rest_is_held_or_supports
 
 ## The judgments
 
