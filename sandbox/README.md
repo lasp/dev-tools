@@ -320,7 +320,7 @@ What is scored is one of:
 With `--items`, `--clusters <file>` also scores a clustering of that run, the clusters file
 `scripts/guidance_clusters.py` checked: each theme joined when one cluster holds its statements
 from two pull requests or more, and kept apart when no other theme shares that cluster, so a
-clustering that merges neighbouring principles loses the second figure.
+clustering that merges neighboring principles loses the second figure.
 
 An item finds a label where their quotes overlap in the comment. An analyst line carries no quote,
 so it finds every label on its comment. `--pairs <file>` writes each such label beside its line,
@@ -350,7 +350,7 @@ Clustering, under `skills/revise/harvest.md` "Clusters" of 2026-11-05: on the pu
 runs each joined and kept apart 8 of 8 themes, in 28 and 29 clusters of 64 statements, agreeing on
 99.7% of pairs of statements; `clusters/` holds the second. On the private month, 247 statements
 fell into 97 clusters; of the six themes the reference read named as recurring, four were each
-joined in one cluster over two or three pull requests, one of them with a neighbouring principle
+joined in one cluster over two or three pull requests, one of them with a neighboring principle
 beside it, and two restate live rules and support them as `covered` statements. The first
 private run, before the section said that statements needing two different changes are two
 clusters, merged three of the themes into one.
