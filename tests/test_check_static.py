@@ -77,6 +77,8 @@ def count(log, since=None):
             row["firings"] += 1
             v = re.search(r"verdict: (\\w+)", item).group(1)
             v = {"unparsed": "unanswered", "contested": "open-contest"}.get(v, v)
+            if re.search(r"^    severity: unparsed$", item, re.M):
+                v = "unlabeled"
             row[v] += 1
             row["contested"] += "\\n    contested: true" in item and v != "open-contest"
     return table

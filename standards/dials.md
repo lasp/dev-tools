@@ -32,7 +32,7 @@ no threshold.
 | Recurring ask | the same concern in 2 merged pull requests, accumulated across revisions (starting value) | 1; 3 |
 | Candidate drop | no new evidence in 6 months (starting value) | 4 months; 8 months |
 | Revision floor | 5 records since the last revision; below it the report only (starting value) | 3; 7 |
-| Unanswered share | a rule's findings unanswered in more than a third of its firings: propose a do-not-flag sentence or a severity change (starting value) | a quarter; a half |
+| Unanswered share | a rule's findings unanswered in more than a third of its firings less its `unlabeled` ones, whose severity label could not be read: propose a do-not-flag sentence or a severity change (starting value) | a quarter; a half |
 | Contested | a rule contested more than once in the window: name it and what the disagreements shared (starting value) | once; three times |
 | Corrected | a rule corrected twice in the window: propose a rewrite or a do-not-flag sentence, never a promotion (starting value) | once; three times |
 | Ticket candidates | a constraint in three or more ticket baselines is a candidate rule; a thing typed into free text three or more times is a candidate template field (starting value) | two; four |

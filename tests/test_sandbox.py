@@ -94,7 +94,7 @@ class TriggerPack(unittest.TestCase):
             if s["id"].startswith("notrigger-"):
                 self.assertTrue(any(r.startswith("Skill(") for r in s["must_not_run"]), s["id"])
 
-    def test_each_skill_a_request_can_reach_has_one_trigger_scenario_and_the_set_holds_the_pack(self):
+    def test_each_skill_a_request_can_reach_has_a_trigger_scenario_and_the_set_holds_the_pack(self):
         reachable = set()
         for path in ROOT.glob("skills/*/SKILL.md"):
             front = yaml.safe_load(path.read_text().split("---", 2)[1])
@@ -103,11 +103,15 @@ class TriggerPack(unittest.TestCase):
         triggers = {s["id"]: s for s in self.known.values() if s["id"].startswith("trigger-")}
         for name in reachable:
             with self.subTest(skill=name):
-                s = triggers.get(f"trigger-{name}")
-                self.assertIsNotNone(s)
-                self.assertEqual(s["expect"].get("skills"), [name])
+                self.assertIn(f"trigger-{name}", triggers)
+        for i, s in triggers.items():
+            with self.subTest(scenario=i):
+                skills = s["expect"].get("skills")
+                self.assertEqual(len(skills), 1)
+                name = skills[0]
+                self.assertIn(name, reachable)
+                self.assertTrue(i == f"trigger-{name}" or i.startswith(f"trigger-{name}-"))
                 self.assertNotIn(name, s["turns"][0].lower())
-        self.assertLessEqual({i.removeprefix("trigger-") for i in triggers}, reachable)
         self.assertEqual(set(smoke.smoke_set(self.PACK)), set(self.known))
 
     def test_the_pack_plants_no_credentials(self):
@@ -139,7 +143,7 @@ class Sandbox(unittest.TestCase):
 
     def test_every_generic_scenario_is_well_formed_and_runs_in_the_fixture(self):
         known = run.scenarios()
-        self.assertEqual(len(known), 21)
+        self.assertEqual(len(known), 24)
         well_formed(self, known, {"widgets"})
 
     def test_every_fixture_a_scenario_copies_is_in_the_pack(self):
