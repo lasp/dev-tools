@@ -2,8 +2,8 @@
 """Check a repository's rules against the seven gates of `standards/rule-bar.md`.
 
 Reads the ledger (`--ledger`, a standard's `review-rules.md`), whose entries hold each rule's
-wording as the `> ` lines of the entry, the decisions (`--decisions`, repeatable: the standard's
-and the shared `decisions.md`), and the repository itself (`--repo`, for `git ls-files` and `git
+wording as the `> ` lines of the entry, the decisions (`--decisions`, repeatable: a standard's
+`decisions.md`; the plugin ships none), and the repository itself (`--repo`, for `git ls-files` and `git
 show`). A ledger whose wording is still in an instruction file names it with `--instructions`, the
 file whose `## Review Rules` section holds each rule under its `### R-NNN · <title>` heading, and
 each entry links it on a `Wording:` line. With `--entry <file>` in place of the ledger, it reads
@@ -538,7 +538,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--ledger", type=Path, help="the repository's standards/review-rules.md")
     p.add_argument("--instructions", type=Path, help="for a ledger whose wording is still in an instruction file: the file whose ## Review Rules section holds it")
     p.add_argument("--repo", type=Path, default=Path("."), help="the repository git ls-files and git show run in")
-    p.add_argument("--decisions", type=Path, action="append", help="a decisions.md; repeat for the repository's and the shared one")
+    p.add_argument("--decisions", type=Path, action="append", help="a standard's decisions.md; repeatable")
     p.add_argument("--changed", help="R-NNN[,R-NNN...]: the rules whose failures fail the run")
     p.add_argument("--entry", type=Path, help="one drafted entry and its wording, in place of --ledger")
     p.add_argument("--profiles", type=Path, help="the standard's profiles/ directory, by default beside --ledger")

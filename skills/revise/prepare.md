@@ -169,8 +169,11 @@ step 1.
      thing to fix, a `ticket/` in its place. A rule the sweep marks `drift` stays under
      "Practice", since no Dial reads the sweep.
 7. **Hold each proposal to the bar.** Run harvest.md's "The bar" on each proposal that admits,
-   rewords, promotes or broadens a rule, with the decisions files that exist: `<standard files>/decisions.md`,
-   and, with `profiles/`, `--profiles <standard files>/profiles/`; a rule that applies to only some repositories carries their `repos:`
+   rewords, promotes or broadens a rule, with one decisions file, the project's, by `revise`'s "The
+   standard's repository": `--decisions <clone>/standards/decisions.md` in the pointer's row and
+   `--decisions standards/decisions.md` in the other, either only when that file exists. The plugin
+   ships no `decisions.md`, so none is passed from `<plugin root>/standards/`. With `profiles/`,
+   add `--profiles <standard files>/profiles/`; a rule that applies to only some repositories carries their `repos:`
    line. A proposal a
    gate fails goes under "Held by the bar".
 
