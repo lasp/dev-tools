@@ -485,7 +485,7 @@ class Budget(unittest.TestCase):
 
     def test_a_ledger_at_its_budget_passes_and_one_line_over_fails(self):
         head = "# Review rules\n\n**Budget: 20 lines**\n\n"
-        self.assertEqual(self.lint(head + entry("R-001", 16)), (0, []))
+        self.assertEqual(self.lint(head + entry("R-001", 16)), (0, ["budget ok: ledger: 20 of 20 lines"]))
         self.assertEqual(
             self.lint(head + entry("R-001", 17)),
             (1, ["budget: ledger: 21 lines over a budget of 20; retire, merge or narrow a rule, or raise the budget in the ledger's header with the reason"]),
@@ -494,7 +494,7 @@ class Budget(unittest.TestCase):
     def test_a_check_tier_entry_and_the_held_candidates_are_not_counted(self):
         head = "# Review rules\n\n**Budget: 20 lines**\n\n"
         held = "## Candidates below the criteria\n\n" + "- held\n" * 30
-        self.assertEqual(self.lint(head + entry("R-001", 16) + entry("R-002", 30, tier="check") + held), (0, []))
+        self.assertEqual(self.lint(head + entry("R-001", 16) + entry("R-002", 30, tier="check") + held), (0, ["budget ok: ledger: 20 of 20 lines"]))
 
     def test_each_covered_repository_is_counted_with_only_the_rules_tagged_for_it(self):
         (self.ledger.parent / "profiles").mkdir()
@@ -503,7 +503,7 @@ class Budget(unittest.TestCase):
         text = "# Review rules\n\n**Budget: 30 lines**\n\n" + entry("R-001", 10) + entry("R-002", 10, repos="alpha") + entry("R-003", 17, repos="Beta")
         rc, out = self.lint(text)
         self.assertEqual(rc, 1)
-        self.assertEqual([line.split(";")[0] for line in out], ["budget: beta: 31 lines over a budget of 30"])
+        self.assertEqual([line.split(";")[0] for line in out], ["budget ok: alpha: 24 of 30 lines", "budget: beta: 31 lines over a budget of 30"])
 
     def test_a_budget_failure_fails_a_changed_run_only_when_a_changed_rule_counts_there(self):
         (self.ledger.parent / "profiles").mkdir()
@@ -524,7 +524,7 @@ class Budget(unittest.TestCase):
         # The fixture's ledger with a budget line counts 29 lines, R-003 left out as check-tier,
         # and R-001's and R-002's wording two lines each.
         self.assertEqual(self.lint_instructions(budget=None)[0], 0)
-        self.assertEqual(self.lint_instructions(budget=33), (0, []))
+        self.assertEqual(self.lint_instructions(budget=33), (0, ["budget ok: ledger: 33 of 33 lines"]))
         self.assertEqual(self.lint_instructions(budget=32), (1, ["budget: ledger: 33 lines over a budget of 32; retire, merge or narrow a rule, or raise the budget in the ledger's header with the reason"]))
 
     def test_a_ledger_stating_no_budget_with_no_rule_budget_dial_cannot_run(self):
@@ -553,7 +553,13 @@ class Budget(unittest.TestCase):
 
     def test_bold_budget_in_a_rule_s_prose_is_not_a_stated_budget(self):
         text = "# Review rules\n\n" + entry("R-001", 8).replace("> Line 1.", "> Keep the **budget** of a loop small.")
-        self.assertEqual(self.lint(text), (0, []))
+        self.assertEqual(self.lint(text)[0], 0)
+
+    def test_a_run_of_every_gate_prints_no_budget_ok_line(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rc = rule_lint.main(["--ledger", str(self.repo / "review-rules.md"), "--instructions", str(self.repo / "instructions.md"), "--repo", str(self.repo), "--decisions", str(self.repo / "decisions.md")])
+        self.assertEqual((rc, out.getvalue()), (0, ""))
 
     def test_an_empty_profiles_directory_cannot_run(self):
         (self.ledger.parent / "profiles").mkdir()

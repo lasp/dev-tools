@@ -128,7 +128,7 @@ step 1.
    `python3 "<plugin root>/scripts/rule_lint.py" --ledger <the standard's ledger> --repo .
    --checks budget`, with `--instructions` naming the instruction file the ledger's `Wording:`
    lines link, if any, and the `--profiles` step 7 names, reports, a line for each covered
-   repository over it. Name the Dial beside each proposal. Below the Minimum settled
+   repository with its lines against its budget, `budget ok` or over it. Name the Dial beside each proposal. Below the Minimum settled
    firings before a rate is read Dial, no proposal resting on a rate is made for that rule, and its
    rate line reads `keep, insufficient evidence`; admission, establishment and expiry rest on no
    rate. A candidate that meets the Admission Dial is proposed whatever the rule count. The Low
