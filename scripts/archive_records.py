@@ -13,9 +13,9 @@ harvest did not write, is refused, so a kept record is always one the threads ca
 so is one whose harvested record holds findings, per rule, the log's lacks, since keeping it would
 drop those instead.
 
-A log directory that does not exist yet, on a repository's first harvest, is made when its parent
-is an existing directory named `log`, as `standards/log/<repo>/` is; any other missing log is
-refused. Prints `copied pr-NNNN` or `kept pr-NNNN · <n> finding(s) the threads do not carry` per
+A log directory that does not exist yet, on a repository's first harvest, is made, with its
+`log/` parent, when it is `standards/log/<repo>/` under an existing `standards/`; any other
+missing log, or a symbolic link where the log should be, is refused. Prints `copied pr-NNNN` or `kept pr-NNNN · <n> finding(s) the threads do not carry` per
 record. A record either side whose findings cannot be read, or a directory that is not one, exits
 1 with the reason. Stdlib only.
 """
@@ -47,11 +47,17 @@ def dropped(old: Path, new: Path) -> Counter:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("records", type=Path, help="the harvest's .review/harvest/records/")
-    p.add_argument("log", type=Path, help="the standards/<repo>/log/ directory")
+    p.add_argument("log", type=Path, help="the standards/log/<repo>/ directory")
     p.add_argument("--keep", type=int, action="append", default=[], help="a pull request whose log record stays as it is")
     args = p.parse_args(argv)
     try:
-        new = not args.log.exists() and args.log.parent.name == "log" and args.log.parent.is_dir()
+        new = (
+            not args.log.exists()
+            and not args.log.is_symlink()
+            and args.log.parent.name == "log"
+            and args.log.parent.parent.name == "standards"
+            and args.log.parent.parent.is_dir()
+        )
         for d in (args.records, *([] if new else [args.log])):
             if not d.is_dir():
                 raise ValueError(f"{d} is not a directory")
@@ -81,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"refused {name[:-5]} · the log's record holds findings the harvested one does not: {counts}")
         return 1
     if new:
-        args.log.mkdir()
+        args.log.mkdir(parents=True)
     for path in harvested:
         if path.name in kept:
             print(f"kept {path.stem} · {sum(losses[path.name].values())} finding(s) the threads do not carry")
