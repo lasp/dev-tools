@@ -51,7 +51,7 @@ the ledger still links an instruction file, under a `### R-NNN · <title>` headi
 where the rule should not apply, say so rather than inventing one. Run `python3 "<plugin
 root>/scripts/rule_lint.py" --entry <that file> --repo .` with a `--decisions` for each decisions
 file the caller names; an exit 2 (`CANNOT RUN`) stops the step with its line. Then one
-`rule-probe` per anchor of the `example:` line, all in one message, each given this repository's
+`rule-probe` per anchor of the `example:` line, launched as "Analysts" launches agents, each given this repository's
 path, the drafted title, wording and `Do not flag:` line, and one anchor; write their blocks to
 `.review/backtest/R-NNN.md`. Under the proposal or candidate, in the caller's report: the drafted
 `scope:` and `example:` lines, then `bar: ok` or the lint's lines, then `probe: <anchor>

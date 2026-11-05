@@ -6,7 +6,13 @@ by name from the shared `dials.md`; a threshold the Dials do not state is not ap
 2, 5 and 7 run the sections of `<plugin root>/skills/revise/harvest.md` they name; read it at
 step 1.
 
-**First, say what the run covers**, before anything is harvested: the window, where the standard
+**First, fetch and read the dates.** Run `git fetch origin main` here, and in the clone when
+there is one, then read the adoption dates as `revise`'s "The standard's repository" sets out. A
+fetch that fails is said in one line, and the dates are read from `origin/main` as the last fetch
+left it. With no previous report and no date from the command for this repository, stop and say
+so, naming the command and the file: the window has no first day, and no other day stands in.
+
+**Then say what the run covers**, before anything is harvested: the window, where the standard
 is stored (this repository's `standards/`, or the repository its pointer names), and, for a
 standard whose `profiles/` covers several repositories, what the run does in each. Every
 covered repository is harvested and its records archived. A rule reaches a repository when its

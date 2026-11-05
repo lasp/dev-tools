@@ -58,7 +58,7 @@ repositories covered; the threads, the clusters, the sweep and the bar's `scope:
 checks read this repository's code alone, so another repository's records are archived and
 counted but its threads reach no analyst, which `prepare` says before it harvests. A repository's
 adoption date is, for this repository, the day the ledger or the `standard:` pointer reached
-`main`: `git log origin/main --first-parent --diff-filter=A --reverse --format=%cs -- <file> |
+`main`: `git log -m --first-parent origin/main --diff-filter=A --reverse --format=%cs -- <file> |
 head -1` here, `<file>` being `standards/review-rules.md` or `standards/profile.yaml`. For
 another covered repository it is the earliest day the standard could apply there, the day its
 `profiles/<repo>.yaml` reached the standard's `main`: the same command on that file, in the clone

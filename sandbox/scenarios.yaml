@@ -91,6 +91,7 @@ scenarios:
       - "awk '{print} /^scope:/{n++; print (n==1 ? \"repos: [widgets]\" : \"repos: [widgets, gadgets]\")}' \"$SBX_FIXTURES/standard-review-rules.md\" > standards/review-rules.md"
       - "for r in widgets gadgets sprockets; do printf '# %s\\n' \"$r\" > \"standards/profiles/$r.yaml\"; done"
       - git add standards && git -c user.name=Sandbox -c user.email=sandbox@example.com commit -qm "Adopt the standard"
+      - git update-ref refs/remotes/origin/main HEAD
     origin: "#45, #63"
     why: >-
       Runs revise prepare in a repository whose own standard covers three, with R-001 tagged for
@@ -102,7 +103,8 @@ scenarios:
       - /lasp-dev:revise prepare
     must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)", "mcp__*", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
     look_at: >-
-      The scope list names the window and that the standard is this repository's standards/, then
+      The fetch of origin fails offline and is said in one line; the adoption date comes from
+      origin/main, which setup moved to the adoption commit. The scope list names the window and that the standard is this repository's standards/, then
       one line per repository: widgets with R-001 and R-002, its threads read and diffs swept;
       gadgets with R-002, archived and counted, its threads not read; sprockets with no rule,
       archived only, not skipped. With no GitHub server the harvest stops as servers.md sets out,
