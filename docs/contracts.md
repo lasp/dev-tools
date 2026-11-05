@@ -886,7 +886,8 @@ Fields: two optional lines of a ledger entry in an adopting repository's
 hold. `repos: [<repo>, ...]`, on a rule in the ledger, a decision in `decisions.md`, or an entry
 in `agent-guidance.md` or `data-conventions.md` of a standard covering several repositories, a flow list of repository names, each with a
 `profiles/<repo>.yaml` there, matched ignoring case: the rule or decision applies only in those
-repositories, and one without the line applies in all of them. It is one line, `repos:` at its
+repositories, and one without the line applies in all of them; an agent guidance or data
+convention entry reads it the same way. It is one line, `repos:` at its
 start, anywhere in the block outside a code fence and outside the rule's wording; a block with two
 is refused by the lint, and only the first is read (version 2). A rule's wording is the entry's `> ` lines, the one
 copy; a ledger whose wording is still in an instruction file has none there and a `Wording:` link
@@ -959,7 +960,7 @@ last saw the habit, or `_YYYY-MM_` for a data convention, the month admitted; th
 guidance, one `habit: <the habit>` line, and for a data convention one `source: <the document, or
 the data's owner>` line; one or more `> ` lines, the instruction an agent reads; and `said:
 "<words>" — <login>, <url>` lines, at least one for agent guidance. Text before the first entry is
-the file's own, and a code fence shows an example without making it an entry. A retired entry
+the file's own, with no heading of level two or three, and a code fence shows an example without making it an entry. A retired entry
 leaves the file for the standard's `archive/`. `standards/templates/` holds a starting copy of each
 file.
 

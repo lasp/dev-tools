@@ -70,8 +70,9 @@ neither the code nor `terminology.md` is a question.
 
 ## Agent guidance and data conventions
 
-A change that repeats a habit an `agent-guidance.md` entry names is a should-fix keyed
-`agent/A-nnn`, its Proposed line the entry's instruction. A change that breaks a
+A change that repeats a habit an `agent-guidance.md` entry names is a suggestion keyed
+`agent/A-nnn`, its Proposed line the entry's instruction: the entry guides the code's writer and
+is not held to the rule bar. A change that breaks a
 `data-conventions.md` entry is a should-fix keyed `data/F-nnn`, or a must-fix when the product
 would be wrong with no trace; a convention the code shows to be out of date is a question for the
 convention's source, never a finding against the code.

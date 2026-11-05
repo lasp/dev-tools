@@ -214,6 +214,15 @@ for f in decisions.md review-rules.md; do
     '[ "$rc" = 1 ] && grep -q "names a standard, and standards/$f is here too" err && [ -z "$out" ]'
   [ "$f" = review-rules.md ] && rm "standards/$f"
 done
+mv standards/decisions.md "$parent/held/decisions.aside"
+for f in agent-guidance.md data-conventions.md; do
+  echo "own $f" >"standards/$f"
+  out=$(bash "$script" 2>err); rc=$?
+  check "a pointer beside the repository's own $f is refused too" \
+    '[ "$rc" = 1 ] && grep -q "names a standard, and standards/$f is here too" err && [ -z "$out" ]'
+  rm "standards/$f"
+done
+mv "$parent/held/decisions.aside" standards/decisions.md
 
 # A trial reads a local checkout of the standard's repository as it stands, committed or not.
 trial="$parent/trial"

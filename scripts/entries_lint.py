@@ -7,7 +7,7 @@
 Each entry is:
 
     ### A-001 · <title>
-    repos: [<repo>, ...]                                optional, at most one
+    repos: [<repo>, ...]                                optional, at most one, as rule_lint.py reads it
     _YYYY-MM · seen YYYY-MM_                            agent guidance: admitted, last seen
     _YYYY-MM_                                           data conventions: admitted
     habit: <the habit it replaces>                      agent guidance only, exactly one
@@ -16,11 +16,14 @@ Each entry is:
     said: "<a person's words>" — <login>, <url>         agent guidance one or more; optional otherwise
 
 A retired entry leaves the file for the standard's `archive/`, as a retired rule does. Text before
-the first entry is the file's own, and nothing inside a code fence is read, so an example shown in
-one is not an entry. Given files by those names, it prints `ok · <file> · <n> entries` for each,
+the first entry is the file's own, with no heading of level two or three, and nothing inside a code
+fence is read, so an example shown in one is not an entry. Given files by those names, it prints `ok · <file> · <n> entries` for each,
 and exits 0; otherwise one `refused · <file>:<line> · <why>` line per fault, every fault found, and
 exits 1: a file of another name or that cannot be read; a `## ` or `### ` heading that is not an
-entry of the file's letter; an id given twice or out of order; a second `repos:` line; no date line of the file's form
+entry of the file's letter; a code fence still open at the end of the file, which would hide
+every entry after it; an id given twice or out of order; a second `repos:` line, one that is not a
+flow list of names, one naming a repository with no `profiles/<repo>.yaml` beside the file, or one
+in a standard with no `profiles/`, which covers one repository; no date line of the file's form
 first, or a `seen` month before the admitted one; no `> ` line; not exactly one `habit:` line (agent
 guidance) or `source:` line (data conventions), or a line of the other file's kind; a `said:` line
 not of the form above, or none in agent guidance. Stdlib only.
@@ -57,6 +60,30 @@ def blocks(lines: list[str]) -> list[tuple[int, str, list[str]]]:
     return [b for b in out if b[1]]
 
 
+def opened(text: str) -> bool:
+    """Whether a code fence is still open at the end of `text`, as `unfenced` closes them."""
+    fence = None
+    for line in text.splitlines():
+        m = re.match(r"(`{3,}|~{3,})", line)
+        if fence is None and m:
+            fence = m.group(1)
+        elif fence is not None and m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence):
+            fence = None
+    return fence is not None
+
+
+def tag_faults(line: str, profiles: Path) -> list[str]:
+    """What is wrong with an entry's `repos:` line, as `rule_lint.py`'s fields gate judges one."""
+    tag = line[len("repos:"):].strip()
+    names = ratchet_counts.repos(tag)
+    if names is None:
+        return [f"repos: {tag} is not a list of repository names such as [my_repo]"]
+    if not profiles.is_dir():
+        return ["a repos: line in a standard with no profiles/, which covers one repository"]
+    have = {f.stem.lower() for f in profiles.glob("*.yaml")}
+    return [f"repos: names {n}, which has no profiles/{n}.yaml" for n in names if n not in have]
+
+
 def check(path: Path) -> tuple[list[str], int]:
     if path.name not in KINDS:
         return [f"refused · {path} · not agent-guidance.md or data-conventions.md"], 0
@@ -66,6 +93,8 @@ def check(path: Path) -> tuple[list[str], int]:
         return [f"refused · {path} · cannot be read: {e}"], 0
     letter, own, other, dated = KINDS[path.name]
     faults, last, found = [], 0, blocks(ratchet_counts.unfenced(text).splitlines())
+    if opened(text):
+        faults.append(f"refused · {path} · a code fence still open at the end of the file, which hides every entry after it")
     for n, heading, body in found:
         where = f"{path}:{n}"
         m = re.fullmatch(rf"### {letter}-(\d{{3,}}) · \S.*", heading.rstrip())
@@ -75,8 +104,11 @@ def check(path: Path) -> tuple[list[str], int]:
         if int(m[1]) <= last:
             faults.append(f"refused · {where} · {letter}-{m[1]} given twice or out of order")
         last = max(last, int(m[1]))
-        if sum(x.startswith("repos:") for x in body) > 1:
+        tags = [x for x in body if x.startswith("repos:")]
+        if len(tags) > 1:
             faults.append(f"refused · {where} · a second `repos:` line, which standard_file.sh would not read")
+        if tags:
+            faults += [f"refused · {where} · {why}" for why in tag_faults(tags[0], path.parent / "profiles")]
         body = [x for x in body if not x.startswith("repos:")]
         date = dated.fullmatch(body[0]) if body else None
         if not date:

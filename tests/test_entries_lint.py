@@ -64,6 +64,9 @@ class Lint(unittest.TestCase):
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.dir)
+        (self.dir / "profiles").mkdir()
+        for repo in ("widgets", "gadgets"):
+            (self.dir / "profiles" / f"{repo}.yaml").write_text("# settings\n")
 
     def run_lint(self, **files: str) -> tuple[int, list[str]]:
         paths = []
@@ -81,11 +84,20 @@ class Lint(unittest.TestCase):
         self.assertEqual(code, 0, lines)
         self.assertEqual([x.rsplit(" · ", 1)[1] for x in lines], ["2 entries", "2 entries"])
 
-    def test_the_plugins_templates_pass(self):
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out):
-            code = entries_lint.main([str(ROOT / "standards" / "templates" / f) for f in ("agent-guidance.md", "data-conventions.md")])
-        self.assertEqual(code, 0, out.getvalue())
+    def test_each_templates_example_filled_in_is_one_entry_the_lint_passes(self):
+        fill = {"<what to do, in a few words>": "Rename outright", "<the fact, in a few words>": "Fill values",
+                "<YYYY-MM admitted>": "2026-10", "<YYYY-MM last seen>": "2026-11", "<login>": "alice",
+                "<comment URL>": "https://github.com/o/r/pull/1#discussion_r1"}
+        for name in ("agent-guidance.md", "data-conventions.md"):
+            with self.subTest(name=name):
+                text = (ROOT / "standards" / "templates" / name).read_text()
+                self.assertEqual(self.run_lint(**{name.replace("-", "_").replace(".", "_"): text})[0], 0)
+                example = text.split("```markdown\n", 1)[1].split("```", 1)[0]
+                for placeholder, value in fill.items():
+                    example = example.replace(placeholder, value)
+                code, lines = self.run_lint(**{name.replace("-", "_").replace(".", "_"): example})
+                self.assertEqual(code, 0, lines)
+                self.assertTrue(lines[0].endswith("· 1 entry"), lines)
 
     def test_refuses_an_agent_guidance_entry_out_of_form(self):
         cases = {
@@ -101,6 +113,9 @@ class Lint(unittest.TestCase):
             "no `said:` line: agent guidance quotes a person": GUIDANCE.replace(
                 'said: "nobody uses this yet" — carol, https://github.com/o/r/pull/3#discussion_r3\n', ""),
             "a second `repos:` line": GUIDANCE.replace("repos: [widgets]\n", "repos: [widgets]\nrepos: [gadgets]\n"),
+            "repos: widgets is not a list of repository names": GUIDANCE.replace("repos: [widgets]", "repos: widgets"),
+            "repos: names widgts, which has no profiles/widgts.yaml": GUIDANCE.replace("repos: [widgets]", "repos: [widgts]"),
+            "a code fence still open at the end of the file": GUIDANCE.replace("### A-002", "```\n### A-002"),
         }
         for why, text in cases.items():
             with self.subTest(why=why):
@@ -120,6 +135,12 @@ class Lint(unittest.TestCase):
                 code, lines = self.run_lint(data_conventions_md=text)
                 self.assertEqual(code, 1)
                 self.assertIn(why, "\n".join(lines))
+
+    def test_refuses_a_repos_line_in_a_standard_for_one_repository(self):
+        shutil.rmtree(self.dir / "profiles")
+        code, lines = self.run_lint(agent_guidance_md=GUIDANCE)
+        self.assertEqual(code, 1)
+        self.assertIn("a repos: line in a standard with no profiles/", "\n".join(lines))
 
     def test_reports_every_fault_and_refuses_a_file_of_another_name(self):
         text = GUIDANCE.replace("habit: guards the import of a dependency the image lacks\n", "").replace("_2026-10 · seen 2026-10_", "")

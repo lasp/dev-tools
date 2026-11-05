@@ -403,8 +403,8 @@ scenarios:
     look_at: >-
       implement-change resumes at step 8, writes .review/standard.md with the agent guidance and
       data conventions sections in it and runs the wave. A reviewer raises the get_inventory alias
-      as a should-fix keyed agent/A-001, proposing to drop it and its test; the wave's loop may fix
-      it before step 9's gate, and the reply says so.
+      as a suggestion keyed agent/A-001, proposing to drop it and its test, and step 9's gate lists
+      it, or the wave's loop removes it and the reply says so, naming A-001.
     verify:
       - grep -q '^# standards/agent-guidance.md$' .review/standard.md
       - grep -q '^# standards/data-conventions.md$' .review/standard.md

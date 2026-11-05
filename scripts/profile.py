@@ -404,7 +404,7 @@ def standard_of(top: Path) -> tuple[Path | None, str, bool] | None:
     named = own[POINTER]
     if set(own) != {POINTER} or not isinstance(named, str) or not OWNER_REPO.fullmatch(named):
         raise ProfileError(f"{REPO_PROFILE}: holds a standard: line, so it holds that one line alone, standard: <owner>/<repo>")
-    beside = [f for f in ("review-rules.md", "decisions.md") if (top / "standards" / f).is_file()]
+    beside = [f for f in ("review-rules.md", "decisions.md", "agent-guidance.md", "data-conventions.md") if (top / "standards" / f).is_file()]
     if beside:
         raise ProfileError(f"{REPO_PROFILE} names the standard {named}, and standards/{beside[0]} is here too; a repository's standard is in one place")
     script = Path(__file__).resolve().parent / "standard.sh"

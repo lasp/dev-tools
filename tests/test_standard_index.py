@@ -150,7 +150,8 @@ class Render(unittest.TestCase):
     def test_agent_guidance_or_data_conventions_with_no_entries_say_none(self):
         out = standard_index.render("# own/standards/agent-guidance.md\n\n# Agent guidance\n")
         self.assertIn("Agent guidance, from own/standards/agent-guidance.md: 0 entries\n  none\n", out)
-        self.assertTrue(out.endswith("No standard: no rules or decisions apply here.\n"))
+        self.assertTrue(out.endswith("No standard: no rules or decisions apply here. "
+                                     "Agent guidance and data conventions load only beside them.\n"))
 
     def test_a_two_column_terminology_table_lists_the_code_name_alone(self):
         text = "# own/standards/terminology.md\n\n| ID | Code name |\n| --- | --- |\n| T-001 | `obsid` |\n"

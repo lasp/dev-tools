@@ -35,7 +35,8 @@ is not of that form.
 A source line ending `@none` is a standard the person chose not to read, with `git config
 lasp-dev.standard none`: it prints `Standard: <owner>/<repo>, not read` and the command that
 reads it again. With neither rules nor decisions otherwise, the last line is `No standard: no
-rules or decisions apply here.`
+rules or decisions apply here.`, followed, when agent guidance or data
+conventions are listed, by ` Agent guidance and data conventions load only beside them.`
 
 Input with no `# <path>` section heading is not an assembled standard; it, a rule with no status
 line, or a file that cannot be read prints the reason on stderr and exits 2. Stdlib only.
@@ -185,7 +186,8 @@ def render(text: str, source: str = "", contexts: list[Path] | None = None) -> s
     for directory in contexts or []:
         out.extend(context_lines(directory))
     if not found and not unread:
-        out.append("No standard: no rules or decisions apply here.")
+        out.append("No standard: no rules or decisions apply here."
+                   + (" Agent guidance and data conventions load only beside them." if any(k in KINDS for k, _, _ in parts) else ""))
     return "\n".join(out) + "\n"
 
 

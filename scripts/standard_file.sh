@@ -16,7 +16,8 @@
 # `<owner>/<repo>@<7-character sha>`, `@local` or `@none`, for pr-review's standards: line. A failed
 # fetch stops the standard; no earlier copy stands in. With `git config lasp-dev.standard none`,
 # the person's choice when the standard cannot be fetched, it writes the contract alone and says so.
-# A pointer beside the repository's own ledger or decisions would be a second standard.
+# A pointer beside the repository's own ledger, decisions, agent guidance or data conventions
+# would be a second standard.
 #
 # A standard elsewhere with neither review-rules.md nor decisions.md is empty, and a plugin missing
 # its contract is broken: each exits 1 naming the file and prints nothing, so the standard is
@@ -47,7 +48,7 @@ unread=""
 [ -n "$rules" ] || { mkdir -p .review/standard && rm -f .review/standard/source; }
 source_line() { [ -n "$rules" ] || printf '%s\n' "$1" >.review/standard/source; }
 if [ -f standards/profile.yaml ] && grep -qE '^standard:' standards/profile.yaml; then
-  for f in review-rules.md decisions.md; do
+  for f in review-rules.md decisions.md agent-guidance.md data-conventions.md; do
     if [ -f "standards/$f" ]; then
       echo "standard_file.sh: standards/profile.yaml names a standard, and standards/$f is here too; a repository's standard is in one place" >&2
       exit 1

@@ -132,8 +132,9 @@ Two kinds of guidance reviewers give are not rules, and each has its own file:
   backward-compatibility shims before a product has users, or changing test data to make a test
   pass. Each entry names the habit, says what to do instead, and quotes the reviewer. It guides
   whoever writes the code, and is not held to the rule bar, so it needs no `scope:` or
-  `example:`; a review that meets the habit again raises it keyed `agent/A-nnn`, as the review
-  contract's "Agent guidance and data conventions" says, which is how the revision sees it.
+  `example:`; a review that meets the habit again raises a suggestion keyed `agent/A-nnn`, as the
+  review contract's "Agent guidance and data conventions" says, which is how the revision will
+  see it.
 - **Data conventions**, `data-conventions.md`: facts about the inputs and products that code must
   respect, such as fill values that differ by field, the frame a position is given in, the
   attribute conventions a product follows, or filename rules an interface document sets. Each
@@ -141,18 +142,21 @@ Two kinds of guidance reviewers give are not rules, and each has its own file:
   change that breaks one keyed `data/F-nnn`.
 
 `standard_file.sh` loads both, after the terminology, into the standard every build and review
-reads, so `implement-change`, its review wave and `pr-review` work from them; `quickstart`'s "what
+reads, so `implement-change`, its review wave and `pr-review` work from them in a repository with a
+standard: a ledger, decisions or a pointer. Alone, the two files make no standard and nothing
+loads them; `quickstart`'s "what
 applies here" lists them. A `repos:` line limits an entry to some repositories, as it does a rule.
 `standards/templates/` holds a starting copy of each file, and `scripts/entries_lint.py` checks the
 form `docs/contracts.md` sets.
 
-They change differently from rules:
+They are to change differently from rules, once `revise` routes guidance to them (ROADMAP, "Route
+guidance to its destination"); until then a person writes and retires them:
 
 - An agent guidance entry carries the month a review last saw the habit. When the Agent guidance
-  expiry Dial in `standards/dials.md` passes with no review seeing it again, the revision proposes
-  retiring it, since the habit is gone or the entry no longer reaches the agents.
-- A data convention changes only through its owner. The revision proposes a change, with its
-  evidence, for the owner to make or decline; it never edits one silently.
+  expiry Dial in `standards/dials.md` passes with no review seeing it again, the revision is to
+  propose retiring it, since the habit is gone or the entry no longer reaches the agents.
+- A data convention changes only through its owner. The revision is to propose a change, with its
+  evidence, for the owner to make or decline, and never edit one silently.
 
 A retired entry of either kind moves to `archive/` with why, as a rule does.
 
