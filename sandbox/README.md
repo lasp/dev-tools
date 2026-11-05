@@ -39,7 +39,7 @@ whose planted credentials are placeholders `run.py` fills in, as [its docstring]
 and `pr-create-new-flow`, a description for a branch that adds a pipeline.
 The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
-skill, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
+skill, and a second, `trigger-<skill>-<suffix>`, where the first is an uncommon phrasing, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
 `notrigger-` scenario holds the other side, a request that must not reach a skill, named in its
 `must_not_run` as `Skill(...)`: a GitHub issue is not `ticket-draft`'s.
 `revise` and `ticket-audit` are not in it, since `disable-model-invocation` keeps them to their

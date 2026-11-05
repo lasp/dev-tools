@@ -1,14 +1,15 @@
 ---
 name: pr-fix
 description: >
-  Answers the review on your pull request: takes each thread, your own comments included, to a
-  verdict, then implements the agreed fixes, pushes and replies. Use when asked to "answer the
-  review findings", "reply agree or disagree", "address review comments", "fix the PR feedback"
-  or "respond to my reviewer".
+  Answers the review on your own pull request: takes each thread, your own comments included, to a
+  verdict, then implements the agreed fixes, pushes and replies. Use when asked to "deal with the
+  comments on my PR", "address review comments", "fix the PR feedback", "respond to my reviewer",
+  "answer the review findings" or "reply agree or disagree". Not for reviewing someone else's pull
+  request, which is pr-review.
 argument-hint: "[PR number or URL] [scope] [skip the gate] [rebase]"
 metadata:
   author: llm-tooling
-  version: 2.8.0
+  version: 2.8.1
 ---
 
 # PR Fix

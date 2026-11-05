@@ -1,6 +1,7 @@
-# The trigger pack: one plain-language request per skill a person types, in the words a person
-# would use rather than the skill's name or its description's phrases, so a run shows whether the
-# request reaches the skill. Each runs in `widgets`, as the generic pack does, with the same
+# The trigger pack: one plain-language request per skill a person types, `trigger-<skill>`, and a
+# second, `trigger-<skill>-<suffix>`, where the first is an uncommon phrasing, each in the words a
+# person would use rather than the skill's name or its description's phrases, so a run shows
+# whether the request reaches the skill. Each runs in `widgets`, as the generic pack does, with the same
 # sandbox and an mcp.json of `{"mcpServers": {}}`. The fields are the generic pack's, in
 # ../scenarios.yaml. Each expects only its skill's Skill call and a turn that ends in success:
 # dontAsk mode ends the turn at the skill's first question, and with no server connected nothing
@@ -24,6 +25,22 @@ scenarios:
       - printf '\nInventories are CSV files with the columns part and count.\n' >> README.md
     turns:
       - Go ahead and save what I've changed to git.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)"]
+    verify:
+      - test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+    look_at: The request reaches commit, which finds the README edit on main and asks before committing to the default branch, offering a branch.
+    expect:
+      ends: success
+      skills: [commit]
+
+  - id: trigger-commit-history
+    repo: widgets
+    origin: "lasp/dev-tools#23: a second request for a commit, without the word"
+    why: Asks for a commit in other words than trigger-commit's, so a run shows whether the request reaches commit rather than a direct git commit.
+    setup:
+      - printf '\nInventories are CSV files with the columns part and count.\n' >> README.md
+    turns:
+      - I'm happy with the README edit. Put it in the history.
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)"]
     verify:
       - test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
@@ -116,11 +133,35 @@ scenarios:
       ends: success
       skills: [pr-review]
 
+  - id: trigger-pr-review-short
+    repo: widgets
+    origin: "lasp/dev-tools#23: a newcomer typing \"review PR 1\" gets the built-in behavior"
+    why: Asks for a review in the fewest words a person types, so a run shows whether it reaches pr-review rather than a direct gh read.
+    turns:
+      - Review PR 1.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches pr-review, which says GitHub is not connected and stops.
+    expect:
+      ends: success
+      skills: [pr-review]
+
   - id: trigger-process-doc
     repo: widgets
     turns:
       - New people on the team keep asking how to add a widget part and run the tests. Can you write that down for them?
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches process-doc, which says the topic, the kind and the readers, then stops at its first question.
+    expect:
+      ends: success
+      skills: [process-doc]
+
+  - id: trigger-process-doc-wiki
+    repo: widgets
+    origin: "lasp/dev-tools#23: trigger-process-doc names no wiki, so a file in the repository can fairly answer it"
+    why: Asks for the same guide on the team wiki, so a run shows whether a request that says where the page goes reaches process-doc.
+    turns:
+      - Put a guide on our team wiki for adding a widget part and running the tests.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Edit", "Write(*/repos/widgets/[!.]*)"]
     look_at: The request reaches process-doc, which says the topic, the kind and the readers, then stops at its first question.
     expect:
       ends: success
@@ -167,6 +208,20 @@ scenarios:
       - git switch -q PROJ-42-csv-loader
     turns:
       - Is the testing on this branch good enough to merge?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    look_at: The request reaches test-suite-review, which finds that loader.py arrives with no test, and edits nothing.
+    expect:
+      ends: success
+      skills: [test-suite-review]
+
+  - id: trigger-test-suite-review-solid
+    repo: widgets
+    origin: "lasp/dev-tools#23: trigger-test-suite-review asks a merge question the session answers itself"
+    why: Asks about the tests themselves, so a run shows whether a plain question on test quality reaches test-suite-review.
+    setup:
+      - git switch -q PROJ-42-csv-loader
+    turns:
+      - Look at the tests on this branch and tell me how solid they are.
     must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
     look_at: The request reaches test-suite-review, which finds that loader.py arrives with no test, and edits nothing.
     expect:

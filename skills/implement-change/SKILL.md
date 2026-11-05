@@ -1,14 +1,14 @@
 ---
 name: implement-change
 description: >
-  Takes one change request (a file, a Jira ticket, a GitHub issue or the prompt) to an agreed
-  plan, verified code and an offered pull request. Use when asked to "implement this", "build
-  this feature" or "plan and implement". Not for routing a ticket to its next phase, which is
-  work.
+  Takes one change request (a file, a Jira ticket, a GitHub issue or the prompt) through a plan
+  agreed with you to verified code and an offered pull request. Use when asked to "implement
+  this", "build this feature", "plan and implement", "plan this change, then make it" or "take
+  this through to a pull request". Not for routing a ticket to its next phase, which is work.
 argument-hint: "[file | ticket key | issue | description]"
 metadata:
   author: llm-tooling
-  version: 1.17.1
+  version: 1.17.2
 ---
 
 # Implement Change

@@ -1,4 +1,4 @@
 # The trigger pack's set: every scenario in scenarios.yaml beside this file, so sandbox/smoke.py
 # with --scenarios sandbox/triggers/scenarios.yaml runs the whole pack on both checkouts.
 
-smoke: [trigger-architecture-doc, trigger-commit, trigger-design-doc, trigger-downstream, trigger-drawio, trigger-implement-change, trigger-onboard, trigger-pr-create, trigger-pr-fix, trigger-pr-review, trigger-process-doc, trigger-quickstart, trigger-rebase, trigger-skill-feedback, trigger-test-suite-review, trigger-ticket-draft, trigger-work, trigger-writing, notrigger-ticket-draft-github-issue]
+smoke: [trigger-architecture-doc, trigger-commit, trigger-commit-history, trigger-design-doc, trigger-downstream, trigger-drawio, trigger-implement-change, trigger-onboard, trigger-pr-create, trigger-pr-fix, trigger-pr-review, trigger-pr-review-short, trigger-process-doc, trigger-process-doc-wiki, trigger-quickstart, trigger-rebase, trigger-skill-feedback, trigger-test-suite-review, trigger-test-suite-review-solid, trigger-ticket-draft, trigger-work, trigger-writing, notrigger-ticket-draft-github-issue]
