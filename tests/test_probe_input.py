@@ -71,6 +71,35 @@ class ProbeInput(unittest.TestCase):
         code, out, _ = self.run_it(LINKED)
         self.assertEqual(code, 0)
         self.assertEqual(out.splitlines(), WANT)
+        self.assertNotIn("example", out)
+
+    def test_what_follows_the_wording_under_a_later_heading_is_not_read(self):
+        trailing = "\n## Notes\n\nexample: fires on r#9 PRRT_zzz; not on r#9@abc1234 pkg/x.py::f \"x\"\nDo not flag: a second case.\n"
+        for text in (INLINE + trailing, LINKED + trailing):
+            code, out, _ = self.run_it(text)
+            self.assertEqual((code, out.splitlines()), (0, WANT))
+
+    def test_the_wording_heading_before_the_entry_is_refused(self):
+        entry, wording = LINKED.rsplit("### R-004", 1)
+        code, out, err = self.run_it("### R-004" + wording + "\n" + entry)
+        self.assertEqual((code, out), (2, ""))
+        self.assertIn("no scope: or example: line", err)
+
+    def test_a_line_that_would_show_the_probe_a_field_is_refused(self):
+        code, out, err = self.run_it(LINKED + "scope: pkg/*.py\n")
+        self.assertEqual((code, out), (2, ""))
+        self.assertIn("would show the probe 'scope: pkg/*.py'", err)
+
+    def test_three_entry_headings_are_refused(self):
+        code, _, err = self.run_it(LINKED + "\n### R-004 · Validate a path where it is constructed\n\nMore.\n")
+        self.assertEqual(code, 2)
+        self.assertIn("3 ### R-NNN headings", err)
+
+    def test_a_wording_heading_with_the_same_id_and_another_title_is_refused(self):
+        entry, wording = LINKED.rsplit("### R-004 · Validate a path where it is constructed", 1)
+        code, _, err = self.run_it(entry + "### R-004 · Check paths early" + wording)
+        self.assertEqual(code, 2)
+        self.assertIn("the wording heading is R-004 · 'Check paths early'", err)
 
     def test_an_entry_without_a_do_not_flag_line_is_refused(self):
         code, out, err = self.run_it(INLINE.replace("Do not flag: a path validated by its caller, when the docstring says so.\n", ""))

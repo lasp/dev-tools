@@ -55,11 +55,13 @@ silent
 <at most two sentences: why, naming the do-not-flag clause when one applies>
 ```
 
-or, when git no longer holds the code the thread commented on:
+or, when the thread, its dump or the code it commented on cannot be read: no `comments.json`
+in the dump, no thread with that id in it, or a squash merge whose file before the pull request
+lacks the lines the thread quotes:
 
 ```
 cannot read
-<one sentence: which commit or file was missing>
+<one sentence naming which of these it was, and the file or commit>
 ```
 
 ## Never
