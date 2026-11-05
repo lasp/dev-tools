@@ -28,6 +28,7 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
 
 ## Proposals                                steps 3 to 8, in the overview's order
 - [ ] R-0NN · <proposal> · <Dial> · <evidence pointers>
+  said: "<a person's quote>" — <login>, <url> | <name>, pasted <file>; one line per quote, the clearest first
   Recommended: <accept | accept, override: <reason> | decline: <reason> | escalate: <reason>> — <the evidence that decides it>
   scope: … / example: … / bar: ok | <lint lines> / probe: … fires|silent|cannot read; … fires|silent|cannot read
   Mark:
@@ -54,9 +55,9 @@ Other Dials: no change one step either way.
 
 ### Rules                                   steps 1, 3
 the window's and all records' count tables and the expiry table, every row the script prints, each ledger rule included at 0 when it has no firing; contested rules and what the
-disagreements shared; rules held provisional for breadth and what would release them
+disagreements shared; rules held provisional for breadth and what would release them; each guidance tally `covered` statement under the rule, decision or instruction file it names, with its quote
 
-### Held candidates                         step 6
+### Held candidates                         step 6: each with its quotes and the criterion it fails
 ### What review asked for                   step 2
 ### Practice                                step 2's sweep, report only: per claim, judged on, follows, breaks, untouched; drift; missed by review; rules not swept
 ### About the procedure                     step 2: each skill-feedback draft's path and ask; each settled finding and what settled it
