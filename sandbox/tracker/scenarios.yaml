@@ -36,6 +36,7 @@ scenarios:
       to paste.
     expect:
       ends: success
+      mcp: [mcp__atlassian__jira_search]
       files: [".review/context/*.jira.txt"]
 
   - id: tracker-ticket-draft-reformat
@@ -61,6 +62,7 @@ scenarios:
       planning. .review/context/PROJ-57.jira.txt holds the description in wiki markup.
     expect:
       ends: success
+      mcp: [mcp__atlassian__jira_search]
       files: [".review/context/PROJ-57.jira.txt", ".review/context/PROJ-57.original.txt"]
 
   - id: tracker-work-no-page
@@ -82,7 +84,9 @@ scenarios:
       is not among the pull request statuses.
     expect:
       ends: success
-      says: ["implement-change"]
+      mcp: ["mcp__atlassian__jira_*"]
+      says: ["(?m)^Next: implement-change\\."]
+      not_says: ["(?m)^Next: ticket-draft"]
 
   - id: tracker-ticket-draft-triage-old
     repo: widgets
@@ -102,8 +106,9 @@ scenarios:
       again?", Reformat it recommended. No ticket-investigator runs.
     expect:
       ends: success
+      mcp: [mcp__atlassian__jira_search]
       agents_absent: [ticket-investigator]
-      says: ["(?i)reformat"]
+      says: ["(?i)\\*\\*Reformat it\\*\\*|reformat it, or draft it again"]
 
   - id: tracker-ticket-draft-triage-current
     repo: widgets
@@ -123,4 +128,6 @@ scenarios:
       3's widget: the goal, and how to go on.
     expect:
       ends: success
+      mcp: [mcp__atlassian__jira_search]
       agents: [ticket-investigator]
+      not_says: ["(?i)\\*\\*Reformat it\\*\\*|reformat it, or draft it again"]

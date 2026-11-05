@@ -528,6 +528,7 @@ def check(summary: dict, scenario: dict) -> str:
         fails.append(f"ends {summary['subtype']}")
     fails += [f"no skill {s}" for s in expect.get("skills", []) if s not in summary["skills"]]
     fails += [f"no agent {a}" for a in expect.get("agents", []) if a not in summary["agents"]]
+    fails += [f"no mcp tool {g}" for g in expect.get("mcp", []) if not fnmatch.filter(summary["mcp"], g)]
     fails += [f"no file {g}" for g in expect.get("files", []) if not fnmatch.filter(summary["files"], g)]
     if "max_cost" in expect and summary["cost_usd"] > expect["max_cost"]:
         fails.append(f"cost {summary['cost_usd']:.2f} over {expect['max_cost']}")

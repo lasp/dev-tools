@@ -43,7 +43,7 @@ except ImportError:
     run = rule_cases = smoke = None
 
 FIXTURE = ROOT / "tests" / "fixtures" / "sandbox" / "quickstart.jsonl"
-EXPECT_KEYS = {"skills", "agents", "files", "ends", "max_cost", "max_turns", "max_ticket_words", "says", "not_says", "files_absent", "agents_absent", "never_anywhere"}
+EXPECT_KEYS = {"skills", "agents", "mcp", "files", "ends", "max_cost", "max_turns", "max_ticket_words", "says", "not_says", "files_absent", "agents_absent", "never_anywhere"}
 
 
 def fixture() -> list[dict]:
@@ -164,20 +164,50 @@ class TrackerPack(unittest.TestCase):
         allow = json.loads((sandbox / "settings.json").read_text())["permissions"]["allow"]
         self.assertIn("mcp__atlassian", allow)
 
-    def test_the_stub_serves_a_ticket_as_stored_and_refuses_an_unknown_key(self):
-        listed, stored, missing = self.serve(
-            {"id": 1, "method": "tools/list"},
-            {"id": 2, "method": "tools/call", "params": {"name": "jira_search", "arguments": {"jql": "key = PROJ-57"}}},
-            {"id": 3, "method": "tools/call", "params": {"name": "jira_get_issue", "arguments": {"issue_key": "PROJ-99"}}},
-        )
+    def call(self, name: str, **arguments) -> dict:
+        (reply,) = self.serve({"id": 1, "method": "tools/call", "params": {"name": name, "arguments": arguments}})
+        return reply["result"]
+
+    def test_the_stub_lists_no_write_tool(self):
+        (listed,) = self.serve({"id": 1, "method": "tools/list"})
         names = {t["name"] for t in listed["result"]["tools"]}
-        self.assertIn("jira_get_issue", names)
+        self.assertLessEqual({"jira_get_issue", "jira_search"}, names)
         self.assertFalse({n for n in names if re.match(r"(jira|confluence)_(create|update|delete|add|transition|link|assign|move|remove)", n)})
-        issues = json.loads(stored["result"]["content"][0]["text"])["issues"]
+
+    def test_a_search_returns_the_description_as_stored(self):
+        issues = json.loads(self.call("jira_search", jql="key = PROJ-57")["content"][0]["text"])["issues"]
         self.assertEqual([i["key"] for i in issues], ["PROJ-57"])
         self.assertIn("\nh1. Context\n", issues[0]["description"])
-        self.assertTrue(missing["result"]["isError"])
-        self.assertIn("PROJ-99", missing["result"]["content"][0]["text"])
+        self.assertIn("\n# An inventory with A-1 at -2", issues[0]["description"])
+
+    def test_a_search_for_several_keys_returns_each(self):
+        issues = json.loads(self.call("jira_search", jql="key in (PROJ-57, PROJ-58) ORDER BY key")["content"][0]["text"])["issues"]
+        self.assertEqual([i["key"] for i in issues], ["PROJ-57", "PROJ-58"])
+
+    def test_get_issue_converts_headings_and_numbered_items_to_markdown(self):
+        description = json.loads(self.call("jira_get_issue", issue_key="PROJ-57")["content"][0]["text"])["description"]
+        self.assertIn("\n# Context\n", description)
+        self.assertIn("\n## Acceptance Criteria\n", description)
+        self.assertIn("\n1. An inventory with A-1 at -2", description)
+        self.assertNotIn("\n1. Context", description)
+
+    def test_an_unknown_key_is_an_error_result(self):
+        missing = self.call("jira_get_issue", issue_key="PROJ-99")
+        self.assertTrue(missing["isError"])
+        self.assertIn("PROJ-99", missing["content"][0]["text"])
+
+    def test_a_call_naming_no_tool_is_a_protocol_error(self):
+        (reply,) = self.serve({"id": 1, "method": "tools/call", "params": {}})
+        self.assertEqual(reply["error"]["code"], -32602)
+
+    def test_the_mcp_expectation_fails_a_run_the_server_did_not_answer(self):
+        scenario = self.known["tracker-work-no-page"]
+        summary = {"subtype": "success", "is_error": False, "skills": [], "agents": {"source-reader": 1}, "files": [],
+                   "mcp": {"mcp__atlassian__jira_search": 1}, "cost_usd": 0.1, "turns": 6,
+                   "final": "PROJ-42 · To Do\nNext: implement-change.\n", "must_not_run": []}
+        self.assertEqual(run.check(summary, scenario), "pass")
+        self.assertEqual(run.check({**summary, "mcp": {}}, scenario), "fail: no mcp tool mcp__atlassian__jira_*")
+        self.assertIn("does not say", run.check({**summary, "final": "Next: not implement-change."}, scenario))
 
     def test_the_pack_plants_no_credentials(self):
         spec = importlib.util.spec_from_file_location("secret_scan_tests", ROOT / "tests" / "test_secret_scan.py")
@@ -464,7 +494,7 @@ class Sandbox(unittest.TestCase):
         settings = json.loads(text)
         box = settings["sandbox"]
         env = {e["name"] for e in box["credentials"]["envVars"] if e["mode"] == "deny"}
-        self.assertTrue({"GH_TOKEN", "GITHUB_TOKEN", "GITHUB_MCP_PAT_EXAMPLE", "JIRA_TOKEN"} <= env)
+        self.assertTrue({"GH_TOKEN", "GITHUB_TOKEN", "SBX_FIXTURES", "GITHUB_MCP_PAT_EXAMPLE", "JIRA_TOKEN"} <= env)
         files = {f["path"] for f in box["credentials"]["files"] if f["mode"] == "deny"}
         self.assertTrue({"~/.config/gh", "~/.git-credentials", "~/.netrc"} <= files)
         for name in ("settings.json", "mcp.json"):

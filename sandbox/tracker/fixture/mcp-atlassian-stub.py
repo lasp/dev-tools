@@ -4,10 +4,12 @@
 no Jira. Its name holds `mcp-atlassian`, so `run.py` gives it the Atlassian rules, and it is
 listed with `--read-only` and `READ_ONLY_MODE=true`, which it honors by having no write tools.
 
-    {"command": "python3", "args": ["<this file>", "--read-only"], "env": {"READ_ONLY_MODE": "true"}}
+    {"command": "python3", "args": ["-I", "<this file>", "--read-only"], "env": {"READ_ONLY_MODE": "true"}}
 
 `jira_search` returns the description as stored, in wiki markup; `jira_get_issue` returns a
-rough Markdown conversion of it, as the real server does. A key the project does not hold is an
+rough Markdown conversion of it, as the real server does. A search naming keys (`key = A`,
+`key in (A, B)`) returns those issues; any other query returns every issue in the project, Done
+ones included, since no clause beyond the key is read. A key the project does not hold is an
 error result. Confluence holds no page. Stdlib only.
 """
 
@@ -35,9 +37,9 @@ TOOLS = {
 
 
 def markdown(text: str) -> str:
+    text = re.sub(r"(?m)^# ", "1. ", text)
     text = re.sub(r"(?m)^h([1-6])\. ", lambda m: "#" * int(m.group(1)) + " ", text)
     text = re.sub(r"(?m)^\* ", "- ", text)
-    text = re.sub(r"(?m)^# ", "1. ", text)
     return re.sub(r"\{\{(.+?)\}\}", r"`\1`", text)
 
 
@@ -54,7 +56,9 @@ def call(name: str, args: dict):
             raise ValueError(f"Issue Does Not Exist: {key}")
         return issue(ISSUES[key], converted=True)
     if name == "jira_search":
-        keys = re.findall(r"\b(?:key|issuekey)\s*(?:=|in)\s*\(?\s*([A-Z]+-\d+)", args.get("jql", ""), re.I)
+        jql = args.get("jql", "")
+        named = re.findall(r"\b(?:key|issuekey)\s*(?:=\s*[A-Z]+-\d+|in\s*\([^)]*\))", jql, re.I)
+        keys = re.findall(r"[A-Z]+-\d+", " ".join(named), re.I)
         found = [ISSUES[k.upper()] for k in keys if k.upper() in ISSUES] if keys else list(ISSUES.values())
         found = found[: int(args.get("limit") or 50)]
         return {"total": len(found), "start_at": 0, "max_results": len(found), "issues": [issue(i, converted=False) for i in found]}
@@ -102,6 +106,8 @@ def main() -> None:
             reply(rid, {})
         elif method == "tools/list":
             reply(rid, {"tools": [{"name": n, "description": d, "inputSchema": schema(p, r)} for n, (d, p, r) in TOOLS.items()]})
+        elif method == "tools/call" and "name" not in params:
+            reply(rid, error={"code": -32602, "message": "tools/call names no tool"})
         elif method == "tools/call":
             try:
                 text, failed = json.dumps(call(params["name"], params.get("arguments") or {}), indent=2), False
