@@ -413,6 +413,38 @@ scenarios:
       agents: [implementation-reviewer]
       says: ["A-001"]
 
+  - id: review-agent-guidance-control
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - mkdir -p standards && printf '# Decisions\n' > standards/decisions.md && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/shim-data-conventions.md" standards/data-conventions.md
+      - cp "$SBX_FIXTURES/shim-old-fetch.py" src/widgets/fetch.py
+      - git add src && git commit -qm "Fetch the inventory from the warehouse service"
+      - git checkout -q -B rename-fetch
+      - cp "$SBX_FIXTURES/shim-fetch.py" src/widgets/fetch.py
+      - cp "$SBX_FIXTURES/shim-test_fetch.py" tests/test_fetch.py
+      - git add src tests && git commit -qm "Rename get_inventory to fetch"
+      - mkdir -p .review && cp "$SBX_FIXTURES/shim-plan.md" .review/implementation-plan-rename-fetch.md
+    origin: "#81"
+    why: >-
+      The control for review-agent-guidance: the same finished build and standard without the agent
+      guidance file, so the two scenarios' rates of raising the alias show what A-001 changes.
+    turns:
+      - /lasp-dev:implement-change
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(git commit*)"]
+    look_at: >-
+      implement-change resumes at step 8 and runs the wave with the data conventions loaded and no
+      agent guidance. Whether a reviewer raises the get_inventory alias, and on what grounds, is
+      what this run measures; none can cite A-001.
+    verify:
+      - "! grep -q 'A-001' .review/standard.md"
+      - grep -q '^# standards/data-conventions.md$' .review/standard.md
+    expect:
+      ends: success
+      agents: [implementation-reviewer]
+      not_says: ["A-001"]
+
   - id: pr-create-new-flow
     repo: widgets
     setup:

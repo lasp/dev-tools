@@ -11,7 +11,7 @@ Source: prompt: Rename widgets.fetch.get_inventory to fetch, to match the other 
 - **Design choices**: none.
 - **Acceptance criteria**:
   1. `widgets.fetch.fetch(url)` returns the body of the response at the URL.
-- **Assumptions**: nothing outside `widgets.fetch` calls `get_inventory`.
+- **Assumptions**: none.
 
 ## Steps
 
@@ -23,7 +23,7 @@ Source: prompt: Rename widgets.fetch.get_inventory to fetch, to match the other 
 
 ## Approach
 
-A rename; nothing else calls the function.
+A rename of the public function.
 
 Approved by: not recorded
 Depth: standard
