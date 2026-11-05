@@ -1,14 +1,13 @@
 ---
 name: downstream
 description: >
-  Says which consuming repositories a change breaks and what bump it owes, from each consumer's
-  use of what changed; also diagnoses a red CI run and follows a release to the consumers' pins.
-  Use when asked "who does this break", "is this a breaking change", "check downstream" or "why
-  did main go red".
+  Says which consuming repositories a change breaks and what bump it owes; also diagnoses a red
+  CI run and follows a release to the consumers' pins. Use when asked "who does this break",
+  "check downstream" or "why did main go red".
 argument-hint: "[check [branch | symbol] | ci <run> | release <version>]"
 metadata:
   author: lasp-dev
-  version: 1.1.2
+  version: 1.1.1
 ---
 
 ## When to run

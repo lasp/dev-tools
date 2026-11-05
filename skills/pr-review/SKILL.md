@@ -4,12 +4,11 @@ description: >
   Reviews a pull request and presents ranked findings at their lines; drafts comments when asked
   and posts one review only on your yes. Use when asked to "review this PR", "what's wrong with
   this PR", "review and post comments", "submit a PR review" or "publish my review". Not for
-  answering a review of your own pull request (pr-fix) or a diff with no pull request
-  (/code-review).
+  answering a review (pr-fix) or a diff with no pull request (/code-review).
 argument-hint: "[PR number or URL] [focus area]"
 metadata:
   author: lasp-dev
-  version: 6.11.1
+  version: 6.11.0
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.

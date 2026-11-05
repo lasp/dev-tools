@@ -1,16 +1,16 @@
 ---
 name: process-doc
 description: >
-  Writes a Confluence page on how something is done: a team process such as development or review,
-  a how-to, or a user guide to a software or data product; its purpose, readers and steps settled
-  with you; publishes on your yes. `revise` brings a published page in line with how things are
-  done now. Use when asked to "document our process", "write up our workflow", "write a how-to",
-  "write a user guide" or "update the process page". Not for how a system is built
-  (architecture-doc) or a change still being designed (design-doc).
+  Writes a Confluence page on how something is done: a team process such as development or
+  review, a how-to, or a user guide to a software or data product; its purpose and readers
+  confirmed with you, the steps and who does each settled with you; publishes on your yes.
+  `revise` brings a published page in line with how things are done now. Use when asked to
+  "document our process", "write a how-to", "write a user guide" or "update the process page".
+  Not for how a system is built (architecture-doc) or a change still being designed (design-doc).
 argument-hint: "[revise] <page ID | URL | file | text>"
 metadata:
   author: lasp-dev
-  version: 1.0.3
+  version: 1.0.2
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
