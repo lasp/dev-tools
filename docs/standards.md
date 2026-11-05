@@ -125,9 +125,9 @@ without a yes to that write.
 
 `revise` proposes rule changes from the evidence of merged pull requests. For a standard covering
 several repositories, it counts each rule's findings in every repository the rule reaches, so the
-whole project shapes whether a rule stays; new rules come from the repository it runs in, whose
-threads it reads against that repository's code, and a run in another repository drafts that
-one's. For a
+whole project shapes whether a rule stays. It archives every covered repository's records, but
+reads only the threads of the repository it runs in, against that repository's code, so new rules
+come from that repository alone; ROADMAP.md tracks reading the others'. For a
 standard elsewhere it writes into a clone of the standard's repository, and its accepted changes
 are one pull request there; for a repository's own standard, they are one pull request in it.
 

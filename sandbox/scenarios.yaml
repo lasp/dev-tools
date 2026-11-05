@@ -94,22 +94,23 @@ scenarios:
     origin: "#45, #63"
     why: >-
       Runs revise prepare in a repository whose own standard covers three, with R-001 tagged for
-      widgets and R-002 for widgets and gadgets, so before any harvest it says what the run does in
-      each: widgets read and swept, gadgets counted against R-002 only, sprockets not harvested
-      since no rule reaches it, and asks before going on.
+      widgets and R-002 for widgets and gadgets, and no GitHub server, so it says what the run does
+      in each: widgets' threads read and swept, gadgets and sprockets archived and counted only,
+      their threads not read, and on stopping at the harvest it ends with that scope and that
+      nothing in the standard changed.
     turns:
       - /lasp-dev:revise prepare
     must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)", "mcp__*", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
     look_at: >-
-      The reply names the window and that the standard is this repository's standards/, then one
-      line per repository: widgets with R-001 and R-002, harvested, read and swept; gadgets with
-      R-002, harvested and counted, its threads reaching no analyst; sprockets with no rule, not
-      harvested, and why. It ends on Go on, Harvest it too, Stop here and Let's discuss, before any
-      pr-reader starts.
+      The scope list names the window and that the standard is this repository's standards/, then
+      one line per repository: widgets with R-001 and R-002, its threads read and diffs swept;
+      gadgets with R-002, archived and counted, its threads not read; sprockets with no rule,
+      archived only, not skipped. With no GitHub server the harvest stops as servers.md sets out,
+      and the last message repeats the scope and says no rule, decision or document changed.
     expect:
       ends: success
-      agents_absent: [pr-reader]
-      says: ['(?i)sprockets[^\n]*(not harvest|skip)', '(?i)gadgets[^\n]*R-002', 'Recommended']
+      says: ['(?i)gadgets[^\n]*(archiv|count|no analyst|not read)', '(?i)sprockets[^\n]*(archiv|count|no analyst|not read)', '(?i)widgets[^\n]*(swept|read|analy)']
+      not_says: ['(?i)sprockets[^\n]*(not harvest|skip)']
 
   - id: onboard-blanket-answer
     repo: widgets

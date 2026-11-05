@@ -34,7 +34,7 @@ is reached; nothing schedules it.
 | Option | Default |
 |---|---|
 | Mode | `prepare`: read `${CLAUDE_SKILL_DIR}/prepare.md`. `apply`, after the group has marked the report: read `${CLAUDE_SKILL_DIR}/apply.md`. `correct`, when a person says the corpus has something wrong: read `${CLAUDE_SKILL_DIR}/correct.md` |
-| Window | From the day after the `window:` line's end in the newest `ratchet-*.md` in any `<log>` of the standard; before the first, from the date the ledger, or the pointer, reached the repository's `main` |
+| Window | From the day after the `window:` line's end in the newest `ratchet-*.md` in any `<log>` of the standard; before the first, from this repository's adoption date ("The standard's repository") |
 | Measures | Not read. `measures`, or the person asking for them, has `prepare` also read `${CLAUDE_SKILL_DIR}/measures.md`: tickets, escaped defects, build yield and what the build missed. No Dial acts on them except the Ticket candidates Dial, which applies only in a run that reads them |
 | Page or epic to add | None. A named Confluence page or Jira epic is read once and drafted as a context-entry candidate, marked like any other proposal, within `context/README.md`'s ten-entry cap |
 
@@ -51,12 +51,16 @@ repository that is, and where each of its parts lives, is decided once, before a
 Its settings are the standard's too, as `profile.py` reads them. `<repo>` is a GitHub repository's name, and `<log>` names the
 records directory of each repository harvested. In either row a standard with
 `profiles/` covers several repositories: one run, in any one of them, revises it. `prepare`
-harvests this one and every other one a rule reaches, each from the later of the window's start and its adoption date, counts each
+harvests every one, another from the later of the window's start and its adoption date, counts each
 with `ratchet_counts.py --repo <name>`, and lints with
 `rule_lint.py --profiles <standard files>/profiles/`, which checks each `repos:` tag against the
 repositories covered; the threads, the clusters, the sweep and the bar's `scope:` and `example:`
 checks read this repository's code alone, so another repository's records are archived and
-counted but admit no rule, which `prepare` says before it harvests. A proposal to reword, promote or
+counted but its threads reach no analyst, which `prepare` says before it harvests. A repository's
+adoption date is the date of the first commit that adds, for this repository, the ledger or the
+`standard:` pointer to its `main` (`git log --diff-filter=A` of that file here) and, for another
+covered repository, its `profiles/<repo>.yaml` to the standard's repository (`git log
+--diff-filter=A` of that file in the clone, or here when the standard is this repository's own). A proposal to reword, promote or
 broaden a rule whose `repos:` line leaves this repository out runs only the bar's `fields`,
 `status` and `wording` gates here (`--checks`), and is marked "check from <a repository it
 names>" rather than held, since its `scope:` and `example:` are another repository's. Any other exit 1 from

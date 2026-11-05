@@ -43,8 +43,9 @@ A defect fixed in the window is a merged pull request whose ticket is a Bug, or 
 repository: `git log -S` with a line the fix removed or changed, or `git blame -w -M -C` at the
 fix's parent on the changed lines, with `--ignore-revs-file` where the repository keeps one; for a
 fix that only adds lines, `git log -L` on the enclosing function at the fix's parent. Then the
-merged pull request that carries it. Run one `thread-analyst` per defect in `defect` mode, all in
-one message, each given the repository's path, the introducing and fixing merge commits, the
+merged pull request that carries it. Run one `thread-analyst` per defect in `defect` mode, at most
+twenty at once, Claude Code's limit on agents: the first twenty in one message; once they have
+all returned, the rest in one more message, each given the repository's path, the introducing and fixing merge commits, the
 introducing pull request's merge date, `standards/review-rules.md` and `prepare.md` step 6's held
 candidates as text.
 

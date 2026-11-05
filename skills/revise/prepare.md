@@ -8,24 +8,21 @@ step 1.
 
 **First, say what the run covers**, before anything is harvested: the window, where the standard
 is stored (this repository's `standards/`, or the repository its pointer names), and, for a
-standard whose `profiles/` covers several repositories, what the run does in each. A rule reaches
-a repository when its `repos:` line names it or it has none (`docs/contracts.md`, "The ledger's bar lines"):
-- **This repository** is harvested, its threads read and clustered and its merged diffs swept, so
-  its records can admit, reword, promote or retire a rule.
-- **Another repository some rule reaches** is harvested and its records archived and counted
-  against those rules alone. Its threads reach no analyst and no cluster, since those read this
-  repository's code, so no rule is admitted from its asks.
-- **Another repository no rule reaches** is not harvested: its records could count for no rule.
-  Its asks reach the standard when the revision runs there.
+standard whose `profiles/` covers several repositories, what the run does in each. Every
+covered repository is harvested and its records archived. A rule reaches a repository when its
+`repos:` line names it or it has none (`docs/contracts.md`, "The ledger's bar lines"):
+- **This repository** feeds the analysts: its threads are read and clustered and its merged diffs
+  swept, so its records can admit, reword, promote or retire a rule.
+- **Every other repository** is archive-only: its records are counted against the rules that
+  reach it, none when no rule does, and its threads reach no analyst and no cluster, since those
+  read this repository's code. The window is shared, so its asks from this window reach no analyst
+  in any later run either.
 
-Write it as a short list, one repository a line, each with the rules that reach it, what the run
-does there and why, such as "gadgets: no rule is tagged for it yet, so nothing of its is
-counted; not harvested". When a repository is not harvested, ask: **Go on** (Recommended: its
-records would count for nothing), **Harvest it too**, which archives its records and counts
-nothing, **Stop here**, or **Let's discuss**. Otherwise go on.
+Write it as a short list, one repository a line, each with the rules that reach it and what the
+run does there, such as "gadgets: R-002; archived and counted, its threads not read", then go on.
 
-1. **Harvest the records.** Run harvest.md's "Records" for each other repository the scope
-   harvests, from the later of the window's first day and that repository's adoption date (below),
+1. **Harvest the records.** Run harvest.md's "Records" for each other covered repository, from
+   the later of the window's first day and that repository's adoption date (`revise`'s "The standard's repository"),
    since a pull request before it was reviewed against no standard, in either row of
    `revise`'s "The standard's repository", then for this
    repository last, from the window's first day, since each harvest starts its directories afresh, copying each repository's
@@ -51,14 +48,11 @@ nothing, **Stop here**, or **Let's discuss**. Otherwise go on.
    Then, for each repository harvested, run `python3 "<plugin root>/scripts/ratchet_counts.py"
    <its log> --ledger <standard files>/review-rules.md --since <the window's first day>`, adding `--repo
    <its name>` for a standard covering several, the paths absolute, with the numbers of the merged
-   pull requests the harvest listed for it as created after the adoption date on stdin; with
-   several, "Rules" gives each repository's tables under its name. The adoption date is the date
-   of the first commit adding the ledger, or the pointer, to that repository's `main`: from `git
-   log` here, and for another repository from its commits touching that file through GitHub, as
-   `using-github` sets out; a date that cannot be read is said under "Head", that repository's
-   harvest starts at the window's first day, and its pull requests are counted as baseline, never
-   as missing; a pull request opened
-   before it had no standard to be reviewed against and is counted as baseline, never as missing.
+   pull requests the harvest listed for it as created after its adoption date on stdin; with
+   several, "Rules" gives each repository's tables under its name. A date that cannot be read is
+   said under "Head", that repository's harvest starts at the window's first day, and its pull
+   requests are counted as baseline, never as missing; a pull request opened before it had no
+   standard to be reviewed against and is counted as baseline, never as missing.
 
    From its output, into "Rules": the window's table and all records', and the `expiry` table,
    every row the script prints, each ledger rule included at 0 when it has no firing. Each table
@@ -127,8 +121,8 @@ nothing, **Stop here**, or **Let's discuss**. Otherwise go on.
    and the claim in one line. Show the `C-` claims and ask once: **Sweep these** (Recommended),
    **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**. Then one
    `diff-probe` per merged pull request the script listed, past thirty the thirty merged most
-   recently, at most twenty running at once, Claude Code's limit on agents: the first twenty in one
-   message, then one more as each returns, each given this repository's path, its number and sha, the claims file
+   recently, at most twenty at once, Claude Code's limit on agents: the first twenty in one
+   message; once they have all returned, the rest in one more message, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
    and every `C-` claim. Write each block to `.review/revision/sweep/pr-NNNN.md` as returned. Into
    "Practice", per claim: the pull requests it was judged on and how many follow it, break it,
@@ -221,21 +215,24 @@ nothing, **Stop here**, or **Let's discuss**. Otherwise go on.
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,
     or **Let's discuss**. Either commit answer commits the report in `<log>` with the records, in
     the clone; with no clone, nothing is committed and the question is not asked: the report and
-    the records stay in `<log>` here, as `revise`'s "The standard's repository" says. In the same
-    widget, a second question, which counts only with **Commit and push the branch**: open the
+    the records stay in `<log>` here, as `revise`'s "The standard's repository" says, and no draft
+    pull request is offered. With a clone, in the same widget, a second question, which counts only with **Commit and push the branch**: open the
     pushed branch as a draft pull request on the standard's repository, as `using-github` sets
     out, so the group can discuss each proposal in its review before or during the meeting?
     **Open a draft pull request** or **No pull request**, neither recommended, since it turns on
     whether the group discusses before it meets. The question shows the title,
     `Standards revision · <repo> · YYYY-MM`, and the body as they will be sent: the report's path
-    and the records' count; that nothing in the standard has changed yet; that a proposal is
+    and the records' count; that no rule, decision, term or context entry has changed, the diff
+    being the month's records and the report; that a proposal is
     discussed in a review comment on its line, and its verdict counts once it is on the proposal's
     `Mark:` line in the report, written there on the branch or copied in by the driver, since
     `apply` reads the report, not the threads; and the attribution line `pr-create` appends, at
     the level `<plugin root>/skills/pr-review/comment-style.md`, "AI assistance level", sets.
     Only an answer that names the pull request opens it.
 
-    Then stop with the run's result, in this order, a table where items are compared:
+    Then stop with the run's result, in this order, a table where items are compared. A run that
+    stops at an earlier step, on the person's answer or a server it cannot reach, ends with the
+    same result as far as it got: the scope, and what it changed and did not.
     - **Scope**: where the standard is stored, the window, and the scope list from the start of
       this file, each repository with what the run did there.
     - **Proposals**: how many, by priority, then a table of each, its id, what it proposes, what
