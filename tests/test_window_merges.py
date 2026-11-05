@@ -141,6 +141,9 @@ class WindowMerges(unittest.TestCase):
         self.commit("Add the template (#70)", {".github/pull_request_template.md": "Ticket:"}, "2026-10-05T12:00:00+00:00")
         self.commit("Fix (#71)", {"pkg/f.py": "1"}, "2026-10-06")
         self.commit("Late docs (#72)", {"docs/late.md": "1"}, "2026-10-07")
+        self.git("rm", "-q", "README.md")
+        self.git("commit", "-q", "-m", "Drop the readme", day="2026-10-08")
+        self.commit("Restore the readme", {"README.md": "y"}, "2026-10-09")
         dumps = self.tmp / "threads"
         for n, created in ((67, "2026-10-02T13:00:00Z"), (70, "2026-10-01T09:00:00Z"), (71, "2026-10-05T12:00:00Z"), (72, "2026-10-06T09:00:00Z")):
             (dumps / f"pr-{n:04d}").mkdir(parents=True)
@@ -149,10 +152,10 @@ class WindowMerges(unittest.TestCase):
 
     def test_a_document_judges_only_the_pull_requests_opened_after_it_reached_main(self):
         dumps = self.with_docs()
-        docs = [".github/pull_request_template.md", "docs/guide.md", "docs/late.md", "missing.md"]
+        docs = [".github/pull_request_template.md", "docs/guide.md", "docs/late.md", "README.md", "missing.md"]
         rc, out, err = self.run_it("--ledger", str(self.ledger), "--dumps", str(dumps), *[a for d in docs for a in ("--doc", d)])
         self.assertEqual(rc, 0, err)
-        self.assertEqual(out[-10:], [
+        self.assertEqual(out[-13:], [
             "doc .github/pull_request_template.md: pr-0071 pr-0072",
             "doc .github/pull_request_template.md: predates pr-0067 pr-0070",
             "doc .github/pull_request_template.md: no opened day pr-0066",
@@ -163,15 +166,22 @@ class WindowMerges(unittest.TestCase):
             "doc docs/late.md: none",
             "doc docs/late.md: predates pr-0067 pr-0070 pr-0071 pr-0072",
             "doc docs/late.md: no opened day pr-0066",
+            # Deleted and added again: dated from its return, after every pull request opened.
+            "doc README.md: none",
+            "doc README.md: predates pr-0067 pr-0070 pr-0071 pr-0072",
+            "doc README.md: no opened day pr-0066",
             "doc missing.md: not on main",
         ])
-        self.assertEqual(out[-11], "R-003 not swept: no scope")
+        self.assertEqual(out[-14], "R-003 not swept: no scope")
 
     def test_a_doc_without_dumps_or_an_unreadable_opened_day_cannot_run(self):
         dumps = self.with_docs()
         rc, out, err = self.run_it("--doc", "docs/guide.md")
         self.assertEqual((rc, out), (2, []))
         self.assertIn("--doc needs --dumps", err)
+        rc, out, err = self.run_it("--doc", "docs/guide.md", "--dumps", str(self.tmp / "no-threads"))
+        self.assertEqual((rc, out), (2, []))
+        self.assertIn("no-threads is not a directory", err)
         for text in ("not json", json.dumps({"number": 71}), json.dumps({"created_at": "2026-10-05"})):
             (dumps / "pr-0071" / "pr.json").write_text(text)
             rc, out, err = self.run_it("--doc", "docs/guide.md", "--dumps", str(dumps))

@@ -106,11 +106,13 @@ step 1.
    **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**. With `every
    change` claims kept, rerun the script adding `--dumps .review/harvest/threads/` and a `--doc
    <path>` for each document they cite, so each is judged only on the pull requests opened after
-   its document reached `main`. Then, all in one
+   its document reached `main`; an exit 2 on that rerun drops the `every change` claims, with its
+   line under "Practice". Then, all in one
    message, one `diff-probe` per merged pull request the script listed, past thirty the thirty
    merged most recently, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
-   each `every change` claim whose document's `doc` line names it, and every `code` claim. Write each block to `.review/revision/sweep/pr-NNNN.md` as returned. Into
+   each `every change` claim whose document's `doc <path>: pr-…` line names it, never one under
+   its `predates` or `no opened day`, and every `code` claim. Write each block to `.review/revision/sweep/pr-NNNN.md` as returned. Into
    "Practice", per claim: the pull requests it was judged on and how many follow it, break it,
    leave it untouched and could not be judged for want of a description, each break with its pull request and place; `drift` beside a claim broken
    in more than half of those that touched it; `missed by review` beside a break on a pull request

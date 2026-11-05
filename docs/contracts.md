@@ -679,9 +679,10 @@ ledger order: `R-NNN pr-NNNN [pr-NNNN ...]`, `R-NNN none`, `R-NNN predates pr-NN
 `R-NNN not swept: no scope`. A pull request is named by its merge subject as
 `scripts/merge_commit.py`'s `pr_numbers` reads it. With `--doc` and `--dumps`, then per document
 in the order given: `doc <path>: pr-NNNN [...]` or `doc <path>: none`, the pull requests opened,
-by their `pr.json`'s `created_at`, at or after the first commit on `--ref`'s first-parent history
+by their `pr.json`'s `created_at`, at or after the latest commit on `--ref`'s first-parent history
 that adds the document; `doc <path>: predates pr-NNNN [...]`, those opened before; `doc <path>: no
 opened day pr-NNNN [...]`, those with no `pr.json`; or `doc <path>: not on <ref>` alone (version 2).
+A `--dumps` that is not a directory exits 2.
 
 Writers: `scripts/window_merges.py`. Readers: `revise` `prepare` step 2, which gives each
 `diff-probe` the rules whose line names its pull request, and each `every change` claim whose

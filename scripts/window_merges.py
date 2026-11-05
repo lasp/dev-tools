@@ -32,12 +32,14 @@ directory, then one line per document, in the order given:
     doc <path>: no opened day pr-NNNN [...]    no <dumps>/pr-NNNN/pr.json to read it from
     doc <path>: not on <ref>                   no commit on --ref's first-parent history adds it
 
-A document reaches --ref with the oldest commit on its first-parent history that adds the path,
-compared against its first parent, by committer time; a pull request is opened at its pr.json's
+A document reaches --ref with the latest commit on its first-parent history that adds the path,
+compared against its first parent, by committer time, so a document deleted and added again is
+dated from its return; a pull request is opened at its pr.json's
 `created_at`. Every pull request listed is on one of the first four lines.
 
 A git that cannot read --ref, a --since that is not a date, a ledger that cannot be read or whose
-since: is not `YYYY-MM` or `YYYY-MM-DD`, --doc without --dumps, or a pr.json that is not JSON or
+since: is not `YYYY-MM` or `YYYY-MM-DD`, --doc without --dumps, a --dumps that is not a
+directory, or a pr.json that is not JSON or
 whose `created_at` is not a UTC time like `2026-10-01T12:00:00Z` prints the reason on stderr and
 exits 2. Stdlib only.
 """
@@ -113,9 +115,9 @@ def rule_lines(entries: dict, found: list[tuple[int, str, str, list[str]]]) -> l
 
 
 def reached(repo: Path, ref: str, path: str) -> int | None:
-    """When `path` reached `ref`: the committer time of the oldest first-parent commit adding it, or None."""
-    log = git(repo, "log", "--first-parent", "--diff-merges=first-parent", "--no-patch", "--diff-filter=A", "--format=%ct", ref, "--", path)
-    return int(log.split()[-1]) if log.split() else None
+    """When `path` reached `ref`: the committer time of the latest first-parent commit adding it, or None."""
+    adds = git(repo, "log", "--first-parent", "--diff-merges=first-parent", "--no-patch", "--diff-filter=A", "--format=%ct", ref, "--", path).split()
+    return int(adds[0]) if adds else None
 
 
 def opened(dumps: Path, n: int) -> int | None:
@@ -161,6 +163,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.doc and args.dumps is None:
             raise CannotRun("--doc needs --dumps, which says when each pull request was opened")
+        if args.dumps is not None and not args.dumps.is_dir():
+            raise CannotRun(f"--dumps {args.dumps} is not a directory")
         try:
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", args.since):
                 raise ValueError("not YYYY-MM-DD")
