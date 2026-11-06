@@ -2,7 +2,9 @@
 
 How a skill writes to Jira: every write a pass proposes, in one numbered list the person approves
 once, run in order, read back and recorded. `ticket-draft` steps 7 and 8 and `ticket-audit`'s
-Apply use it; `SKILL.md`'s "Writing to Jira" says what a plan may hold.
+Apply use it; `SKILL.md`'s "Writing to Jira" says what a plan may hold. Where the tracker is
+GitHub Issues, a plan follows this file with the items, tools, record and read-back
+`<plugin root>/skills/using-github/issues.md` sets in place of Jira's.
 
 ## When the tools are there
 

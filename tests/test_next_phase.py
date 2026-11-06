@@ -506,6 +506,12 @@ class Rows(unittest.TestCase):
             ],
         )
 
+    def test_a_drafted_issue_not_filed_names_its_issue_paste_file(self):
+        self.github(self.LABELS)
+        rc, out = self.run_it(self.fields(context="", ticket="", slug="retry-policy"))
+        self.assertEqual(rc, 0, out)
+        self.assertIn("\nNothing: file `.review/context/retry-policy.issue.md` in the tracker, or have `/lasp-dev:ticket-draft retry-policy` file it; ", out)
+
     def test_a_slug_beside_a_ticket_or_a_context_page_is_refused(self):
         self.assertEqual(self.run_it(self.fields(context="", slug="retry-policy"))[0], 1)
         self.assertEqual(self.run_it(self.fields(ticket="", slug="retry-policy"))[0], 1)

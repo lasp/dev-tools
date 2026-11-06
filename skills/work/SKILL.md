@@ -7,7 +7,7 @@ description: >
 argument-hint: "[ticket key or issue number | PR number | nothing]"
 metadata:
   author: lasp-dev
-  version: 1.9.0
+  version: 1.9.1
 ---
 
 # Work
@@ -162,7 +162,7 @@ options are **Retry the build** (`implement-change`, resuming), **Open the pull 
 outcome line: Open anyway when the build was blocked by a pre-existing failure, Retry when it
 stopped for a person who has since acted, and Let's discuss when the review cap was reached or a
 finding kept returning, since a retry meets the same finding. On `why: unfiled`, the three
-lines name the slug's `.jira.txt` to file in the tracker and `ticket-draft <slug>`, which files it or
+lines name the slug's `.jira.txt`, or `.issue.md` on a GitHub tracker, to file in the tracker and `ticket-draft <slug>`, which files it or
 takes its key and renames the page; stop there.
 
 ## 4. Run it, then look again

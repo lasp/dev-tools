@@ -48,7 +48,7 @@ The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox 
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
 skill, and a second, `trigger-<skill>-<suffix>`, where one request leaves a gap, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
 `notrigger-` scenario holds the other side, a request that must not reach a skill, named in its
-`must_not_run` as `Skill(...)`: a GitHub issue is not `ticket-draft`'s.
+`must_not_run` as `Skill(...)`: a complaint about a skill, asked as an issue on the plugin, is not `ticket-draft`'s.
 `revise` and `ticket-audit` are not in it, since `disable-model-invocation` keeps them to their
 slash commands. Its `coverage.yaml` names the whole pack as its set, so `smoke.py` runs it on two
 checkouts, after a change to a skill's `description:`:
@@ -70,12 +70,17 @@ to paste.
 
 The GitHub tracker pack, `tracker-github/scenarios.yaml`, runs in `widgets` given a standard whose
 tracker is GitHub's, its labels mapped to the workflow and no ticket pattern recorded, against
-issues `tracker-github/fixture/github-mcp-server-stub.py` serves read-only from `github.json`:
+issues `tracker-github/fixture/github-mcp-server-stub.py` serves from `github.json`:
 `work` routing an open issue with no label, an open one with a mapped label, a closed one, and a
-branch named `issue-<n>-words`. Its `mcp.json` names the stub as
-`${SBX_FIXTURES}/github-mcp-server-stub.py`, as the pack's header shows; the file name holds
-`github-mcp-server`, so `run.py` gives it the GitHub rules. The stub's tools carry
-github-mcp-server's names, arguments and output shapes, and none writes.
+branch named `issue-<n>-words`; `ticket-draft` drafting a new issue and refining #12, each through
+a yes to its write plan, and a draft whose plan is answered Paste it all. Its `mcp.json` names the
+stub as `${SBX_FIXTURES}/github-mcp-server-stub.py` with `--writes .git/github-writes.jsonl`, as
+the pack's header shows; the file name holds `github-mcp-server`, so `run.py` gives it the GitHub
+rules, except that a pack's stub run with `--writes` has `issue_write` and `add_issue_comment`
+neither allowed nor denied. Under `dontAsk` such a call then runs only when `hooks/issue-gate.sh`
+allows it, and the stub records it to that file, which each scenario's setup removes and its
+verify reads; nothing reaches GitHub. The stub's tools carry github-mcp-server's names, arguments
+and output shapes.
 
 A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a

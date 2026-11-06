@@ -212,6 +212,28 @@ and `ticket-audit`, at the person's yes; removed when the plan finishes or stops
 
 Pinned by: tests/test_atlassian_gate.sh::with this session's record, every write it lists is allowed
 
+## The GitHub approval record
+
+Version: 1
+
+Fields: `.review/github-approval.json`, at the repository's top level, which the hook finds from
+the payload's `cwd`; one JSON object in the Jira record's shape: `session`, `t` and `items`, each
+item `{"tool": <tool>, "target": <target>}`, the tool named without its server prefix. The target
+is `<owner>/<repo>` for an `issue_write` whose `method` is `create`, and `<owner>/<repo>#<n>` for
+one whose `method` is `update` and for `add_issue_comment`, as github-mcp-server names the
+parameters `owner`, `repo` and `issue_number`. `hooks/issue-gate.sh` allows a call from the main
+session only when the record's session is the call's, `t` is under 30 minutes old and not in the
+future, and an item matches the tool and target exactly; it gives every other call no decision,
+so the person's own permissions apply: a record that does not parse in this shape, a subagent's
+call, a create naming `parent_issue_number` or `issue_fields`, a comment with a `reaction` or a
+`comment_id`, and any call when jq is missing.
+
+Writers: the GitHub write plan (`skills/using-github/issues.md`, "Running it"), run by
+`ticket-draft`, at the person's yes; removed when the plan finishes or stops. Readers:
+`hooks/issue-gate.sh`.
+
+Pinned by: tests/test_issue_gate.sh::with this session's record, a listed create, update and comment are allowed
+
 ## The `--state` printout
 
 Version: 5
@@ -504,7 +526,7 @@ Pinned by: tests/test_where.sh::"--fields prints the facts, one per line, on a c
 
 ## The next phase
 
-Version: 5
+Version: 6
 
 Fields: `scripts/next_phase.py`'s printout: `phase:` (a skill, or `nothing`), `argument:`,
 `why:` (the row's name in the script's table, `review-unposted` among them from version 3), `lock:`
@@ -522,7 +544,8 @@ ticket-draft`, and one with a mapped label goes to that label's `next`, a label 
 labels, `--ticket-status` on a GitHub tracker, `--issue-state` on any other, and `--label`
 without `--issue-state` exit 1. The state block's `ticket: Ticket: #<n>` names issue `<n>`; the
 first line writes an issue as `#<n>`, `argument:` as the number. The `unfiled` and
-`ticket-closed` lines name the tracker, not Jira.
+`ticket-closed` lines name the tracker, not Jira. Version 6: on a GitHub tracker the `unfiled`
+line names `.review/context/<slug>.issue.md`, the issue's paste file.
 
 Writers: `scripts/next_phase.py`. Readers: `work`.
 
@@ -675,7 +698,7 @@ Pinned by: tests/test_profile.py::test_a_value_of_the_wrong_shape
 
 ## The ticket shape
 
-Version: 1
+Version: 2
 
 Fields: a ticket, in whatever tracker files it, is an id (a Jira key, `<KEY>-NNNN`, or a GitHub
 issue's number), a title (Jira's summary), a description in `standards/ticket-format.md`'s format,
@@ -694,15 +717,15 @@ the profile's `issue_tracker.statuses` ("The profile"):
 
 A Jira workflow maps each role to exactly one status. A GitHub tracker maps each to at most one
 label, and `--defaults --field issue_tracker.roles.<role>` prints `none` for a role with no label:
-an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. With #59, a skill
-that would move a ticket into `approved` or `implementation` with no label for it skips the move;
-until then every skill that moves a ticket reads `jira.roles`, which prints `not yet recorded` for a
-GitHub tracker, and stops.
+an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. On a GitHub
+tracker `ticket-draft` reads `issue_tracker.roles.<role>` and skips a move into a role whose label
+is `none` (version 2); `ticket-audit` still reads `jira.roles`, which prints `not yet recorded` for
+a GitHub tracker, and stops.
 An open issue that carries no mapped label is in `filed`, and `work` sends it to `ticket-draft`.
 
 Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`
 and the tracker's skill, `using-jira`, for the description. Readers: `scripts/profile.py`, and
-through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, and the skills that read `jira.roles`.
+through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, the skills that read `jira.roles`, and `ticket-draft` on a GitHub tracker.
 
 Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_to_each_role
 

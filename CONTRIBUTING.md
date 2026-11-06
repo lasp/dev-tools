@@ -8,7 +8,7 @@ measures it. `.claude/CLAUDE.md` holds the conventions every skill and agent fol
   `/lasp-dev:skill-feedback` in the session where it went wrong, or open one with the
   "Skill feedback" template.
 - **Before a pull request**, run the checks CI runs:
-  `uv run python -m unittest discover -s tests`, the four `tests/*.sh`, and
+  `uv run python -m unittest discover -s tests`, the five `tests/*.sh`, and
   `uv run python scripts/check_static.py`.
 - **Security issues** go through `SECURITY.md`, not a public issue.
 

@@ -1,17 +1,17 @@
 ---
 name: ticket-draft
 description: >
-  Drafts or refines a Jira ticket in the team's format, placed among existing work, from a
-  description, a ticket or a pull request with none; can brief you on the code first, fold in
-  later answers, or reformat a ticket to the current format; writes to Jira only on your yes. Use when
-  asked to "write a ticket for", "file a ticket", "create a Jira ticket", "log a bug in Jira",
-  "refine this ticket", "is this ticket ready", "what is this ticket missing" or "groom this
-  ticket". Not for a GitHub issue, which it neither drafts nor files, or a complaint about a
+  Drafts or refines a Jira ticket or a GitHub issue, for the profile's tracker, in the team's
+  format, placed among existing work, from a description, a ticket or a pull request with none;
+  can brief you on the code first, fold in later answers, or reformat a ticket to the current
+  format; files only on your yes. Use when asked to "write a ticket for", "file a ticket", "create
+  a Jira ticket", "open a GitHub issue for", "log a bug", "refine this ticket", "is this ticket
+  ready", "what is this ticket missing" or "groom this ticket". Not for a complaint about a
   lasp-dev skill, which is skill-feedback's.
-argument-hint: "[investigate | settle | reformat] <ticket key | description | pull request> [thread id]"
+argument-hint: "[investigate | settle | reformat] <ticket key | issue #n | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
-  version: 1.10.19
+  version: 1.11.0
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
@@ -33,7 +33,7 @@ the repository's state, a TODO sweep or a roadmap on its own initiative.
 | Option | Default |
 |---|---|
 | Mode | `draft`; `investigate` adds a briefing on the code and the design choices, and the person's questions, before the draft; `settle` folds answers that arrived since the draft, from the estimation meeting, a comment or a pull request thread, into a drafted ticket, and records a departure the work keeps as a comment; `reformat` rewrites a ticket that already holds its requirements in the current format, with no search or investigation |
-| Source | A Jira ticket key, a description of the change, a markdown file whose text is the prompt, or a pull request number or URL; asked for when none is given. `work` names a slug whose page is under `.review/context/` for a ticket not filed yet, and `pr-fix` passes `settle <key> <thread id>` |
+| Source | A Jira ticket key, or on a GitHub tracker an issue's number, `#12`, a description of the change, a markdown file whose text is the prompt, or a pull request number or URL; asked for when none is given. `work` names a slug whose page is under `.review/context/` for a ticket not filed yet, and `pr-fix` passes `settle <key> <thread id>` |
 
 ## Reads
 
@@ -93,7 +93,7 @@ section 4 laid out as `using-jira`'s "Copy-paste output" sets: its `Comment to p
 `<ticket>.original.txt`'s text with its markup put right as that section says, signed with the `ticket` block's reporter and created date, or
 for a new ticket the person and today; its `Session comment` comes from What changed.
 
-In Jira, only at step 8 and only the items of the write plan the person approved at step 7, as
+In the tracker, only at step 8 and only the items of the write plan the person approved at step 7, as
 `using-jira`'s "Writing to Jira" and `${CLAUDE_SKILL_DIR}/../using-jira/write-plan.md` set out.
 The filed and the approved status are the profile's: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py"
 --defaults --field jira.roles` prints them, and an error from it, or `not yet recorded`, is a stop
@@ -101,7 +101,8 @@ for the status move, as `write-plan.md` says.
 Each text sent is kept under `.review/context/<ticket>.send/`, as shown (`.txt`) and as sent
 (`.md`), with `stored.txt`, the description as read back, and each item's outcome in
 `.review/context/<ticket>.writes.md`. Whatever the plan did not write stays in
-`<ticket>.jira.txt` to paste.
+`<ticket>.jira.txt` to paste. On a GitHub tracker the paste file is `<ticket>.issue.md` and the
+plan is GitHub's, as `${CLAUDE_SKILL_DIR}/github.md` says.
 
 ## How each turn reads
 
@@ -110,6 +111,10 @@ only what bears on the ticket: a rule the change must meet goes under Technical 
 never in a preamble. Nothing comes before step 1's opening block.
 
 ## Steps
+
+On a GitHub tracker, where `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
+issue_tracker.kind` prints `github`, read `${CLAUDE_SKILL_DIR}/github.md` first, which says what
+changes in every step below and in the files.
 
 A pull request as the source, or a slug whose page exists under `.review/context/`, which `work`
 names for a page with no key yet: read `${CLAUDE_SKILL_DIR}/sources.md` first, which says what
@@ -406,7 +411,8 @@ such as a typo fix, say so and stop.
 
 ## Never
 
-Write to Jira outside step 8's approved write plan, or to GitHub. Put an estimate in the ticket
+Write to the tracker outside step 8's approved write plan, or to GitHub other than a GitHub
+tracker's issues there. Put an estimate in the ticket
 block or Story Points. Call two tickets the same without quoting the criteria that match. Write a
 ticket nobody asked for. Write step 8's files before the person's Looks right; the write plan's
 `.review/jira-plan.md` is the one file written to show it.
