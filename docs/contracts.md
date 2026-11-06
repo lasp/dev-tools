@@ -425,7 +425,7 @@ tally is in exactly one cluster; a cluster holds at least one item or note.
 refuses, one `refused · <where> · <why>` line each and exit 1, a file of any other form, a key
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
-no `--ledger`. Otherwise it
+no `--ledger`, and a tally `ask` line whose key is no `admit` or `covered` line (version 4). Otherwise it
 prints per cluster, its `admit` count only the `admit` lines of its kind or that a tally `ask`
 line names (version 4), any other counted as `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·
@@ -435,7 +435,8 @@ then `asked · <id> · pr-NNNN, ...` or `none`, the pull requests counted, which
 line when it continues one, an `ask · <id> · <author> · <url>` line per line of it a tally `ask` line
 names (version 4), a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
-from a pull request and a person not yet quoted while one is left; then `clusters: <n> · lines:
+from a pull request and a person not yet quoted while one is left; then one `ask · <covered_by> ·
+<author> · <url>` per tally `ask` on a `covered` line (version 4); then `clusters: <n> · lines:
 <n>` and exit 0. A cluster's pull requests are those a person asked on, of its `admit` and `hold`
 lines and its `human` notes, which the Recurring ask Dial counts; its people the authors of those
 and of its pasted notes; either `none` when there are none; an agent's or a bot's words count for neither. It also refuses a tally whose closing `items:` line is missing or counts its words

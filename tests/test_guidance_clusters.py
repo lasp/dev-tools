@@ -152,6 +152,19 @@ class Clusters(unittest.TestCase):
         (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", "ask · s1-4 · pr-0106 · dave · u61\nitems: 9"))
         self.assertIn("counts asks otherwise", "\n".join(self.run_clusters(clusters)[1]))
 
+    def test_an_ask_on_a_covered_line_is_printed_under_its_entry_and_one_on_no_line_is_refused(self):
+        asks = "ask · s1-0 · pr-0101 · bob · u11\nask · s1-1 · pr-0101 · bob · u12\nitems: 9"
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", asks).replace("asks: 0", "asks: 2"))
+        code, lines = self.run_clusters(self.two())
+        self.assertEqual(code, 0, lines)
+        self.assertIn("· rule · admit 2 ·", [x for x in lines if x.startswith("cluster · C1")][0])
+        self.assertEqual([x for x in lines if x.startswith("ask ·")], ["ask · C1 · bob · u11", "ask · R-002 · bob · u12"])
+        for key in ("s1-2", "s1-9"):
+            with self.subTest(key=key):
+                (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", f"ask · {key} · pr-0104 · carol · u41\nitems: 9")
+                                                    .replace("asks: 0", "asks: 1"))
+                self.assertIn(f"an ask names no admit or covered line: {key}", "\n".join(self.run_clusters(self.two())[1]))
+
     def test_a_cluster_of_agents_lines_alone_takes_their_kind_and_people_s_lines_outrank_them(self):
         (self.dir / "tally.txt").write_text(TALLY.replace("support · s1-3 · pr-0104 · 42 · alice · rule ·",
                                                           "support · s1-3 · pr-0104 · 42 · alice · tool-config ·"))

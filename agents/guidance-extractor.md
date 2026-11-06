@@ -40,6 +40,9 @@ that make the same point are one item, two points are two. Not guidance: thanks,
 ("ready for another look"), a question asking only for information, a report that something was
 done, a restatement of the comment being answered, and a verdict word alone (`Agree`, `Disagree`).
 An answer that gives a reason, such as "No: we never fall back to a cached product", is guidance.
+An ask to keep a point, "+1, worth adding to our conventions", is guidance even when the point is
+in the comment it answers: quote the ask's own words and take `principle` from the comment
+answered.
 
 Each item is an object with exactly these keys:
 

@@ -13,8 +13,8 @@ Given that file with --clusters, the tally's printout with --tally (what `guidan
 printed, saved to a file) and, when a cluster names a held candidate, the ledger with --ledger,
 this script refuses, one `refused · <where> · <why>` line per fault and exit 1:
 
-- a tally whose closing `items:` line is missing or counts its words otherwise than its lines, or a
-  line with too few cells;
+- a tally whose closing `items:` line is missing or counts its words otherwise than its lines, a
+  line with too few cells, or an `ask` line whose key is no `admit` or `covered` line;
 - a cluster without exactly the keys above, an `id` not `C<n>` or given twice, a `kind` that is not
   one of the guidance items' kinds or, in a cluster with tally lines, the kind of none of its
   people's lines, its `admit` and `hold` lines, or of none of its lines when it has only `support`,
@@ -47,7 +47,9 @@ note, and up to three `said · <id> ·
 each from a pull request and a person not yet quoted while one is left, then the rest in that
 order. `prs · <id> · none` and `people · <id> · none` when it has none. A note's pull request is
 `pr-` and at least four digits, as the tally prints it.
-A last line reads `clusters: <n> · lines: <n>`. Exits 0. Stdlib only.
+After the clusters, one `ask · <covered_by> · <author> · <url>` per `ask` on a `covered` line, an
+ask the live entry already answers. A last line reads `clusters: <n> · lines: <n>`. Exits 0.
+Stdlib only.
 """
 
 from __future__ import annotations
@@ -71,11 +73,12 @@ class Refused(Exception):
     """Input the clusters cannot be checked against."""
 
 
-def tally_lines(text: str) -> dict[str, dict]:
+def tally_lines(text: str) -> tuple[dict[str, dict], list[str]]:
     """The tally's clustered lines by key: word, pr, author, url and quote, each read by its
-    place, the quote last, so a `·` in it splits nothing. Refused unless its last line counts what
-    it lists."""
-    out, counts, summary, asks = {}, {w: 0 for w in (*WORDS, "covered", "asks")}, None, set()
+    place, the quote last, so a `·` in it splits nothing, an `ask` line marking its line `ask`;
+    and, per `ask` on a `covered` line, `ask · <covered_by> · <author> · <url>`. Refused unless its
+    last line counts what it lists, or for an `ask` that names no `admit` or `covered` line."""
+    out, counts, summary, asks, covered = {}, {w: 0 for w in (*WORDS, "covered", "asks")}, None, set(), {}
     for line in text.splitlines():
         cells = line.split(" · ")
         if cells[0] == "ask" and len(cells) == 5:
@@ -86,7 +89,9 @@ def tally_lines(text: str) -> dict[str, dict]:
             if len(cells) <= url_at + 1:
                 raise Refused(f"a tally line with too few cells: {line[:80]}")
             counts[cells[0]] += 1
-            if cells[0] != "covered":
+            if cells[0] == "covered":
+                covered[cells[1]] = f"{cells[6]} · {cells[4]} · {cells[7]}"
+            else:
                 out[cells[1]] = {"word": cells[0], "pr": cells[2], "author": cells[4], "kind": cells[5], "url": cells[url_at],
                                  "quote": " · ".join(cells[url_at + 1:])}
         elif line.startswith("items: "):
@@ -96,9 +101,12 @@ def tally_lines(text: str) -> dict[str, dict]:
     gone = [w for w, n in counts.items() if int(summary.get(w, -1)) != n]
     if gone:
         raise Refused(f"the tally's closing line counts {', '.join(gone)} otherwise than its lines")
+    dangling = sorted(k for k in asks if k not in covered and out.get(k, {}).get("word") != "admit")
+    if dangling:
+        raise Refused(f"an ask names no admit or covered line: {', '.join(dangling)}")
     for key in asks & set(out):
         out[key]["ask"] = True
-    return out
+    return out, [f"ask · {covered[k]}" for k in sorted(asks & set(covered))]
 
 
 NOTE = re.compile(r"(pr-\d{4,}) · (\S+) · (human|ai-drafted|bot) · \S.*|pasted (\S+) · ([^·]+?) · \S.*")
@@ -208,7 +216,7 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
     try:
         clusters = json.loads(args.clusters.read_text())
-        lines = tally_lines(args.tally.read_text())
+        lines, covered_asks = tally_lines(args.tally.read_text())
         headings = held_titles(args.ledger.read_text()) if args.ledger else None
         _, medium, high = priorities()
     except (OSError, json.JSONDecodeError, Refused) as e:
@@ -246,6 +254,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"note · {c['id']} · {note}")
         for q in quotes(keys, lines):
             print(f'said · {c["id"]} · "{q["quote"]}" — {q["author"]}, {q["url"]}')
+    if covered_asks:
+        print("\n".join(covered_asks))
     print(f"clusters: {len(clusters['clusters'])} · lines: {len(lines)}")
     return 0
 

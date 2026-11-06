@@ -66,8 +66,8 @@ still refused, after it went back once, is not read: check again without it and 
 lists, and name its pull requests and its lines with what was not read. The printout of the
 check that passes is the guidance's count. Then run `python3 "<plugin root>/scripts/guidance_tally.py"`
 with the same slices and lists, writing its printout to `.review/harvest/guidance/tally.txt`: its
-`admit`, `covered`, `hold` and `support` lines, each with the comment's own words, are what
-"Clusters" and the caller read (`docs/contracts.md`, "The guidance tally"). With
+`admit`, `covered`, `hold` and `support` lines, each with the comment's own words, and its `ask`
+lines, each a person asking for a point to be kept, are what "Clusters" and the caller read (`docs/contracts.md`, "The guidance tally"). With
 no comment list, or none left once the unread slices are set aside, no check runs, and the count
 is `none read`.
 
