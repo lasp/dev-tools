@@ -87,9 +87,11 @@ in a clone, its branch. Then, by mark:
    linked instruction file, `--repo .`, the `--decisions` and `--profiles` files `prepare.md`
    step 7 names, the copied `decisions.md` in place of its own, and `--changed` naming each accepted proposal that admits,
    rewords, promotes or broadens a rule, less those accepted with an override, whose lint lines
-   go into the report beside the reason, and less each marked "check from <repo>", linted apart on
-   its own `--entry` with `--checks` naming every gate but `scope` and `anchors`, which read another
-   repository's code, its mark kept on its entry's evidence line. With nothing to name and no new decision, skip the lint. A failure stops,
+   go into the report beside the reason, and less each marked "check from <repo>": that one is
+   linted apart on its own `--entry` with `--checks sync,wording,status,fields`, since `scope` and
+   `anchors` read another repository's code, and named in a second run of the applied copy,
+   `--checks budget --changed <its ids>`, so it cannot carry its repositories over budget; its
+   mark stays on its entry's evidence line. With nothing to name and no new decision, skip the lint. A failure stops,
    with its lines, and nothing is written. Once a repository is over its budget, any named
    change to a rule counted there fails the budget gate, a narrowing included, so the proposals
    that bring it back under go in the same apply; an admission accepted with an override is not

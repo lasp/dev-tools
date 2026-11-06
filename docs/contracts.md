@@ -917,7 +917,8 @@ convention entry reads it the same way. It is one line, `repos:` at its
 start, anywhere in the block outside a code fence and outside the rule's wording; a block with two
 is refused by the lint, and only the first is read (version 2). A rule's wording is the entry's `> ` lines, the one
 copy; a ledger whose wording is still in an instruction file has none there and a `Wording:` link
-to its heading instead (version 3).
+to its heading instead (version 3). An entry admitted from another repository's evidence alone carries
+`check from <repo>` on its evidence line until its `scope:` and `example:` are checked there.
 
 Writers: `onboard`'s first rules and `revise` (`apply` and `correct`). Readers:
 `scripts/rule_lint.py`, `scripts/window_merges.py`, for `scope:`, and `rule-probe`;

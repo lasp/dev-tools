@@ -97,7 +97,7 @@ one pull request's still counts toward the Recurring ask Dial, and each pasted n
 states the same principle, so the evidence of earlier revisions joins it. Then run `python3
 "<plugin root>/scripts/guidance_clusters.py" --clusters .review/harvest/clusters.json --tally
 .review/harvest/guidance/tally.txt --ledger <the ledger>`, adding, for a standard covering
-several repositories, `--repo <this repository>`, and `--tally-from <repo>=.review/harvest/guidance-<repo>/tally.txt`
+several repositories, one with `profiles/`, `--repo <this repository>`, and `--tally-from <repo>=.review/harvest/guidance-<repo>/tally.txt`
 for each other whose "Guidance" ran this run, the rest named under "Not read", whose tally lines are keyed `<repo>:s<n>-<i>` and pull requests `<repo>/pr-NNNN`
 in the clusters file, its notes and the ledger's `prs:` lines; on its `refused` lines, correct the file
 and run it again. Its printout is the clusters the caller reads: each one's pull requests, people
