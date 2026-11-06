@@ -10,7 +10,7 @@ description: >
 argument-hint: "[question]"
 metadata:
   author: dev-tools
-  version: 1.9.1
+  version: 1.10.0
 ---
 
 # Quickstart
@@ -203,6 +203,7 @@ answer says so.
 | how the rules were generated and measured | `skills/onboard/first-rules.md` for a repository's first rules; `skills/revise/harvest.md` for a revision's; a project's own harvest report, where it keeps one, in its standard's log |
 | what is the bar, why was my rule held | `standards/rule-bar.md` |
 | a term, a decision | `<standard>/terminology.md`; `<standard>/decisions.md` and the repository's |
+| agent guidance, a data convention | `<standard>/agent-guidance.md`, `<standard>/data-conventions.md`; `docs/standards.md` "Agent guidance and data conventions" |
 | what the first merge left out, what is planned | `ROADMAP.md` |
 | setup, servers, models, time, cost | `README.md` "Install", "MCP servers", "Models" |
 
@@ -227,8 +228,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/standard_index.py" .review/standard.md --
 otherwise `standards/context`. When `.review/standard/source`
 ends `@none`, the standard is not read: pass no `--context`. `standard_index.py` lists
 what every build and review loads: each rule and decision with its number, title, status and
-`repos:` tag, each term with what it is also called, and the context entries, each under the file
-it came from. Show its output as it prints, one line per entry in a code block, never recast as a
+`repos:` tag, each term with what it is also called, each agent guidance entry with the month a
+review last saw its habit, each data convention, and the context entries, each under the file it
+came from. Show its output as it prints, one line per entry in a code block, never recast as a
 table and with nothing added from the files it lists, then one line: a rule's wording is its
 entry's `> ` lines, and each file changes by a pull request to the repository it came from, as
 `${CLAUDE_PLUGIN_ROOT}/README.md` "How the corpus grows" says. When its last line is `No

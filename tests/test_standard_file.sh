@@ -92,7 +92,14 @@ out=$(bash "$script" 2>err); rc=$?
 headings=$(printf '%s\n' "$out" | grep '^# ' | tr '\n' ',')
 check "a repository's own terminology follows its decisions" \
   '[ "$rc" = 0 ] && [ "$headings" = "# dev-tools/standards/review-contract.md,# standards/review-rules.md,# standards/decisions.md,# standards/terminology.md," ]'
-rm standards/terminology.md
+echo "own agent guidance" >standards/agent-guidance.md
+echo "own data conventions" >standards/data-conventions.md
+out=$(bash "$script" 2>err); rc=$?
+headings=$(printf '%s\n' "$out" | grep '^# ' | tr '\n' ',')
+check "agent guidance, then data conventions, follow the terminology, each verbatim" \
+  '[ "$rc" = 0 ] && [ "$headings" = "# dev-tools/standards/review-contract.md,# standards/review-rules.md,# standards/decisions.md,# standards/terminology.md,# standards/agent-guidance.md,# standards/data-conventions.md," ] &&
+   [[ "$out" == *"own agent guidance"* ]] && [[ "$out" == *"own data conventions"* ]]'
+rm standards/terminology.md standards/agent-guidance.md standards/data-conventions.md
 
 mkdir -p "$parent/dev-tools/standards"
 for f in decisions terminology; do echo "sibling $f" >"$parent/dev-tools/standards/$f.md"; done
@@ -207,6 +214,15 @@ for f in decisions.md review-rules.md; do
     '[ "$rc" = 1 ] && grep -q "names a standard, and standards/$f is here too" err && [ -z "$out" ]'
   [ "$f" = review-rules.md ] && rm "standards/$f"
 done
+mv standards/decisions.md "$parent/held/decisions.aside"
+for f in agent-guidance.md data-conventions.md; do
+  echo "own $f" >"standards/$f"
+  out=$(bash "$script" 2>err); rc=$?
+  check "a pointer beside the repository's own $f is refused too" \
+    '[ "$rc" = 1 ] && grep -q "names a standard, and standards/$f is here too" err && [ -z "$out" ]'
+  rm "standards/$f"
+done
+mv "$parent/held/decisions.aside" standards/decisions.md
 
 # A trial reads a local checkout of the standard's repository as it stands, committed or not.
 trial="$parent/trial"
@@ -281,12 +297,23 @@ check "and the profile reads the project's and the repository's settings from it
 # Tags: a rule or decision whose repos: line does not name this repository is not loaded.
 printf '### R-001 · A family rule\n\nfor everyone\n\n### R-002 · Elsewhere only\nrepos: [other]\n\nnot for member\n\n### R-003 · Here too\nrepos: [Other, "MEMBER"]\n\nfor member\n\n## Candidates below the criteria\n\n- held\n' >"$family/standards/review-rules.md"
 printf '# Decisions\n\n### D-001 · Shared\n\nshared decision\n\n### D-002 · Other only\nrepos: [other]\n\nother decision\n\n```python\n# set up\nfenced other\n```\n\nstill other\n\n````\n```\n### D-090 · inside\n````\n\n### D-003 · Two tags\nrepos: [other]\n\nrepos: [member] in the text\n\n### D-004 · CRLF tag\r\nrepos: [member]\r\n\r\ncrlf decision\r\n\n## Archive\n\nkept\n' >"$family/standards/decisions.md"
+printf '# Agent guidance\n\n### A-001 · Everywhere\n\nguidance for all\n\n### A-002 · Other only\nrepos: [other]\n\nguidance for other\n' >"$family/standards/agent-guidance.md"
+printf '# Data conventions\n\n### F-001 · Member only\nrepos: [member]\n\nconvention for member\n\n### F-002 · Other only\nrepos: [other]\n\nconvention for other\n' >"$family/standards/data-conventions.md"
 git -C "$family" add -A && git -C "$family" -c user.name=t -c user.email=t@t commit -qm tags
 out=$(bash "$script" 2>err); rc=$?
+check "agent guidance and data conventions load only where tagged, as rules do" \
+  '[ "$rc" = 0 ] && [[ "$out" == *"guidance for all"* ]] && [[ "$out" != *"guidance for other"* ]] &&
+   [[ "$out" == *"convention for member"* ]] && [[ "$out" != *"convention for other"* ]]'
 check "a standard for several loads only the rules and decisions tagged for this repository or untagged" \
   '[ "$rc" = 0 ] && [[ "$out" == *"for everyone"* ]] && [[ "$out" == *"for member"* ]] && [[ "$out" != *"not for member"* ]] && [[ "$out" != *"Elsewhere only"* ]] &&
    [[ "$out" == *"shared decision"* ]] && [[ "$out" != *"other decision"* ]] && [[ "$out" == *"## Archive"* ]] && [[ "$out" != *"- held"* ]] &&
    [[ "$out" != *"fenced other"* ]] && [[ "$out" != *"D-090"* ]] && [[ "$out" != *"still other"* ]] && [[ "$out" != *"in the text"* ]] && [[ "$out" == *"crlf decision"* ]]'
+printf '# Agent guidance\n\n### A-001 · Everywhere\n\nguidance for all\n\n### A-003 · Bad tag\nrepos: other\n\nbad\n' >"$family/standards/agent-guidance.md"
+git -C "$family" -c user.name=t -c user.email=t@t commit -qam "a bad agent guidance tag"
+out=$(bash "$script" 2>err); rc=$?
+check "an agent guidance entry's repos: line that is not a list of names stops the standard, naming it" \
+  '[ "$rc" = 1 ] && grep -q "A-003 has a repos: line that is not a list of names" err'
+git -C "$family" reset -q --hard HEAD~1
 sed -i.bak 's/^repos: \[other\]$/repos: [other]  # widen later/' "$family/standards/review-rules.md" && rm "$family/standards/review-rules.md.bak"
 git -C "$family" -c user.name=t -c user.email=t@t commit -qam "a tag with a comment"
 out=$(bash "$script" 2>err); rc=$?

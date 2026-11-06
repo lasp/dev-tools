@@ -8,7 +8,7 @@ description: >
 argument-hint: "[diff | branch | suite]"
 metadata:
   author: lasp-dev
-  version: 1.1.7
+  version: 1.1.8
 ---
 
 ## When to run
@@ -26,7 +26,7 @@ changes code as `${CLAUDE_SKILL_DIR}/../implement-change/reviews/wave.md` "Who r
 (a diff of test files or `conftest.py` alone gets no coverage run), one `test-runner` in
 coverage mode with the coverage command and the base. In place of a plan file the reviewer's
 prompt names what to judge, the base, the lanes and their markers and the mocking libraries, and
-"every blocking finding; non-blocking ones up to the Suggestions per review Dial". The base is a
+"every blocking finding; non-blocking ones up to the review contract's limit on suggestions". The base is a
 commit, as the wave's is: for a branch,
 `git merge-base <branch> HEAD`, so commits that branch gained since the change began are not read,
 reversed, as part of it. Turn the runner's uncovered lines into `test/uncovered` findings; a
@@ -60,8 +60,8 @@ covers well. End on the counts of blocking and non-blocking findings.
 
 ## Bounds
 
-Every blocking finding is shown; non-blocking ones up to the Suggestions per review Dial
-(`standards/dials.md`), the rest a count per key.
+Every blocking finding is shown; non-blocking ones up to the limit on suggestions in
+`standards/review-contract.md`'s "Severity", the rest a count per key.
 
 ## Never
 

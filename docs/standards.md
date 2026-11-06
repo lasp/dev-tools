@@ -24,6 +24,8 @@ A standard is one folder, `standards/`, with the same files whatever it covers:
 | `review-rules.md` | The rules, each with its wording, tier, status, evidence and scope; held candidates below `## Candidates below the criteria` |
 | `decisions.md` | The design decisions the code follows |
 | `terminology.md` | The vocabulary, when the project keeps one |
+| `agent-guidance.md` | Habits coding agents should not repeat here, each in a reviewer's words, when the project keeps them |
+| `data-conventions.md` | Facts about the project's inputs and products, each with its source, when the project keeps them |
 | `profile.yaml` | The settings: whatever detection cannot find, and any threshold set differently from the plugin's default |
 | `already-checked-by-tools.md` | Asks a configured linter or hook already enforces, so no rule repeats them |
 | `templates/<name>/` | The pull request templates a repository's `template` setting names |
@@ -121,6 +123,48 @@ elsewhere, tagging every candidate `repos: [<this repository>]`, since its evide
 repository's alone. Nothing is written outside `.review/` or committed
 without a yes to that write.
 
+## Agent guidance and data conventions
+
+Two kinds of guidance reviewers give are not rules, and each has its own file:
+
+- **Agent guidance**, `agent-guidance.md`: a habit coding agents fall into here and a reviewer had
+  to undo, such as working around a missing dependency instead of fixing the environment, adding
+  backward-compatibility shims before a product has users, or changing test data to make a test
+  pass. Each entry names the habit, says what to do instead, and quotes the reviewer. It guides
+  whoever writes the code, and is not held to the rule bar, so it needs no `scope:` or
+  `example:`; a review that meets the habit again raises a suggestion keyed `agent/A-nnn`, as the
+  review contract's "Agent guidance and data conventions" says, which is how the revision sees
+  it.
+- **Data conventions**, `data-conventions.md`: facts about the inputs and products that code must
+  respect, such as fill values that differ by field, the frame a position is given in, the
+  attribute conventions a product follows, or filename rules an interface document sets. Each
+  entry names its source: the document, or the person who owns the data. A review raises a
+  change that breaks one keyed `data/F-nnn`.
+
+`standard_file.sh` loads both, after the terminology, into the standard every build and review
+reads, so `implement-change`, its review wave and `pr-review` work from them in a repository with a
+standard: a ledger, decisions or a pointer. Alone, the two files make no standard and nothing
+loads them; `quickstart`'s "what
+applies here" lists them. A `repos:` line limits an entry to some repositories, as it does a rule.
+`standards/templates/` holds a starting copy of each file, and `scripts/entries_lint.py` checks the
+form `docs/contracts.md` sets.
+
+`revise` proposes new entries from what reviewers said, as `skills/revise/harvest.md`'s
+"Destinations" sets out, and they change differently from rules:
+
+- An agent guidance entry carries the month a review last saw the habit, which the revision moves
+  forward when a reviewer restates it or a review raises it. When the Agent guidance expiry Dial in
+  `standards/dials.md` passes with no review seeing it again, the revision proposes retiring it,
+  since the habit is gone or the entry no longer reaches the agents.
+- A data convention changes only through its owner. The revision proposes a change, with its
+  evidence, for the owner to make or decline, and never edits one silently.
+
+A retired entry of either kind moves to `archive/` with why, as a rule does.
+
+Domain knowledge too large for an entry, such as a calibration registry with its own lookup rules,
+belongs in a project skill instead, which an agent loads when the work needs it; the data
+conventions file then holds one entry pointing to it, so the knowledge has one home.
+
 ## The revision
 
 `revise` proposes rule changes from the evidence of merged pull requests. For a standard covering
@@ -133,7 +177,8 @@ are one pull request there; for a repository's own standard, they are one pull r
 
 ## Decision and rule numbers
 
-A standard numbers its rules `R-nnn` and its decisions `D-nnn`, one series each, whatever it covers.
+A standard numbers its rules `R-nnn`, its decisions `D-nnn`, its agent guidance `A-nnn` and its
+data conventions `F-nnn`, one series each, whatever it covers.
 A rule or decision that moves into a standard from another numbering takes the next free number,
 and `archive/` records the old number beside the new.
 

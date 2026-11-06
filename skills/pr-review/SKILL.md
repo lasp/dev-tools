@@ -8,7 +8,7 @@ description: >
 argument-hint: "[PR number or URL] [focus area]"
 metadata:
   author: lasp-dev
-  version: 6.12.0
+  version: 6.13.0
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
@@ -155,7 +155,7 @@ keeps an existing file: a run abandoned before then leaves nothing that reads as
      script's note on stderr, when it prints one, in one line. Note
      `git log -1 --format=%h -- :/standards/` for the summary's `standards:` line, `none` when no
      commit has touched `standards/`, followed by ` + uncommitted` when
-     `git status --porcelain -- :/standards/review-rules.md :/standards/decisions.md :/standards/terminology.md` prints
+     `git status --porcelain -- :/standards/review-rules.md :/standards/decisions.md :/standards/terminology.md :/standards/agent-guidance.md :/standards/data-conventions.md` prints
      anything: the review then ran on a rule or decision nobody has committed, such as one being
      tried before it is proposed, and the person is told so in one line. The suffix covers this
      repository's files only, not the plugin's. With a pointer, the `standards:` line is the

@@ -624,8 +624,8 @@ class ContractChecks(unittest.TestCase):
         )
 
     def test_a_plugin_path_a_markdown_path_and_the_corpus_readmes_form_resolve_their_sections(self):
-        self.edit("skills/ticket-draft/SKILL.md", "`standards/dials.md`), propose", "`${CLAUDE_PLUGIN_ROOT}/standards/dials.md` \"Nope\"), propose")
         self.edit("GUIDE.md", "## Glossary\n", "## Glossary\n\nSee `skills/revise/outline.md` \"Nope\" and the corpus README's \"Nope\".\n")
+        self.edit("skills/ticket-draft/SKILL.md", "## When to run\n", "## When to run\n\nSee `${CLAUDE_PLUGIN_ROOT}/standards/dials.md` \"Nope\".\n")
         self.assertEqual(
             self.failures("sections"),
             [
@@ -657,7 +657,7 @@ class ContractChecks(unittest.TestCase):
         )
 
     def test_a_dials_row_counts_as_a_section(self):
-        self.edit("GUIDE.md", "## Glossary\n", "## Glossary\n\nSee `standards/dials.md` \"Established\" and `standards/dials.md` \"Deep review\".\n")
+        self.edit("GUIDE.md", "## Glossary\n", "## Glossary\n\nSee `standards/dials.md` \"Established\" and `standards/dials.md` \"Recurring ask\".\n")
         self.assertEqual(self.failures("sections"), [])
 
     def test_a_link_inside_code_is_not_read_and_a_repeated_heading_takes_its_suffix(self):
@@ -669,13 +669,13 @@ class ContractChecks(unittest.TestCase):
     def test_a_dial_that_is_not_a_row_fails_dials(self):
         self.edit("docs/design.md", "the Provisional expiry, Established expiry and Low agree rate Dials", "the Provisional expiry, Late expiry and Low agree rate Dials")
         self.edit("GUIDE.md", "the Admission Dial", "the Admission or Nope Dial")
-        self.edit("skills/ticket-draft/SKILL.md", '"Split before starting" threshold', '"Split first" threshold')
+        self.edit("skills/revise/prepare.md", "the Admission Dial", '"Split first" threshold and the Admission Dial')
         self.assertEqual(
             self.failures("dials"),
             [
                 'dials: GUIDE.md: "Nope" is not a row of standards/dials.md',
                 'dials: docs/design.md: "Late expiry" is not a row of standards/dials.md',
-                'dials: skills/ticket-draft/SKILL.md: "Split first" is not a row of standards/dials.md',
+                'dials: skills/revise/prepare.md: "Split first" is not a row of standards/dials.md',
             ],
         )
 

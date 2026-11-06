@@ -43,7 +43,7 @@ except ImportError:
     run = rule_cases = smoke = None
 
 FIXTURE = ROOT / "tests" / "fixtures" / "sandbox" / "quickstart.jsonl"
-EXPECT_KEYS = {"skills", "agents", "files", "ends", "max_cost", "max_turns", "max_ticket_words", "says", "not_says", "files_absent", "agents_absent", "never_anywhere"}
+EXPECT_KEYS = {"skills", "agents", "mcp", "files", "ends", "max_cost", "max_turns", "max_ticket_words", "says", "not_says", "files_absent", "agents_absent", "never_anywhere"}
 
 
 def fixture() -> list[dict]:
@@ -126,6 +126,107 @@ class TriggerPack(unittest.TestCase):
 
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
+class TrackerPack(unittest.TestCase):
+    """sandbox/tracker/: scenarios against a Jira project the pack's read-only stub serves."""
+
+    PACK = ROOT / "sandbox" / "tracker" / "scenarios.yaml"
+    STUB = ROOT / "sandbox" / "tracker" / "fixture" / "mcp-atlassian-stub.py"
+    SERVER = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/mcp-atlassian-stub.py", "--read-only"],
+              "env": {"READ_ONLY_MODE": "true"}}
+
+    def setUp(self):
+        patch = mock.patch.object(run, "SCENARIOS", self.PACK)
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.known = run.scenarios()
+
+    def serve(self, *requests: dict) -> list[dict]:
+        lines = "".join(json.dumps({"jsonrpc": "2.0", **r}) + "\n" for r in requests)
+        out = subprocess.run([sys.executable, "-I", str(self.STUB), "--read-only"], input=lines,
+                             capture_output=True, text=True, check=True).stdout
+        return [json.loads(line) for line in out.splitlines()]
+
+    def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
+        self.assertEqual(len(self.known), 5)
+        well_formed(self, self.known, {"widgets"})
+        for s in self.known.values():
+            self.assertTrue(s["id"].startswith("tracker-"), s["id"])
+            for name in re.findall(r'"\$SBX_FIXTURES/([^"]+)"', " ".join(s.get("setup", []))):
+                self.assertTrue((run.fixture_dir() / name).is_file(), (s["id"], name))
+
+    def test_the_documented_server_gets_the_atlassian_rules_and_is_read_only(self):
+        self.assertIn(json.dumps(self.SERVER["args"][1]), self.PACK.read_text())
+        self.assertEqual(run.server_kind(self.SERVER), "atlassian")
+        sandbox = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, sandbox)
+        (sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"atlassian": self.SERVER}}))
+        run.write_settings(sandbox, ROOT)
+        allow = json.loads((sandbox / "settings.json").read_text())["permissions"]["allow"]
+        self.assertIn("mcp__atlassian", allow)
+
+    def call(self, name: str, **arguments) -> dict:
+        (reply,) = self.serve({"id": 1, "method": "tools/call", "params": {"name": name, "arguments": arguments}})
+        return reply["result"]
+
+    def test_the_stub_lists_no_write_tool(self):
+        (listed,) = self.serve({"id": 1, "method": "tools/list"})
+        names = {t["name"] for t in listed["result"]["tools"]}
+        self.assertLessEqual({"jira_get_issue", "jira_search"}, names)
+        self.assertFalse({n for n in names if re.match(r"(jira|confluence)_(create|update|delete|add|transition|link|assign|move|remove)", n)})
+
+    def test_a_search_returns_the_description_as_stored(self):
+        issues = json.loads(self.call("jira_search", jql="key = PROJ-57")["content"][0]["text"])["issues"]
+        self.assertEqual([i["key"] for i in issues], ["PROJ-57"])
+        self.assertIn("\nh1. Context\n", issues[0]["description"])
+        self.assertIn("\n# An inventory with A-1 at -2", issues[0]["description"])
+
+    def test_a_search_for_several_keys_returns_each(self):
+        issues = json.loads(self.call("jira_search", jql="key in (PROJ-57, PROJ-58) ORDER BY key")["content"][0]["text"])["issues"]
+        self.assertEqual([i["key"] for i in issues], ["PROJ-57", "PROJ-58"])
+
+    def test_a_search_for_a_quoted_key_or_by_issue_returns_that_ticket(self):
+        for jql in ('key = "PROJ-57"', "key = 'PROJ-57'", "issue = PROJ-57", 'issue = "PROJ-57"'):
+            with self.subTest(jql=jql):
+                issues = json.loads(self.call("jira_search", jql=jql)["content"][0]["text"])["issues"]
+                self.assertEqual([i["key"] for i in issues], ["PROJ-57"])
+
+    def test_get_issue_converts_headings_and_numbered_items_to_markdown(self):
+        description = json.loads(self.call("jira_get_issue", issue_key="PROJ-57")["content"][0]["text"])["description"]
+        self.assertIn("\n# Context\n", description)
+        self.assertIn("\n## Acceptance Criteria\n", description)
+        self.assertIn("\n1. An inventory with A-1 at -2", description)
+        self.assertNotIn("\n1. Context", description)
+
+    def test_an_unknown_key_is_an_error_result(self):
+        missing = self.call("jira_get_issue", issue_key="PROJ-99")
+        self.assertTrue(missing["isError"])
+        self.assertIn("PROJ-99", missing["content"][0]["text"])
+
+    def test_a_call_naming_no_tool_is_a_protocol_error(self):
+        (reply,) = self.serve({"id": 1, "method": "tools/call", "params": {}})
+        self.assertEqual(reply["error"]["code"], -32602)
+
+    def test_the_mcp_expectation_fails_a_run_the_server_did_not_answer(self):
+        scenario = self.known["tracker-work-no-page"]
+        summary = {"subtype": "success", "is_error": False, "skills": [], "agents": {"source-reader": 1}, "files": [],
+                   "mcp": {"mcp__atlassian__jira_search": 1}, "cost_usd": 0.1, "turns": 6,
+                   "final": "PROJ-42 · To Do\nNext: implement-change.\n", "must_not_run": []}
+        self.assertEqual(run.check(summary, scenario), "pass")
+        self.assertEqual(run.check({**summary, "mcp": {}}, scenario), "fail: no mcp tool mcp__atlassian__jira_*")
+        self.assertIn("does not say", run.check({**summary, "final": "Next: not implement-change."}, scenario))
+
+    def test_the_pack_plants_no_credentials(self):
+        spec = importlib.util.spec_from_file_location("secret_scan_tests", ROOT / "tests" / "test_secret_scan.py")
+        scan = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(scan)
+        planted = scan.planted
+        pack = "sandbox/tracker/"
+        files = [str(p.relative_to(ROOT)) for p in (ROOT / pack).rglob("*") if p.is_file()]
+        self.assertTrue(files)
+        self.assertEqual(planted(files), {})
+
+
+@unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
 class Sandbox(unittest.TestCase):
     def setUp(self):
         self.sandbox = Path(tempfile.mkdtemp())
@@ -143,7 +244,7 @@ class Sandbox(unittest.TestCase):
 
     def test_every_generic_scenario_is_well_formed_and_runs_in_the_fixture(self):
         known = run.scenarios()
-        self.assertEqual(len(known), 28)
+        self.assertEqual(len(known), 30)
         well_formed(self, known, {"widgets"})
 
     def test_every_fixture_a_scenario_copies_is_in_the_pack(self):
@@ -399,7 +500,7 @@ class Sandbox(unittest.TestCase):
         settings = json.loads(text)
         box = settings["sandbox"]
         env = {e["name"] for e in box["credentials"]["envVars"] if e["mode"] == "deny"}
-        self.assertTrue({"GH_TOKEN", "GITHUB_TOKEN", "GITHUB_MCP_PAT_EXAMPLE", "JIRA_TOKEN"} <= env)
+        self.assertTrue({"GH_TOKEN", "GITHUB_TOKEN", "SBX_FIXTURES", "GITHUB_MCP_PAT_EXAMPLE", "JIRA_TOKEN"} <= env)
         files = {f["path"] for f in box["credentials"]["files"] if f["mode"] == "deny"}
         self.assertTrue({"~/.config/gh", "~/.git-credentials", "~/.netrc"} <= files)
         for name in ("settings.json", "mcp.json"):
@@ -1170,6 +1271,16 @@ class Reuse(unittest.TestCase):
                 self.assertRaisesRegex(RuntimeError, "setup reached"):
             run.run_once(self.sandbox, scenario, self.plugin, self.sandbox / "runs" / "x", {})
         self.assertEqual(stop.call_args.args[0], "true")
+        self.assertEqual(stop.call_args.kwargs["env"]["SBX_FIXTURES"], str(self.sandbox / "pack" / "fixture"))
+
+    def test_a_packs_session_reads_the_packs_fixtures_for_its_mcp_json(self):
+        pack = self.sandbox / "pack" / "scenarios.yaml"
+        scenario = {**self.scenario, "repo": "gizmos", "setup": []}
+        stop = mock.Mock(side_effect=RuntimeError("session reached"))
+        with mock.patch.object(run, "SCENARIOS", pack), mock.patch.object(run, "child", stop), \
+                self.assertRaisesRegex(RuntimeError, "session reached"):
+            run.run_once(self.sandbox, scenario, self.plugin, self.sandbox / "runs" / "x", {})
+        self.assertEqual(Path(stop.call_args.args[0][0]).name, "sbx-claude")
         self.assertEqual(stop.call_args.kwargs["env"]["SBX_FIXTURES"], str(self.sandbox / "pack" / "fixture"))
 
     def test_list_reads_the_scenario_file_given_and_refuses_a_missing_one(self):

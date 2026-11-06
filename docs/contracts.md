@@ -289,6 +289,161 @@ Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
 
 Pinned by: tests/test_record.py::test_a_comment_without_its_date_is_refused_naming_its_position
 
+## The comment list
+
+Version: 1
+
+Fields: `.review/harvest/threads/pr-NNNN/comment-list.json`, a JSON object: `pr`, the pull
+request's number, and `comments`, every comment in its dump, ordered by `created` then `id` and
+empty when no one commented: each review thread's opening comment and
+every reply in it, each review whose summary is not blank, and each conversation comment, a bot's
+and the pull request author's included. Each item has exactly these keys: `pr`, the number; `id`,
+the comment's number (a review comment's from its `html_url`'s `#discussion_r<n>`); `url`;
+`author`, the login; `authorship`, `human`, `ai-drafted` or `bot`, as "The record"'s "Authorship"
+reads this comment alone; `kind`, `thread`, `reply`, `review` or `comment`; `thread`, the review
+thread's id, null for a review or a conversation comment; `path` and `line`, where the comment
+anchors, `line` its `original_line`, the line in the commit it was made on, else `line`, null at
+file level, both null for a review or a conversation comment; `created`,
+GitHub's timestamp (`created_at`, or a review's `submitted_at`); and `body`, the text unchanged.
+
+Every comment is listed, a reply as much as the comment that opened its thread: guidance is read
+per comment, apart from how a thread was settled, which the record and `thread-analyst` judge per
+thread.
+
+`scripts/comment_list.py <dump> [...]` writes it from a dump `scripts/thread_dump.py` wrote, and
+prints `wrote <path>: <n> comments, <n> human, <n> ai-drafted, <n> bot` per dump. An `id` is
+unique in the list, since a reader names a comment by its number alone. It exits 1 with the
+reason, writing nothing for any dump given, for a dump directory not named `pr-NNNN`, one of
+`comments.json`, `reviews.json` and `issue-comments.json` missing or not JSON,
+a review comment whose `html_url` has no `#discussion_r<n>`, a review with a body but no
+`submitted_at`, an id given twice, across kinds as well as within one, or a profile `record.py`
+refuses.
+
+Writers: `scripts/comment_list.py`, run by harvest.md's "Records". Readers: `guidance-extractor`
+and `scripts/guidance_check.py`, through harvest.md's "Guidance"; `sandbox/harvest_recall.py`,
+whose fixture holds comment lists.
+
+Pinned by: tests/test_comment_list.py::test_lists_every_comment_with_its_own_authorship
+
+## The guidance items
+
+Version: 2
+
+Fields: `.review/harvest/guidance/slice-<n>.json`, one `guidance-extractor` run, a JSON object:
+`prs`, the pull request numbers whose comment lists it read, each once; `comments_read`, the
+comments those lists hold; and `items`, one object per statement of guidance, in the lists' order,
+each with exactly these keys:
+
+| Key | Value |
+|---|---|
+| `pr`, `comment_id`, `url`, `author`, `authorship` | the comment's, as its entry in "The comment list" gives them |
+| `quote` | the words that carry the guidance, one passage of 1 to 40 words of the comment's own words: its `body` without the lines that open `>` |
+| `generality` | `general` or `pr-specific` |
+| `signal` | `addresses agents`, `states a principle`, `names a habit`, `cites a source` or `none`; `none` on a `pr-specific` item |
+| `kind` | `rule`, `agent-guidance`, `data-convention`, `process`, `decision`, `tool-config`, `exemplar`, `review-calibration` or `open-question` |
+| `principle` | one sentence in the extractor's words |
+| `rationale` | the comment's own reason, one passage of 1 to 40 of its own words, or `null` |
+| `covered_by` | `R-<n>`, `D-<n>`, `A-<n>`, `F-<n>`, `instruction file`, or `null` (version 2 adds `A-<n>` and `F-<n>`) |
+| `outcome` | `changed as asked`, `changed differently`, `declined`, `discussed` or `unanswered` |
+
+`scripts/guidance_check.py <slice> [...] --comments <comment-list.json> [...]`, given every slice
+of a run and every comment list it read, holds them to this form: every list's pull request in
+exactly one slice, and every slice's among the lists; a slice of more than 300 comments only when
+it holds one pull request; every key present and no other, each value of its form;
+`comments_read` the comments a slice's lists hold; each item on a comment its `pr`'s list holds,
+its `pr` one of its slice's, with that comment's `url`, `author` and `authorship`; and each
+`quote`, and each `rationale` that is not null, found in that comment's own words, within one
+run of its lines between those that open `>`, a run of whitespace read as one space, never starting
+or ending inside a word, and nothing else forgiven.
+It prints `slices: <n> · comments: <n> · items: <n> · general: <n> · pr-specific: <n>`, then
+`kind · <kind> · <general> · <pr-specific>` for each kind with an item, and exits 0; otherwise one
+`refused · <where> · <why>` line per fault, every fault found, and exit 1: a slice that cannot be
+read as JSON is one, and leaves its pull requests in no slice while the other slices are checked.
+
+Writers: `guidance-extractor`, at the path harvest.md's "Guidance" gives it. Readers:
+`scripts/guidance_check.py` and `scripts/guidance_tally.py`; `revise` `prepare`, through harvest.md;
+`sandbox/harvest_recall.py` `--items`.
+
+Pinned by: tests/test_guidance_check.py::test_a_run_true_to_its_comments_passes
+
+## The guidance tally
+
+Version: 2
+
+Fields: what `scripts/guidance_tally.py <slice> [...] --comments <comment-list.json> [...]` prints,
+given a run's slices and lists as `guidance_check.py` takes them, and refusing, with that check's
+lines and exit 1, any run the check refuses. One line per `general` item, in the slices' order,
+`<key>` being `s<n>-<i>`, the n-th slice given, from 1, and the item's index in it, from 0:
+
+- `admit · <key> · pr-NNNN · <comment id> · <author> · <kind> · <signal> · <url> · <quote>`: a
+  person's words (`authorship` `human`) with `covered_by` null, of kind `rule`, `agent-guidance`
+  or `process` with a `signal` of `states a principle`, `addresses agents` or `names a habit`, of
+  kind `data-convention` or `decision` with one of those or `cites a source`, or of kind `tool-config`, `exemplar`, `review-calibration` or
+  `open-question` with any signal;
+- `covered · <key> · pr-NNNN · <comment id> · <author> · <kind> · <covered_by> · <url> · <quote>`:
+  a person's general item a live rule, decision, agent guidance entry, data convention or the
+  instruction file already says;
+- `hold · <key> · pr-NNNN · <comment id> · <author> · <kind> · <criterion> · <url> · <quote>`: a
+  person's other general items, the criterion `no signal of generality` for signal `none` or
+  `signal <signal>, not one that admits` (version 2: every kind admits; version 1 held all but
+  `rule` as `a <kind> statement: revise proposes rules only`);
+- `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
+  general item the pull request's author changed as asked.
+
+An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
+is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
+before it. A last line reads `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> ·
+not listed: <n>`.
+
+Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
+"Clusters" and "Destinations", and `revise` `prepare` step 5, for the Admission Dial's single
+statements;
+`scripts/guidance_clusters.py`, which reads each line's fields by place.
+
+Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admits_and_the_rest_is_held_or_supports
+
+## The guidance clusters
+
+Version: 3
+
+Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
+object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
+once; `kind`, the cluster's destination, one of the guidance items' nine kinds and, in a cluster
+with tally lines, the kind of at least one of its people's lines, or of a `support` line when it
+has no other, as harvest.md's "Destinations" reads it
+(version 2); `principle`, one sentence; `items`, the keys of the guidance tally's `admit`, `hold` and
+`support` lines it holds ("The guidance tally"); `notes`, other evidence, one line each, an
+analyst's ask as `pr-NNNN · <login> · <human|ai-drafted|bot> · <text>` or a pasted note as `pasted
+<file> · <name> · <text>`; and `held`, the title of the
+ledger's held candidate it continues, its heading or the bold title its bullet opens with, or
+null. Every `admit`, `hold` and `support` line of the
+tally is in exactly one cluster; a cluster holds at least one item or note.
+
+`scripts/guidance_clusters.py --clusters <file> --tally <the tally's printout> [--ledger <ledger>]`
+refuses, one `refused · <where> · <why>` line each and exit 1, a file of any other form, a key
+that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
+ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
+no `--ledger`. Otherwise it
+prints per cluster, its `admit` count only the `admit` lines of its kind and any other counted as
+`hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
+<principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·
+<low|medium|high> · <n> pull request(s)`, its pull requests and, when it has people, those its
+continued held candidate's `prs:` line names and its `support` lines', at the Recurring ask Dial's counts,
+then `asked · <id> · pr-NNNN, ...` or `none`, the pull requests counted, which it refuses to run without (version 3), a `held · <id> · <title>`
+line when it continues one, a `note · <id> · <note>` line per note, and up to three `said · <id> ·
+"<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
+from a pull request and a person not yet quoted while one is left; then `clusters: <n> · lines:
+<n>` and exit 0. A cluster's pull requests are those a person asked on, of its `admit` and `hold`
+lines and its `human` notes, which the Recurring ask Dial counts; its people the authors of those
+and of its pasted notes; either `none` when there are none; an agent's or a bot's words count for neither. It also refuses a tally whose closing `items:` line is missing or counts its words
+otherwise than its lines, and reads each tally line's fields by place, the quote last, so a `·` in
+a quote splits nothing.
+
+Writers: the driver, in harvest.md's "Clusters". Readers: `scripts/guidance_clusters.py`; `revise`
+`prepare` steps 5, 6 and 10, through its printout; `sandbox/harvest_recall.py` `--clusters`.
+
+Pinned by: tests/test_guidance_clusters.py::test_prints_each_cluster_with_its_people_prs_and_quotes
+
 ## The judgments
 
 Version: 1
@@ -540,10 +695,10 @@ Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_t
 
 ## The record
 
-Version: 12
+Version: 13
 
 Fields: `<log>/pr-NNNN.yaml`, `<log>` the records directory `revise`'s "The standard's repository"
-names, first line `contract: 12`. This section is the one
+names, first line `contract: 13`. This section is the one
 place the fields are defined; the records directory's own README says how the revision
 reads them.
 
@@ -598,9 +753,8 @@ reads them.
 - `threads:`, a pointer to every other review thread: a person's, a bot's, or a finding posted
   with no key. Each carries `thread`; `by`, its opener, `bot` for a bot or `review` for an uncited
   finding, which also carries its `severity`, `unparsed` with `verdict: unparsed` and `line:` as
-  on a finding; `authorship` (`human`, `bot`, or `ai-drafted` when
-  the opening comment carries the review's attribution line or one of the
-  `attribution.phrases` of the repository's standard, Libera's being D-013's "drafted with AI assistance" and the loop review's attribution line); `at`; `opened`, the day; `resolved` and `outdated`, GitHub's flags; `replies`,
+  on a finding; `authorship` of its opening comment, as
+  "Authorship" below defines it; `at`; `opened`, the day; `resolved` and `outdated`, GitHub's flags; `replies`,
   the count from people; `verdict`, an uncited finding's read as a finding's, otherwise the pull
   request author's from the first of their replies that starts with one of the three words, or
   judged from one in their own words (`judged`, `basis` and `done` as on a finding), a Discuss
@@ -632,6 +786,10 @@ version without it may still have run on uncommitted standards. Version 11: in a
 standard is elsewhere, `standards_sha` is the named repository's commit, not this one's.
 Version 12: a finding whose severity label is not one of the four is recorded with `severity:
 unparsed`, where earlier versions refused the record of its pull request.
+Version 13: `authorship` reads the signatures under "Authorship" as well as the attribution line
+and the standard's phrases, so a reply reworded from the attribution line, and an agent's own
+signature, read `ai-drafted` where earlier versions read `human`; a thread the author opened that
+way reads `verdict: none`, where it read `unanswered` or `unparsed`.
 
 A harvested record reaches the log through `scripts/archive_records.py`, which refuses to
 replace a record whose findings, counted per rule, the harvested one falls short of, unless told
@@ -642,6 +800,40 @@ Writers: `scripts/record.py`, run by `pr-reader` at the harvest; `scripts/archiv
 copies it into the log. Readers:
 `scripts/ratchet_counts.py`, `revise`; `thread-analyst`, for each thread's, review's and
 comment's `authorship`.
+
+### Authorship
+
+`scripts/record.py`'s `authorship_of` decides who wrote one comment, and every reader of a
+comment's authorship uses it: the record's `threads:`, `reviews:` and `comments:`. It reads the
+comment alone, never its thread, so a person's reply in a thread an agent opened is `human`. It
+reads the comment's own lines that are not blank: not the lines that open `>`, which quote someone
+else, and not a fenced code block, which shows text rather than signs the comment; a fence closes on
+a line of its own character, at least as long, with nothing after it. Case is ignored.
+
+- `bot`: the login ends `[bot]` or is one of the review bots `BOT_LOGINS` names.
+- `ai-drafted`: its own lines carry the review's attribution line, `AI-assisted comment, posted
+  by @` or the earlier `AI-assisted comment, reviewed and approved by @`, or one of the
+  `attribution.phrases` of the repository's standard; or its first or last own line, where an
+  agent signs, with its inline code spans removed, has one of the shapes `AI_SIGNATURES` lists:
+  - a line that opens or closes with `🤖` and carries `AI-assisted`, as any rewording of the
+    attribution line keeps them (`pr-review/comment-style.md`);
+  - a line that ends with `AI assistance level: <n>/5`, its meaning in parentheses after it, and
+    no `?`;
+  - a line that opens with markup, such as `🤖 *` or `_`, then `comment`, `reply`, `review` or
+    `summary`, optionally `this` before it and `was` or `is` after, then `generated`, `drafted`
+    or `written`, `by` or `with`, and `Claude`, `Copilot`, or `a` or `an` then `AI` or `LLM`, with no
+    `?` after it;
+  - a line that opens with `🤖` and then `generated by` or `generated with`;
+  - a line that is, after any markup, `generated by Claude Code` or `generated with Claude
+    Code`, the name bracketed with its link or not, and nothing after it but punctuation;
+  - a line opening `Co-Authored-By: Claude`, so a person who pastes that trailer as their comment's
+    first or last line fences it.
+- `human`: none of these. A comment that gives no sign is a person's.
+
+A person's sentence about a signature, such as "is this review generated by Copilot?" or "please
+add AI assistance level: 3/5 to your replies", has no signature's shape and reads `human`. Every
+level of the assistance scale reads `ai-drafted`, 1/5 included: the line says an agent posted the
+text, and the level is the person's own account of how much of it they wrote.
 
 Pinned by: tests/test_record.py::test_reproduces_the_committed_record
 
@@ -654,7 +846,7 @@ the records, one `<field>: <value>`
 per line. `scripts/ratchet_counts.py` reads every `correction-*.yaml` and `note-*.yaml` in the
 log directory it is given. Both carry `date: YYYY-MM-DD`; `ids: [<id>, …]`, a list on one line,
 not empty, of every ID the correction touched or the note concerns, each cited as a finding key
-cites it (`R-012`, `D-004@libera_utils`, `term/T-010`), or a skill's or agent's name on a
+cites it (`R-012`, `D-004@libera_utils`, `term/T-010`, `agent/A-003`, `data/F-002`), or a skill's or agent's name on a
 procedure note, and each counted under the rule a finding key with that citation counts under;
 `kind`; and `by`, the person who ran it. A correction adds `source`, what was read and its
 version; `clause`, what was misread, in one clause; and `pull_requests`, a list a person fills in.
@@ -702,10 +894,11 @@ Fields: two optional lines of a ledger entry in an adopting repository's
 `example: fires on <anchor or thread>; not on <anchor>`, where an anchor is `<repo>#<PR>@<sha>
 <path>::<symbol> "<shape>"` and a thread is `<repo>#<PR> <thread id>`. `scripts/rule_lint.py`'s
 `ANCHOR` and `THREAD` are the one copy of both forms. `standards/rule-bar.md` says what each must
-hold. `repos: [<repo>, ...]`, on a rule in the ledger or a decision in `decisions.md` of a
-standard covering several repositories, a flow list of repository names, each with a
+hold. `repos: [<repo>, ...]`, on a rule in the ledger, a decision in `decisions.md`, or an entry
+in `agent-guidance.md` or `data-conventions.md` of a standard covering several repositories, a flow list of repository names, each with a
 `profiles/<repo>.yaml` there, matched ignoring case: the rule or decision applies only in those
-repositories, and one without the line applies in all of them. It is one line, `repos:` at its
+repositories, and one without the line applies in all of them; an agent guidance or data
+convention entry reads it the same way. It is one line, `repos:` at its
 start, anywhere in the block outside a code fence and outside the rule's wording; a block with two
 is refused by the lint, and only the first is read (version 2). A rule's wording is the entry's `> ` lines, the one
 copy; a ledger whose wording is still in an instruction file has none there and a `Wording:` link
@@ -714,7 +907,8 @@ to its heading instead (version 3).
 Writers: `onboard`'s first rules and `revise` (`apply` and `correct`). Readers:
 `scripts/rule_lint.py`, `scripts/window_merges.py`, for `scope:`, and `rule-probe`;
 `scripts/standard_file.sh`, which loads a tagged rule or decision only in a repository its line
-names, and exits 1 naming a block whose first line is not that flow list; `scripts/rule_lint.py`'s
+names, the agent guidance and data conventions entries included, and exits 1 naming a block
+whose first line is not that flow list; `scripts/entries_lint.py`, which refuses a second; `scripts/rule_lint.py`'s
 fields gate and `scripts/ratchet_counts.py --repo`, for `repos:`; `scripts/standard_file.sh
 --rules`, which `hooks/rules.sh` runs at session start, for the wording of the live reviewer-tier
 rules that apply.
@@ -746,12 +940,18 @@ Pinned by: tests/test_window_merges.py::test_a_document_judges_only_the_pull_req
 
 ## The ledger's held-candidates heading
 
-Version: 1
+Version: 2
 
 Fields: the line `## Candidates below the criteria`, word for word, trailing whitespace allowed,
 in an adopting repository's `standards/review-rules.md`. Everything from it to the end of the
 file is the held candidates, each with its evidence and the criterion or check it fails, so the
-section is the ledger's last. `scripts/standard_file.sh` writes the ledger into the standard up
+section is the ledger's last. Each candidate opens with a `### <title>` heading or a bullet `-
+**<title>**`, its bold title not a label ending `:`, and may carry a `kind: <kind>` line, its kind when not a rule, and a `prs: pr-NNNN,
+...` line, the merged pull requests its people asked on, with those whose agent findings the author
+changed as asked, accumulated across revisions, which `scripts/guidance_clusters.py` reads for a
+cluster's priority; a candidate without the line counts none (version 2). A `###` candidate's body
+opens no bullet with a bold title other than a label ending `:`, since that bullet would start a
+candidate. `scripts/standard_file.sh` writes the ledger into the standard up
 to that line, a ledger without it whole, and exits 1, writing nothing, when the words head a line
 at another level or with anything after them. `scripts/ratchet_counts.py`'s ledger entries end
 at it as at any heading of level one to three.
@@ -764,6 +964,34 @@ window's clusters into it; `scripts/ratchet_counts.py` and `scripts/rule_lint.py
 `parse_entries`.
 
 Pinned by: tests/test_standard_file.sh::"the ledger stops before its held candidates, headed as onboard's first rules and revise's apply head them"
+
+## Agent guidance and data conventions
+
+Version: 2
+
+Fields: the entries of a standard's `agent-guidance.md` and `data-conventions.md`, each a `###
+A-NNN · <title>` or `### F-NNN · <title>` heading, numbered in order, one series per file. Under
+it, apart from an optional `repos:` line as "The ledger's bar lines" sets: first a date line,
+`_YYYY-MM · seen YYYY-MM_` for agent guidance, the month it was admitted and the month a review
+last saw the habit, or `_YYYY-MM_` for a data convention, the month admitted; then, for agent
+guidance, one `habit: <the habit>` line, and for a data convention one `source: <the document, or
+the data's owner>` line; one or more `> ` lines, the instruction an agent reads; and `said:
+"<words>" — <login>, <url>` lines, at least one for agent guidance. Text before the first entry is
+the file's own, and the file holds no heading of level two or three but its entries'; the lines
+after the date line come in any order, and a code fence shows an example without making it an entry. A retired entry
+leaves the file for the standard's `archive/`. `standards/templates/` holds a starting copy of each
+file.
+
+A data convention's owner may follow its source, `source: <document or owner> · owner: <name> ·
+<YYYY-MM>`, when a revision wrote a change the owner accepted (version 2).
+
+Writers: a person, from the templates; `revise` `apply`, which adds entries, moves an agent
+guidance entry's `seen` month and writes an accepted change to a data convention. Readers: `scripts/entries_lint.py`, which checks the form;
+`scripts/standard_file.sh`, which loads both files into the standard every build and review reads,
+after the terminology; `scripts/standard_index.py`, which lists each entry's id, title and, for
+agent guidance, its `seen` month.
+
+Pinned by: tests/test_entries_lint.py::test_well_formed_files_pass_and_count_their_entries
 
 ## The analysis blocks
 
@@ -792,7 +1020,7 @@ mismatch:` line with more after it, a line of no form above, or a `Procedure:`, 
 
 Writers: `thread-analyst`, at the path harvest.md's "Analysts" gives it. Readers:
 `scripts/block_tally.py`, run by harvest.md's "Analysts"; `revise` `prepare` step 2 and `onboard`'s
-first rules, for the asks.
+first rules, for the asks; `sandbox/harvest_recall.py` `--analyst`, through `block_tally.py`'s grammar.
 
 Pinned by: tests/test_block_tally.py::test_the_analysis_counts_asks_by_who_source_category_and_outcome
 

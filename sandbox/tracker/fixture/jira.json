@@ -1,0 +1,124 @@
+{
+  "project": "PROJ",
+  "project_name": "Widgets",
+  "components": [
+    {"id": "10001", "name": "Inventory"},
+    {"id": "10002", "name": "Loader"},
+    {"id": "10003", "name": "Restock"}
+  ],
+  "issue_types": [
+    {"id": "1", "name": "Task"}, {"id": "2", "name": "Bug"}, {"id": "3", "name": "Improvement"}, {"id": "4", "name": "Epic"}
+  ],
+  "fields": [
+    {"id": "customfield_10014", "name": "Epic Link"},
+    {"id": "customfield_10016", "name": "Story Points"}
+  ],
+  "transitions": [
+    {"id": "11", "name": "To Do"}, {"id": "21", "name": "Upcoming"}, {"id": "31", "name": "Abandoned"}
+  ],
+  "issues": [
+    {
+      "key": "PROJ-10",
+      "summary": "Inventory checks",
+      "issue_type": "Epic",
+      "status": "Upcoming",
+      "priority": "Normal",
+      "assignee": null,
+      "reporter": "Alice Example",
+      "created": "2026-01-02",
+      "duedate": null,
+      "story_points": null,
+      "components": ["Inventory"],
+      "epic": null,
+      "description": "The checks an inventory passes before it is merged or ordered from.",
+      "comments": [],
+      "issuelinks": []
+    },
+    {
+      "key": "PROJ-31",
+      "summary": "Count widgets by part",
+      "issue_type": "Task",
+      "status": "Done",
+      "priority": "Normal",
+      "assignee": "Bob Example",
+      "reporter": "Bob Example",
+      "created": "2026-01-08",
+      "resolved": "2026-01-12",
+      "duedate": null,
+      "story_points": 2,
+      "components": ["Inventory"],
+      "epic": "PROJ-10",
+      "description": "h1. Driving Requirements\nEach part number's count from an inventory, refusing a part listed twice.\n\nh2. Acceptance Criteria\n# An inventory listing A-1 and B-7: their counts by part.\n# An inventory listing A-1 twice: ValueError naming A-1.",
+      "comments": [],
+      "issuelinks": []
+    },
+    {
+      "key": "PROJ-42",
+      "summary": "Load an inventory from a CSV file",
+      "issue_type": "Task",
+      "status": "To Do",
+      "priority": "Normal",
+      "assignee": "Alice Example",
+      "reporter": "Alice Example",
+      "created": "2026-01-15",
+      "duedate": null,
+      "story_points": 2,
+      "components": ["Loader"],
+      "epic": "PROJ-10",
+      "description": "Read a warehouse export, a CSV file with the columns part and count, into the widgets of an inventory, so an inventory can be built from the export rather than typed in.\n\nA count that is not a whole number should be refused.",
+      "comments": [],
+      "issuelinks": [{"type": "relates to", "key": "PROJ-31", "summary": "Count widgets by part", "status": "Done"}]
+    },
+    {
+      "key": "PROJ-44",
+      "summary": "Merge inventory counts across warehouses",
+      "issue_type": "Task",
+      "status": "Upcoming",
+      "priority": "Normal",
+      "assignee": null,
+      "reporter": "Carol Example",
+      "created": "2026-01-22",
+      "duedate": null,
+      "story_points": null,
+      "components": ["Restock"],
+      "epic": "PROJ-10",
+      "description": "Add each part's count across every warehouse's inventory, so the nightly restock run orders from one total.",
+      "comments": [],
+      "issuelinks": []
+    },
+    {
+      "key": "PROJ-57",
+      "summary": "Refuse a negative count when an inventory is counted by part",
+      "issue_type": "Task",
+      "status": "New",
+      "priority": "Normal",
+      "assignee": null,
+      "reporter": "Alice Example",
+      "created": "2026-02-02",
+      "duedate": null,
+      "story_points": null,
+      "components": ["Inventory"],
+      "epic": "PROJ-10",
+      "description": "ticket-draft: drafted 2026-02-02 by Alice Example · open questions: 0\nh1. Context\nA warehouse export sometimes carries a negative count after a stock correction, and by_part passes it through, so the restock run under-orders that part. The purchasing team found two such orders in January.\n*Touches:* {{src/widgets/inventory.py}}, {{by_part}}\n*Used by:* the nightly restock run, {{merge}}\n\nh1. Where it fits\nEpic PROJ-10, Inventory checks. Builds on PROJ-31. Wanted before the March restock review.\n\nh1. Driving Requirements\nAn inventory that holds a negative count is refused when it is counted by part, naming each part whose count is negative.\n\nh2. Acceptance Criteria\n# An inventory with A-1 at -2 and B-7 at -1: ValueError naming A-1 and B-7, observed by a unit test with a two-row fixture.\n# An inventory with a count of zero: counted as zero, not refused.\n# An inventory with no negative count: the counts by part, as today.\n\nh1. Not this ticket\n* Merging counts across warehouses: PROJ-44\n* Correcting the warehouse export itself (candidate)",
+      "comments": [],
+      "issuelinks": [{"type": "relates to", "key": "PROJ-31", "summary": "Count widgets by part", "status": "Done"}]
+    },
+    {
+      "key": "PROJ-58",
+      "summary": "Refuse an empty part number when an inventory is counted by part",
+      "issue_type": "Task",
+      "status": "New",
+      "priority": "Normal",
+      "assignee": null,
+      "reporter": "Bob Example",
+      "created": "2026-02-09",
+      "duedate": null,
+      "story_points": null,
+      "components": ["Inventory"],
+      "epic": "PROJ-10",
+      "description": "ticket-draft: drafted 2026-02-09 by Bob Example · open questions: 0\nh1. Motivation\nA warehouse export with a blank part cell yields a widget whose part is the empty string, and by_part counts it as a part of its own, so the order sheet carries a row no supplier can fill.\n\n*Impact:*\n* The purchasing team stops sending suppliers rows with no part.\n\nh1. Driving Requirements\nAn inventory holding a widget with an empty part number is refused when it is counted by part.\n\nh2. Technical Requirements\n* The refusal is a ValueError, as by_part's other refusal is (PROJ-31).\n\nh2. Acceptance Criteria\n# An inventory with a widget whose part is the empty string: ValueError saying a part number is empty.\n# An inventory with no empty part number: the counts by part, as today.\n\nh1. Related Out of Scope Tickets\n* [PROJ-44 Merge inventory counts across warehouses|https://jira.example.com/browse/PROJ-44]\n\nh1. The code today\n*Touches:* {{src/widgets/inventory.py}}, {{by_part}}\n*Used by:* nothing outside this repository\n*Missing:*\n* No check on the part number",
+      "comments": [],
+      "issuelinks": [{"type": "relates to", "key": "PROJ-31", "summary": "Count widgets by part", "status": "Done"}, {"type": "relates to", "key": "PROJ-44", "summary": "Merge inventory counts across warehouses", "status": "Upcoming"}]
+    }
+  ]
+}

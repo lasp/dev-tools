@@ -37,6 +37,9 @@ the review contract's product scenarios, `review-specified-retry`, whose review 
 a retry the plan specifies, `review-fail-loud-decision`, whose wave raises a silent cache fallback
 under an adopted fail-loud decision, and `review-swallowed-exception`, whose wave raises a swallowed
 exception under the contract's floor alone,
+`review-agent-guidance`, whose wave loads a standard's agent guidance and data conventions and raises
+a deprecated alias under its agent guidance against compatibility shims, and its control,
+`review-agent-guidance-control`, the same without the agent guidance,
 `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
 environment) with the TODO still in place, the `skill-feedback` previews,
 whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,
@@ -53,6 +56,17 @@ checkouts, after a change to a skill's `description:`:
 ```bash
 sandbox/smoke.py --scenarios sandbox/triggers/scenarios.yaml --base ../dev-tools-main --head . --sandbox ~/sbx/1002 --repeat 3
 ```
+
+The tracker pack, `tracker/scenarios.yaml`, runs in `widgets` given its own standard with a Jira
+workflow, against a Jira project that `tracker/fixture/mcp-atlassian-stub.py` serves read-only from
+`jira.json`: `ticket-draft` drafting a new ticket and reformatting an older one through to the paste
+file, its format triage on a ticket in the older layout and one in the current format, and `work`
+routing a To Do ticket with no context page. Its `mcp.json` names the stub as
+`${SBX_FIXTURES}/mcp-atlassian-stub.py`, which `run.py` sets for the session, as the pack's header
+shows, and each scenario's `mcp:` expectation fails a run the stub did not answer. A search that
+names no key returns the whole project, Done tickets included. The stub has no write tools, as a
+read-only server has none, so a write plan's gate is never reached: each run hands its writes over
+to paste.
 
 A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
@@ -190,8 +204,8 @@ verified. Inside it every Bash command is allowed without a rule, so the
 compound commands a skill composes (`mkdir -p .review && bash …`, `source .venv/bin/activate &&
 pytest`, a heredoc) run as they would for a person. A command that fails in the sandbox is not
 retried outside it, and a session refuses to start where the sandbox cannot, rather than run
-unsandboxed. Sandboxed commands lose the environment variables `mcp.json` reads and `GH_TOKEN` and
-`GITHUB_TOKEN`, cannot read `~/.config/gh`, `~/.netrc` or `~/.git-credentials`, cannot write the
+unsandboxed. Sandboxed commands lose the environment variables `mcp.json` reads, `GH_TOKEN`,
+`GITHUB_TOKEN` and `SBX_FIXTURES`, cannot read `~/.config/gh`, `~/.netrc` or `~/.git-credentials`, cannot write the
 sandbox's `settings.json` or `mcp.json`, and get no answer from a git credential helper, which
 `sbx-claude` clears: a scenario's fetches read public repositories, and a command cannot push to a
 URL it names. Claude Code still sends some commands, such as a `for` loop, `eval` or one that
@@ -290,6 +304,97 @@ repeats of one variant compared against each other came out identical in 21 of 2
 other four differing only in such tools; main against the sandbox's pin found the changed
 `using-confluence` body that `source-reader` preloads, the namespaced names it preloads by, and
 the skill and agent listings.
+
+## Harvest recall
+
+`sandbox/harvest_recall.py <fixture>` scores what a reading of a month's review comments finds,
+against an answer key, with no model and no login: whatever is measured reads the comments once,
+and the score is a script. A change to how `revise` reads review comments, such as `record.py`'s
+authorship or the guidance extractor, reports it before and after; a change to what comes after
+the reading, such as clustering or admission, adds what it needs to the scorer.
+
+`sandbox/harvest/` is the public fixture: one synthetic month of an invented repository, ten merged
+pull requests and 186 comments as `scripts/comment_list.py` lists them, most threads opened by an
+agent's finding with the principle in a person's reply. Its key holds 46 general statements in
+eight themes, each theme stated on three pull requests in different words, one comment holding
+two, and 20 people's comments, openers and replies, that ask only for a change in their own pull
+request. Its README gives the shape and the traps. `tests/test_harvest_recall.py` holds the
+fixture to that shape and reproduces the scores below from the run recorded under `runs/`, so CI
+pins the scorer, the fixture and that run, never the extractor itself. A project scores its own
+months the same way: a directory of comment lists and a `labels.json` of what a person's full read
+found, kept in that project, since it quotes the team.
+
+What is scored is one of:
+- `--items <slice> ...`, a `guidance-extractor` run;
+- `--analyst <dir>`, `thread-analyst` blocks, a pull request with no block reported and read as
+  finding nothing;
+- `--openers`, the analyst's reading with no run: an item on each person's thread-opening comment,
+  review summary and conversation comment, and none on a reply.
+
+With `--items`, `--clusters <file>` also scores a clustering of that run, the clusters file
+`scripts/guidance_clusters.py` checked: each theme joined when one cluster holds its statements
+from two pull requests or more, and kept apart when no other theme shares that cluster, so a
+clustering that merges neighboring principles loses the second figure.
+
+An item finds a label where their quotes overlap in the comment. An analyst line carries no quote,
+so it finds every label on its comment. `--pairs <file>` writes each such label beside its line,
+for a judge, and `--carried <file>`, the judge's `carried` or `local` per label, adds the recall of
+lines that carry the principle. The printout gives:
+- recall overall, by kind, by signal, in replies, and in replies to an agent's finding;
+- each theme's items and pull requests found, and how many themes have found items on two pull
+  requests, which a two-pull-request bar can meet once clustering joins them;
+- the extractor's agreement on kind;
+- precision, with each general item no label holds listed for a person to judge;
+- the negatives read as general;
+- the quotes found in their comments.
+
+`--openers` places an item on an approval the analyst would skip, so it reports neither precision
+nor negatives.
+
+Scores of 2026-11-05:
+
+| Reading | Recall | In replies, to an agent's finding | Agent guidance | Themes on two PRs | Precision | Negatives read general | Cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Public fixture, `--openers` | 14/46 | 0/32, 0/27 | 1/14 | 1/8 | — | — | none |
+| Public fixture, `guidance-extractor` on Opus, `runs/` | 46/46 | 32/32, 27/27 | 14/14 | 8/8 | 45/47 | 1/20 | 1 agent, about 154,000 tokens, 6 minutes |
+| A private month, 1,232 comments, `--analyst` with a judge's `--carried` | 38/117 carried (76 found) | 0/30, 0/13 | — | — | — | — | as that month's run |
+| The same month, `guidance-extractor` on Opus | 92/117 | 22/30, 12/13 | 7/7 | — | 96/263 | — | 4 agents, about 840,000 tokens, 11 minutes in parallel |
+
+Clustering, under `skills/revise/harvest.md` "Clusters" of 2026-11-05: on the public fixture, two
+runs each joined and kept apart 8 of 8 themes, in 28 and 29 clusters of 64 statements, agreeing on
+99.7% of pairs of statements; `clusters/` holds the second. On the private month, 247 statements
+fell into 97 clusters; of the six themes the reference read named as recurring, four were each
+joined in one cluster over two or three pull requests, one of them with a neighboring principle
+beside it, and two restate live rules and support them as `covered` statements. The first
+private run, before the section said that statements needing two different changes are two
+clusters, merged three of the themes into one.
+
+Routing, under `skills/revise/harvest.md` "Destinations" of 2026-11-05: on the public fixture, the
+recorded run's tally admits each labeled statement as its own kind for 8 of 8 data conventions, 4 of
+4 process statements and 4 of 6 tool-checkable asks, where it held every one before; the two others
+admit under the kind the extractor gave them. The recorded clusters' kinds, each the kind of most of its people's lines, are 6 agent guidance,
+6 data convention, 5 rule, 4 process and 8 of the other kinds. On the private month, 100 of the
+tally's 164 held statements admit under their kind, 34 of them process and 22 data conventions, so
+its admissions rise from 53 to 153 before clustering.
+
+Priority, under `standards/dials.md`'s Recurring ask of 2026-11-05, which counts a cluster's pull
+requests at 1 low, 2 medium and 3 or more high: of the recorded clusters, 8 are high and 21 low,
+where the rule before, two pull requests or two people high and one statement medium, made 8 high,
+20 medium and 1 low. The 20 said once move from medium to low; recall is unchanged, since the
+Dials read nothing the extractor does.
+
+On the private month, the key was drafted by agents, and the extractor's quotes were all in their
+comments (631 of 631); 4 of the key's 117 quotes could not be found in their comments, which
+leaves those labels unfound. A judge read most of the general items no label held, 127 of 164 at
+an earlier count, as general guidance the key missed. A person samples about twenty labels before a key's figures are read as
+recall or precision. The synthetic month is easier than real review prose, so its figures are a
+check that nothing regressed, and a real month's are the measure.
+
+To record a new run after a change to the extractor's prompt, run `guidance-extractor` on the ten
+comment lists with `standard/` as the ledger and decisions and no instruction file. Write its slice
+under `runs/` and check it with `python3 scripts/guidance_check.py <slice> --comments
+sandbox/harvest/comments/*.json`. Then score it, and record the figures and the cost in this table
+and in the test's pins.
 
 ## From a complaint to a scenario
 

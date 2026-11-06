@@ -11,7 +11,10 @@ meeting deferred everything: stop, there is nothing to write, and name the repor
 in a clone, its branch. Then, by mark:
 - A proposal not marked `accept` gets no archive entry, no diff line of its own and no ticket. A
   declined, escalated or blank admission, the last one the meeting deferred, returns to the held
-  candidates with its evidence.
+  candidates with its evidence and its quotes, a `question/` included, with `kind:
+  open-question`; one marked `answer:` is settled, and becomes a decision.
+- A held proposal whose held line says `no override` returns to the held candidates whatever its
+  mark.
 - A proposal held by the bar is accepted only by `accept, override: <reason>`. A held admission
   not so marked returns to the held candidates; a held rewording, promotion or broadening not so
   marked leaves its rule as it stands. A held proposal marked a plain `accept` stops `apply`,
@@ -32,7 +35,8 @@ in a clone, its branch. Then, by mark:
    - a Confluence page body with the same content in `.review/archive-pages/`; the report says a
      person has to publish it.
 
-   The same for a retired `context/` entry and a superseded decision. A rule may not leave the
+   The same for a retired `context/` entry, a superseded decision, and an agent guidance entry or
+   data convention that retires, each to `<archive>/<id>.md` with no stub left behind. A rule may not leave the
    corpus in a revision pull request without all of them. With a clone, the archive entries go in
    its pull request, which merges first, and the pull request here links it.
 2. **Draft, lint, then write.** Draft the diff for the accepted proposals and the accepted
@@ -41,21 +45,48 @@ in a clone, its branch. Then, by mark:
    a new one's under a `### R-NNN · <title>` heading with a `Wording:` link from its entry, since
    the lint refuses a ledger that mixes the two; a changed title changes that file's anchor, and
    the ledger's link changes with it. Whatever the marks, the diff also rewrites the
-   ledger's `## Candidates below the criteria` from the held candidates, the admissions declined,
-   escalated or deferred, and the held admissions not accepted with an override, each with its evidence and
-   the criterion or check it fails. An admitted, reworded, promoted or broadened entry takes its
+   ledger's `## Candidates below the criteria` from the held candidates, of every kind, each
+   other than a rule with a `kind: <kind>` line, and each with a `prs:` line: a continued
+   candidate's, its cluster's `asked` line from `guidance_clusters.py`; a candidate no cluster
+   continued, its line as it stands, or, with none, the pull requests a person asked on that its
+   evidence names, written once; the admissions declined,
+   escalated or deferred, and the held admissions not accepted with an override, each with its evidence, its
+   quotes and the criterion or check it fails. An admitted, reworded, promoted or broadened entry takes its
    `scope:` and `example:` lines verbatim from under its proposal. An admitted rule's `since:` is
    the month its entry reaches `main`, never the window's, since the Provisional expiry Dial counts
-   from then. An accepted override goes on the entry's evidence line as `rule-bar.md` says. An
+   from then. An accepted override goes on the entry's evidence line as `rule-bar.md` says, or,
+   for a `D-NNN`, on its date line as harvest.md's "Destinations" says. An
    accepted `doc/<path>` proposal changes that document to say what its pull requests show, in
-   the same diff, and touches nothing else in it.
+   the same diff, and touches nothing else in it; an accepted `exemplar/<path>` adds a pointer to
+   that code to the instruction file.
+
+   The other destinations, as harvest.md's "Destinations" names them, each taking its drafted text
+   verbatim from its `entry:` lines in the report:
+   - `A-NNN` and `F-NNN` entries go at the end of `<standard files>/agent-guidance.md` and
+     `data-conventions.md`, each file started from `<plugin root>/standards/templates/` when the
+     standard has none, their months the month the entry reaches `main`. A change to a live
+     `F-NNN` is written only when marked `accept, owner: <name>`, its owner the one named, and
+     `owner: <name> · <YYYY-MM>` goes on its `source:` line; marked a plain `accept`, it stops
+     `apply`, naming it, as a held proposal does. Whatever the marks, each agent guidance entry the
+     report's "Rules" lists as seen again takes its new `seen` month.
+   - `D-NNN` entries go at the end of `<standard files>/decisions.md`, and so does each answered
+     `question/`, as a provisional `D-NNN` stating the answer, numbered as harvest.md says, so a
+     later revision finds it covered.
+   - `tool/<rule>`, proposed only with no violations on `main`, changes the lint configuration
+     the repository's instruction files or CI name, in this repository's diff, enabling that rule
+     and nothing else.
+
+   Lint each changed agent guidance or data conventions file with `python3 "<plugin
+   root>/scripts/entries_lint.py"` on its copy beside the ledger's; a refusal stops as the ledger's
+   lint does. Append each `D-NNN` to a copy of `decisions.md` beside them and pass that copy as
+   the lint's `--decisions` below, with `--checks fields` run on it even when nothing is named.
 
    Apply the drafted diff to copies of the ledger, and of the instruction file it links if any,
    under `mktemp -d` and run `rule_lint.py` on them with `--ledger`, `--instructions` only for a
    linked instruction file, `--repo .`, the `--decisions` and `--profiles` files `prepare.md`
-   step 7 names, and `--changed` naming each accepted proposal that admits,
+   step 7 names, the copied `decisions.md` in place of its own, and `--changed` naming each accepted proposal that admits,
    rewords, promotes or broadens a rule, less those accepted with an override, whose lint lines
-   go into the report beside the reason. With nothing to name, skip the lint. A failure stops,
+   go into the report beside the reason. With nothing to name and no new decision, skip the lint. A failure stops,
    with its lines, and nothing is written. Once a repository is over its budget, any named
    change to a rule counted there fails the budget gate, a narrowing included, so the proposals
    that bring it back under go in the same apply; an admission accepted with an override is not

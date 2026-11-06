@@ -1,8 +1,8 @@
 # The plugin's standards
 
 What every project's standard is held to, shipped with the plugin: how every reviewer behaves
-(`review-contract.md`), the bar a rule meets (`rule-bar.md`), the thresholds the revision and the
-planning skills apply (`dials.md`), the ticket description every tracker writes
+(`review-contract.md`), the bar a rule meets (`rule-bar.md`), the thresholds the revision applies
+(`dials.md`), the ticket description every tracker writes
 (`ticket-format.md`) and the default profile (`default-profile.yaml`, with `profile.example.yaml`
 as its template). A project's own standard holds the rest: its vocabulary,
 its decisions, `context/`, `archive/`, each repository's rules and each repository's records. That
@@ -27,6 +27,7 @@ the Confluence pages and Jira issues named in `context/`, and the people who mad
 | `dials.md` — every threshold the revision applies | `context/` — one entry per Confluence page, Jira epic or PR thread | `standards/profile.yaml` — its settings, or the one-line `standard:` pointer |
 | `ticket-format.md` — the ticket description, the same in every tracker, which a project's `tracker.md` may adapt | — | — |
 | `default-profile.yaml` — how the tools operate, under every repository's settings | `archive/` — why a rule existed, kept after the rule stops existing | `.github/PULL_REQUEST_TEMPLATE.md`, which `/lasp-dev:quickstart` checks against the standard's `templates/<name>/PULL_REQUEST_TEMPLATE.md` |
+| `templates/` — a starting copy of a standard's agent guidance and data conventions files | `agent-guidance.md` — habits coding agents should not repeat; `data-conventions.md` — facts about inputs and products, each with its source (`docs/standards.md`, "Agent guidance and data conventions") | — |
 | — | `<repo>/log/` — each repository's review records, revision reports and corrections (`docs/contracts.md`, "The record") | — |
 
 A rule is loaded on every reviewer run and has to earn that
@@ -69,7 +70,8 @@ what is detected and the default profile's.
 
 ## Dials
 
-The thresholds the revision and the planning skills apply are in `standards/dials.md`.
+The thresholds the revision applies are in `standards/dials.md`; a threshold another skill applies
+lives in the file that applies it.
 
 ## Numbering
 

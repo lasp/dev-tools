@@ -11,7 +11,7 @@ description: >
 argument-hint: "[investigate | settle | reformat] <ticket key | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
-  version: 1.10.18
+  version: 1.10.19
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
@@ -200,7 +200,8 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
    Show **Placement**: the overlaps with their verdicts and quoted criteria, the epic, the
    dependencies, the year-plan month, and each repository the change reaches with its report's
    Touches in a line, the full reports going to the context page. Then the rough size, and
-   whether it reaches the "Group ticket session" threshold. Then one widget, two questions:
+   whether it calls for a group ticket session: an estimate of 5 or more, or an epic. Then one
+   widget, two questions:
    - **The goal** searched for: **Right** (Recommended), or **Correct it**, which runs step 2
      again on the corrected goal.
    - **How to go on**, the options that apply, the recommended one first:
@@ -212,7 +213,7 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
        upheld `same` keeps the source and merges <ticket key> into it. The option's description
        names the ticket that section recommends keeping.
      - **Split**, recommended when the reports show two goals or the rough size is at or above
-       the "Split before starting" threshold (the plugin's `standards/dials.md`), proposes the
+       an estimate of 8, at which a ticket is split before work starts, proposes the
        pieces, each a goal in one line, in the order they must land and which can go in
        parallel; on a yes, each is drafted from step 4 with the reports reused, through its own
        step 7, and step 7's write plan for the last piece holds every piece's items. The first

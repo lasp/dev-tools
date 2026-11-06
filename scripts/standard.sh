@@ -3,8 +3,8 @@
 # prints one line, `<owner>/<repo><TAB><directory><TAB><version>`: the repository that holds the
 # standard, the directory holding its standards/ files, and the commit they were read at, or
 # `local` for a checkout named in git's config. Run from the code repository's top level;
-# standard_file.sh reads the ledger, decisions and terminology from the directory, and profile.py
-# the settings. With no `standard:` line it prints nothing.
+# standard_file.sh reads the ledger, decisions, terminology, agent guidance and data conventions
+# from the directory, and profile.py the settings. With no `standard:` line it prints nothing.
 #
 # A trial of changes not yet merged reads a local checkout of the standard's repository, named once
 # per clone with `git config lasp-dev.standard <absolute path>`, as it stands, committed or not;

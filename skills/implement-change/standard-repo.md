@@ -6,8 +6,8 @@ else in the skill stands.
 
 - **Context first (step 1).** For an epic, or a ticket in the profile's ticket key pattern with no
   `.review/context/<ticket>.md`, offer `/lasp-dev:ticket-draft` on it before the brief; its
-  estimate, against the "Group ticket session" threshold in the plugin's `standards/dials.md`,
-  says whether the group should settle the plan. With the source, read
+  estimate, against the group ticket session `ticket-draft`'s step 3 names, says whether the
+  group should settle the plan. With the source, read
   `.review/context/<ticket>.md`, its first line on its own first: a page that opens with a
   `Controlled:` line is held as `<plugin root>/skills/writing/references/short.md`, "Controlled content" says, and nothing of it reaches the planner until the
   person clears it. `.review/context.md` stays the session-start line's copy.
@@ -16,7 +16,7 @@ else in the skill stands.
   "<plugin root>/scripts/standard_file.sh" > .review/standard.md.tmp && mv
   .review/standard.md.tmp .review/standard.md`, so a failure keeps the last good file. It holds
   the review contract, the repository's rules and decisions, or with a pointer those the script
-  fetches from the repository it names, and the plugin's shared decisions and terminology. Exit 1
+  fetches from the repository it names, with their terminology, agent guidance and data conventions. Exit 1
   names the missing file, which stops the build; a standard that cannot be fetched stops it too,
   and the person may choose to go on without it, `git config lasp-dev.standard none`, which
   lasts until `git config --unset lasp-dev.standard`; say so to the person and in a sentence of
