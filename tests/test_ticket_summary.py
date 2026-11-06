@@ -94,6 +94,7 @@ class Forms(unittest.TestCase):
             "qualifier": "Summary (unchanged): Refuse a negative count in by_part\n",
             "heading, unchanged below": "== Summary ==\nunchanged\n",
             "field changes none": "Field changes: none. Summary, Component/s and Priority are unchanged.\n",
+            "kept in what changed": "* Kept: the summary, the Motivation and Impact\n",
         }
         for name, text in cases.items():
             with self.subTest(name):

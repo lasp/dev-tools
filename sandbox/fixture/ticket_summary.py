@@ -10,7 +10,8 @@ the heading `== Summary (field change) ==`, takes it from the next non-blank lin
 `After:` line of a `Now:`/`After:` pair. A value that is a change, `<now> → <after>` or `->`, its
 sides quoted, backticked or bare, or `"<now>" to "<after>"`, gives its after; one that ends
 `(was: …)` or `(changed from …)` gives what comes before. A summary line, or a `Field changes:`
-line, that says the summary is unchanged, kept or none prints the summary as filed.
+line, that says the summary is unchanged, kept or none, or a What changed line `Kept: the summary,
+…`, prints the summary as filed.
 
 A follow-up ticket's summary is skipped. A line of at most 120 characters that opens with
 `Follow-up`, `New follow-up` or `File the follow-up`, after any heading marks or number, opens its
@@ -102,6 +103,8 @@ def summary(text: str, key: str, filed: str) -> Optional[str]:
         elif re.match(r"^\s*field changes?:", line, re.I) and not follow_up:
             if KEPT.match(line.split(":", 1)[1]):
                 return filed
+        elif re.match(r"^[\s*-]*kept:\s*(?:the\s+)?summary\b", line, re.I) and not follow_up:
+            return filed
     heading = re.compile(rf"^[\s#=*]*(?:ticket:?\s*)?{re.escape(key)}\s*·\s*(?P<s>.+)$", re.I)
     for line in lines:
         m = heading.match(line)
