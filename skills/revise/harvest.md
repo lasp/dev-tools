@@ -66,7 +66,8 @@ still refused, after it went back once, is not read: check again without it and 
 lists, and name its pull requests and its lines with what was not read. The printout of the
 check that passes is the guidance's count. Then run `python3 "<plugin root>/scripts/guidance_tally.py"`
 with the same slices and lists, writing its printout to `.review/harvest/guidance/tally.txt`: its
-`admit`, `covered`, `hold` and `support` lines, each with the comment's own words, are what
+`admit`, `covered`, `hold` and `support` lines, each with the comment's own words, and its
+`nominated` lines, one per line a person opened `For agents:` or `Standard:`, are what
 "Clusters" and the caller read (`docs/contracts.md`, "The guidance tally"). With
 no comment list, or none left once the unread slices are set aside, no check runs, and the count
 is `none read`.
@@ -83,7 +84,8 @@ With "Guidance" run, the statements are the guidance tally's `admit`, `hold` and
 its `covered` lines support the entry they name and join nothing. Write
 `.review/harvest/clusters.json` (`docs/contracts.md`, "The guidance clusters"): each cluster's
 kind, the destination "Destinations" sends it to, the kind of most of its people's lines, since
-the script takes only a kind one of its lines carries; its principle in one sentence; its tally lines by key; as notes, each analyst `asked:` line not `none`,
+the script takes only a kind one of its lines carries; its principle in one sentence; its tally lines by key; as notes, each `nominated` line `not
+extracted`, `pr-NNNN · <login> · human · nominated <comment id>: <text>`, each analyst `asked:` line not `none`,
 `pr-NNNN · <opener login> · <by> · <source> <id>: <asked>`, so a person's ask the extractor read as
 one pull request's still counts toward the Recurring ask Dial, and each pasted note as `pasted
 <file> · <name> · <the ask>`; and the title of the ledger's held candidate it continues, when one

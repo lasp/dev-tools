@@ -26,6 +26,9 @@ no one commented on, each item:
   commit it was made on, else `line`, and null at file level; both null for a review or a
   conversation comment;
 - `created`, its timestamp as GitHub gave it: `created_at`, or a review's `submitted_at`;
+- `nominated`, what the comment nominates for the standard: the rest of each of its own lines
+  (`record.py`'s `own_lines`, so not a quoted or fenced line) that opens `For agents:` or
+  `Standard:`, case aside, in order; empty when none does (`README.md`, "Nominating guidance");
 - `body`, its text, unchanged.
 
 A review with a blank body, such as one posted with a batch of thread replies, is no comment and
@@ -50,6 +53,9 @@ DISCUSSION = re.compile(r"#discussion_r(\d+)$")
 
 class Refused(Exception):
     """A dump the list cannot be built from."""
+
+
+NOMINATION = re.compile(r"(?i)(?:for agents|standard):\s*(\S.*)")
 
 
 def load_record():
@@ -78,7 +84,8 @@ def build(dump: Path, record) -> dict:
         items.append({
             "pr": pr, "id": id_, "url": url, "author": author,
             "authorship": record.authorship_of({"author": author, "body": body}),
-            "kind": kind, "thread": thread, "path": path, "line": line, "created": created, "body": body,
+            "kind": kind, "thread": thread, "path": path, "line": line, "created": created,
+            "nominated": [m[1] for m in map(NOMINATION.match, record.own_lines(body)) if m], "body": body,
         })
 
     for t in read(dump, "comments.json")["review_threads"]:

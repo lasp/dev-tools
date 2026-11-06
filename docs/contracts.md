@@ -291,7 +291,7 @@ Pinned by: tests/test_record.py::test_a_comment_without_its_date_is_refused_nami
 
 ## The comment list
 
-Version: 1
+Version: 2
 
 Fields: `.review/harvest/threads/pr-NNNN/comment-list.json`, a JSON object: `pr`, the pull
 request's number, and `comments`, every comment in its dump, ordered by `created` then `id` and
@@ -304,7 +304,9 @@ reads this comment alone; `kind`, `thread`, `reply`, `review` or `comment`; `thr
 thread's id, null for a review or a conversation comment; `path` and `line`, where the comment
 anchors, `line` its `original_line`, the line in the commit it was made on, else `line`, null at
 file level, both null for a review or a conversation comment; `created`,
-GitHub's timestamp (`created_at`, or a review's `submitted_at`); and `body`, the text unchanged.
+GitHub's timestamp (`created_at`, or a review's `submitted_at`); `nominated`, the text after each
+of its own lines, as `record.py`'s `own_lines` reads them, that opens `For agents:` or `Standard:`,
+case aside, in order, empty when none (version 2); and `body`, the text unchanged.
 
 Every comment is listed, a reply as much as the comment that opened its thread: guidance is read
 per comment, apart from how a thread was settled, which the record and `thread-analyst` judge per
@@ -368,7 +370,7 @@ Pinned by: tests/test_guidance_check.py::test_a_run_true_to_its_comments_passes
 
 ## The guidance tally
 
-Version: 2
+Version: 3
 
 Fields: what `scripts/guidance_tally.py <slice> [...] --comments <comment-list.json> [...]` prints,
 given a run's slices and lists as `guidance_check.py` takes them, and refusing, with that check's
@@ -390,10 +392,16 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
 - `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
   general item the pull request's author changed as asked.
 
-An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
+A person's item on a comment whose `nominated` list is not empty is `admit` with the signal
+`nominated`, unless `covered`, whatever its generality and signal; then one line per nomination of
+a person's comment, `nominated · pr-NNNN · <comment id> · <author> · <its items' keys, or not
+extracted> · <url> · <text>` (version 3).
+
+An agent's other items, a bot's and every other `pr-specific` item are counted, never listed. The quote
 is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
 before it. A last line reads `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> ·
-not listed: <n>`.
+not listed: <n> · nominated: <n>`. `guidance_check.py` refuses a comment list with a comment that
+has no `nominated` list, one from before version 2 of "The comment list".
 
 Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
 "Clusters" and "Destinations", and `revise` `prepare` step 5, for the Admission Dial's single

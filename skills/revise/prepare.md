@@ -193,7 +193,10 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    **Single statements.** A cluster admits on one guidance tally `admit` line of its own kind
    alone, a person's general statement, the `admit` count `guidance_clusters.py` prints, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
    note admits the same way when a named person states a principle or asks for a change in it,
-   cited `pasted <file>` with that person's name. Each admitted cluster is a proposal of its kind,
+   cited `pasted <file>` with that person's name, and so does a person's nomination, a tally
+   `nominated` line: its items already admit as `nominated`, and one `not extracted` admits the
+   cluster its note joins. Every `nominated` line reaches the report, as a proposal's evidence or
+   a held candidate with its reason, never dropped. Each admitted cluster is a proposal of its kind,
    with the id and destination harvest.md's "Destinations" gives it. A cluster with no `admit` line and a `hold`
    line is held with the tally's criterion. A `covered` line supports the live rule, decision,
    agent guidance entry, data convention or instruction it names, listed under it in "Rules", and

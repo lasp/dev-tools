@@ -22,7 +22,7 @@ spec.loader.exec_module(harvest_recall)
 
 BODY = "Fixed.\n\nIn general, import dependencies directly;   no guards."
 COMMENT = {"pr": 7, "id": 12, "url": "u12", "author": "bob", "authorship": "human", "kind": "reply", "thread": "PRRT_a",
-           "path": "x.py", "line": 5, "created": "2026-10-01T11:00:00Z", "body": BODY}
+           "path": "x.py", "line": 5, "created": "2026-10-01T11:00:00Z", "nominated": [], "body": BODY}
 ITEM = {"pr": 7, "comment_id": 12, "url": "u12", "author": "bob", "authorship": "human",
         "quote": "In general, import dependencies directly; no guards.", "generality": "general",
         "signal": "states a principle", "kind": "rule", "principle": "Import directly.", "rationale": None,
@@ -75,7 +75,7 @@ class Tally(unittest.TestCase):
             "admit · s1-5 · pr-0007 · 12 · bob · data-convention · states a principle · u12 · no guards.",
             "support · s1-6 · pr-0007 · 13 · alice · rule · u13 · in general at the boundary.",
             "admit · s1-9 · pr-0007 · 12 · bob · tool-config · none · u12 · no guards.",
-            "items: 10 · admit: 3 · covered: 1 · hold: 2 · support: 1 · not listed: 3",
+            "items: 10 · admit: 3 · covered: 1 · hold: 2 · support: 1 · not listed: 3 · nominated: 0",
         ])
 
     def test_a_kind_whose_bar_reads_no_signal_admits_without_one(self):
@@ -91,6 +91,30 @@ class Tally(unittest.TestCase):
             with self.subTest(kind=kind):
                 lines = self.tally([COMMENT], {**ITEM, "quote": "no guards.", "signal": "cites a source", "kind": kind})[1]
                 self.assertTrue(lines[0].startswith(f"{word} · "), lines)
+
+    def test_every_nomination_of_a_person_is_listed_and_its_items_admit_whatever_their_signal(self):
+        nominating = {**COMMENT, "nominated": ["import dependencies directly"]}
+        silent = {**COMMENT, "id": 15, "url": "u15", "author": "carol", "nominated": ["fill values are per variable"],
+                  "body": "Standard: fill values are per variable"}
+        agent = {**COMMENT, "id": 16, "url": "u16", "author": "alice", "authorship": "ai-drafted", "nominated": ["mock it"],
+                 "body": "For agents: mock it"}
+        code, lines = self.tally([nominating, silent, agent],
+                                 {**ITEM, "quote": "no guards.", "signal": "none", "generality": "pr-specific"},
+                                 {**ITEM, "quote": "no guards.", "covered_by": "R-002"})
+        self.assertEqual(code, 0, lines)
+        self.assertEqual(lines, [
+            "admit · s1-0 · pr-0007 · 12 · bob · rule · nominated · u12 · no guards.",
+            "covered · s1-1 · pr-0007 · 12 · bob · rule · R-002 · u12 · no guards.",
+            "nominated · pr-0007 · 12 · bob · s1-0, s1-1 · u12 · import dependencies directly",
+            "nominated · pr-0007 · 15 · carol · not extracted · u15 · fill values are per variable",
+            "items: 2 · admit: 1 · covered: 1 · hold: 0 · support: 0 · not listed: 0 · nominated: 2",
+        ])
+
+    def test_refuses_a_comment_list_from_before_nominations(self):
+        old = {k: v for k, v in COMMENT.items() if k != "nominated"}
+        code, lines = self.tally([old], ITEM)
+        self.assertEqual(code, 1)
+        self.assertIn("a comment with no nominated list", "\n".join(lines))
 
     def test_refuses_a_run_the_guidance_check_refuses(self):
         code, lines = self.tally([COMMENT], {**ITEM, "quote": "never said"})

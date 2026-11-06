@@ -159,6 +159,8 @@ def main(argv: list[str] | None = None) -> int:
         if (not isinstance(data, dict) or set(data) != {"pr", "comments"} or not shape(data["pr"], int)
                 or not isinstance(data["comments"], list)):
             faults.append(f"refused · {path} · not a comment list, an object with pr and comments")
+        elif not all(isinstance(c, dict) and isinstance(c.get("nominated"), list) for c in data["comments"]):
+            faults.append(f"refused · {path} · a comment with no nominated list: a comment list from before version 2")
         elif data["pr"] in lists:
             faults.append(f"refused · {path} · pull request {data['pr']} given twice")
         else:

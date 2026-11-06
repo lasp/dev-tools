@@ -8,7 +8,7 @@ description: >
 argument-hint: "[PR number or URL] [scope] [skip the gate] [rebase]"
 metadata:
   author: llm-tooling
-  version: 2.8.0
+  version: 2.8.1
 ---
 
 # PR Fix

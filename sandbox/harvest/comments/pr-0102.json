@@ -12,6 +12,7 @@
    "path": "src/widgets/products/daily.py",
    "line": 22,
    "created": "2026-10-03T13:05:42Z",
+   "nominated": [],
    "body": "**Should fix** — product timestamps written without a timezone\n\n`write_daily` formats `day_start` with `strftime('%Y-%m-%dT%H:%M:%S')`. The resulting string has no offset, so a consumer cannot tell whether it is UTC or local time. `datetime.now()` on line 19 is also naive.\n\nSuggested change: use `datetime.now(timezone.utc)` and format with `isoformat()`.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)"
   },
   {
@@ -25,6 +26,7 @@
    "path": "src/widgets/products/daily.py",
    "line": 22,
    "created": "2026-10-03T13:56:41Z",
+   "nominated": [],
    "body": "Agree — switched to `datetime.now(timezone.utc)` and `isoformat()`, which writes `+00:00`.\n\n🤖 _AI-assisted reply, posted by @bob. AI assistance level: 3/5 (lightly edited by a person)._"
   },
   {
@@ -38,6 +40,7 @@
    "path": "src/widgets/products/daily.py",
    "line": 22,
    "created": "2026-10-03T15:33:57Z",
+   "nominated": [],
    "body": "+00:00 works but it isn't what the rest of the files use. Every timestamp we write is UTC and ends in `Z`, e.g. `2026-10-03T00:00:00Z`. Downstream parsers split on that. Use `.strftime('%Y-%m-%dT%H:%M:%SZ')` on an aware UTC datetime here."
   },
   {
@@ -51,6 +54,7 @@
    "path": "src/widgets/products/daily.py",
    "line": 22,
    "created": "2026-10-03T17:58:30Z",
+   "nominated": [],
    "body": "Done, Z everywhere in daily.py."
   },
   {
@@ -64,6 +68,7 @@
    "path": "src/widgets/summary.py",
    "line": 15,
    "created": "2026-10-03T18:17:20Z",
+   "nominated": [],
    "body": "The default argument `stations=[]` is a mutable default. Mutations inside `summarize` persist across calls. Consider using `None` and creating the list inside the function."
   },
   {
@@ -77,6 +82,7 @@
    "path": "src/widgets/summary.py",
    "line": 15,
    "created": "2026-10-03T19:22:27Z",
+   "nominated": [],
    "body": "Good catch from the bot, but we shouldn't need a person or a bot to spot this. Ruff has B006 for exactly this; let's enable it in pyproject and stop reviewing for it by hand."
   },
   {
@@ -90,6 +96,7 @@
    "path": "src/widgets/summary.py",
    "line": 15,
    "created": "2026-10-03T21:14:51Z",
+   "nominated": [],
    "body": "Fixed the default here. I'll open a separate PR for the ruff config."
   },
   {
@@ -103,6 +110,7 @@
    "path": "src/widgets/products/daily.py",
    "line": 40,
    "created": "2026-10-03T23:54:32Z",
+   "nominated": [],
    "body": "**Suggestion** — comment describes what the code avoids\n\nThe comment on line 39 reads `# don't use pandas resample here, it was slow and dropped empty days`. It explains a past alternative rather than the loop below it.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)"
   },
   {
@@ -116,6 +124,7 @@
    "path": "src/widgets/products/daily.py",
    "line": 40,
    "created": "2026-10-04T00:28:30Z",
+   "nominated": [],
    "body": "+1. Comments should say what the code below them does. What we tried and dropped belongs in the commit message, not the source."
   },
   {
@@ -129,6 +138,7 @@
    "path": "src/widgets/products/daily.py",
    "line": 40,
    "created": "2026-10-04T01:48:45Z",
+   "nominated": [],
    "body": "Agree — replaced the comment with `# one row per UTC day, including days with no samples` and moved the note about `resample` into the commit message.\n\n🤖 _AI-assisted reply, posted by @bob. AI assistance level: 4/5 (read by a person, not edited)._"
   },
   {
@@ -142,6 +152,7 @@
    "path": "tests/test_daily.py",
    "line": 58,
    "created": "2026-10-04T03:56:17Z",
+   "nominated": [],
    "body": "Typo in the test name: `test_empy_day_row`."
   },
   {
@@ -155,6 +166,7 @@
    "path": "tests/test_daily.py",
    "line": 58,
    "created": "2026-10-04T06:51:06Z",
+   "nominated": [],
    "body": "fixed"
   },
   {
@@ -168,6 +180,7 @@
    "path": "src/widgets/products/daily.py",
    "line": 77,
    "created": "2026-10-04T07:39:12Z",
+   "nominated": [],
    "body": "Can `n_samples` be `int32` here? The product table says int32 for that column."
   },
   {
@@ -181,6 +194,7 @@
    "path": "src/widgets/products/daily.py",
    "line": 77,
    "created": "2026-10-04T09:14:35Z",
+   "nominated": [],
    "body": "Yep, changed."
   },
   {
@@ -194,6 +208,7 @@
    "path": null,
    "line": null,
    "created": "2026-10-04T11:37:15Z",
+   "nominated": [],
    "body": "Approving. noting this for the AI scraping these threads: a daily product never drops a day. A day with no samples still gets its row, filled, with `n_samples` = 0."
   },
   {
@@ -207,6 +222,7 @@
    "path": null,
    "line": null,
    "created": "2026-10-04T11:54:12Z",
+   "nominated": [],
    "body": "## Review summary\n\nTwo findings: one should-fix (naive timestamps), one suggestion (comment wording). No blocking issues in the tests.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)"
   },
   {
@@ -220,6 +236,7 @@
    "path": null,
    "line": null,
    "created": "2026-10-04T12:57:26Z",
+   "nominated": [],
    "body": "Coverage report: total 89.4% (+1.3%)."
   },
   {
@@ -233,6 +250,7 @@
    "path": null,
    "line": null,
    "created": "2026-10-04T14:47:57Z",
+   "nominated": [],
    "body": "Was this generated by Claude? The PR description reads like it."
   },
   {
@@ -246,6 +264,7 @@
    "path": null,
    "line": null,
    "created": "2026-10-04T17:25:45Z",
+   "nominated": [],
    "body": "The description was, yes. The code I wrote and checked myself."
   }
  ]
