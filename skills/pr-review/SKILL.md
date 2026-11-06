@@ -8,7 +8,7 @@ description: >
 argument-hint: "[PR number or URL] [focus area]"
 metadata:
   author: lasp-dev
-  version: 6.13.1
+  version: 6.13.0
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.

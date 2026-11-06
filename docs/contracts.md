@@ -291,7 +291,7 @@ Pinned by: tests/test_record.py::test_a_comment_without_its_date_is_refused_nami
 
 ## The comment list
 
-Version: 2
+Version: 1
 
 Fields: `.review/harvest/threads/pr-NNNN/comment-list.json`, a JSON object: `pr`, the pull
 request's number, and `comments`, every comment in its dump, ordered by `created` then `id` and
@@ -304,9 +304,7 @@ reads this comment alone; `kind`, `thread`, `reply`, `review` or `comment`; `thr
 thread's id, null for a review or a conversation comment; `path` and `line`, where the comment
 anchors, `line` its `original_line`, the line in the commit it was made on, else `line`, null at
 file level, both null for a review or a conversation comment; `created`,
-GitHub's timestamp (`created_at`, or a review's `submitted_at`); `nominated`, the text after each
-of its own lines, as `record.py`'s `own_lines` reads them, that opens `For agents:` or `Standard:`,
-case aside, in order, empty when none (version 2); and `body`, the text unchanged.
+GitHub's timestamp (`created_at`, or a review's `submitted_at`); and `body`, the text unchanged.
 
 Every comment is listed, a reply as much as the comment that opened its thread: guidance is read
 per comment, apart from how a thread was settled, which the record and `thread-analyst` judge per
@@ -329,7 +327,7 @@ Pinned by: tests/test_comment_list.py::test_lists_every_comment_with_its_own_aut
 
 ## The guidance items
 
-Version: 2
+Version: 3
 
 Fields: `.review/harvest/guidance/slice-<n>.json`, one `guidance-extractor` run, a JSON object:
 `prs`, the pull request numbers whose comment lists it read, each once; `comments_read`, the
@@ -341,7 +339,7 @@ each with exactly these keys:
 | `pr`, `comment_id`, `url`, `author`, `authorship` | the comment's, as its entry in "The comment list" gives them |
 | `quote` | the words that carry the guidance, one passage of 1 to 40 words of the comment's own words: its `body` without the lines that open `>` |
 | `generality` | `general` or `pr-specific` |
-| `signal` | `addresses agents`, `states a principle`, `names a habit`, `cites a source` or `none`; `none` on a `pr-specific` item |
+| `signal` | `asks for guidance`, `addresses agents`, `states a principle`, `names a habit`, `cites a source` or `none`; `none` on a `pr-specific` item (version 3 adds `asks for guidance`) |
 | `kind` | `rule`, `agent-guidance`, `data-convention`, `process`, `decision`, `tool-config`, `exemplar`, `review-calibration` or `open-question` |
 | `principle` | one sentence in the extractor's words |
 | `rationale` | the comment's own reason, one passage of 1 to 40 of its own words, or `null` |
@@ -379,9 +377,10 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
 
 - `admit · <key> · pr-NNNN · <comment id> · <author> · <kind> · <signal> · <url> · <quote>`: a
   person's words (`authorship` `human`) with `covered_by` null, of kind `rule`, `agent-guidance`
-  or `process` with a `signal` of `states a principle`, `addresses agents` or `names a habit`, of
-  kind `data-convention` or `decision` with one of those or `cites a source`, or of kind `tool-config`, `exemplar`, `review-calibration` or
-  `open-question` with any signal;
+  or `process` with a `signal` of `asks for guidance`, `states a principle`, `addresses agents` or
+  `names a habit`, of kind `data-convention` or `decision` with one of those or `cites a source`,
+  or of kind `tool-config`, `exemplar`, `review-calibration` or `open-question` with any signal
+  (version 3 adds `asks for guidance`);
 - `covered · <key> · pr-NNNN · <comment id> · <author> · <kind> · <covered_by> · <url> · <quote>`:
   a person's general item a live rule, decision, agent guidance entry, data convention or the
   instruction file already says;
@@ -392,16 +391,11 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
 - `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
   general item the pull request's author changed as asked.
 
-An item whose quote lies within a nominated text of its comment, or holds one, a bot's comment
-excepted, is `admit` with the signal `nominated, <its signal>`, unless `covered`, whatever its
-generality; then one line per nomination of a comment not a bot's, `nominated · pr-NNNN · <comment
-id> · <author> · <the keys of the items within it, or not extracted> · <url> · <text>` (version 3).
-
-An agent's other items, a bot's and every other `pr-specific` item are counted, never listed. The quote
+An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
 is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
-before it. A last line reads `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> ·
-not listed: <n> · nominated: <n>`. `guidance_check.py` refuses a comment list with a comment that
-has no `nominated` list, one from before version 2 of "The comment list".
+before it. After the items, one `ask · <key> · pr-NNNN · <author> · <url>` line per `admit` or
+`covered` line whose item's signal is `asks for guidance` (version 3). A last line reads `items:
+<n> · admit: <n> · covered: <n> · hold: <n> · support: <n> · not listed: <n> · asks: <n>`.
 
 Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
 "Clusters" and "Destinations", and `revise` `prepare` step 5, for the Admission Dial's single
@@ -435,19 +429,18 @@ per cluster and every `asked` entry `<repo>/pr-NNNN` (version 5),
 refuses, one `refused · <where> · <why>` line each and exit 1, a file of any other form, a key
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
-no `--ledger`. It refuses, too, a tally `nominated` line `not extracted` that is not a
-note `pr-NNNN · <login> · human · nominated <comment id>: <its text>` in exactly one cluster, and counts
-such a note under the cluster's `admit`, and refuses a note no `not extracted` line names, matched
-by pull request, comment id and text (version 4). Otherwise it
-prints per cluster, its `admit` count only the `admit` lines of its kind and any other counted as
-`hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
+no `--ledger`, and a tally `ask` line whose key is no `admit` or `covered` line (version 4). Otherwise it
+prints per cluster, its `admit` count only the `admit` lines of its kind or that a tally `ask`
+line names (version 4), any other counted as `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·
 <low|medium|high> · <n> pull request(s)`, its pull requests and, when it has people, those its
 continued held candidate's `prs:` line names and its `support` lines', at the Recurring ask Dial's counts,
 then `asked · <id> · pr-NNNN, ...` or `none`, the pull requests counted, which it refuses to run without (version 3), a `held · <id> · <title>`
-line when it continues one, a `note · <id> · <note>` line per note, and up to three `said · <id> ·
+line when it continues one, an `ask · <id> · <author> · <url>` line per line of it a tally `ask` line
+names (version 4), a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
-from a pull request and a person not yet quoted while one is left; then `clusters: <n> · lines:
+from a pull request and a person not yet quoted while one is left; then one `ask · <covered_by> ·
+<author> · <url>` per tally `ask` on a `covered` line (version 4); then `clusters: <n> · lines:
 <n>` and exit 0. A cluster's pull requests are those a person asked on, of its `admit` and `hold`
 lines and its `human` notes, which the Recurring ask Dial counts; its people the authors of those
 and of its pasted notes; either `none` when there are none; an agent's or a bot's words count for neither. It also refuses a tally whose closing `items:` line is missing or counts its words
