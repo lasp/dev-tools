@@ -82,10 +82,6 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
   Recommended: …
   Mark:
 
-## Dials at the margin                      step 4
-<Dial>: at <value>, <proposals gained or lost>; at <value>, <…>
-Other Dials: no change one step either way.
-
 ## Reference
 
 ### Rules                                   steps 1, 3

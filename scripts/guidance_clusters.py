@@ -34,7 +34,9 @@ admit it; an `admit` line of another kind counts under `hold`. Its pull requests
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
-<id> · <login>, ...`, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
+<id> · <login>, ...`, `priority · <id> · <low|medium|high> · <n> pull requests`, its pull requests
+with those of its `support` lines, an agent's finding the author changed as asked, at the
+Recurring ask Dial's counts in `standards/dials.md`, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
 note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
@@ -54,6 +56,8 @@ from pathlib import Path
 WORDS = ("admit", "hold", "support")
 HELD = "## Candidates below the criteria"
 KEYS = {"id", "kind", "principle", "items", "notes", "held"}
+DIALS = Path(__file__).resolve().parents[1] / "standards" / "dials.md"
+PRIORITY = re.compile(r"^\| Recurring ask \|.*?(\d+) low, (\d+) medium, (\d+) or more high", re.M)
 KINDS = ("rule", "agent-guidance", "data-convention", "process", "decision", "tool-config", "exemplar",
          "review-calibration", "open-question")
 
@@ -104,6 +108,14 @@ def held_titles(ledger: str) -> set[str]:
         if m:
             out.add(m[1].strip().rstrip("."))
     return out
+
+
+def priorities() -> tuple[int, int, int]:
+    """The Recurring ask Dial's pull request counts for low, medium and high priority."""
+    m = PRIORITY.search(DIALS.read_text() if DIALS.is_file() else "")
+    if not m:
+        raise Refused(f"{DIALS} has no Recurring ask Dial reading `<n> low, <n> medium, <n> or more high`")
+    return int(m[1]), int(m[2]), int(m[3])
 
 
 def check(clusters, lines: dict[str, dict], headings: set[str] | None) -> list[str]:
@@ -181,6 +193,7 @@ def main(argv: list[str] | None = None) -> int:
         clusters = json.loads(args.clusters.read_text())
         lines = tally_lines(args.tally.read_text())
         headings = held_titles(args.ledger.read_text()) if args.ledger else None
+        _, medium, high = priorities()
     except (OSError, json.JSONDecodeError, Refused) as e:
         print(f"refused · input · {e}")
         return 1
@@ -202,6 +215,9 @@ def main(argv: list[str] | None = None) -> int:
               + f" · prs {len(prs)} · people {len(people)} · {c['principle']}")
         print(f"prs · {c['id']} · {', '.join(prs) or 'none'}")
         print(f"people · {c['id']} · {', '.join(people) or 'none'}")
+        asked = len(set(prs) | {lines[k]["pr"] for k in keys if lines[k]["word"] == "support"})
+        level = "high" if asked >= high else "medium" if asked >= medium else "low"
+        print(f"priority · {c['id']} · {level} · {asked} pull request{'' if asked == 1 else 's'}")
         if c["held"]:
             print(f"held · {c['id']} · {c['held']}")
         for note in c["notes"]:

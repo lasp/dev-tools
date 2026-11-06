@@ -8,7 +8,7 @@ description: >
 argument-hint: "[file | ticket key | issue | description]"
 metadata:
   author: llm-tooling
-  version: 1.18.0
+  version: 1.18.1
 ---
 
 # Implement Change
@@ -160,7 +160,8 @@ once found, goes to `pr-create` at step 11.
 `depth:` light, standard or deep and its reason. **Light** is the light build
 `${CLAUDE_SKILL_DIR}/reviews/wave.md` "Depth" defines, with no plan reviewer and the planner
 optional; **standard** is the wave there; **deep** is the wave, with the planner and the plan
-review always run. The person may raise the depth, and lower a standard floor to light at step 5;
+review always run, for a public signature, a product definition or manifest, a schema or an epic,
+and for any change a person raises to deep. The person may raise the depth, and lower a standard floor to light at step 5;
 deep is never lowered.
 
 **Then ask, in one widget**, every question about the brief that changes the shape of the work, up

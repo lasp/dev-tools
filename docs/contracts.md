@@ -404,7 +404,7 @@ Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admit
 
 ## The guidance clusters
 
-Version: 2
+Version: 3
 
 Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
 object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
@@ -426,7 +426,9 @@ ledger's "Candidates below the criteria" does not hold, a trailing full stop asi
 no `--ledger`. Otherwise it
 prints per cluster, its `admit` count only the `admit` lines of its kind and any other counted as
 `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
-<principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, a `held · <id> · <title>`
+<principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·
+<low|medium|high> · <n> pull requests`, its pull requests with its `support` lines' at the
+Recurring ask Dial's counts, which it refuses to run without (version 3), a `held · <id> · <title>`
 line when it continues one, a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
 from a pull request and a person not yet quoted while one is left; then `clusters: <n> · lines:

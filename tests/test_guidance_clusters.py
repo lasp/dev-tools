@@ -9,6 +9,7 @@ import json
 import shutil
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,6 +62,7 @@ class Clusters(unittest.TestCase):
             "Install a missing system dependency rather than mock it.",
             "prs · C1 · pr-0101, pr-0104, pr-0106, pr-0108",
             "people · C1 · bob, carol, dave, erin",
+            "priority · C1 · high · 4 pull requests",
             "note · C1 · pr-0108 · erin · human · thread PRRT_x: add libhdf5 · the image",
             "note · C1 · pr-0109 · copilot · bot · thread PRRT_y: mock the import",
             'said · C1 · "Install the library in CI; never mock it away." — bob, u11',
@@ -69,6 +71,7 @@ class Clusters(unittest.TestCase):
             "cluster · C2 · process · admit 0 · hold 1 · support 0 · prs 1 · people 2 · The changelog lists only user-visible changes.",
             "prs · C2 · pr-0106",
             "people · C2 · dave, erin",
+            "priority · C2 · low · 1 pull request",
             "held · C2 · Changelog scope",
             "note · C2 · pasted notes-1.md · erin · keep the changelog to what users see",
             'said · C2 · "Changelog holds user-visible changes." — dave, u62',
@@ -146,6 +149,21 @@ class Clusters(unittest.TestCase):
         code, lines = self.run_clusters(outranked)
         self.assertEqual(code, 1)
         self.assertIn("kind tool-config, which none of its lines is", "\n".join(lines))
+
+    def test_priority_counts_people_s_and_agents_changed_pull_requests_at_the_recurring_ask_dial(self):
+        one = {"id": "C1", "kind": "rule", "principle": "P.", "items": ["s1-2"], "notes": [], "held": None}
+        two = {**one, "id": "C2", "items": ["s1-0", "s1-3"]}
+        rest = {**one, "id": "C3", "items": ["s1-4", "s1-5"]}
+        lines = self.run_clusters({"clusters": [one, two, rest]})[1]
+        self.assertEqual([x for x in lines if x.startswith("priority")],
+                         ["priority · C1 · low · 1 pull request", "priority · C2 · medium · 2 pull requests",
+                          "priority · C3 · low · 1 pull request"])
+        dials = self.dir / "dials.md"
+        dials.write_text("| Recurring ask | 2 pull requests |\n")
+        with unittest.mock.patch.object(guidance_clusters, "DIALS", dials):
+            code, lines = self.run_clusters({"clusters": [one, two, rest]})
+        self.assertEqual(code, 1)
+        self.assertIn("no Recurring ask Dial reading", "\n".join(lines))
 
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {

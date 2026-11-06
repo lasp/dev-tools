@@ -21,8 +21,8 @@ one, `ticket/plan` where it departs from the approved plan, and otherwise with n
 | --- | --- |
 | must-fix | Ranked. Quote the lines from the file, not only the diff; one not anchored to lines is downgraded |
 | should-fix | Ranked |
-| suggestion | At most the Suggestions per review Dial (`dials.md`), ranked; a Disagree needs no reason |
-| question | At most the Questions per review Dial. When a decision in either `decisions.md` answers it, cite the decision instead |
+| suggestion | At most 7, ranked; a Disagree needs no reason |
+| question | At most 5. When a decision in either `decisions.md` answers it, cite the decision instead |
 
 A must-fix or should-fix with a Proposed line, and a key where Citation gives one, is always
 posted. The summary line counts findings by severity. A `test/` finding takes the severity the
