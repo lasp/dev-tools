@@ -345,8 +345,8 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
    revised Driving Requirements, whose main point a summary names, not each requirement: one that
    no longer names it, or names work now out of scope, gets a new summary proposed in the form
    `using-jira`'s "Copy-paste output" sets, shown now and after as a field change and listed under
-   Reworded. One that still names it is kept as it reads, whatever its form: a summary is not
-   replaced for its form alone. Show
+   Reworded. One that still names it and names nothing now out of scope is kept as it reads,
+   whatever its form: a summary is not replaced for its form alone. Show
    the draft as it now stands, each kept-open question's drafted reason and effect named as
    theirs to keep or correct, and ask: **Looks right** (Recommended), which writes the files,
    step 8's page, context copy and paste file; **Change it**, folded in and asked again;
@@ -369,8 +369,10 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
      "Writing to Jira" allows them, each status as the profile's `jira.roles` names it ("Writes").
 
    Ask **Write all <n>** (Recommended), **Drop some** or **Paste it all**, beside Looks right;
-   the answer counts only with Looks right, and is asked again after a Change it. Without the
-   write tools, say so in one line and ask no gate.
+   the answer counts only with Looks right, and is asked again after a Change it. A field change
+   dropped there, a new summary included, leaves What changed and the `Session comment` too, so
+   the record says only what is written; that changes the `Session comment`, and the plan is shown
+   again. Without the write tools, say so in one line and ask no gate.
 8. **Write the files, write the plan, and hand off.** Write the page, its `.review/context.md`
    copy except for a pull request source, and `<ticket>.jira.txt` first, so the paste is ready
    whatever follows. Then run the plan, as the plan file sets out, its texts under
