@@ -92,22 +92,27 @@ class Tally(unittest.TestCase):
                 lines = self.tally([COMMENT], {**ITEM, "quote": "no guards.", "signal": "cites a source", "kind": kind})[1]
                 self.assertTrue(lines[0].startswith(f"{word} · "), lines)
 
-    def test_every_nomination_of_a_person_is_listed_and_its_items_admit_whatever_their_signal(self):
-        nominating = {**COMMENT, "nominated": ["import dependencies directly"]}
+    def test_every_nomination_but_a_bot_s_is_listed_and_only_the_nominated_item_admits(self):
+        nominating = {**COMMENT, "nominated": ["import dependencies directly; no guards.", "keep the changelog short"]}
         silent = {**COMMENT, "id": 15, "url": "u15", "author": "carol", "nominated": ["fill values are per variable"],
                   "body": "Standard: fill values are per variable"}
-        agent = {**COMMENT, "id": 16, "url": "u16", "author": "alice", "authorship": "ai-drafted", "nominated": ["mock it"],
-                 "body": "For agents: mock it"}
-        code, lines = self.tally([nominating, silent, agent],
+        drafted = {**COMMENT, "id": 16, "url": "u16", "author": "alice", "authorship": "ai-drafted",
+                   "nominated": ["never mock a system library"], "body": "For agents: never mock a system library"}
+        bot = {**COMMENT, "id": 17, "url": "u17", "author": "copilot", "authorship": "bot", "nominated": ["add types"],
+               "body": "For agents: add types"}
+        code, lines = self.tally([nominating, silent, drafted, bot],
                                  {**ITEM, "quote": "no guards.", "signal": "none", "generality": "pr-specific"},
+                                 {**ITEM, "quote": "Fixed.", "signal": "none", "generality": "pr-specific"},
                                  {**ITEM, "quote": "no guards.", "covered_by": "R-002"})
         self.assertEqual(code, 0, lines)
         self.assertEqual(lines, [
-            "admit · s1-0 · pr-0007 · 12 · bob · rule · nominated · u12 · no guards.",
-            "covered · s1-1 · pr-0007 · 12 · bob · rule · R-002 · u12 · no guards.",
-            "nominated · pr-0007 · 12 · bob · s1-0, s1-1 · u12 · import dependencies directly",
+            "admit · s1-0 · pr-0007 · 12 · bob · rule · nominated, none · u12 · no guards.",
+            "covered · s1-2 · pr-0007 · 12 · bob · rule · R-002 · u12 · no guards.",
+            "nominated · pr-0007 · 12 · bob · s1-0, s1-2 · u12 · import dependencies directly; no guards.",
+            "nominated · pr-0007 · 12 · bob · not extracted · u12 · keep the changelog short",
             "nominated · pr-0007 · 15 · carol · not extracted · u15 · fill values are per variable",
-            "items: 2 · admit: 1 · covered: 1 · hold: 0 · support: 0 · not listed: 0 · nominated: 2",
+            "nominated · pr-0007 · 16 · alice · not extracted · u16 · never mock a system library",
+            "items: 3 · admit: 1 · covered: 1 · hold: 0 · support: 0 · not listed: 1 · nominated: 4",
         ])
 
     def test_refuses_a_comment_list_from_before_nominations(self):

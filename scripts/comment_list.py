@@ -28,7 +28,7 @@ no one commented on, each item:
 - `created`, its timestamp as GitHub gave it: `created_at`, or a review's `submitted_at`;
 - `nominated`, what the comment nominates for the standard: the rest of each of its own lines
   (`record.py`'s `own_lines`, so not a quoted or fenced line) that opens `For agents:` or
-  `Standard:`, case aside, in order; empty when none does (`README.md`, "Nominating guidance");
+  `Standard:`, case aside, as a list item too and bold or italic too, in order; empty when none does (`README.md`, "Nominating guidance");
 - `body`, its text, unchanged.
 
 A review with a blank body, such as one posted with a batch of thread replies, is no comment and
@@ -55,7 +55,7 @@ class Refused(Exception):
     """A dump the list cannot be built from."""
 
 
-NOMINATION = re.compile(r"(?i)(?:for agents|standard):\s*(\S.*)")
+NOMINATION = re.compile(r"(?i)(?:[-*+] +)?(?:\*\*|__|\*|_)?(?:for agents|standard)(?::(?:\*\*|__|\*|_)?|(?:\*\*|__|\*|_)?:)\s*(\S.*)")
 
 
 def load_record():

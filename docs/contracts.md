@@ -392,10 +392,10 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
 - `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
   general item the pull request's author changed as asked.
 
-A person's item on a comment whose `nominated` list is not empty is `admit` with the signal
-`nominated`, unless `covered`, whatever its generality and signal; then one line per nomination of
-a person's comment, `nominated · pr-NNNN · <comment id> · <author> · <its items' keys, or not
-extracted> · <url> · <text>` (version 3).
+An item whose quote lies within a nominated text of its comment, or holds one, a bot's comment
+excepted, is `admit` with the signal `nominated, <its signal>`, unless `covered`, whatever its
+generality; then one line per nomination of a comment not a bot's, `nominated · pr-NNNN · <comment
+id> · <author> · <the keys of the items within it, or not extracted> · <url> · <text>` (version 3).
 
 An agent's other items, a bot's and every other `pr-specific` item are counted, never listed. The quote
 is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
@@ -431,7 +431,9 @@ tally is in exactly one cluster; a cluster holds at least one item or note.
 refuses, one `refused · <where> · <why>` line each and exit 1, a file of any other form, a key
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
-no `--ledger`. Otherwise it
+no `--ledger`. It refuses, too, a tally `nominated` line `not extracted` that is not a
+note `pr-NNNN · <login> · human · nominated <comment id>: <text>` in exactly one cluster, and counts
+such a note under the cluster's `admit` (version 3). Otherwise it
 prints per cluster, its `admit` count only the `admit` lines of its kind and any other counted as
 `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·

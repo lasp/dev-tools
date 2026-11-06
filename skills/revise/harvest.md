@@ -63,7 +63,8 @@ with its line. A `refused` line naming a slice sends that slice's extractor back
 lines. A `pr <n> · in no slice` line sends back the slice the cut gave pull request n, or, when no
 slice was given it, is a cut to make again, as is a slice too large. Then check again. A slice
 still refused, after it went back once, is not read: check again without it and its comment
-lists, and name its pull requests and its lines with what was not read. The printout of the
+lists, and name its pull requests and its lines with what was not read, with each `nominated`
+entry of those lists, its comment id, author and URL, since a nomination needs no extractor. The printout of the
 check that passes is the guidance's count. Then run `python3 "<plugin root>/scripts/guidance_tally.py"`
 with the same slices and lists, writing its printout to `.review/harvest/guidance/tally.txt`: its
 `admit`, `covered`, `hold` and `support` lines, each with the comment's own words, and its
@@ -117,7 +118,7 @@ guidance tally has already read the part of the bar a statement's signal decides
 | `rule` | `rule-bar.md`, through "The bar" | `R-NNN` | the ledger |
 | `agent-guidance` | a person's quote that names the habit | `A-NNN` | `agent-guidance.md` |
 | `data-convention` | its source, the document with its version and section or the data's owner, named in the evidence or found by the driver | `F-NNN` | `data-conventions.md` |
-| `process` | practiced in two merged pull requests, its cluster's `prs` 2 or more, or stated as the team's way by a person, an `admit` line whose signal is `states a principle` | `D-NNN` | `decisions.md` |
+| `process` | practiced in two merged pull requests, its cluster's `prs` 2 or more, or stated as the team's way by a person, an `admit` line whose signal is `states a principle` or a nomination | `D-NNN` | `decisions.md` |
 | `decision` | as `process` | `D-NNN` | `decisions.md` |
 | `tool-config` | the rule exists in the linter the repository configures, and its count of violations on `origin/main`, run with that rule alone, is shown under the proposal; at none, proposed; otherwise held `no override` with that count, and a `ticket/` for the fixes proposed in its place, so the setting comes once `main` is clean | `tool/<rule>` | the lint configuration, in this repository's diff |
 | `exemplar` | the code it points to is still at its path on `main`, by `git ls-files` | `exemplar/<path>`, the code's path | the instruction file |

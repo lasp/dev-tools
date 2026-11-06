@@ -30,7 +30,10 @@ this script refuses, one `refused · <where> · <why>` line per fault and exit 1
 Otherwise it prints, per cluster in the file's order, `cluster · <id> · <kind> · admit <n> · hold <n> ·
 support <n> · prs <n> · people <n> · <principle>`, its kind the destination `harvest.md`'s
 "Destinations" sends it to. `admit` counts its `admit` lines of that kind alone, since only those
-admit it; an `admit` line of another kind counts under `hold`. Its pull requests are those a person asked on, of
+admit it, and its notes that carry a nomination the extractor took nothing from; an `admit` line of
+another kind counts under `hold`. Each tally `nominated` line `not extracted` must be such a note,
+`pr-NNNN · <login> · human · nominated <comment id>: <text>`, in exactly one cluster, or it is
+refused, so no nomination is dropped. Its pull requests are those a person asked on, of
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
@@ -95,6 +98,17 @@ def tally_lines(text: str) -> dict[str, dict]:
 
 
 NOTE = re.compile(r"(pr-\d{4,}) · (\S+) · (human|ai-drafted|bot) · \S.*|pasted (\S+) · ([^·]+?) · \S.*")
+NOMINATED = re.compile(r"(pr-\d{4,}) · \S+ · human · nominated (\d+): \S.*")
+
+
+def unextracted(text: str) -> set[tuple[str, str]]:
+    """The tally's nominations no item was taken from, as (pr-NNNN, comment id)."""
+    out = set()
+    for line in text.splitlines():
+        cells = line.split(" · ")
+        if cells[0] == "nominated" and len(cells) >= 7 and cells[4] == "not extracted":
+            out.add((cells[1], cells[2]))
+    return out
 
 
 def held_titles(ledger: str) -> dict[str, set[str]]:
@@ -128,7 +142,8 @@ def priorities() -> tuple[int, int, int]:
     return int(m[1]), int(m[2]), int(m[3])
 
 
-def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None) -> list[str]:
+def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None,
+          nominations: set[tuple[str, str]] = frozenset()) -> list[str]:
     if not isinstance(clusters, dict) or set(clusters) != {"clusters"} or not isinstance(clusters["clusters"], list):
         return ["refused · clusters · not an object with a clusters list"]
     faults, seen, ids = [], {}, set()
@@ -174,6 +189,10 @@ def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None
             elif c["held"].rstrip(".") not in headings:
                 faults.append(f"refused · {where} · no held candidate headed {c['held']!r} in the ledger")
     faults += [f"refused · {key} · in no cluster" for key in lines if key not in seen]
+    noted = [(m[1], m[2]) for c in clusters["clusters"] if isinstance(c, dict) and isinstance(c.get("notes"), list)
+             for m in (NOMINATED.fullmatch(n) for n in c["notes"] if isinstance(n, str)) if m]
+    faults += [f"refused · nominated {cid} in {pr} · not extracted, and a note in {noted.count((pr, cid)) or 'no'} cluster"
+               f"{'s' if noted.count((pr, cid)) > 1 else ''}, not one" for pr, cid in sorted(nominations) if noted.count((pr, cid)) != 1]
     return faults
 
 
@@ -201,20 +220,22 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
     try:
         clusters = json.loads(args.clusters.read_text())
-        lines = tally_lines(args.tally.read_text())
+        tally = args.tally.read_text()
+        lines, nominations = tally_lines(tally), unextracted(tally)
         headings = held_titles(args.ledger.read_text()) if args.ledger else None
         _, medium, high = priorities()
     except (OSError, json.JSONDecodeError, Refused) as e:
         print(f"refused · input · {e}")
         return 1
-    faults = check(clusters, lines, headings)
+    faults = check(clusters, lines, headings, nominations)
     if faults:
         print("\n".join(faults))
         return 1
     for c in clusters["clusters"]:
         keys = c["items"]
         admits = [k for k in keys if lines[k]["word"] == "admit" and lines[k]["kind"] == c["kind"]]
-        count = {"admit": len(admits), "hold": sum(lines[k]["word"] in WORDS[:2] for k in keys) - len(admits),
+        noted = [n for n in c["notes"] if NOMINATED.fullmatch(n)]
+        count = {"admit": len(admits) + len(noted), "hold": sum(lines[k]["word"] in WORDS[:2] for k in keys) - len(admits),
                  "support": sum(lines[k]["word"] == "support" for k in keys)}
         notes = [NOTE.fullmatch(n) for n in c["notes"]]
         prs = sorted({lines[k]["pr"] for k in keys if lines[k]["word"] != "support"}

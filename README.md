@@ -624,15 +624,6 @@ Each kind of file has one home, and one way to change it:
 each rule and decision with its number, title and status, the terminology, the agent guidance, the
 data conventions and the context entries, each under the file it comes from.
 
-### Nominating guidance
-
-Anyone reviewing a pull request can put guidance forward for the standard by opening a line of a
-review comment, a reply or a review summary with `For agents:` or `Standard:`, followed by the
-guidance in a sentence: `For agents: install a missing system library in CI; never mock its
-import.` The next revision lists every such line, as a proposal when it meets its kind's bar and
-held with the reason otherwise, never dropped (`skills/revise/harvest.md`, "Guidance"). The line
-must be your own words, not quoted, and the skills never write one for you.
-
 Who does what:
 
 - **Everyone** answers the findings on their pull requests, as `GUIDE.md` "Reviewing a pull
@@ -645,6 +636,18 @@ Who does what:
 
 How a rule is admitted, established and retired: `GUIDE.md` "How the rules change"; the
 thresholds are `standards/dials.md`.
+
+### Nominating guidance
+
+Anyone reviewing a pull request can put guidance forward for the standard by opening a line of a
+review comment, a reply or a review summary with `For agents:` or `Standard:`, as a list item or in
+bold too, followed by the guidance in a sentence: `For agents: install a missing system library in
+CI; never mock its import.` The next revision lists every such line: as a proposal when it meets
+its kind's bar, as support for the live rule or entry that already says it, or held with the
+reason, never dropped (`skills/revise/harvest.md`, "Guidance"). The line must be your own words,
+not quoted, and the skills never write one for you; you may add one to a reply a skill drafted.
+The `Nominated:` line of a pull request body's Already checked block is another thing, the
+corrections a build's author made, and does nothing in a comment.
 
 ![A rule's life: candidate, provisional, established, graduated; an established rule under half agree with is reworded, and one still disputed, or a provisional rule left unused, is retired](docs/img/rule-life.svg)
 

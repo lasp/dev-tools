@@ -26,12 +26,13 @@ Admission Dial in `standards/dials.md` read it:
 `<key>` is `s<n>-<i>`, the item's place: the n-th slice given, from 1, and its index in that
 slice's items, from 0, so a later step names one item however many share a comment.
 
-A person's comment that nominates guidance, a `nominated` entry in its comment list (`README.md`,
-"Nominating guidance"), has said it is general: each of its items is listed as `admit` with the
-signal `nominated`, whatever its generality and signal, unless it is `covered`. Then, after the
-items, one line per nomination of a person's comment, `nominated · pr-NNNN · <comment id> ·
-<author> · <the keys of that comment's listed items, comma-separated, or not extracted> · <url> ·
-<the nominated text>`, so none is dropped; an agent's or a bot's nomination is not one.
+A nomination, a `nominated` entry in a comment's list (`README.md`, "Nominating guidance"), is a
+person's word that it is general, a bot's excepted, and a comment an agent drafted included, since
+a person added the line: each item whose quote lies within a nominated text, or holds one, is
+listed as `admit` with the signal `nominated, <its signal>`, whatever its generality, unless it
+is `covered`; the comment's other items are judged as any other. Then, after the items, one line
+per nomination, `nominated · pr-NNNN · <comment id> · <author> · <the keys of its items,
+comma-separated, or not extracted> · <url> · <the nominated text>`, so none is dropped.
 
 An agent's other items, a bot's and every other `pr-specific` item are counted, never listed.
 Lines run in the slices' order, then a last line, `items: <n> · admit: <n> · covered: <n> · hold:
@@ -62,10 +63,10 @@ def load_check():
 
 
 def verdict(item: dict, nominated: bool = False) -> tuple[str, str] | None:
-    """The tally's word for one item and what follows its kind, or None when it is not listed; a
-    person's item on a comment that nominates guidance admits as `nominated` unless covered."""
-    if item["authorship"] == "human" and nominated:
-        return ("covered", item["covered_by"]) if item["covered_by"] is not None else ("admit", "nominated")
+    """The tally's word for one item and what follows its kind, or None when it is not listed; an
+    item a person nominated admits, its signal `nominated, <signal>`, unless covered."""
+    if nominated:
+        return ("covered", item["covered_by"]) if item["covered_by"] is not None else ("admit", f"nominated, {item['signal']}")
     if item["generality"] != "general":
         return None
     if item["authorship"] == "human":
@@ -95,12 +96,17 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     counts = {"admit": 0, "covered": 0, "hold": 0, "support": 0}
     comments = [c for path in args.comments for c in json.loads(path.read_text())["comments"]]
-    nominating = {c["id"]: c for c in comments if c["nominated"] and c["authorship"] == "human"}
+    nominating = {c["id"]: c for c in comments if c["nominated"] and c["authorship"] != "bot"}
+
+    def nominated(it: dict) -> bool:
+        quote = check.flat(it["quote"])
+        return it["comment_id"] in nominating and any(
+            quote in check.flat(text) or check.flat(text) in quote for text in nominating[it["comment_id"]]["nominated"])
     items = [(f"s{n}-{i}", it) for n, path in enumerate(args.slices, 1)
              for i, it in enumerate(json.loads(path.read_text())["items"])]
     listed: dict[int, list[str]] = {}
     for key, it in items:
-        v = verdict(it, it["comment_id"] in nominating)
+        v = verdict(it, nominated(it))
         if v is None:
             continue
         word, why = v
@@ -108,11 +114,13 @@ def main(argv: list[str] | None = None) -> int:
         cells = [word, key, f"pr-{it['pr']:04d}", str(it["comment_id"]), it["author"], it["kind"], *([why] if why else []),
                  it["url"], check.flat(it["quote"])]
         print(" · ".join(cells))
-        listed.setdefault(it["comment_id"], []).append(key)
-    nominations = [(c, text) for c in nominating.values() for text in c["nominated"]]
+        if nominated(it):
+            listed.setdefault((it["comment_id"], check.flat(it["quote"])), []).append(key)
+    nominations = [(c, check.flat(text)) for c in nominating.values() for text in c["nominated"]]
     for c, text in nominations:
+        keys = [k for (cid, quote), ks in listed.items() if cid == c["id"] and (quote in text or text in quote) for k in ks]
         print(" · ".join(["nominated", f"pr-{c['pr']:04d}", str(c["id"]), c["author"],
-                          ", ".join(listed.get(c["id"], [])) or "not extracted", c["url"], check.flat(text)]))
+                          ", ".join(keys) or "not extracted", c["url"], text]))
     print(f"items: {len(items)} · " + " · ".join(f"{k}: {n}" for k, n in counts.items())
           + f" · not listed: {len(items) - sum(counts.values())} · nominated: {len(nominations)}")
     return 0
