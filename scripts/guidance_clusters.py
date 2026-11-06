@@ -16,8 +16,8 @@ tally with --tally-from <repo>=<file>, its keys read `<repo>:s<n>-<i>` and its p
 a `prs:` entry `<--repo>/pr-NNNN` read as this repository's and a note naming any other refused, and, when a cluster names a held candidate, the ledger with --ledger,
 this script refuses, one `refused · <where> · <why>` line per fault and exit 1:
 
-- a tally whose closing `items:` line is missing or counts its words otherwise than its lines, or a
-  line with too few cells;
+- a tally whose closing `items:` line is missing or counts its words otherwise than its lines, a
+  line with too few cells, or an `ask` line whose key is no `admit` or `covered` line;
 - a cluster without exactly the keys above, an `id` not `C<n>` or given twice, a `kind` that is not
   one of the guidance items' kinds or, in a cluster with tally lines, the kind of none of its
   people's lines, its `admit` and `hold` lines, or of none of its lines when it has only `support`,
@@ -33,10 +33,8 @@ this script refuses, one `refused · <where> · <why>` line per fault and exit 1
 Otherwise it prints, per cluster in the file's order, `cluster · <id> · <kind> · admit <n> · hold <n> ·
 support <n> · prs <n> · people <n> · <principle>`, its kind the destination `harvest.md`'s
 "Destinations" sends it to. `admit` counts its `admit` lines of that kind alone, since only those
-admit it, and its notes that carry a nomination the extractor took nothing from; an `admit` line of
-another kind counts under `hold`. Each tally `nominated` line `not extracted` must be such a note,
-`pr-NNNN · <login> · human · nominated <comment id>: <its text>`, in exactly one cluster, and every
-such note a `not extracted` line, or it is refused, so no nomination is dropped or invented. Its pull requests are those a person asked on, of
+admit it, and its `admit` lines of any kind that the tally's `ask` lines name, a person asking for
+the point to be kept; an `admit` line of another kind counts under `hold`. Its pull requests are those a person asked on, of
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
@@ -46,13 +44,15 @@ Recurring ask Dial's counts in `standards/dials.md`, of its pull requests and, w
 people, those its continued held candidate's `prs:` line names, accumulated across revisions, and
 those of its `support` lines, an agent's finding the author changed as asked, then `asked · <id> ·
 pr-NNNN, ...` or `none`, the pull requests it counted, each `<repo>/pr-NNNN` with --repo,
-which `apply` carries into the candidate's `prs:` line, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
-note, and up to three `said · <id> ·
+which `apply` carries into the candidate's `prs:` line, `held · <id> · <title>` when it joins one,
+`ask · <id> · <author> · <url>` for each of its lines the tally's `ask` lines name, `note · <id> ·
+<note>` for each note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
 order. `prs · <id> · none` and `people · <id> · none` when it has none. A note's pull request is
 `pr-` and at least four digits, as the tally prints it.
-A last line reads `clusters: <n> · lines: <n>`. Exits 0. Stdlib only.
+After the clusters, one `ask · <covered_by> · <author> · <url>` per `ask` on a `covered` line, an
+ask the live entry already answers. A last line reads `clusters: <n> · lines: <n>`. Exits 0. Stdlib only.
 """
 
 from __future__ import annotations
@@ -76,22 +76,28 @@ class Refused(Exception):
     """Input the clusters cannot be checked against."""
 
 
-def tally_lines(text: str, repo: str = "") -> dict[str, dict]:
+def tally_lines(text: str, repo: str = "") -> tuple[dict[str, dict], list[str]]:
     """The tally's clustered lines by key: word, pr, author, url and quote, each read by its
-    place, the quote last, so a `·` in it splits nothing. Refused unless its last line counts what
-    it lists."""
-    out, counts, summary = {}, {w: 0 for w in (*WORDS, "covered")}, None
+    place, the quote last, so a `·` in it splits nothing, an `ask` line marking its line `ask`;
+    and, per `ask` on a `covered` line, `ask · <covered_by> · <author> · <url>`. Keys read
+    `<repo>:s<n>-<i>` and pull requests `<repo>/pr-NNNN` with `repo`. Refused unless its last line
+    counts what it lists, or for an `ask` that names no `admit` or `covered` line."""
+    out, counts, summary, asks, covered = {}, {w: 0 for w in (*WORDS, "covered", "asks")}, None, set(), {}
     for line in text.splitlines():
         cells = line.split(" · ")
-        if cells[0] in counts:
+        if cells[0] == "ask" and len(cells) == 5:
+            counts["asks"] += 1
+            asks.add(cells[1])
+        elif cells[0] in counts:
             url_at = 6 if cells[0] == "support" else 7
             if len(cells) <= url_at + 1:
                 raise Refused(f"a tally line with too few cells: {line[:80]}")
             counts[cells[0]] += 1
-            if cells[0] != "covered":
-                out[f"{repo}:{cells[1]}" if repo else cells[1]] = {
-                    "word": cells[0], "pr": f"{repo}/{cells[2]}" if repo else cells[2], "author": cells[4], "kind": cells[5], "url": cells[url_at],
-                                 "quote": " · ".join(cells[url_at + 1:])}
+            if cells[0] == "covered":
+                covered[cells[1]] = f"{cells[6]} · {cells[4]} · {cells[7]}"
+            else:
+                out[cells[1]] = {"word": cells[0], "pr": f"{repo}/{cells[2]}" if repo else cells[2], "author": cells[4],
+                                 "kind": cells[5], "url": cells[url_at], "quote": " · ".join(cells[url_at + 1:])}
         elif line.startswith("items: "):
             summary = dict(re.findall(r"(\w+): (\d+)", line))
     if summary is None:
@@ -99,22 +105,17 @@ def tally_lines(text: str, repo: str = "") -> dict[str, dict]:
     gone = [w for w, n in counts.items() if int(summary.get(w, -1)) != n]
     if gone:
         raise Refused(f"the tally's closing line counts {', '.join(gone)} otherwise than its lines")
-    return out
+    dangling = sorted(k for k in asks if k not in covered and out.get(k, {}).get("word") != "admit")
+    if dangling:
+        raise Refused(f"an ask names no admit or covered line: {', '.join(dangling)}")
+    for key in asks & set(out):
+        out[key]["ask"] = True
+    return ({f"{repo}:{k}" if repo else k: v for k, v in out.items()},
+            [f"ask · {covered[k]}" for k in sorted(asks & set(covered))])
 
 
 PR = r"(?:[\w.-]+/)?pr-\d{4,}"
 NOTE = re.compile(rf"({PR}) · (\S+) · (human|ai-drafted|bot) · \S.*|pasted (\S+) · ([^·]+?) · \S.*")
-NOMINATED = re.compile(rf"({PR}) · \S+ · human · nominated (\d+): (\S.*)")
-
-
-def unextracted(text: str, repo: str = "") -> set[tuple[str, str, str]]:
-    """The tally's nominations no item was taken from, as (pr-NNNN, comment id, text)."""
-    out = set()
-    for line in text.splitlines():
-        cells = line.split(" · ")
-        if cells[0] == "nominated" and len(cells) >= 7 and cells[4] == "not extracted":
-            out.add((f"{repo}/{cells[1]}" if repo else cells[1], cells[2], " · ".join(cells[6:])))
-    return out
 
 
 def held_titles(ledger: str) -> dict[str, set[str]]:
@@ -154,8 +155,7 @@ def norm(pr: str) -> str:
     return f"{repo + '/' if repo else ''}pr-{int(number[3:]):04d}"
 
 
-def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None,
-          nominations: set[tuple[str, str, str]] = frozenset(), others: frozenset = frozenset(),
+def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None, others: frozenset = frozenset(),
           this: str | None = None) -> list[str]:
     if not isinstance(clusters, dict) or set(clusters) != {"clusters"} or not isinstance(clusters["clusters"], list):
         return ["refused · clusters · not an object with a clusters list"]
@@ -206,13 +206,6 @@ def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None
             elif c["held"].rstrip(".") not in headings:
                 faults.append(f"refused · {where} · no held candidate headed {c['held']!r} in the ledger")
     faults += [f"refused · {key} · in no cluster" for key in lines if key not in seen]
-    noted = [(m[1], m[2], m[3]) for c in clusters["clusters"] if isinstance(c, dict) and isinstance(c.get("notes"), list)
-             for m in (NOMINATED.fullmatch(n) for n in c["notes"] if isinstance(n, str)) if m]
-    faults += [f"refused · nominated {cid} in {pr} · not extracted, and a note in {noted.count((pr, cid, t)) or 'no'} cluster"
-               f"{'s' if noted.count((pr, cid, t)) > 1 else ''}, not one: {t}"
-               for pr, cid, t in sorted(nominations) if noted.count((pr, cid, t)) != 1]
-    faults += [f"refused · nominated {cid} in {pr} · a note no `not extracted` tally line names: {t}"
-               for pr, cid, t in sorted(set(noted) - set(nominations))]
     return faults
 
 
@@ -244,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         clusters = json.loads(args.clusters.read_text())
         tally = args.tally.read_text()
-        lines, nominations = tally_lines(tally), unextracted(tally)
+        lines, covered_asks = tally_lines(tally)
         if args.tally_from and not args.repo:
             raise Refused("--tally-from needs --repo, this repository's name")
         for given in args.tally_from:
@@ -252,8 +245,9 @@ def main(argv: list[str] | None = None) -> int:
             if not re.fullmatch(r"[\w.-]+", repo) or not path or repo == args.repo:
                 raise Refused(f"--tally-from {given!r} is not <another repository>=<its tally>")
             other = Path(path).read_text()
-            lines.update(tally_lines(other, repo))
-            nominations |= unextracted(other, repo)
+            found, theirs = tally_lines(other, repo)
+            lines.update(found)
+            covered_asks += theirs
         headings = held_titles(args.ledger.read_text()) if args.ledger else None
         _, medium, high = priorities()
     except (OSError, json.JSONDecodeError, Refused) as e:
@@ -268,15 +262,14 @@ def main(argv: list[str] | None = None) -> int:
             {**c, "notes": [n.replace(f"{args.repo}/pr-", "pr-", 1) if n.startswith(f"{args.repo}/pr-") else n for n in c["notes"]]}
             if isinstance(c, dict) and isinstance(c.get("notes"), list) else c for c in clusters["clusters"]]} \
             if isinstance(clusters, dict) and isinstance(clusters.get("clusters"), list) else clusters
-    faults = check(clusters, lines, headings, nominations, others, args.repo)
+    faults = check(clusters, lines, headings, others, args.repo)
     if faults:
         print("\n".join(faults))
         return 1
     for c in clusters["clusters"]:
         keys = c["items"]
-        admits = [k for k in keys if lines[k]["word"] == "admit" and lines[k]["kind"] == c["kind"]]
-        noted = [n for n in c["notes"] if NOMINATED.fullmatch(n)]
-        count = {"admit": len(admits) + len(noted), "hold": sum(lines[k]["word"] in WORDS[:2] for k in keys) - len(admits),
+        admits = [k for k in keys if lines[k]["word"] == "admit" and (lines[k]["kind"] == c["kind"] or lines[k].get("ask"))]
+        count = {"admit": len(admits), "hold": sum(lines[k]["word"] in WORDS[:2] for k in keys) - len(admits),
                  "support": sum(lines[k]["word"] == "support" for k in keys)}
         notes = [NOTE.fullmatch(n) for n in c["notes"]]
         prs = sorted({lines[k]["pr"] for k in keys if lines[k]["word"] != "support"}
@@ -298,10 +291,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"asked · {c['id']} · {', '.join(qualified) or 'none'}")
         if c["held"]:
             print(f"held · {c['id']} · {c['held']}")
+        for k in keys:
+            if lines[k].get("ask"):
+                print(f"ask · {c['id']} · {lines[k]['author']} · {lines[k]['url']}")
         for note in c["notes"]:
             print(f"note · {c['id']} · {note}")
         for q in quotes(keys, lines):
             print(f'said · {c["id"]} · "{q["quote"]}" — {q["author"]}, {q["url"]}')
+    if covered_asks:
+        print("\n".join(covered_asks))
     print(f"clusters: {len(clusters['clusters'])} · lines: {len(lines)}")
     return 0
 

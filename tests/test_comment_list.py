@@ -61,24 +61,9 @@ class CommentList(unittest.TestCase):
         reply = got[2]
         self.assertEqual(reply, {"pr": 7, "id": 12, "url": url(12), "author": "bob", "authorship": "human", "kind": "reply",
                                  "thread": "PRRT_a", "path": "x.py", "line": 5, "created": "2026-10-01T11:00:00Z",
-                                 "nominated": [], "body": "In general, import dependencies directly."})
+                                 "body": "In general, import dependencies directly."})
         self.assertEqual((got[0]["thread"], got[0]["path"], got[0]["line"]), (None, None, None))
         self.assertEqual(got[3]["line"], None)
-
-    def test_a_person_s_own_for_agents_or_standard_line_is_nominated_and_a_quoted_or_fenced_one_is_not(self):
-        body = ("Fixed.\n\nFor agents: install a missing system library in CI; never mock its import.\n"
-                "standard: Fill values are read per variable.\n> For agents: quoted from someone else\n"
-                "```\nFor agents: shown in code\n```\nFor future agents: not the marker\n- **For agents:** bulleted and bold\n"
-                "Standards: not the marker\nFor agents:\n_Standard_: in italics\n**For agents:**\n**Standard: keep it short**\n"
-                "For agents: `uv sync` before tests\n1. For agents: (optional) never edit __init__\n"
-                "For agents: ends with emphasis *really*")
-        thread = {"id": "PRRT_a", "is_resolved": True, "is_outdated": False, "comments": [
-            {"author": "bob", "body": body, "created_at": "2026-10-01T11:00:00Z", "html_url": url(12), "path": "x.py"}]}
-        got = self.run_on(self.dump([thread]))
-        self.assertEqual(got[0]["nominated"], ["install a missing system library in CI; never mock its import.",
-                                               "Fill values are read per variable.", "bulleted and bold", "in italics",
-                                               "keep it short", "`uv sync` before tests",
-                                               "(optional) never edit __init__", "ends with emphasis *really*"])
 
     def test_the_committed_dump_lists_each_of_its_comments_once(self):
         d = Path(tempfile.mkdtemp()) / "pr-0042"

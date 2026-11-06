@@ -16,7 +16,7 @@ spec.loader.exec_module(guidance_check)
 
 REPLY = {
     "pr": 7, "id": 12, "url": "https://github.com/o/r/pull/7#discussion_r12", "author": "bob", "authorship": "human",
-    "kind": "reply", "thread": "PRRT_a", "path": "x.py", "line": 5, "created": "2026-10-01T11:00:00Z", "nominated": [],
+    "kind": "reply", "thread": "PRRT_a", "path": "x.py", "line": 5, "created": "2026-10-01T11:00:00Z",
     "body": "> Always validate units at the boundary.\n\nFixed the name, thanks.\n\n"
             "In general, import dependencies directly:   a degraded state with broken imports is broken.",
 }

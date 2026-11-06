@@ -24,7 +24,7 @@ hold · s1-2 · pr-0104 · 41 · carol · rule · no signal of generality · u41
 support · s1-3 · pr-0104 · 42 · alice · rule · u42 · A missing system library is installed, not mocked.
 admit · s1-4 · pr-0106 · 61 · dave · rule · addresses agents · u61 · Agents: add the dependency · CI, never skip.
 hold · s1-5 · pr-0106 · 62 · dave · process · no signal of generality · u62 · Changelog holds user-visible changes.
-items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3
+items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3 · asks: 0
 """
 LEDGER = ("# Review rules\n\n## R-001 · A rule\n\n## Candidates below the criteria\n\n### Changelog scope\n\nEvidence.\n\n"
           "#### Evidence\n\nprs: pr-48, pr-0104\n\n- **Held:** an agent's ask in pr-0061; fails **Admission** twice.\n\n"
@@ -139,6 +139,32 @@ class Clusters(unittest.TestCase):
         self.assertIn("· rule · admit 1 · hold 1 · support 0 ·", heads[0])
         self.assertIn("· process · admit 0 · hold 2 · support 1 ·", heads[1])
 
+    def test_a_persons_ask_admits_its_cluster_whatever_its_kind_and_names_who_asked(self):
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", "ask · s1-4 · pr-0106 · dave · u61\nitems: 9")
+                                            .replace("asks: 0", "asks: 1"))
+        clusters = {"clusters": [
+            {"id": "C1", "kind": "rule", "principle": "Rules.", "items": ["s1-0", "s1-2", "s1-3"], "notes": [], "held": None},
+            {"id": "C2", "kind": "process", "principle": "Asked.", "items": ["s1-4", "s1-5"], "notes": [], "held": None}]}
+        code, lines = self.run_clusters(clusters)
+        self.assertEqual(code, 0, lines)
+        self.assertIn("· process · admit 1 · hold 1 · support 0 ·", [x for x in lines if x.startswith("cluster · C2")][0])
+        self.assertEqual([x for x in lines if x.startswith("ask ·")], ["ask · C2 · dave · u61"])
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", "ask · s1-4 · pr-0106 · dave · u61\nitems: 9"))
+        self.assertIn("counts asks otherwise", "\n".join(self.run_clusters(clusters)[1]))
+
+    def test_an_ask_on_a_covered_line_is_printed_under_its_entry_and_one_on_no_line_is_refused(self):
+        asks = "ask · s1-0 · pr-0101 · bob · u11\nask · s1-1 · pr-0101 · bob · u12\nitems: 9"
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", asks).replace("asks: 0", "asks: 2"))
+        code, lines = self.run_clusters(self.two())
+        self.assertEqual(code, 0, lines)
+        self.assertIn("· rule · admit 2 ·", [x for x in lines if x.startswith("cluster · C1")][0])
+        self.assertEqual([x for x in lines if x.startswith("ask ·")], ["ask · C1 · bob · u11", "ask · R-002 · bob · u12"])
+        for key in ("s1-2", "s1-9"):
+            with self.subTest(key=key):
+                (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", f"ask · {key} · pr-0104 · carol · u41\nitems: 9")
+                                                    .replace("asks: 0", "asks: 1"))
+                self.assertIn(f"an ask names no admit or covered line: {key}", "\n".join(self.run_clusters(self.two())[1]))
+
     def test_a_cluster_of_agents_lines_alone_takes_their_kind_and_people_s_lines_outrank_them(self):
         (self.dir / "tally.txt").write_text(TALLY.replace("support · s1-3 · pr-0104 · 42 · alice · rule ·",
                                                           "support · s1-3 · pr-0104 · 42 · alice · tool-config ·"))
@@ -186,37 +212,11 @@ class Clusters(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("no Recurring ask Dial reading", "\n".join(lines))
 
-    def test_a_nomination_not_extracted_is_a_note_in_one_cluster_and_admits_it(self):
-        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9 ·", "nominated · pr-0107 · 71 · erin · not extracted · u71 · "
-                                                          "Bump the version in one commit.\nitems: 9 ·"))
-        clusters = self.two()
-        clusters["clusters"].append({"id": "C3", "kind": "process", "principle": "One commit bumps the version.", "items": [],
-                                     "notes": ["pr-0107 · erin · human · nominated 71: Bump the version in one commit."],
-                                     "held": None})
-        code, lines = self.run_clusters(clusters)
-        self.assertEqual(code, 0, lines)
-        self.assertIn("cluster · C3 · process · admit 1 · hold 0 · support 0 · prs 1 · people 1 · One commit bumps the version.", lines)
-        clusters["clusters"].pop()
-        code, lines = self.run_clusters(clusters)
-        self.assertEqual(code, 1)
-        self.assertIn("refused · nominated 71 in pr-0107 · not extracted, and a note in no cluster, not one: "
-                      "Bump the version in one commit.", lines)
-        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9 ·", "nominated · pr-0107 · 71 · erin · not extracted · u71 · alpha\n"
-                                                          "nominated · pr-0107 · 71 · erin · not extracted · u71 · beta\nitems: 9 ·"))
-        two = self.two()
-        for n, text in ((3, "alpha"), (4, "beta")):
-            two["clusters"].append({"id": f"C{n}", "kind": "process", "principle": text, "items": [],
-                                    "notes": [f"pr-0107 · erin · human · nominated 71: {text}"], "held": None})
-        self.assertEqual(self.run_clusters(two)[0], 0)
-        two["clusters"][3]["notes"] = ["pr-0107 · erin · human · nominated 71: gamma"]
-        lines = self.run_clusters(two)[1]
-        self.assertIn("refused · nominated 71 in pr-0107 · a note no `not extracted` tally line names: gamma", lines)
-        self.assertIn("refused · nominated 71 in pr-0107 · not extracted, and a note in no cluster, not one: beta", lines)
-
     def test_a_cluster_draws_on_every_covered_repository_s_tally(self):
         other = self.dir / "gadgets.txt"
-        other.write_text("admit · s1-0 · pr-0101 · 21 · frank · rule · states a principle · g21 · Install it in CI.\n"
-                         "items: 1 · admit: 1 · covered: 0 · hold: 0 · support: 0 · not listed: 0 · nominated: 0\n")
+        other.write_text("admit · s1-0 · pr-0101 · 21 · frank · rule · asks for guidance · g21 · Install it in CI.\n"
+                         "ask · s1-0 · pr-0101 · frank · g21\n"
+                         "items: 1 · admit: 1 · covered: 0 · hold: 0 · support: 0 · not listed: 0 · asks: 1\n")
         clusters = self.two(items=["s1-0", "s1-2", "s1-3", "s1-4", "gadgets:s1-0"],
                             notes=["gadgets/pr-0102 · gina · human · thread PRRT_g: install it"])
         (self.dir / "clusters.json").write_text(json.dumps(clusters))
@@ -229,6 +229,7 @@ class Clusters(unittest.TestCase):
         self.assertEqual(code, 0, lines)
         self.assertIn("prs · C1 · gadgets/pr-0101, gadgets/pr-0102, pr-0101, pr-0104, pr-0106", lines)
         self.assertIn("repos · C1 · gadgets, widgets", lines)
+        self.assertIn("ask · C1 · frank · g21", lines)
         self.assertIn("repos · C2 · widgets", lines)
         self.assertIn("priority · C1 · high · 5 pull requests", lines)
         with contextlib.redirect_stdout(io.StringIO()) as out:

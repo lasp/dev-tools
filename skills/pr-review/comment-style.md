@@ -45,9 +45,6 @@ notification, next to the code. Write for that moment.
 - Link external documentation when it is the evidence for the critique.
 - Link GitHub issues and pull requests inline where the prose refers to them. Links to Jira and
   Confluence follow `writing`'s `references/short.md`.
-- Never open a line with `For agents:` or `Standard:`: that is how a person nominates guidance for
-  the standard (`README.md`, "Nominating guidance"), and an agent's line would read as theirs. A
-  comment or reply that quotes a person's line of that kind quotes the whole line.
 
 Vague and specific, on the same finding:
 

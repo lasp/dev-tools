@@ -202,7 +202,7 @@ answer says so.
 | the `.review/` files | `README.md` "Layout" |
 | how the rules were generated and measured | `skills/onboard/first-rules.md` for a repository's first rules; `skills/revise/harvest.md` for a revision's; a project's own harvest report, where it keeps one, in its standard's log |
 | what is the bar, why was my rule held | `standards/rule-bar.md` |
-| suggesting guidance for the standard from a review, `For agents:` | `README.md` "Nominating guidance" |
+| asking from a review for something to go into the standard | `README.md` "Asking for guidance" |
 | a term, a decision | `<standard>/terminology.md`; `<standard>/decisions.md` and the repository's |
 | agent guidance, a data convention | `<standard>/agent-guidance.md`, `<standard>/data-conventions.md`; `docs/standards.md` "Agent guidance and data conventions" |
 | what the first merge left out, what is planned | `ROADMAP.md` |

@@ -97,7 +97,7 @@ record `sources`.
    cites thread ids. Then run harvest.md's "Guidance" on this repository's comment lists, the
    others' having run at step 1; into
    "Head", one guidance line per repository from its check's printout, never counted by hand, and
-   under "Not read" each repository's unread slices and their nominations. What either did not
+   under "Not read" each repository's unread slices. What either did not
    read goes under "Not read".
 
    From the blocks, leaving out lines with `asked: none`, the counts from harvest.md's
@@ -204,7 +204,7 @@ record `sources`.
    agent guidance entry past the Agent guidance expiry Dial, its `seen` month moved first as
    harvest.md's "Destinations" says, is a proposal `A-NNN · retire`.
 
-5. **Cluster.** Run harvest.md's "Clusters", adding the records' plan-gate corrections (`inner.nominated`),
+5. **Cluster.** Run harvest.md's "Clusters", adding the records' `inner.nominated` corrections,
    the taken suggestions, and each ask in the meeting or chat notes the driver pasted into
    `.review/revision/notes/*.md`, cited by its file and marked `pasted`: a person's line that
    strengthens its cluster's evidence but counts as no merged pull request for the Recurring ask
@@ -213,14 +213,15 @@ record `sources`.
    `guidance_clusters.py` printout, when "Guidance" ran, each cluster's pull requests, people and
    `said` quotes as it prints them.
 
-   **Single statements.** A cluster admits on one guidance tally `admit` line of its own kind
-   alone, a person's general statement, the `admit` count `guidance_clusters.py` prints, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
+   **Single statements.** A cluster admits on one guidance tally `admit` line of its own kind, or
+   one a tally `ask` line names, alone, a person's general statement, the `admit` count `guidance_clusters.py` prints, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
    note admits the same way when a named person states a principle or asks for a change in it,
-   cited `pasted <file>` with that person's name, and so does a review nomination, a tally
-   `nominated` line: its items already admit as `nominated`, and one `not extracted` is a note
-   that admits its cluster, both in the `admit` count `guidance_clusters.py` prints. Every
-   `nominated` line reaches the report, as a proposal's evidence, the support of the live entry
-   that already says it, or a held candidate with its reason, never dropped. Each admitted cluster is a proposal of its kind,
+   cited `pasted <file>` with that person's name. A reviewer who asked for a point to be kept, a
+   tally `ask` line, is named with it in the report: an ask on an `admit` line admits its cluster
+   whatever the cluster's kind, an `ask · <cluster>` line in the `guidance_clusters.py`
+   printout, and the cluster is a proposal or, failing its cluster's kind's bar in harvest.md's
+   "Destinations", held with that bar's reason; an ask on a `covered` line, an `ask ·
+   <covered_by>` line there, is listed under the live entry it names. Each admitted cluster is a proposal of its kind,
    with the id and destination harvest.md's "Destinations" gives it. A cluster with no `admit` line and a `hold`
    line is held with the tally's criterion. A `covered` line supports the live rule, decision,
    agent guidance entry, data convention or instruction it names, listed under it in "Rules", and

@@ -34,7 +34,7 @@ import sys
 from pathlib import Path
 
 GENERALITY = ("general", "pr-specific")
-SIGNALS = ("addresses agents", "states a principle", "names a habit", "cites a source", "none")
+SIGNALS = ("asks for guidance", "addresses agents", "states a principle", "names a habit", "cites a source", "none")
 KINDS = ("rule", "agent-guidance", "data-convention", "process", "decision", "tool-config", "exemplar",
          "review-calibration", "open-question")
 AUTHORSHIP = ("human", "ai-drafted", "bot")
@@ -159,8 +159,6 @@ def main(argv: list[str] | None = None) -> int:
         if (not isinstance(data, dict) or set(data) != {"pr", "comments"} or not shape(data["pr"], int)
                 or not isinstance(data["comments"], list)):
             faults.append(f"refused · {path} · not a comment list, an object with pr and comments")
-        elif not all(isinstance(c, dict) and isinstance(c.get("nominated"), list) for c in data["comments"]):
-            faults.append(f"refused · {path} · a comment with no nominated list: a comment list from before version 2")
         elif data["pr"] in lists:
             faults.append(f"refused · {path} · pull request {data['pr']} given twice")
         else:

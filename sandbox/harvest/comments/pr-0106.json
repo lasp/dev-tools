@@ -12,7 +12,6 @@
    "path": ".github/workflows/ci.yml",
    "line": 18,
    "created": "2026-10-15T09:08:46Z",
-   "nominated": [],
    "body": "**Should fix** — `test_netcdf_reader.py` skipped on the macOS job\n\nThe new macOS job adds `-k 'not netcdf'` because `libnetcdf` is not installed on the runner. The NetCDF reader then has no coverage on macOS.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)"
   },
   {
@@ -26,7 +25,6 @@
    "path": ".github/workflows/ci.yml",
    "line": 18,
    "created": "2026-10-15T09:58:49Z",
-   "nominated": [],
    "body": "Discuss — installing via Homebrew adds about two minutes to the job. Alternatively the `netCDF4` import could be mocked on macOS only.\n\n🤖 _AI-assisted reply, posted by @alice. AI assistance level: 5/5 (not read by a person)._"
   },
   {
@@ -40,7 +38,6 @@
    "path": ".github/workflows/ci.yml",
    "line": 18,
    "created": "2026-10-15T11:36:09Z",
-   "nominated": [],
    "body": "Not the mock, please. If the runner lacks the C library, `brew install netcdf` in the job and eat the two minutes. A test run that can only pass by faking its dependency tells us nothing."
   },
   {
@@ -54,7 +51,6 @@
    "path": ".github/workflows/ci.yml",
    "line": 18,
    "created": "2026-10-15T14:00:46Z",
-   "nominated": [],
    "body": "brew step added, `-k` removed."
   },
   {
@@ -68,7 +64,6 @@
    "path": "pyproject.toml",
    "line": 41,
    "created": "2026-10-15T14:19:40Z",
-   "nominated": [],
    "body": "**Suggestion** — add `B008` alongside `B006`\n\n`select = [\"E\", \"F\", \"B006\"]` catches mutable defaults but not function calls in defaults, such as `def write(day=date.today())` in `products/daily.py`.\n\n🤖 _AI-assisted comment, posted by @erin. AI assistance level: 2/5 (substantially edited by a person)._"
   },
   {
@@ -82,7 +77,6 @@
    "path": "pyproject.toml",
    "line": 41,
    "created": "2026-10-15T15:24:51Z",
-   "nominated": [],
    "body": "Yes. Anything we keep catching by eye in review belongs in the linter config instead. Calls in defaults are the same trap as mutable defaults."
   },
   {
@@ -96,7 +90,6 @@
    "path": "pyproject.toml",
    "line": 41,
    "created": "2026-10-15T17:17:19Z",
-   "nominated": [],
    "body": "Added B008 and fixed `daily.write`."
   },
   {
@@ -110,7 +103,6 @@
    "path": ".pre-commit-config.yaml",
    "line": 12,
    "created": "2026-10-15T19:57:04Z",
-   "nominated": [],
    "body": "**Should fix** — `# noqa: B006` added in `summary.py`\n\nTo get pre-commit to pass, the commit adds `# noqa: B006` on `summarize` rather than changing the default.\n\n🤖 _AI-assisted comment, posted by @erin. AI assistance level: 3/5 (lightly edited by a person)._"
   },
   {
@@ -124,7 +116,6 @@
    "path": ".pre-commit-config.yaml",
    "line": 12,
    "created": "2026-10-15T20:30:06Z",
-   "nominated": [],
    "body": "Agreed, and this isn't the first time. Agents: when pre-commit fails, fix the finding. A `# noqa` only goes in with a reason on the same line."
   },
   {
@@ -138,7 +129,6 @@
    "path": ".pre-commit-config.yaml",
    "line": 12,
    "created": "2026-10-15T21:50:25Z",
-   "nominated": [],
    "body": "removed the noqa, fixed the default."
   },
   {
@@ -152,7 +142,6 @@
    "path": ".github/workflows/ci.yml",
    "line": 9,
    "created": "2026-10-15T23:58:01Z",
-   "nominated": [],
    "body": "`python-version: '3.x'`, please pin it. Every CI job pins the Python minor version; floating `3.x` moved under us last spring and we lost a day."
   },
   {
@@ -166,7 +155,6 @@
    "path": ".github/workflows/ci.yml",
    "line": 9,
    "created": "2026-10-16T02:52:54Z",
-   "nominated": [],
    "body": "Pinned to 3.10 and 3.12."
   },
   {
@@ -180,7 +168,6 @@
    "path": "pyproject.toml",
    "line": 44,
    "created": "2026-10-16T03:41:04Z",
-   "nominated": [],
    "body": "line-length 100 here but 88 in the pre-commit ruff args, pick one."
   },
   {
@@ -194,7 +181,6 @@
    "path": "pyproject.toml",
    "line": 44,
    "created": "2026-10-16T05:16:31Z",
-   "nominated": [],
    "body": "100 in both."
   },
   {
@@ -208,7 +194,6 @@
    "path": ".github/workflows/ci.yml",
    "line": 30,
    "created": "2026-10-16T07:39:15Z",
-   "nominated": [],
    "body": "The `actions/setup-python` step does not enable pip caching. Consider adding `cache: pip`."
   },
   {
@@ -222,7 +207,6 @@
    "path": ".github/workflows/ci.yml",
    "line": 30,
    "created": "2026-10-16T07:55:16Z",
-   "nominated": [],
    "body": "Added."
   },
   {
@@ -236,7 +220,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-16T08:58:34Z",
-   "nominated": [],
    "body": "LGTM, ship it."
   },
   {
@@ -250,7 +233,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-16T10:49:09Z",
-   "nominated": [],
    "body": "CI: 3 jobs passed (ubuntu-3.10, ubuntu-3.12, macos-3.12)."
   }
  ]
