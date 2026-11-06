@@ -250,6 +250,15 @@ class Clusters(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as out:
             self.assertEqual(guidance_clusters.main([*args, "--repo", "widgets", "--tally-from", f"gadgets={other}"]), 0)
         self.assertIn("asked · C2 · gadgets/pr-0101, widgets/pr-0048, widgets/pr-0106", out.getvalue())
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args[:4], "--repo", "widgets"]), 1)
+        self.assertIn("gadgets:s1-0", out.getvalue())
+        alone = self.two(notes=["widgets/pr-0108 · erin · human · thread PRRT_x: add libhdf5"])
+        (self.dir / "clusters.json").write_text(json.dumps(alone))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args, "--repo", "widgets"]), 0)
+        self.assertIn("asked · C1 · widgets/pr-0101, widgets/pr-0104, widgets/pr-0106, widgets/pr-0108", out.getvalue())
+        self.assertIn("repos · C1 · widgets", out.getvalue())
 
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {

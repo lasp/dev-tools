@@ -50,7 +50,8 @@ record `sources`.
    records into its `<log>` (`revise`'s "The standard's repository") before the next harvest
    starts, with `python3 "<plugin root>/scripts/archive_records.py" <its records> <its log>`, each
    replacing a record of the same number, and making `<log>` on the repository's first harvest; the threads stay the source, and the copy lets the
-   history be read without GitHub. Before the next harvest empties its directories, run
+   history be read without GitHub. Before the first harvest, remove every
+   `.review/harvest/guidance-*/`, so no earlier run's tally is read. Before the next harvest empties its directories, run
    harvest.md's "Guidance" on each other repository's comment lists, into
    `.review/harvest/guidance-<repo>/`. The script refuses, copying nothing, when a harvested record
    would drop findings the log's record holds, which the threads cannot rebuild. Show its
@@ -330,7 +331,8 @@ record `sources`.
     same result as far as it got: the scope, and what it changed and did not.
     - **Scope**: where the standard is stored, the window, the scope list from the start of this
       file, each repository with what the run does there as planned at the start, then the step
-      the run stopped at.
+      the run stopped at, and `revise_state.py check`'s lines: the stages skipped, with why, and
+      those not reached.
     - **Proposals**: how many, by priority, then a table of each, its id, what it proposes, what
       it applies to and where `apply` would change it, in the overview's order; the held by the
       bar and the held candidates as counts.

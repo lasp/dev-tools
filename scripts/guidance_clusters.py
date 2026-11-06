@@ -40,12 +40,12 @@ such note a `not extracted` line, or it is refused, so no nomination is dropped 
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
-<id> · <login>, ...`, with --tally-from `repos · <id> · <repo>, ...`, the repositories its pull
+<id> · <login>, ...`, with --repo `repos · <id> · <repo>, ...`, the repositories its pull
 requests are in, `priority · <id> · <low|medium|high> · <n> pull request(s)`, at the
 Recurring ask Dial's counts in `standards/dials.md`, of its pull requests and, when it has
 people, those its continued held candidate's `prs:` line names, accumulated across revisions, and
 those of its `support` lines, an agent's finding the author changed as asked, then `asked · <id> ·
-pr-NNNN, ...` or `none`, the pull requests it counted, each `<repo>/pr-NNNN` with --tally-from,
+pr-NNNN, ...` or `none`, the pull requests it counted, each `<repo>/pr-NNNN` with --repo,
 which `apply` carries into the candidate's `prs:` line, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
 note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
@@ -155,7 +155,8 @@ def norm(pr: str) -> str:
 
 
 def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None,
-          nominations: set[tuple[str, str, str]] = frozenset(), others: frozenset = frozenset()) -> list[str]:
+          nominations: set[tuple[str, str, str]] = frozenset(), others: frozenset = frozenset(),
+          this: str | None = None) -> list[str]:
     if not isinstance(clusters, dict) or set(clusters) != {"clusters"} or not isinstance(clusters["clusters"], list):
         return ["refused · clusters · not an object with a clusters list"]
     faults, seen, ids = [], {}, set()
@@ -186,7 +187,7 @@ def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None
             faults.append(f"refused · {where} · notes are not each `pr-NNNN · <login> · <human|ai-drafted|bot> · "
                           f"<text>` or `pasted <file> · <name> · <text>`")
         if notes_ok:
-            stray = sorted({m[1].split("/")[0] for m in map(NOTE.fullmatch, c["notes"]) if m[1] and "/" in m[1]} - others)
+            stray = sorted({m[1].split("/")[0] for m in map(NOTE.fullmatch, c["notes"]) if m[1] and "/" in m[1]} - others - {this})
             if stray:
                 faults.append(f"refused · {where} · a note names {', '.join(stray)}, no repository given with --tally-from")
         if not isinstance(c["items"], list) or not (c["items"] or (notes_ok and c["notes"])):
@@ -262,7 +263,12 @@ def main(argv: list[str] | None = None) -> int:
     if headings and args.repo:
         headings = {t: {p[len(args.repo) + 1:] if p.startswith(args.repo + "/") else p for p in prs}
                     for t, prs in headings.items()}
-    faults = check(clusters, lines, headings, nominations, others)
+    if args.repo:
+        clusters = {**clusters, "clusters": [
+            {**c, "notes": [n.replace(f"{args.repo}/pr-", "pr-", 1) if n.startswith(f"{args.repo}/pr-") else n for n in c["notes"]]}
+            if isinstance(c, dict) and isinstance(c.get("notes"), list) else c for c in clusters["clusters"]]} \
+            if isinstance(clusters, dict) and isinstance(clusters.get("clusters"), list) else clusters
+    faults = check(clusters, lines, headings, nominations, others, args.repo)
     if faults:
         print("\n".join(faults))
         return 1
@@ -280,7 +286,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"cluster · {c['id']} · {c['kind']} · " + " · ".join(f"{w} {n}" for w, n in count.items())
               + f" · prs {len(prs)} · people {len(people)} · {c['principle']}")
         print(f"prs · {c['id']} · {', '.join(prs) or 'none'}")
-        if args.tally_from:
+        if args.repo:
             repos = sorted({pr.split("/")[0] if "/" in pr else args.repo for pr in prs})
             print(f"repos · {c['id']} · {', '.join(repos) or 'none'}")
         print(f"people · {c['id']} · {', '.join(people) or 'none'}")
@@ -288,7 +294,7 @@ def main(argv: list[str] | None = None) -> int:
         asked = set(prs) | earlier | ({lines[k]["pr"] for k in keys if lines[k]["word"] == "support"} if people else set())
         level = "high" if len(asked) >= high else "medium" if len(asked) >= medium else "low"
         print(f"priority · {c['id']} · {level} · {len(asked)} pull request{'' if len(asked) == 1 else 's'}")
-        qualified = sorted(p if "/" in p or not args.tally_from else f"{args.repo}/{p}" for p in asked)
+        qualified = sorted(p if "/" in p or not args.repo else f"{args.repo}/{p}" for p in asked)
         print(f"asked · {c['id']} · {', '.join(qualified) or 'none'}")
         if c["held"]:
             print(f"held · {c['id']} · {c['held']}")

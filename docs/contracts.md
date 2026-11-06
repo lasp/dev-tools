@@ -430,7 +430,8 @@ tally is in exactly one cluster; a cluster holds at least one item or note.
 `scripts/guidance_clusters.py --clusters <file> --tally <the tally's printout> [--ledger <ledger>]
 [--repo <this repository> --tally-from <repo>=<its tally> ...]`, the other covered repositories' tallies
 keyed `<repo>:s<n>-<i>` with pull requests `<repo>/pr-NNNN`, as their notes and `prs:` lines name them,
-adding a `repos · <id> · <repo>, ...` line per cluster (version 5),
+and, with `--repo`, given whenever the standard has `profiles/`, a `repos · <id> · <repo>, ...` line
+per cluster and every `asked` entry `<repo>/pr-NNNN` (version 5),
 refuses, one `refused · <where> · <why>` line each and exit 1, a file of any other form, a key
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with

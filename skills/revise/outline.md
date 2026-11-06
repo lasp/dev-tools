@@ -32,7 +32,7 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
 - [ ] R-0NN · <proposal> · <Dial> · <evidence pointers>
   said: "<a person's quote>" — <login>, <url> | <name>, pasted <file>; one line per quote, the clearest first
   Recommended: <accept | accept, override: <reason> | decline: <reason> | escalate: <reason>> — <the evidence that decides it>
-  scope: … / example: … / bar: ok | <lint lines> / probe: … fires|silent|cannot read; … fires|silent|cannot read
+  scope: … / example: … / bar: ok | <lint lines> | check from <repo> / probe: … fires|silent|cannot read; … | none, check from <repo>
   Mark:
 ### Agent guidance
 - [ ] A-0NN · <the habit, and what to do instead> · <evidence pointers> | A-0NN · retire · seen <YYYY-MM>
