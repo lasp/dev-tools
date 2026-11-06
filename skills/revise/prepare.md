@@ -265,10 +265,10 @@ record `sources`.
    **Tickets and documents.** Two kinds of proposal no Dial governs, marked like any other, and
    made below the Revision floor too, since they rest on no count of records:
    - `ticket/<slug>`, one per distinct problem still in the code: a thread step 2 lists as
-     `unanswered` with `diff: does not` whose analyst `by:` is `human`, a sweep `breaks` line, a probe's or a
-     `break` line in `.review/revision/drift.txt` of a `todo` or `history` claim not marked `drift`,
-     never a `template` or `changelog` one, which names a merged description or file list and no
-     line still in the code, or a `tool/` proposal held for its violations on `origin/main`;
+     `unanswered` with `diff: does not` whose analyst `by:` is `human`; a probe's `break` line of a
+     claim not marked `drift`; a `break` line in `.review/revision/drift.txt` of a `todo` or
+     `history` claim not marked `drift`, never a `template` or `changelog` one, which names a merged
+     description or file list and no line still in the code; or a `tool/` proposal held for its violations on `origin/main`;
      each only while `git grep -nF -e '<the line>' origin/main --
      <path>` still finds the line it names. Its evidence is the pull request and the thread id or
      `path:line`.

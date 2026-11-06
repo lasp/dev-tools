@@ -18,8 +18,9 @@ claim on every one listed. Checks:
 - `template`: the claim's path is the pull request template, as --ref holds it, and its line the
   part it claims: a label opening that line (`Ticket:`), which the body, from `<dumps>/pr-NNNN/
   pr.json`, must open a line with, or else the heading on or above it, which the body must hold as
-  a heading, case and level aside. A pull request opened before the first commit on --ref's first
-  parents that added a line with that label or heading, to the second, is not judged on it; one
+  a heading, case and level aside. A pull request opened before the commit on --ref's first
+  parents that last brought that label or heading into the template, to the second, however its
+  line was worded since, is not judged on it; one
   with no `pr.json`, an empty body or no `created_at` is not judged either.
 - `changelog <file> <path>[,<path>]`: a pull request that changes a file under one of the paths,
   the code a user sees, also changes <file>; one that changes none of them is not touched.
@@ -96,25 +97,39 @@ def added(repo: Path, sha: str) -> list[tuple[str, int, str]]:
 
 def ere(text: str) -> str:
     """`text` as a POSIX extended regular expression matching it literally."""
-    return re.sub(r"([.\[\]()*+?{}|^$\\])", r"\\\1", text)
+    return re.sub(r"([.\[()*+?{|^$\\])", r"\\\1", text)
 
 
 def template_part(repo: Path, path: str, line: int, ref: str) -> tuple[str, str, int]:
-    """The claim's part of the template, ("heading" | "label", its text, when a line with that label
-    or heading first reached --ref, as a Unix time): the label opening its line, or the heading on
-    or above it, however its line was worded since."""
+    """The claim's part of the template, ("heading" | "label", its text, when it last came to stay on
+    --ref, as a Unix time): the label opening its line, or the heading on or above it. Dated by the
+    first-parent commit that brought it back after the last one that left the template without it,
+    or the first that added it, however its line was worded since."""
     lines = git(repo, "show", f"{ref}:{path}").splitlines()
     for n in range(min(line, len(lines)), 0, -1):
         h, label = HEADING.match(lines[n - 1]), LABEL.match(lines[n - 1])
         if (label and n == line) or h:
             kind, text = ("label", label[1]) if label and n == line else ("heading", h[1].strip())
             pattern = f"^{ere(text)}:" if kind == "label" else f"^#{{1,6}}[[:space:]]+{ere(text)}([[:space:]]|#|$)"
-            times = git(repo, "log", "--first-parent", "--diff-merges=first-parent", "--no-patch", "--format=%ct",
-                        "-G", pattern, ref, "--", path).split()
-            if not times:
+            commits = git(repo, "-c", "log.showSignature=false", "log", "--reverse", "--first-parent", "--diff-merges=first-parent",
+                          "--no-textconv", "--no-patch", "--format=%H %ct", "-G", pattern, ref, "--", path).split("\n")
+            since = None
+            for sha, at in (c.split() for c in commits if c):
+                if not holds(git(repo, "show", f"{sha}:{path}") if git(repo, "ls-tree", sha, "--", path) else "", kind, text):
+                    since = None
+                elif since is None:
+                    since = int(at)
+            if since is None:
                 raise CannotRun(f"{path}:{line}: no commit on {ref} adds the {kind} {text!r}")
-            return kind, text, min(map(int, times))
+            return kind, text, since
     raise CannotRun(f"{path}:{line} has no heading or label at or above it to require")
+
+
+def holds(template: str, kind: str, text: str) -> bool:
+    """Whether a template holds the label or heading."""
+    if kind == "label":
+        return any((m := LABEL.match(x)) and m[1] == text for x in template.splitlines())
+    return any((m := HEADING.match(x)) and m[1].strip() == text for x in template.splitlines())
 
 
 def opened(pr_json: dict) -> int | None:

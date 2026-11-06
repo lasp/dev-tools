@@ -167,6 +167,29 @@ class Drift(unittest.TestCase):
         lines = self.run_drift()[1]
         self.assertEqual(lines[0], "claim · C-7 · judged 3 · follows 0 · breaks 2 · not touched 0 · not judged 1 · drift")
 
+    def at(self, when: str, *args: str) -> None:
+        subprocess.run(["git", "-C", str(self.repo), "-c", "user.name=t", "-c", "user.email=t@t", *args],
+                       check=True, capture_output=True, env={**os.environ, "GIT_COMMITTER_DATE": when})
+
+    def test_a_template_section_merged_from_a_branch_or_put_back_is_dated_by_its_last_arrival_on_main(self):
+        self.git("checkout", "-q", "-b", "side")
+        self.write(".github/PULL_REQUEST_TEMPLATE.md", TEMPLATE + "\n## Checklist\n")
+        self.git("add", "-A")
+        self.at("2030-01-01T00:00:00+0000", "commit", "-qm", "Add a checklist")
+        self.git("checkout", "-q", "main")
+        self.at("2030-02-01T00:00:00+0000", "merge", "-q", "--no-ff", "side", "-m", "Merge pull request #9 from side")
+        (self.dir / "claims.md").write_text("### C-7 · .github/PULL_REQUEST_TEMPLATE.md:12 · every change · script: template\n")
+        for n, opened in ((1, "2030-01-15T00:00:00Z"), (2, "2030-02-02T00:00:00Z"), (3, "2030-05-01T00:00:00Z")):
+            (self.dumps / f"pr-000{n}" / "pr.json").write_text(json.dumps({"body": "## Summary", "created_at": opened}))
+        self.assertEqual(self.run_drift()[1][0], "claim · C-7 · judged 3 · follows 0 · breaks 2 · not touched 0 · not judged 1 · drift")
+        self.write(".github/PULL_REQUEST_TEMPLATE.md", TEMPLATE)
+        self.git("add", "-A")
+        self.at("2030-03-01T00:00:00+0000", "commit", "-qm", "Drop the checklist")
+        self.write(".github/PULL_REQUEST_TEMPLATE.md", TEMPLATE + "\n## Checklist\n")
+        self.git("add", "-A")
+        self.at("2030-04-01T00:00:00+0000", "commit", "-qm", "Restore the checklist")
+        self.assertEqual(self.run_drift()[1][0], "claim · C-7 · judged 3 · follows 0 · breaks 1 · not touched 0 · not judged 2 · drift")
+
     def test_reads_a_path_with_a_space(self):
         self.write("src/my app.py", "# TODO nothing\n")
         sha = self.commit("Add a spaced file")
@@ -199,7 +222,7 @@ class Drift(unittest.TestCase):
     def test_refuses_a_template_part_no_commit_added(self):
         real = drift_checks.git
         self.addCleanup(setattr, drift_checks, "git", real)
-        drift_checks.git = lambda repo, *args: "" if args[0] == "log" else real(repo, *args)
+        drift_checks.git = lambda repo, *args: "" if "log" in args else real(repo, *args)
         with self.assertRaisesRegex(drift_checks.CannotRun, "no commit on main adds the label 'Ticket'"):
             drift_checks.template_part(self.repo, ".github/PULL_REQUEST_TEMPLATE.md", 1, "main")
 
