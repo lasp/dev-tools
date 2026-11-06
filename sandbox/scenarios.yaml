@@ -236,8 +236,8 @@ scenarios:
       not_says: ["0\\.137", "291\\.4", "\\bK7\\b"]
 
   - id: ticket-draft-retitle
-    # Unlike the rest of the pack, these two scenarios check what step 8 writes, after the
-    # skill's gates: the last turn is spare, for a run that asks one more round.
+    # Unlike the rest of the pack, the three ticket-draft-retitle scenarios check what step 8
+    # writes, after the skill's gates: the last turn is spare, for a run that asks one more round.
     repo: widgets
     setup:
       - cp "$SBX_FIXTURES/retitle-ticket.txt" ticket.txt
@@ -261,7 +261,7 @@ scenarios:
       PROJ-57.jira.txt, read by ticket_summary.py, is one about summing a part listed twice.
     verify:
       - test -f .review/context/PROJ-57.jira.txt
-      - "python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part' | grep -qiE '\\b(sum\\w*|twice|duplicates?|duplicated|duplication|repeat\\w*|more than once|combines?|combined|combining|add\\w*|total\\w*)\\b'"
+      - "python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part' | grep -qiE '\\b(sum\\w*|twice|duplicates?|duplicated|duplication|repeat\\w*|more than once|combines?|combined|combining)\\b'"
     expect:
       ends: success
       files: [".review/context/PROJ-57.jira.txt"]
@@ -288,6 +288,7 @@ scenarios:
     verify:
       - test -f .review/context/PROJ-57.jira.txt
       - "python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part' | grep -qiE '^Refuse a negative count in \\W*by_part\\W*$'"
+      - "! grep -qiE 'summary.*(→|->)' .review/context/PROJ-57.jira.txt"
     expect:
       ends: success
       files: [".review/context/PROJ-57.jira.txt"]
