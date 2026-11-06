@@ -75,7 +75,7 @@ class Tally(unittest.TestCase):
             "admit · s1-5 · pr-0007 · 12 · bob · data-convention · states a principle · u12 · no guards.",
             "support · s1-6 · pr-0007 · 13 · alice · rule · u13 · in general at the boundary.",
             "admit · s1-9 · pr-0007 · 12 · bob · tool-config · none · u12 · no guards.",
-            "items: 10 · admit: 3 · covered: 1 · hold: 2 · support: 1 · not listed: 3",
+            "items: 10 · admit: 3 · covered: 1 · hold: 2 · support: 1 · not listed: 3 · asks: 0",
         ])
 
     def test_a_kind_whose_bar_reads_no_signal_admits_without_one(self):
@@ -91,6 +91,24 @@ class Tally(unittest.TestCase):
             with self.subTest(kind=kind):
                 lines = self.tally([COMMENT], {**ITEM, "quote": "no guards.", "signal": "cites a source", "kind": kind})[1]
                 self.assertTrue(lines[0].startswith(f"{word} · "), lines)
+
+    def test_a_persons_ask_to_keep_a_point_admits_whatever_its_kind_and_an_agents_does_not(self):
+        for kind in guidance_tally.load_check().KINDS:
+            with self.subTest(kind=kind):
+                lines = self.tally([COMMENT], {**ITEM, "quote": "no guards.", "signal": "asks for guidance", "kind": kind})[1]
+                cells = lines[0].split(" · ")
+                self.assertEqual((cells[0], cells[6]), ("admit", "asks for guidance"))
+                self.assertEqual(lines[1:], ["ask · s1-0 · pr-0007 · bob · u12",
+                                             "items: 1 · admit: 1 · covered: 0 · hold: 0 · support: 0 · not listed: 0 · asks: 1"])
+        lines = self.tally([COMMENT], {**ITEM, "quote": "no guards.", "signal": "asks for guidance", "covered_by": "R-002"})[1]
+        self.assertEqual([lines[0].split(" · ")[0], lines[1]], ["covered", "ask · s1-0 · pr-0007 · bob · u12"])
+        agent = {**COMMENT, "authorship": "ai-drafted"}
+        lines = self.tally([agent], {**ITEM, "authorship": "ai-drafted", "quote": "no guards.", "signal": "asks for guidance",
+                                     "outcome": "declined"})[1]
+        self.assertTrue(lines[0].startswith("items: 1 · admit: 0"), lines)
+        code, lines = self.tally([COMMENT], {**ITEM, "quote": "no guards.", "generality": "pr-specific", "signal": "asks for guidance"})
+        self.assertEqual(code, 1)
+        self.assertIn("a pr-specific item has signal 'asks for guidance'", lines[0])
 
     def test_refuses_a_run_the_guidance_check_refuses(self):
         code, lines = self.tally([COMMENT], {**ITEM, "quote": "never said"})

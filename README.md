@@ -676,6 +676,18 @@ One line per file type:
 - `<repo>/log/`: `pr-NNNN.yaml`, one pull request's findings and replies, rebuilt from its threads at the revision; `correction-<date>-<id>.yaml`, one correction; `note-<date>-<id>.yaml`, one note.
 - `archive/`: why a rule existed, kept after it leaves.
 
+### Asking for guidance
+
+Anyone reviewing a pull request can ask for a point to be kept beyond it, in a review comment, a
+reply, a review summary or a conversation comment, in their own words: "can we make this a rule",
+"agents keep doing this, let's teach them not to", "worth adding to our conventions". No prefix or
+phrase is needed. The next revision's extractor reads the comments of the pull requests merged in
+its window, in the repositories its guidance harvest covers, and marks such an ask `asks for
+guidance`; an ask on a pull request still open waits for its merge. The revision lists each one
+with who asked: as a proposal when it meets its kind's bar, as support for the
+live rule or entry that already says it, or held with the reason (`skills/revise/prepare.md`
+step 5, "Single statements"). An ask in a comment an agent drafted is read as the agent's, not yours.
+
 ## Layout
 
 ```text
@@ -764,12 +776,13 @@ session-start line or `work` says something unexpected, these files are what it 
 | `backtest/` | `revise` and `onboard`, each proposal's drafted entry and a rule's probe blocks (`<id>.entry.md`, `R-NNN.md`); the `rule-probe` sandbox scenario, `calibration.md` | The month's driver | Not cleared by the tools |
 | `harvest/threads/`, `harvest/records/` | `pr-reader` in `harvest` mode, for `revise` and `onboard`: each merged pull request's dump (`pages/`, `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json`, `body.md`, `judged.json`, and `comment-list.json`, every comment with its own authorship, from `scripts/comment_list.py`) and the record `scripts/record.py` rebuilt from it | `revise`, which copies the records into `standards/log/<repo>/` with `scripts/archive_records.py`; `thread-analyst`, for each record's authorship | Replaced at each harvest |
 | `harvest/analysis/` | `thread-analyst`, one `pr-NNNN.md` per merged pull request with a record, within the cap of `revise`'s `harvest.md`, for `revise` and `onboard` | `revise`, for the report's front page, through `scripts/block_tally.py`; never copied into the log | A pull request's block is replaced when it is analyzed again; not cleared by the tools |
-| `harvest/guidance/` | `guidance-extractor`, one `slice-<n>.json` per slice of about 300 comments, for `revise`, checked by `scripts/guidance_check.py` | `revise`, for the report's head, and through `scripts/guidance_tally.py` for its clusters, proposals and held candidates | Removed and rewritten at each revision |
+| `harvest/guidance/`, `harvest/guidance-<repo>/` | `guidance-extractor`, one `slice-<n>.json` per slice of about 300 comments, and the tally, this repository's and each other covered repository's, for `revise`, checked by `scripts/guidance_check.py` | `revise`, for the report's head, and through `scripts/guidance_tally.py` for its clusters, proposals and held candidates | Removed and rewritten at each revision |
 | `harvest/` | `onboard`'s first rules: `threads.yaml`, `measurements.md` | The person | Not cleared by the tools |
 | `harvest/context-refresh.md` | `revise`, its context refresh | The person, marking the refresh proposals | Rewritten at each revision |
 | `ratchet-proposal.diff` | `revise`: the accepted change to this repository's `standards/`, instruction file and pull request template, and to the documents accepted `doc/` proposals name | The driver, to apply and open as a pull request | Not cleared by the tools |
 | `checks/`, `archive-pages/` | `revise`: drafted checks, Confluence page bodies | The person | Not cleared by the tools |
 | `revision/claims.md`, `revision/merges.txt`, `revision/sweep/` | `revise`'s sweep at `prepare` step 2: the rules and documented claims it judges, `scripts/window_merges.py`'s printout with `--doc`, and one `diff-probe` block per merged pull request (`pr-NNNN.md`) | `revise`, for the report's Practice section, through `scripts/block_tally.py` | Replaced at each revision |
+| `revision/state.json` | `revise` `prepare`, through `scripts/revise_state.py`: each stage done or skipped, with why | `prepare` step 10, which writes the report only once every stage is recorded | `revise_state.py start`, at the next `prepare` |
 | `revision/notes/` | The driver, before `revise` `prepare`: meeting or chat notes, pasted | `revise`, read as asks at `prepare` step 5 | Not cleared by the tools |
 | `revision/tickets/` | `revise` `apply`: each accepted `ticket/` proposal as a prompt (`<n>-<slug>.md`) | `ticket-draft`, given a prompt's path, one at a time | Replaced at each `apply` |
 | `revision/feedback/` | `revise`: a `skill-feedback` draft per procedure finding, from `prepare` step 2 and `correct` step 2 | `skill-feedback`, given a draft's path | Not cleared by the tools |

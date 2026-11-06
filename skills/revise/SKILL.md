@@ -12,7 +12,7 @@ argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | appl
 disable-model-invocation: true
 metadata:
   author: lasp-dev
-  version: 2.20.0
+  version: 2.22.0
 ---
 
 # Revise the standard
@@ -55,9 +55,9 @@ records directory of each repository harvested. In either row a standard with
 harvests every one, another from the later of the window's start and its adoption date, counts each
 with `ratchet_counts.py --repo <name>`, and lints with
 `rule_lint.py --profiles <standard files>/profiles/`, which checks each `repos:` tag against the
-repositories covered; the threads, the clusters, the sweep and the bar's `scope:` and `example:`
-checks read this repository's code alone, so another repository's records are archived and
-counted but its threads reach no analyst, which `prepare` says before it harvests. A repository's
+repositories covered; every repository's comments are read for guidance and clustered together,
+while the analysts, the sweep and the bar's `scope:` and `example:` checks read this repository's
+code alone, which `prepare` says before it harvests. A repository's
 adoption date is, for this repository, the day the ledger or the `standard:` pointer reached
 `main`: `git log -m --first-parent origin/main --diff-filter=A --reverse --format=%cs -- <file> |
 head -1` here, `<file>` being `standards/review-rules.md` or `standards/profile.yaml`. For
@@ -65,8 +65,8 @@ another covered repository it is the earliest day the standard could apply there
 `profiles/<repo>.yaml` reached the standard's `main`: the same command on that file, in the clone
 against the clone's `origin/main`, or here when the standard is this repository's own. Its pointer
 may have merged later, so its pull requests between the two days count as missing records, which
-`prepare` says under "Head". A proposal to reword, promote or
-broaden a rule whose `repos:` line leaves this repository out runs only the bar's `fields`,
+`prepare` says under "Head". A proposal to admit a rule from another repository's evidence alone, or to reword, promote or
+broaden a rule whose `repos:` line leaves this repository out, runs only the bar's `fields`,
 `status` and `wording` gates here (`--checks`), and is marked "check from <a repository it
 names>" rather than held, since its `scope:` and `example:` are another repository's. Any other exit 1 from
 `profile.py --standard` stops with its message.

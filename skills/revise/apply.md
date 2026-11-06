@@ -46,7 +46,8 @@ in a clone, its branch. Then, by mark:
    the lint refuses a ledger that mixes the two; a changed title changes that file's anchor, and
    the ledger's link changes with it. Whatever the marks, the diff also rewrites the
    ledger's `## Candidates below the criteria` from the held candidates, of every kind, each
-   other than a rule with a `kind: <kind>` line, and each with a `prs:` line: a continued
+   other than a rule with a `kind: <kind>` line, and each with a `prs:` line, each entry
+   `<repo>/pr-NNNN` in a standard with `profiles/` and a bare one there read as this repository's: a continued
    candidate's, its cluster's `asked` line from `guidance_clusters.py`; a candidate no cluster
    continued, its line as it stands, or, with none, the pull requests a person asked on that its
    evidence names, written once; the admissions declined,
@@ -86,7 +87,11 @@ in a clone, its branch. Then, by mark:
    linked instruction file, `--repo .`, the `--decisions` and `--profiles` files `prepare.md`
    step 7 names, the copied `decisions.md` in place of its own, and `--changed` naming each accepted proposal that admits,
    rewords, promotes or broadens a rule, less those accepted with an override, whose lint lines
-   go into the report beside the reason. With nothing to name and no new decision, skip the lint. A failure stops,
+   go into the report beside the reason, and less each marked "check from <repo>": that one is
+   linted apart on its own `--entry` with `--checks sync,wording,status,fields`, since `scope` and
+   `anchors` read another repository's code, and named in a second run of the applied copy,
+   `--checks budget --changed <its ids>`, so it cannot carry its repositories over budget; its
+   mark stays on its entry's evidence line. With nothing to name and no new decision, skip the lint. A failure stops,
    with its lines, and nothing is written. Once a repository is over its budget, any named
    change to a rule counted there fails the budget gate, a narrowing included, so the proposals
    that bring it back under go in the same apply; an admission accepted with an override is not

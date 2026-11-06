@@ -15,7 +15,8 @@ window: <from YYYY-MM-DD>..<to YYYY-MM-DD>
 
 ## Head                                     steps 1, 2
 standard: <where it is stored>
-scope, one line per repository covered: <repo> · <the rules that reach it> · <threads read and diffs swept | archived and counted, threads not read | archived only, no rule reaches it>
+scope, one line per repository covered: <repo> · <the rules that reach it> · <comments read, threads analyzed and diffs swept | comments read, archived and counted | comments read and archived, no rule reaches it>
+skipped: <stage> · <reason>, one line per stage `revise_state.py check` printed as skipped
 records: <n> harvested · <n> missing (<the Missing-record alarm Dial, when it fires>) · <n> baseline
 cost: open-to-merge median <d>, longest <d> · <n> merged without a build · corrections: <n>, on <ids>
 agree rate by severity · share unanswered · share of agreed findings changed as asked
@@ -31,7 +32,7 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
 - [ ] R-0NN · <proposal> · <Dial> · <evidence pointers>
   said: "<a person's quote>" — <login>, <url> | <name>, pasted <file>; one line per quote, the clearest first
   Recommended: <accept | accept, override: <reason> | decline: <reason> | escalate: <reason>> — <the evidence that decides it>
-  scope: … / example: … / bar: ok | <lint lines> / probe: … fires|silent|cannot read; … fires|silent|cannot read
+  scope: … / example: … / bar: ok | <lint lines> | check from <repo> / probe: … fires|silent|cannot read; … | none, check from <repo>
   Mark:
 ### Agent guidance
 - [ ] A-0NN · <the habit, and what to do instead> · <evidence pointers> | A-0NN · retire · seen <YYYY-MM>
