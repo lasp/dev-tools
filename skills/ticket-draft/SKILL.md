@@ -1,13 +1,14 @@
 ---
 name: ticket-draft
 description: >
-  Drafts or refines a Jira ticket or a GitHub issue, for the profile's tracker, in the team's
-  format, placed among existing work, from a description, a ticket or a pull request with none;
-  can brief you on the code first, fold in later answers, or reformat a ticket to the current
-  format; files only on your yes. Use when asked to "write a ticket for", "file a ticket", "create
-  a Jira ticket", "open a GitHub issue for", "log a bug", "refine this ticket", "is this ticket
-  ready", "what is this ticket missing" or "groom this ticket". Not for a complaint about a
-  lasp-dev skill, which is skill-feedback's.
+  Drafts, refines and files a ticket in the team's format, a Jira ticket or a GitHub issue,
+  placed among existing work, from a description, a ticket or a pull request with none; can brief
+  you on the code first, fold in later answers, or reformat a ticket to the current format; files
+  only on your yes. Use when asked to "open a GitHub issue for", "open an issue on this repo",
+  "write a ticket for", "file a ticket", "create a Jira ticket", "log a bug", "refine this ticket",
+  "is this ticket ready", "what is this ticket missing" or "groom this ticket". Not for a complaint
+  about a lasp-dev skill or agent, even one asked for as an issue on the plugin, which is
+  skill-feedback's.
 argument-hint: "[investigate | settle | reformat] <ticket key | issue #n | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
