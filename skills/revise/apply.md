@@ -46,7 +46,10 @@ in a clone, its branch. Then, by mark:
    the lint refuses a ledger that mixes the two; a changed title changes that file's anchor, and
    the ledger's link changes with it. Whatever the marks, the diff also rewrites the
    ledger's `## Candidates below the criteria` from the held candidates, of every kind, each
-   other than a rule with a `kind: <kind>` line, the admissions declined,
+   other than a rule with a `kind: <kind>` line, and each with a `prs:` line: a continued
+   candidate's, its cluster's `asked` line from `guidance_clusters.py`; a candidate no cluster
+   continued, its line as it stands, or, with none, the pull requests a person asked on that its
+   evidence names, written once; the admissions declined,
    escalated or deferred, and the held admissions not accepted with an override, each with its evidence, its
    quotes and the criterion or check it fails. An admitted, reworded, promoted or broadened entry takes its
    `scope:` and `example:` lines verbatim from under its proposal. An admitted rule's `since:` is

@@ -404,7 +404,7 @@ Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admit
 
 ## The guidance clusters
 
-Version: 2
+Version: 3
 
 Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
 object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
@@ -426,7 +426,10 @@ ledger's "Candidates below the criteria" does not hold, a trailing full stop asi
 no `--ledger`. Otherwise it
 prints per cluster, its `admit` count only the `admit` lines of its kind and any other counted as
 `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
-<principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, a `held · <id> · <title>`
+<principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·
+<low|medium|high> · <n> pull request(s)`, its pull requests and, when it has people, those its
+continued held candidate's `prs:` line names and its `support` lines', at the Recurring ask Dial's counts,
+then `asked · <id> · pr-NNNN, ...` or `none`, the pull requests counted, which it refuses to run without (version 3), a `held · <id> · <title>`
 line when it continues one, a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
 from a pull request and a person not yet quoted while one is left; then `clusters: <n> · lines:
@@ -437,7 +440,7 @@ otherwise than its lines, and reads each tally line's fields by place, the quote
 a quote splits nothing.
 
 Writers: the driver, in harvest.md's "Clusters". Readers: `scripts/guidance_clusters.py`; `revise`
-`prepare` steps 5 and 6, through its printout; `sandbox/harvest_recall.py` `--clusters`.
+`prepare` steps 5, 6 and 10, through its printout; `sandbox/harvest_recall.py` `--clusters`.
 
 Pinned by: tests/test_guidance_clusters.py::test_prints_each_cluster_with_its_people_prs_and_quotes
 
@@ -937,12 +940,18 @@ Pinned by: tests/test_window_merges.py::test_a_document_judges_only_the_pull_req
 
 ## The ledger's held-candidates heading
 
-Version: 1
+Version: 2
 
 Fields: the line `## Candidates below the criteria`, word for word, trailing whitespace allowed,
 in an adopting repository's `standards/review-rules.md`. Everything from it to the end of the
 file is the held candidates, each with its evidence and the criterion or check it fails, so the
-section is the ledger's last. `scripts/standard_file.sh` writes the ledger into the standard up
+section is the ledger's last. Each candidate opens with a `### <title>` heading or a bullet `-
+**<title>**`, its bold title not a label ending `:`, and may carry a `kind: <kind>` line, its kind when not a rule, and a `prs: pr-NNNN,
+...` line, the merged pull requests its people asked on, with those whose agent findings the author
+changed as asked, accumulated across revisions, which `scripts/guidance_clusters.py` reads for a
+cluster's priority; a candidate without the line counts none (version 2). A `###` candidate's body
+opens no bullet with a bold title other than a label ending `:`, since that bullet would start a
+candidate. `scripts/standard_file.sh` writes the ledger into the standard up
 to that line, a ledger without it whole, and exits 1, writing nothing, when the words head a line
 at another level or with anything after them. `scripts/ratchet_counts.py`'s ledger entries end
 at it as at any heading of level one to three.

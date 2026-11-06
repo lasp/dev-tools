@@ -9,6 +9,7 @@ import json
 import shutil
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +27,8 @@ hold · s1-5 · pr-0106 · 62 · dave · process · no signal of generality · u
 items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3
 """
 LEDGER = ("# Review rules\n\n## R-001 · A rule\n\n## Candidates below the criteria\n\n### Changelog scope\n\nEvidence.\n\n"
-          "- **Keyword-only arguments for flags.** Evidence: pr-0048. Held: its one ask is AI-drafted.\n")
+          "#### Evidence\n\nprs: pr-48, pr-0104\n\n- **Held:** an agent's ask in pr-0061; fails **Admission** twice.\n\n"
+          "- **Keyword-only arguments for flags.** Evidence: pr-0048. Held: its one ask is AI-drafted.\nprs: none\n")
 
 
 class Clusters(unittest.TestCase):
@@ -61,6 +63,8 @@ class Clusters(unittest.TestCase):
             "Install a missing system dependency rather than mock it.",
             "prs · C1 · pr-0101, pr-0104, pr-0106, pr-0108",
             "people · C1 · bob, carol, dave, erin",
+            "priority · C1 · high · 4 pull requests",
+            "asked · C1 · pr-0101, pr-0104, pr-0106, pr-0108",
             "note · C1 · pr-0108 · erin · human · thread PRRT_x: add libhdf5 · the image",
             "note · C1 · pr-0109 · copilot · bot · thread PRRT_y: mock the import",
             'said · C1 · "Install the library in CI; never mock it away." — bob, u11',
@@ -69,6 +73,8 @@ class Clusters(unittest.TestCase):
             "cluster · C2 · process · admit 0 · hold 1 · support 0 · prs 1 · people 2 · The changelog lists only user-visible changes.",
             "prs · C2 · pr-0106",
             "people · C2 · dave, erin",
+            "priority · C2 · high · 3 pull requests",
+            "asked · C2 · pr-0048, pr-0104, pr-0106",
             "held · C2 · Changelog scope",
             "note · C2 · pasted notes-1.md · erin · keep the changelog to what users see",
             'said · C2 · "Changelog holds user-visible changes." — dave, u62',
@@ -146,6 +152,39 @@ class Clusters(unittest.TestCase):
         code, lines = self.run_clusters(outranked)
         self.assertEqual(code, 1)
         self.assertIn("kind tool-config, which none of its lines is", "\n".join(lines))
+
+    def test_priority_counts_people_s_and_agents_changed_pull_requests_at_the_recurring_ask_dial(self):
+        one = {"id": "C1", "kind": "rule", "principle": "P.", "items": ["s1-2"], "notes": [], "held": None}
+        two = {**one, "id": "C2", "items": ["s1-0", "s1-3"]}
+        rest = {**one, "id": "C3", "items": ["s1-4", "s1-5"]}
+        lines = self.run_clusters({"clusters": [one, two, rest]})[1]
+        self.assertEqual([x for x in lines if x.startswith("priority")],
+                         ["priority · C1 · low · 1 pull request", "priority · C2 · medium · 2 pull requests",
+                          "priority · C3 · low · 1 pull request"])
+        agents = {**one, "id": "C4", "items": ["s1-3"]}
+        two_only = {**two, "items": ["s1-0"]}
+        lines = self.run_clusters({"clusters": [one, two_only, rest, agents]})[1]
+        self.assertIn("priority · C4 · low · 0 pull requests", lines)
+        held = {**one, "held": "Keyword-only arguments for flags"}
+        lines = self.run_clusters({"clusters": [held, two, rest]})[1]
+        self.assertIn("priority · C1 · low · 1 pull request", lines)
+        held = {**one, "held": "Changelog scope"}
+        lines = self.run_clusters({"clusters": [held, two, rest]})[1]
+        self.assertIn("priority · C1 · medium · 2 pull requests", lines)
+        agents_held = {**agents, "held": "Changelog scope"}
+        lines = self.run_clusters({"clusters": [one, two_only, rest, agents_held]})[1]
+        self.assertIn("priority · C4 · low · 0 pull requests", lines)
+        code, lines = self.run_clusters({"clusters": [{**one, "held": "Held:"}, two, rest]})
+        self.assertIn("no held candidate headed 'Held:'", "\n".join(lines))
+        three = {**two, "items": ["s1-0", "s1-2", "s1-4"]}
+        lines = self.run_clusters({"clusters": [three, {**one, "id": "C3", "kind": "process", "items": ["s1-3", "s1-5"]}]})[1]
+        self.assertIn("priority · C2 · high · 3 pull requests", lines)
+        dials = self.dir / "dials.md"
+        dials.write_text("| Recurring ask | 2 pull requests |\n")
+        with unittest.mock.patch.object(guidance_clusters, "DIALS", dials):
+            code, lines = self.run_clusters({"clusters": [one, two, rest]})
+        self.assertEqual(code, 1)
+        self.assertIn("no Recurring ask Dial reading", "\n".join(lines))
 
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {

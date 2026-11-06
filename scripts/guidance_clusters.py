@@ -34,7 +34,12 @@ admit it; an `admit` line of another kind counts under `hold`. Its pull requests
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
-<id> · <login>, ...`, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
+<id> · <login>, ...`, `priority · <id> · <low|medium|high> · <n> pull request(s)`, at the
+Recurring ask Dial's counts in `standards/dials.md`, of its pull requests and, when it has
+people, those its continued held candidate's `prs:` line names, accumulated across revisions, and
+those of its `support` lines, an agent's finding the author changed as asked, then `asked · <id> ·
+pr-NNNN, ...` or `none`, the pull requests it counted, which `apply` carries into the candidate's
+`prs:` line, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
 note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
@@ -54,6 +59,8 @@ from pathlib import Path
 WORDS = ("admit", "hold", "support")
 HELD = "## Candidates below the criteria"
 KEYS = {"id", "kind", "principle", "items", "notes", "held"}
+DIALS = Path(__file__).resolve().parents[1] / "standards" / "dials.md"
+PRIORITY = re.compile(r"^\| Recurring ask \|.*?(\d+) low, (\d+) medium, (\d+) or more high", re.M)
 KINDS = ("rule", "agent-guidance", "data-convention", "process", "decision", "tool-config", "exemplar",
          "review-calibration", "open-question")
 
@@ -90,23 +97,38 @@ def tally_lines(text: str) -> dict[str, dict]:
 NOTE = re.compile(r"(pr-\d{4,}) · (\S+) · (human|ai-drafted|bot) · \S.*|pasted (\S+) · ([^·]+?) · \S.*")
 
 
-def held_titles(ledger: str) -> set[str]:
-    """The titles of the ledger's held candidates: each heading under the line `## Candidates
-    below the criteria`, and each bullet there that opens with a bold title, `- **<title>**`, a
-    trailing full stop left off either."""
+def held_titles(ledger: str) -> dict[str, set[str]]:
+    """The ledger's held candidates by title, each with the pull requests its `prs:` line names, the
+    ones its people asked on (`docs/contracts.md`, "The ledger's held-candidates heading"): each
+    `### ` heading under the line `## Candidates below the criteria`, and each bullet there at the
+    line's start that opens with a bold title, `- **<title>**`, not a label ending `:`, a trailing
+    full stop left off either. A `pr-NNNN` anywhere else in a candidate counts for nothing."""
     lines = ledger.splitlines()
     at = next((i for i, line in enumerate(lines) if line.rstrip() == HELD), None)
     if at is None:
-        return set()
-    out = set()
+        return {}
+    out: dict[str, set[str]] = {}
+    title = None
     for line in lines[at + 1:]:
-        m = re.match(r"#{2,4} (.+)", line) or re.match(r"[-*] \*\*(.+?)\*\*", line)
+        m = re.match(r"### (.+)", line) or re.match(r"[-*] \*\*([^*]*[^*:])\*\*", line)
         if m:
-            out.add(m[1].strip().rstrip("."))
+            title = m[1].strip().rstrip(".")
+            out.setdefault(title, set())
+        prs = re.match(r"\s*(?:[-*] )?prs: (.*)", line)
+        if title is not None and prs:
+            out[title] |= {f"pr-{int(n):04d}" for n in re.findall(r"\bpr-(\d+)\b", prs[1])}
     return out
 
 
-def check(clusters, lines: dict[str, dict], headings: set[str] | None) -> list[str]:
+def priorities() -> tuple[int, int, int]:
+    """The Recurring ask Dial's pull request counts for low, medium and high priority."""
+    m = PRIORITY.search(DIALS.read_text() if DIALS.is_file() else "")
+    if not m:
+        raise Refused(f"{DIALS} has no Recurring ask Dial reading `<n> low, <n> medium, <n> or more high`")
+    return int(m[1]), int(m[2]), int(m[3])
+
+
+def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None) -> list[str]:
     if not isinstance(clusters, dict) or set(clusters) != {"clusters"} or not isinstance(clusters["clusters"], list):
         return ["refused · clusters · not an object with a clusters list"]
     faults, seen, ids = [], {}, set()
@@ -181,6 +203,7 @@ def main(argv: list[str] | None = None) -> int:
         clusters = json.loads(args.clusters.read_text())
         lines = tally_lines(args.tally.read_text())
         headings = held_titles(args.ledger.read_text()) if args.ledger else None
+        _, medium, high = priorities()
     except (OSError, json.JSONDecodeError, Refused) as e:
         print(f"refused · input · {e}")
         return 1
@@ -202,6 +225,11 @@ def main(argv: list[str] | None = None) -> int:
               + f" · prs {len(prs)} · people {len(people)} · {c['principle']}")
         print(f"prs · {c['id']} · {', '.join(prs) or 'none'}")
         print(f"people · {c['id']} · {', '.join(people) or 'none'}")
+        earlier = headings[c["held"].rstrip(".")] if c["held"] and people else set()
+        asked = set(prs) | earlier | ({lines[k]["pr"] for k in keys if lines[k]["word"] == "support"} if people else set())
+        level = "high" if len(asked) >= high else "medium" if len(asked) >= medium else "low"
+        print(f"priority · {c['id']} · {level} · {len(asked)} pull request{'' if len(asked) == 1 else 's'}")
+        print(f"asked · {c['id']} · {', '.join(sorted(asked)) or 'none'}")
         if c["held"]:
             print(f"held · {c['id']} · {c['held']}")
         for note in c["notes"]:

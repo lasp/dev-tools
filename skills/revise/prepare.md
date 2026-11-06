@@ -172,17 +172,15 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    lines link, if any, and the `--profiles` step 7 names, reports, a line for each covered
    repository with its lines against its budget, `budget ok` or over it. Name the Dial beside each proposal. Below the Minimum settled
    firings before a rate is read Dial, no proposal resting on a rate is made for that rule, and its
-   rate line reads `keep, insufficient evidence`; admission, establishment and expiry rest on no
+   rate line reads `keep, insufficient evidence: <agree> agree, <disagree> disagree of <n> settled
+   since <date>`, its counts the all-records table's, or step 3's rerun for a reworded or
+   corrected rule, so the group sees them build; admission, establishment and expiry rest on no
    rate. A candidate that meets the Admission Dial is proposed whatever the rule count. The Low
    agree rate Dial's "still below at the next revision" reads the rules the previous report, the
    newest `ratchet-*.md` in any `<log>` of the standard, proposed rewording under that Dial. An
    agent guidance entry past the Agent guidance expiry Dial, its `seen` month moved first as
    harvest.md's "Destinations" says, is a proposal `A-NNN · retire`.
 
-   **Dials at the margin.** For each Dial with values in its Either way column, list the rules
-   and candidates whose measured value lies between the default and either value, and the
-   proposal each would gain or lose there. A Dial with none is left out; one line says the rest
-   changed nothing.
 5. **Cluster.** Run harvest.md's "Clusters", adding the records' `inner.nominated` corrections,
    the taken suggestions, and each ask in the meeting or chat notes the driver pasted into
    `.review/revision/notes/*.md`, cited by its file and marked `pasted`: a person's line that
@@ -253,11 +251,13 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     context refreshes among them, one line each, grouped by priority, high, medium and low, and
     within a group by impact: the number of merged pull requests in its evidence, then the number
     of files it would change, most first, both written in its Impact cell. A
-    proposal is high when it rests on what people wrote, the author's own comments and other
-    developers', in two merged pull requests or from two people, or on a break still on `main`;
-    medium when it rests on one person's statement in one pull request; low when it rests only on AI findings' agree
-    rates, since a person's comment is more often about the design and a finding agreed to may
-    have missed the mark; medium otherwise. No cap: the group takes them in order and leaves the
+    proposal from a cluster takes the priority `guidance_clusters.py` prints for it, and a held
+    candidate step 6 proposes with no cluster this window the level its `prs:` line counts, by the
+    Recurring ask Dial: what people wrote, the author's own comments and other developers', and
+    the agent findings authors changed as asked, counted by merged pull request. A `ticket/` on a
+    break still on `main` is high; a proposal that rests only on AI findings' agree rates is low,
+    since a person's comment is more often about the design and a finding agreed to may have
+    missed the mark; medium otherwise. No cap: the group takes them in order and leaves the
     rest blank. Each line also says what the proposal applies to: project-wide, for a rule,
     decision or entry with no `repos:` line or a `context/` entry, or the repositories its
     `repos:` line names, or, for a

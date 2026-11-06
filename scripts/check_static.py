@@ -147,7 +147,7 @@ README_REF = re.compile(r"(?<![Cc]orpus )\b[Tt]he\s+README(?:'s|,)\s+\"([^\"]+?)
 CORPUS_README_REF = re.compile(r"[Tt]he\s+corpus\s+README(?:'s|,)\s+\"([^\"]+?)\"")
 # A markdown link, `[text](path#anchor)`; one with a scheme, such as https:, is not checked.
 LINK = re.compile(r"\]\(([^)\s]+)\)")
-# `the Admission Dial`, `the Low agree rate or Established expiry Dial`, `"Split before starting" threshold`.
+# `the Admission Dial`, `the Low agree rate or Established expiry Dial`, `"Recurring ask" threshold`.
 DIAL_NAME = r"[A-Z][\w-]*(?:\s+[a-z][\w-]*)*"
 DIAL_JOIN = r",\s+(?:or\s+|and\s+)?|\s+(?:or|and)\s+"
 DIAL_NAMED = re.compile(rf"\b[Tt]he\s+({DIAL_NAME}(?:(?:{DIAL_JOIN}){DIAL_NAME})*)\s+Dials?\b")

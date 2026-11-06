@@ -377,6 +377,12 @@ admit under the kind the extractor gave them. The recorded clusters' kinds, each
 tally's 164 held statements admit under their kind, 34 of them process and 22 data conventions, so
 its admissions rise from 53 to 153 before clustering.
 
+Priority, under `standards/dials.md`'s Recurring ask of 2026-11-05, which counts a cluster's pull
+requests at 1 low, 2 medium and 3 or more high: of the recorded clusters, 8 are high and 21 low,
+where the rule before, two pull requests or two people high and one statement medium, made 8 high,
+20 medium and 1 low. The 20 said once move from medium to low; recall is unchanged, since the
+Dials read nothing the extractor does.
+
 On the private month, the key was drafted by agents, and the extractor's quotes were all in their
 comments (631 of 631); 4 of the key's 117 quotes could not be found in their comments, which
 leaves those labels unfound. A judge read most of the general items no label held, 127 of 164 at
