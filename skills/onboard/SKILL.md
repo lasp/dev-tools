@@ -15,7 +15,7 @@ description: >
 argument-hint: "[rules [Confluence page or Jira epic to add]]"
 metadata:
   author: lasp-dev
-  version: 0.6.5
+  version: 0.6.6
 ---
 
 # Onboard
@@ -450,9 +450,9 @@ window:
   stand in. The four are `pr-reader`'s `get`, reviews, review comments and conversation comments,
   more where a list pages: the basis for the count, not text for the person.
 - **Agents**: one thread analyst per pull request with review threads a person wrote, up to
-  thirty, then a rule probe for each example a candidate cites, often two per candidate.
+  thirty; a rule probe for an example only when you ask for one.
 - **Cost**: the reads at about 4 cents per merged pull request, plus at most about 15 cents per
-  analyst, its share of the probes included, which at the cap of thirty is about $4 to $5. Say
+  analyst, which at the cap of thirty is about $4 to $5. Say
   that these rates were measured on one run in November 2026, the agents on Sonnet, and change
   when the agents' model does.
 

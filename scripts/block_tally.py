@@ -4,7 +4,8 @@
 `analysis <dir> pr-NNNN [...]` reads the named pull requests' `pr-NNNN.md`, each a `thread-analyst`
 wrote under `.review/harvest/analysis/`; `sweep --claims <claims.md> [--merges <file>] <dir>
 pr-NNNN [...]` each a `diff-probe` wrote under `.review/revision/sweep/`, every block judging every
-`C-n` claim the claims file heads, except an `every change` claim whose document's `doc` line in
+`C-n` claim the claims file heads, except one marked ` · script: <check>`, which
+`scripts/drift_checks.py` judges, and an `every change` claim whose document's `doc` line in
 `--merges`, `scripts/window_merges.py`'s printout, does not name that pull request. Any other file in the directory, such as a block an earlier run left, is not
 read. docs/contracts.md's "The analysis blocks" and "The sweep blocks" give both forms and both
 printouts.
@@ -38,6 +39,12 @@ ASK = re.compile(
 ANALYSIS_HEAD = re.compile(r"^## (pr-\d+) — threads read$")
 MISMATCH = re.compile(r"^record mismatch: (.+)$")
 SWEEP_HEAD = re.compile(r"^## (pr-\d+) · [0-9a-f]{7}$")
+# A claim's heading, and its check when a script judges it (`scripts/drift_checks.py`).
+CLAIM_HEADING = re.compile(
+    r"^### (?P<id>C-\d+) · (?P<path>.+?):(?P<line>\d+) · (?P<kind>every change|code)"
+    r"(?: · script: (?P<check>template|todo|history|changelog (?P<arg>\S+ [^\s,]+(?:,[^\s,]+)*)))?$",
+    re.M,
+)
 VERDICT = re.compile(
     r"^(?P<id>[RC]-\d+) · (?:follows · (?P<follows>.+)"
     r'|breaks · (?P<place>.+?) · "(?P<line>.*)" · (?P<why>.+)'
@@ -152,9 +159,10 @@ def sweep(folder: Path, prs: list[str], claims: Path | None, merges: Path | None
     if merges is not None and not merges.is_file():
         raise CannotRun(f"no merges file {merges}")
     text = claims.read_text()
-    documented = re.findall(r"^### (C-\d+) · (.+?):\d+ · (every change|code)$", text, re.M)
-    if len(documented) != len(re.findall(r"^### C-\d+\b", text, re.M)):
-        raise CannotRun(f"{claims}: a `### C-n` heading is not `### C-n · <path>:<line> · every change|code`")
+    headings = list(CLAIM_HEADING.finditer(text))
+    if len(headings) != len(re.findall(r"^### C-\d+\b", text, re.M)):
+        raise CannotRun(f"{claims}: a `### C-n` heading is not `### C-n · <path>:<line> · every change|code[ · script: <check>]`")
+    documented = [(h["id"], h["path"], h["kind"]) for h in headings if not h["check"]]
     after = opened_after(merges) if merges else None
     for cid, path, kind in documented:
         if after is not None and kind == "every change" and path not in after:

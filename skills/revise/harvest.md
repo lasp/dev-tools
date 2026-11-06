@@ -162,13 +162,16 @@ merged, and its wording, into `.review/backtest/R-NNN.entry.md`: as the entry's 
 the ledger still links an instruction file, under a `### R-NNN · <title>` heading after the entry. If you cannot think of a case
 where the rule should not apply, say so on its `Do not flag:` line rather than inventing one. Run `python3 "<plugin
 root>/scripts/rule_lint.py" --entry <that file> --repo .` with a `--decisions` for each decisions
-file the caller names; an exit 2 (`CANNOT RUN`) stops the step with its line. Then one
+file the caller names; an exit 2 (`CANNOT RUN`) stops the step with its line. The lint's
+`anchors` gate checks each anchor resolves in merged code; a probe, which asks an agent whether
+the rule fires there, runs only when the person asks for one, since a probe shown its own example
+confirms it. On that ask, one
 `rule-probe` per anchor of the `example:` line, launched as "Analysts" launches agents, each given this repository's
 path, the text `python3 "<plugin root>/scripts/probe_input.py" <that file>` prints, the drafted
 title, wording and `Do not flag:` line and never the entry file or its `example:` line, and one
 anchor, or one thread with its pull request's merge commit; an exit 2 stops the step with its
 line. Write their blocks to `.review/backtest/R-NNN.md`. Under the proposal or candidate, in the caller's report: the drafted
 `scope:` and `example:` lines, then `bar: ok` or the lint's lines, then `probe: <anchor>
-fires|silent|cannot read; <anchor> fires|silent|cannot read`. A rule a gate fails is held, with the failed check named,
+fires|silent|cannot read; <anchor> fires|silent|cannot read`, or `probe: none` when none was asked for. A rule a gate fails is held, with the failed check named,
 and never admitted or recommended a plain `accept`. A probe that disagrees with the example line
 is printed and holds nothing.
