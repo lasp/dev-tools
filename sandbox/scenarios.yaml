@@ -261,7 +261,7 @@ scenarios:
       PROJ-57.jira.txt, read by ticket_summary.py, is one about summing a part listed twice.
     verify:
       - test -f .review/context/PROJ-57.jira.txt
-      - "python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part' | grep -qiE '\\b(sum\\w*|twice|duplicates?|duplicated|duplication|repeat\\w*|more than once|combines?|combined|combining)\\b'"
+      - "out=$(python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part') && printf '%s\\n' \"$out\" | grep -qiE '\\b(sum\\w*|twice|duplicates?|duplicated|duplication|repeat\\w*|more than once|combines?|combined|combining)\\b'"
     expect:
       ends: success
       files: [".review/context/PROJ-57.jira.txt"]
@@ -287,8 +287,8 @@ scenarios:
     look_at: The summary is kept, and no field change names it.
     verify:
       - test -f .review/context/PROJ-57.jira.txt
-      - "python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part' | grep -qiE '^Refuse a negative count in \\W*by_part\\W*$'"
-      - "! grep -qiE 'summary.*(→|->)' .review/context/PROJ-57.jira.txt"
+      - "out=$(python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part'); [ -z \"$out\" ] || printf '%s\\n' \"$out\" | grep -qiE '^Refuse a negative count in \\W*by_part\\W*$'"
+      - "! grep -qiE '^[[:space:]*#=|>-]*(new |proposed )?summary[^,;]*(→|->)' .review/context/PROJ-57.jira.txt"
     expect:
       ends: success
       files: [".review/context/PROJ-57.jira.txt"]
@@ -318,8 +318,8 @@ scenarios:
       longer names a warning but the one error that names every part listed twice.
     verify:
       - test -f .review/context/PROJ-58.jira.txt
-      - "python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-58.jira.txt PROJ-58 'Log a warning in by_part for a part listed twice' | grep -qiE '\\b(raises?|raising|errors?|valueerror|refuses?|refusing|rejects?|rejecting|stops?|stopping|every|all|each|names?|naming)\\b'"
-      - "! python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-58.jira.txt PROJ-58 'Log a warning in by_part for a part listed twice' | grep -qiE '\\bwarn'"
+      - "out=$(python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-58.jira.txt PROJ-58 'Log a warning in by_part for a part listed twice') && printf '%s\\n' \"$out\" | grep -qiE '\\b(raises?|raising|errors?|valueerror|refuses?|refusing|rejects?|rejecting|stops?|stopping|every|all|each|names?|naming)\\b'"
+      - "out=$(python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-58.jira.txt PROJ-58 'Log a warning in by_part for a part listed twice') && ! printf '%s\\n' \"$out\" | grep -qiE '\\bwarn'"
     expect:
       ends: success
       files: [".review/context/PROJ-58.jira.txt"]

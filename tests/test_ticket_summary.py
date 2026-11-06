@@ -1,6 +1,7 @@
 """sandbox/fixture/ticket_summary.py: the summary a ticket-draft paste file leaves on one ticket."""
 
 import importlib.util
+import os
 import subprocess
 import sys
 import tempfile
@@ -57,8 +58,16 @@ class Layouts(unittest.TestCase):
     def test_a_paste_heading_names_no_summary(self):
         self.assertIsNone(read("PROJ-57 · Paste in this order. Nothing was written to Jira.\nDESCRIPTION\n"))
 
-    def test_with_no_summary_line_and_no_heading_it_reads_nothing(self):
+    def test_a_file_that_says_nothing_of_the_summary_reads_as_none_for_the_verify_to_judge(self):
         self.assertIsNone(read("FIELDS\nType: Task\n\nDESCRIPTION\nh1. Motivation\n"))
+
+    def test_a_jira_heading_names_the_summary(self):
+        self.assertEqual(read(f"h1. PROJ-57 · {NEW}\n"), NEW)
+
+    def test_the_comment_to_post_quotes_the_ticket_and_is_not_read(self):
+        text = f"== Comment to post ==\nPROJ-57 · {FILED}\n\n== Field changes ==\nNew summary: {NEW}\n"
+        self.assertEqual(read(text), NEW)
+        self.assertIsNone(read(f"Original request (bob, 2026-02-02):\nPROJ-57 · {FILED}\nSummary: {FILED}\n"))
 
 
 class Forms(unittest.TestCase):
@@ -81,6 +90,9 @@ class Forms(unittest.TestCase):
             "changed from": f'Summary: {NEW} (changed from "{FILED}")\n',
             "now and after": f"== Summary (field change) ==\nNow: {FILED}\nAfter: {NEW}\n",
             "key in the label": f'PROJ-57 · {FILED}\n\nSummary (PROJ-57): "{FILED}" → "{NEW}"\n',
+            "summary field label": f"Summary field: {NEW}\n",
+            "new summary label": f"New summary: {NEW}\n",
+            "key prefix on the value": f"== Summary (field change) ==\nPROJ-57 · {NEW}\n",
         }
         for name, text in cases.items():
             with self.subTest(name):
@@ -95,6 +107,10 @@ class Forms(unittest.TestCase):
             "heading, unchanged below": "== Summary ==\nunchanged\n",
             "field changes none": "Field changes: none. Summary, Component/s and Priority are unchanged.\n",
             "kept in what changed": "* Kept: the summary, the Motivation and Impact\n",
+            "unchanged after the value": f"Summary: {FILED} (unchanged)\n",
+            "kept after a dash": f"Summary: {FILED} — kept, it still names the point\n",
+            "field changes heading, none below": "== 3. Field changes ==\nNone.\n",
+            "fields no change": "Fields: no change\n",
         }
         for name, text in cases.items():
             with self.subTest(name):
@@ -134,6 +150,16 @@ class FollowUps(unittest.TestCase):
             with self.subTest(opener):
                 self.assertEqual(read(opener + "\nSummary: " + NEW + "\n"), NEW)
 
+    def test_a_follow_up_summary_that_names_the_key_in_its_value_stays_the_follow_ups(self):
+        text = ("== Follow-up ticket ==\nSummary: Refuse negatives in total, as PROJ-57 does for by_part\n\n"
+                "== PROJ-57 ==\nSummary: " + NEW + "\n")
+        self.assertEqual(read(text), NEW)
+
+    def test_a_jira_list_item_does_not_end_a_follow_up(self):
+        text = ("Follow-up ticket\nDescription:\nh1. Acceptance Criteria\n# total refuses a negative count\n"
+                "Summary: Refuse a negative count in total\n")
+        self.assertIsNone(read(text))
+
     def test_a_long_line_opening_with_follow_up_opens_no_block(self):
         long_line = "Follow-up " + "x" * 120
         self.assertEqual(read(long_line + "\nSummary: " + NEW + "\n"), NEW)
@@ -160,6 +186,51 @@ class Command(unittest.TestCase):
         done = subprocess.run([sys.executable, str(SCRIPT), "/nonexistent/x.txt", "PROJ-57", FILED],
                               capture_output=True, text=True)
         self.assertEqual((done.returncode, done.stdout), (1, ""))
+
+
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+
+@unittest.skipIf(yaml is None, "PyYAML is not installed")
+class Verifies(unittest.TestCase):
+    """Each retitle scenario's verify, run through /bin/sh as run.py runs it, on a paste file."""
+
+    SILENT = "FIELDS\nType: Task\n\nDESCRIPTION\nh1. Motivation\n"
+
+    def verdict(self, scenario: str, key: str, text: str) -> bool:
+        scenarios = {s["id"]: s for s in yaml.safe_load((ROOT / "sandbox" / "scenarios.yaml").read_text())["scenarios"]}
+        with tempfile.TemporaryDirectory() as d:
+            paste = Path(d) / ".review" / "context" / f"{key}.jira.txt"
+            paste.parent.mkdir(parents=True)
+            paste.write_text(text, encoding="utf-8")
+            env = {**os.environ, "SBX_FIXTURES": str(SCRIPT.parent)}
+            return all(subprocess.run(["/bin/sh", "-c", command], cwd=d, env=env, capture_output=True).returncode == 0
+                       for command in scenarios[scenario]["verify"])
+
+    def test_retitle_needs_a_new_summary(self):
+        self.assertTrue(self.verdict("ticket-draft-retitle", "PROJ-57", f"Summary: {NEW}\n"))
+        self.assertFalse(self.verdict("ticket-draft-retitle", "PROJ-57", f"Summary: {FILED}\n"))
+        self.assertFalse(self.verdict("ticket-draft-retitle", "PROJ-57", self.SILENT))
+
+    def test_subtle_needs_a_new_summary_with_no_warning(self):
+        old = "Log a warning in by_part for a part listed twice"
+        run = lambda text: self.verdict("ticket-draft-retitle-subtle", "PROJ-58", text)  # noqa: E731
+        self.assertTrue(run("Summary: Raise one ValueError naming every part listed twice\n"))
+        self.assertFalse(run(f"Summary: {old}\n"))
+        self.assertFalse(run("Summary: Warn on every part listed twice\n"))
+        self.assertFalse(run(self.SILENT))
+
+    def test_control_fails_only_on_a_different_summary(self):
+        run = lambda text: self.verdict("ticket-draft-retitle-control", "PROJ-57", text)  # noqa: E731
+        self.assertTrue(run(self.SILENT))
+        self.assertTrue(run(f"Summary: {FILED}\n"))
+        self.assertTrue(run("- Summary: unchanged\n"))
+        self.assertFalse(run("Summary: Refuse every negative count in by_part\n"))
+        self.assertFalse(run(f'- Summary: "{FILED}" → "{FILED}"\n'))
+        self.assertTrue(run(f"Links: relates to PROJ-12 (summary of work -> later)\nSummary: {FILED}\n"))
 
 
 if __name__ == "__main__":
