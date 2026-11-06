@@ -464,7 +464,7 @@ Pinned by: tests/test_record.py::test_a_judgment_outside_what_the_words_leave_op
 
 ## The local facts
 
-Version: 8
+Version: 9
 
 Fields: `hooks/where.sh --fields`, one `name=value` per line: `ticket`, `branch` (empty with
 none, a detached HEAD included; version 5), `context` (the ticket's context page as an absolute path, or empty; version 5), `plan`
@@ -487,7 +487,12 @@ names this one, or empty).
 is matched ignoring case and written as found when the pattern matches it exactly, else
 upper-cased, so `proj-775-x` gives `PROJ-775`. A branch whose key matches only ignoring case
 and that has its own plan, `.review/implementation-plan-<branch>.md`, stays its own work, with no
-ticket (version 8). The files are read from the
+ticket (version 8). Where the profile's `issue_tracker.kind` is `github`, the key is the issue's
+number: a match is reduced to its digits, `ticket=59`, its plan
+`.review/implementation-plan-59.md`, a context page headed `# #59 · …` is its page, and the
+session-start line shows it as `#59`; the pattern is the `ticket.pattern` the standard records,
+never one detected from the history, and with none it is `(issue-)?\d+`, so `59-x`, `issue-59-x` and `feature/59-x` give `59`. A Jira tracker, or none,
+reads the pattern as recorded (version 9). The files are read from the
 repository's top level, wherever in it the command runs (version 5). The lines print with or without
 `.review/`; a key outside the profile's pattern, another argument, no `jq`, or a reopened line
 that is not `Reopened: <id> · <clause>` exits 1.
@@ -499,7 +504,7 @@ Pinned by: tests/test_where.sh::"--fields prints the facts, one per line, on a c
 
 ## The next phase
 
-Version: 4
+Version: 5
 
 Fields: `scripts/next_phase.py`'s printout: `phase:` (a skill, or `nothing`), `argument:`,
 `why:` (the row's name in the script's table, `review-unposted` among them from version 3), `lock:`
@@ -509,7 +514,15 @@ Fields: `scripts/next_phase.py`'s printout: `phase:` (a skill, or `nothing`), `a
 local routes on. Version 4 reads the fields' `slug=`: a ticket drafted and not filed is `phase:
 nothing`, `argument: <slug>`, `why: unfiled`, whose second line names
 `.review/context/<slug>.jira.txt`; `--slug` is gone. Fields with a `slug` and a `ticket` or a
-`context` exit 1.
+`context` exit 1. Version 5 reads a GitHub tracker: the issue's `--issue-state open|closed` and a
+`--label` for each of its labels, in place of `--ticket-status`. A closed issue is `why:
+ticket-closed`; an open one with no label the profile's `issue_tracker.statuses` maps is `why:
+ticket-draft`, and one with a mapped label goes to that label's `next`, a label in
+`issue_tracker.pr_statuses` needing the state block as a Jira status there does. Two mapped
+labels, `--ticket-status` on a GitHub tracker, `--issue-state` on any other, and `--label`
+without `--issue-state` exit 1. The state block's `ticket: Ticket: #<n>` names issue `<n>`; the
+first line writes an issue as `#<n>`, `argument:` as the number. The `unfiled` and
+`ticket-closed` lines name the tracker, not Jira.
 
 Writers: `scripts/next_phase.py`. Readers: `work`.
 
@@ -689,7 +702,7 @@ An open issue that carries no mapped label is in `filed`, and `work` sends it to
 
 Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`
 and the tracker's skill, `using-jira`, for the description. Readers: `scripts/profile.py`, and
-through it `scripts/next_phase.py` for a Jira workflow, and the skills that read `jira.roles`.
+through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, and the skills that read `jira.roles`.
 
 Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_to_each_role
 
@@ -703,7 +716,8 @@ place the fields are defined; the records directory's own README says how the re
 reads them.
 
 - `pr`, the number; `ticket`, the key on the body's `Ticket:` line in the profile's ticket
-  pattern, or `none`.
+  pattern, or, where the profile's tracker is GitHub's, the number of the line's `#<n>`, whatever
+  the pattern; or `none`.
 - `stack`, `{part, of, base}` from that line's `part k of n · base: <branch>`, and `claims`, the
   list on the body's `Claims:` line, the criteria this part claims; each `none` when absent.
 - `branch`, the head branch; `head`, the commit the last findings review reviewed, or the merge
