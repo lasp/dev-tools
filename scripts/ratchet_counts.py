@@ -8,7 +8,7 @@ read, so whose replies were never read), open contests (verdict `contested`), se
 and the notes the `note-*.yaml` records name, both a count, never evidence. Firings count every
 finding, an unlabeled one included; the unanswered, unlabeled and open-contest columns never
 enter a rate, and the unanswered share is over the firings less the unlabeled. A rule is the citation a
-finding key starts with: `R-012`, `D-008@my_repo`, `term/T-010`; any other key counts under
+finding key starts with: `R-012`, `D-008@my_repo`, `term/T-010`, `agent/A-003`, `data/F-002`; any other key counts under
 its first segment (`ticket`, `other`, `test`). The older verdict words in `pr-0066.yaml` map to
 the current three: accepted to agree, declined to disagree, escalated to discuss.
 
@@ -65,7 +65,7 @@ COLUMNS = (
 
 
 def rule_of(key: str) -> str:
-    m = re.match(r"(R-\d+|D-\d+(?:@[\w-]+)?|term/T-\d+)", key)
+    m = re.match(r"(R-\d+|D-\d+(?:@[\w-]+)?|term/T-\d+|agent/A-\d+|data/F-\d+)", key)
     return m.group(1) if m else key.split("/")[0]
 
 

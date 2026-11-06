@@ -157,6 +157,8 @@ PATH_REF = re.compile(r"`((?:skills|agents|scripts|hooks|docs|tests|sandbox|stan
 IN_ADOPTING_REPO = {
     "standards/review-rules.md",  # each adopting repository's ledger
     "standards/decisions.md",  # each adopting repository's own decisions
+    "standards/agent-guidance.md",  # each adopting repository's own agent guidance
+    "standards/data-conventions.md",  # each adopting repository's own data conventions
     "standards/evidence.yaml",  # the pull requests each rule fired on, as the ROADMAP plans
     "standards/profiles/",  # each repository's settings in a standard for several
     "standards/archive/",  # the archive a repository would keep for itself, as the ROADMAP plans

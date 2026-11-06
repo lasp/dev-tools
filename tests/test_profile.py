@@ -812,6 +812,14 @@ class OwnAndElsewhere(unittest.TestCase):
         repo = self.member({**self.POINTER, "standards/decisions.md": "own\n"})
         self.assertIn("a repository's standard is in one place", self.refusal(repo))
 
+    def test_a_pointer_beside_its_own_agent_guidance_is_refused(self):
+        repo = self.member({**self.POINTER, "standards/agent-guidance.md": "own\n"})
+        self.assertIn("standards/agent-guidance.md is here too", self.refusal(repo))
+
+    def test_a_pointer_beside_its_own_data_conventions_is_refused(self):
+        repo = self.member({**self.POINTER, "standards/data-conventions.md": "own\n"})
+        self.assertIn("standards/data-conventions.md is here too", self.refusal(repo))
+
     def test_a_local_checkout_is_read_as_it_stands_and_named(self):
         repo = self.member(self.POINTER)
         trial = self.parent / "trial"

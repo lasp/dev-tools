@@ -835,7 +835,7 @@ the records, one `<field>: <value>`
 per line. `scripts/ratchet_counts.py` reads every `correction-*.yaml` and `note-*.yaml` in the
 log directory it is given. Both carry `date: YYYY-MM-DD`; `ids: [<id>, …]`, a list on one line,
 not empty, of every ID the correction touched or the note concerns, each cited as a finding key
-cites it (`R-012`, `D-004@libera_utils`, `term/T-010`), or a skill's or agent's name on a
+cites it (`R-012`, `D-004@libera_utils`, `term/T-010`, `agent/A-003`, `data/F-002`), or a skill's or agent's name on a
 procedure note, and each counted under the rule a finding key with that citation counts under;
 `kind`; and `by`, the person who ran it. A correction adds `source`, what was read and its
 version; `clause`, what was misread, in one clause; and `pull_requests`, a list a person fills in.
@@ -883,10 +883,11 @@ Fields: two optional lines of a ledger entry in an adopting repository's
 `example: fires on <anchor or thread>; not on <anchor>`, where an anchor is `<repo>#<PR>@<sha>
 <path>::<symbol> "<shape>"` and a thread is `<repo>#<PR> <thread id>`. `scripts/rule_lint.py`'s
 `ANCHOR` and `THREAD` are the one copy of both forms. `standards/rule-bar.md` says what each must
-hold. `repos: [<repo>, ...]`, on a rule in the ledger or a decision in `decisions.md` of a
-standard covering several repositories, a flow list of repository names, each with a
+hold. `repos: [<repo>, ...]`, on a rule in the ledger, a decision in `decisions.md`, or an entry
+in `agent-guidance.md` or `data-conventions.md` of a standard covering several repositories, a flow list of repository names, each with a
 `profiles/<repo>.yaml` there, matched ignoring case: the rule or decision applies only in those
-repositories, and one without the line applies in all of them. It is one line, `repos:` at its
+repositories, and one without the line applies in all of them; an agent guidance or data
+convention entry reads it the same way. It is one line, `repos:` at its
 start, anywhere in the block outside a code fence and outside the rule's wording; a block with two
 is refused by the lint, and only the first is read (version 2). A rule's wording is the entry's `> ` lines, the one
 copy; a ledger whose wording is still in an instruction file has none there and a `Wording:` link
@@ -895,7 +896,8 @@ to its heading instead (version 3).
 Writers: `onboard`'s first rules and `revise` (`apply` and `correct`). Readers:
 `scripts/rule_lint.py`, `scripts/window_merges.py`, for `scope:`, and `rule-probe`;
 `scripts/standard_file.sh`, which loads a tagged rule or decision only in a repository its line
-names, and exits 1 naming a block whose first line is not that flow list; `scripts/rule_lint.py`'s
+names, the agent guidance and data conventions entries included, and exits 1 naming a block
+whose first line is not that flow list; `scripts/entries_lint.py`, which refuses a second; `scripts/rule_lint.py`'s
 fields gate and `scripts/ratchet_counts.py --repo`, for `repos:`; `scripts/standard_file.sh
 --rules`, which `hooks/rules.sh` runs at session start, for the wording of the live reviewer-tier
 rules that apply.
@@ -945,6 +947,30 @@ window's clusters into it; `scripts/ratchet_counts.py` and `scripts/rule_lint.py
 `parse_entries`.
 
 Pinned by: tests/test_standard_file.sh::"the ledger stops before its held candidates, headed as onboard's first rules and revise's apply head them"
+
+## Agent guidance and data conventions
+
+Version: 1
+
+Fields: the entries of a standard's `agent-guidance.md` and `data-conventions.md`, each a `###
+A-NNN · <title>` or `### F-NNN · <title>` heading, numbered in order, one series per file. Under
+it, apart from an optional `repos:` line as "The ledger's bar lines" sets: first a date line,
+`_YYYY-MM · seen YYYY-MM_` for agent guidance, the month it was admitted and the month a review
+last saw the habit, or `_YYYY-MM_` for a data convention, the month admitted; then, for agent
+guidance, one `habit: <the habit>` line, and for a data convention one `source: <the document, or
+the data's owner>` line; one or more `> ` lines, the instruction an agent reads; and `said:
+"<words>" — <login>, <url>` lines, at least one for agent guidance. Text before the first entry is
+the file's own, and the file holds no heading of level two or three but its entries'; the lines
+after the date line come in any order, and a code fence shows an example without making it an entry. A retired entry
+leaves the file for the standard's `archive/`. `standards/templates/` holds a starting copy of each
+file.
+
+Writers: a person, from the templates. Readers: `scripts/entries_lint.py`, which checks the form;
+`scripts/standard_file.sh`, which loads both files into the standard every build and review reads,
+after the terminology; `scripts/standard_index.py`, which lists each entry's id, title and, for
+agent guidance, its `seen` month.
+
+Pinned by: tests/test_entries_lint.py::test_well_formed_files_pass_and_count_their_entries
 
 ## The analysis blocks
 

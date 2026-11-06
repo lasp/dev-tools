@@ -546,6 +546,7 @@ Once per repository. It needs:
 | --- | --- |
 | `standards/review-rules.md`, the ledger, each entry holding its rule's wording as `> ` lines | `onboard`'s step 6 drafts it into `.review/harvest/`; people cut and commit |
 | `standards/decisions.md`, optional | written by hand; a pipeline that produces a defined product adopts the fail-loud decision in `docs/standards.md`, "Example decision: fail loud" |
+| `standards/agent-guidance.md` and `standards/data-conventions.md`, optional | copied from the plugin's `standards/templates/` and written by hand, as `docs/standards.md`, "Agent guidance and data conventions", says |
 | `.github/PULL_REQUEST_TEMPLATE.md` | copied byte for byte from the standard's `templates/<name>/`, in the directory `scripts/profile.py --standard` prints; `/lasp-dev:quickstart` reports drift |
 | `.review/` in `.gitignore` | the skills and hooks write their working files there |
 
@@ -614,13 +615,13 @@ Each kind of file has one home, and one way to change it:
 | What | Where it lives | How it changes |
 | --- | --- | --- |
 | A repository's standard: `standards/review-rules.md`, each rule's wording in its entry, and `decisions.md`, either file enough | That repository's `standards/`, or the repository its `standard:` pointer names | A pull request there |
-| Shared vocabulary, cross-repository decisions, context and the archive | The standard (`revise`'s "The standard's repository") | A pull request there |
+| Shared vocabulary, cross-repository decisions, agent guidance, data conventions, context and the archive | The standard (`revise`'s "The standard's repository") | A pull request there |
 | Archived review records | Beside the standard, in `log/<repo>/` (`revise`'s "The standard's repository") | The revision rebuilds each merged pull request's record from its threads and archives it there |
 | The procedure: skills, agents, hooks | This plugin | A pull request here |
 
 `/lasp-dev:quickstart what applies here` lists what a repository's standard applies to it:
-each rule and decision with its number, title and status, the terminology and the context
-entries, each under the file it comes from.
+each rule and decision with its number, title and status, the terminology, the agent guidance, the
+data conventions and the context entries, each under the file it comes from.
 
 Who does what:
 
@@ -665,6 +666,8 @@ One line per file type:
 - `review-contract.md`: how a reviewer behaves and what it never raises, one copy, in the plugin, that every repository's review uses.
 - `decisions.md`: settled questions, so nobody asks them again.
 - `terminology.md`: one name per thing across the repositories.
+- `agent-guidance.md`: habits coding agents should not repeat, each in a reviewer's words.
+- `data-conventions.md`: facts about the inputs and products, each with its source.
 - `<repo>/log/`: `pr-NNNN.yaml`, one pull request's findings and replies, rebuilt from its threads at the revision; `correction-<date>-<id>.yaml`, one correction; `note-<date>-<id>.yaml`, one note.
 - `archive/`: why a rule existed, kept after it leaves.
 

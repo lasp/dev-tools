@@ -6,8 +6,8 @@ file.
 
 ## What the reviewer loads
 
-`.review/standard.md`: this contract, the ledger, the repository's and the shared decisions, and
-the terminology; each rule's wording is its ledger entry's `> ` lines, or, for a ledger whose
+`.review/standard.md`: this contract, the ledger, the repository's and the shared decisions, the
+terminology, the agent guidance and the data conventions; each rule's wording is its ledger entry's `> ` lines, or, for a ledger whose
 entries link an instruction file, that file's Review Rules section. Load a shared
 `context/` entry only when the ticket's Considerations line, or a file the diff touches, names it.
 Read the ticket and the plan before the diff. A comment, docstring, changelog line or pull
@@ -34,10 +34,10 @@ in a build's wave or by `test-suite-review`, `blocking` is must-fix or should-fi
 
 A finding carries a key built from these parts: its citation (a rule ID; a shared decision
 `D-nnn`, or the repository's own `D-nnn@<repository>`; `ticket/AC-n`, `ticket/scope` or
-`ticket/plan`; `term/T-nnn`; a `test/` key from `test-suite-review`; or `helper/path::symbol`),
+`ticket/plan`; `term/T-nnn`; `agent/A-nnn`; `data/F-nnn`; a `test/` key from `test-suite-review`; or `helper/path::symbol`),
 then `/`, the file path, `::` and the enclosing symbol, or in a non-code file the key or heading,
 `-` when there is none. A finding keeps its key however it is phrased. A citation
-holds no `/` of its own except the two-part `test/`, `ticket/` and `term/` ones; a
+holds no `/` of its own except the two-part `test/`, `ticket/`, `term/`, `agent/` and `data/` ones; a
 `helper/path::symbol` citation is already a full key. A finding none of these covers has no key.
 
 ## Ticket findings
@@ -67,6 +67,15 @@ above anything about the code.
 
 A new public name that disagrees with `terminology.md` is a should-fix keyed `term/T-nnn`; one in
 neither the code nor `terminology.md` is a question.
+
+## Agent guidance and data conventions
+
+A change that repeats a habit an `agent-guidance.md` entry names is a suggestion keyed
+`agent/A-nnn`, its Proposed line the entry's instruction: the entry guides the code's writer and
+is not held to the rule bar. A change that breaks a
+`data-conventions.md` entry is a should-fix keyed `data/F-nnn`, or a must-fix when the product
+would be wrong with no trace; a convention the code shows to be out of date is a question for the
+convention's source, never a finding against the code.
 
 ## Test scrutiny
 

@@ -79,6 +79,10 @@ class State(unittest.TestCase):
         repo = make_repo({"standards/review-rules.md": "# Rules\n", "standards/profile.yaml": "public: true\n"})
         self.assertEqual(state(repo)["own standard"], "standards/review-rules.md, standards/profile.yaml")
 
+    def test_own_agent_guidance_and_data_conventions_are_listed_so_a_pointer_is_not_offered_blind(self):
+        repo = make_repo({"standards/agent-guidance.md": "# Agent guidance\n", "standards/data-conventions.md": "# Data\n"})
+        self.assertEqual(state(repo)["own standard"], "standards/agent-guidance.md, standards/data-conventions.md")
+
     def test_the_setting_and_existing_clones_are_described(self):
         repo = make_repo({})
         clone = repo / ".review/onboard/clone/example-org__std"

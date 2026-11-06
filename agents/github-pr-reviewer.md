@@ -22,8 +22,8 @@ Review a GitHub pull request for correctness, security, performance, style, and 
 Focus area and context feed Step 6. From `pr-review`, the context also carries these, each used
 as follows:
 
-- **The standard**: `.review/standard.md`, or the paths of the review contract, `decisions.md`
-  and `terminology.md`. Load it before reviewing and hold the change to it; without a rules file
+- **The standard**: `.review/standard.md`, or the paths of the review contract, `decisions.md`,
+  `terminology.md`, `agent-guidance.md` and `data-conventions.md`. Load it before reviewing and hold the change to it; without a rules file
   in it, no finding cites a rule.
 - **A reviewed sha**, on a delta: review only the lines the commits since it changed. When the
   caller says the base moved since, read `git range-diff <reviewed>...<head>`, which compares the
