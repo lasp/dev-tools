@@ -49,5 +49,15 @@ profile_raw() {
   [ "$v" = "not yet recorded" ] || printf '%s' "$v"
 }
 
+# A project field, which profile.py prints only under --defaults, such as issue_tracker.kind: the
+# defaults' value, read here when the profile did not need them, or empty when it reads `not yet
+# recorded` or the defaults cannot be read.
+profile_project() {
+  local v
+  [ -n "$profile_defaults" ] || profile_defaults=$(profile_ask --defaults) || profile_defaults=""
+  v=$(printf '%s\n' "$profile_defaults" | sed -n "s/^$1: //p" | head -1)
+  [ "$v" = "not yet recorded" ] || printf '%s' "$v"
+}
+
 # A profile pattern as grep -E reads it: `\d` becomes `[0-9]`.
 profile_ere() { printf '%s' "${1//\\d/[0-9]}"; }

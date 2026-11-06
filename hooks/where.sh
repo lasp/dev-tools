@@ -25,6 +25,8 @@
 # elsewhere (the first branch the ticket's context page names when none of its Branch: lines
 # names this one, or empty). `--fields --ticket <key>` takes the ticket
 # from the key, in the profile's ticket key pattern, rather than from the branch or context.md.
+# Where the profile's tracker is GitHub's, the key is the issue's number, `ticket=59`, and the
+# session-start line shows it as `#59`; with no pattern recorded, the pattern is `(issue-)?\d+`.
 #
 # .review/ is the one at the repository's top level, found from the SessionStart payload's cwd, or
 # the working directory when there is none, so a session in a subdirectory reads the same files.
@@ -66,9 +68,16 @@ branch=$(git symbolic-ref --short -q HEAD 2>/dev/null || echo "")
 # elsewhere only as last fetched; with --fields, for a skill, it may fetch one never fetched.
 [ -n "$fields" ] || export STANDARD_OFFLINE=1
 helper="$here/../scripts/profile.sh"
-if [ -f "$helper" ]; then . "$helper"; else profile_field() { printf '%s' "$2"; }; profile_ere() { printf '%s' "${1//\\d/[0-9]}"; }; fi
+if [ -f "$helper" ]; then . "$helper"; else profile_field() { printf '%s' "$2"; }; profile_ere() { printf '%s' "${1//\\d/[0-9]}"; }; profile_project() { :; }; fi
 key=$(profile_ere "$(profile_field ticket.pattern '')" 2>/dev/null) || key=""
+# A GitHub tracker's key is the issue number: a match is reduced to its digits, and with no pattern
+# recorded, `59-x`, `issue-59-x` and `feature/59-x` all name issue 59. A Jira tracker, or none,
+# keeps the pattern as recorded.
+tracker=$(profile_project issue_tracker.kind 2>/dev/null) || tracker=""
+[ "$tracker" = github ] && [ -z "$key" ] && key='(issue-)?[0-9]+'
 
+# A GitHub key, the last run of digits in what the pattern matched.
+number() { printf '%s' "$1" | grep -oE '[0-9]+' | tail -1; }
 # A context page's Branch: lines, one per pull request of the ticket, each `<branch>` or
 # `<branch> (part k of n)`: the branch names, and this branch's part.
 # Only the lines above the page's first `## ` section count, where implement-change writes them.
@@ -78,7 +87,14 @@ branches_of() { sed '/^## /q' "$1" 2>/dev/null | sed -n 's/^Branch: //p' | sed -
 heading_of() { awk 'NR == 1 && /^Controlled:/ { next } { print; exit }' "$1" 2>/dev/null; }
 # The key the heading opens with; a key in the summary, such as a follow-up's source, is not the
 # page's.
-key_of() { [ -n "$key" ] || return 0; heading_of "$1" | sed -nE "s/^#[[:space:]]+($key)([^[:alnum:]].*)?\$/\1/p"; }
+key_of() {
+  [ -n "$key" ] || return 0
+  if [ "$tracker" = github ]; then
+    heading_of "$1" | sed -nE "s/^#[[:space:]]+#?($key)([^[:alnum:]].*)?\$/\1/p" | while IFS= read -r k; do number "$k"; done
+  else
+    heading_of "$1" | sed -nE "s/^#[[:space:]]+($key)([^[:alnum:]].*)?\$/\1/p"
+  fi
+}
 part_of() { awk -v b="$branch" 'sub(/^Branch: /, "") && index($0, b " (part ") == 1 { s = substr($0, length(b) + 8); sub(/\)$/, "", s); print s; exit }' "$1" 2>/dev/null; }
 
 # The key starts the branch name, after an optional <word>/ prefix such as feature/. With no key
@@ -89,7 +105,8 @@ part_of() { awk -v b="$branch" 'sub(/^Branch: /, "") && index($0, b " (part ") =
 # written as found when the pattern matches it exactly, and otherwise upper-cased, as Jira writes
 # keys.
 canon() {
-  if printf '%s' "$1" | grep -qxE "($key)"; then printf '%s' "$1"; else printf '%s' "$1" | tr '[:lower:]' '[:upper:]'; fi
+  if [ "$tracker" = github ]; then number "$1"
+  elif printf '%s' "$1" | grep -qxE "($key)"; then printf '%s' "$1"; else printf '%s' "$1" | tr '[:lower:]' '[:upper:]'; fi
 }
 on=""
 slug=""
@@ -203,10 +220,13 @@ if [ -n "$fields" ]; then
   exit 0
 fi
 
+# People see a GitHub issue as #<n>.
+shown=$ticket
+[ "$tracker" = github ] && [ -n "$ticket" ] && shown="#$ticket"
 if [ -n "$elsewhere" ]; then
-  parts=("$ticket is on $elsewhere, not here" "${branch:-no branch}")
+  parts=("$shown is on $elsewhere, not here" "${branch:-no branch}")
 else
-  parts=("${ticket:-no ticket}" "${branch:-no branch}")
+  parts=("${shown:-no ticket}" "${branch:-no branch}")
 
   # The last `## Revision` section of a reopened plan, its redesign, carries its own approval.
   if awk '/^## Revision /{r=1;a=0} r&&/^Approved by: [^[:space:]]/{a=1} END{exit !(r&&!a)}' "$plan" 2>/dev/null; then

@@ -4,10 +4,10 @@ description: >
   Takes a ticket, or its pull request, through the standards workflow: works out where it stands
   and runs the next phase skill. Use when asked to "work this ticket", "continue PROJ-42",
   "what's next on this ticket", "what's next on this PR" or "pick up where I left off".
-argument-hint: "[ticket key | PR number | nothing]"
+argument-hint: "[ticket key or issue number | PR number | nothing]"
 metadata:
   author: lasp-dev
-  version: 1.8.0
+  version: 1.9.0
 ---
 
 # Work
@@ -53,15 +53,25 @@ none of these, or `Branch:` lines naming only other branches, ask which ticket, 
 `ticket-draft` drafted that is not filed yet. Go on to step 2 with no ticket, where `where.sh`
 gives it as `slug=`.
 
+**A GitHub tracker.** Where `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
+issue_tracker.kind` prints `github`, a ticket is a GitHub issue at `issue_tracker.location`
+(`--field issue_tracker.location`, `none` meaning this repository's own issues), and its key is
+the issue's number: `59` in file names, `where.sh` and the scripts' arguments, `#59` wherever
+a person reads it. With no pattern recorded, `where.sh` reads a branch with `(issue-)?\d+`, so
+`59-retry`, `issue-59-retry` and `feature/59-retry` all name issue 59. A number given as the
+argument, `59` or `#59`, is an issue or a pull request: one `issue_read` `get` on it, at the
+tracker's location, decides, a pull request being one whose `html_url` holds `/pull/`. An issue is
+the ticket, given to `where.sh` as `--ticket 59`. Anywhere else a bare number is a pull request.
+
 A server is needed only at the step that reads it: GitHub for step 2's pull request reads and
-`get_me`, Atlassian for the ticket's status. Either one missing or failing is said as
+`get_me`, Atlassian for the ticket's status, or GitHub for it on a GitHub tracker. Either one missing or failing is said as
 `${CLAUDE_PLUGIN_ROOT}/skills/work/servers.md` sets out. When GitHub cannot be reached there, the
 pull request's state is lost: stop as `using-github` "When the server cannot be reached" says. On
 `gh`, which the person chooses there, the phase skills carry their own GitHub reads and gated
 posts, but `pr-reader` builds the thread table only from the server, so `pr-fix` stops at its
-start and `pr-review` posts only a pull request's first review. When Atlassian cannot be reached,
-the ticket's status is lost and the run goes on: run `next_phase.py` without `--ticket-status`,
-which reads the status as unknown, and say so on its own line after the script's three lines, with
+start and `pr-review` posts only a pull request's first review. When the tracker's server cannot be reached,
+the ticket's status is lost and the run goes on: run `next_phase.py` without `--ticket-status`
+or `--issue-state`, which reads the status as unknown, and say so on its own line after the script's three lines, with
 the error verbatim and the fix; the phase skill that needs the ticket offers the paste.
 
 ## 2. Where it stands
@@ -74,19 +84,21 @@ tool (`${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`, "Writing a file").
 `--ticket <key>` when the ticket did not come from the branch: a key given as the argument, or
 the key the given pull request's `ticket:` line names.
 
-When the fields have no context page and there is a ticket key, read its Jira status first, with
-one `source-reader` and the task `ticket <key>`, and the statuses at which the team's tickets have
-a pull request, one per line, from
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field jira.pr_statuses`, an error
+When the fields have no context page and there is a ticket key, read its status first, with
+one `source-reader` and the task `ticket <key>`: on Jira, the status on its `Fields:` line; on a
+GitHub tracker, the issue's state, `open` or `closed`, and its labels. Read too the statuses at
+which the team's tickets have a pull request, one per line, from
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field issue_tracker.pr_statuses`,
+Jira statuses or GitHub labels, an error
 from which is a stop, as step 1 says; where it prints `not yet recorded`, no workflow is recorded,
-and no status is among those. Then,
+and no status is among those. A GitHub issue's status is among them when one of its labels is. Then,
 without a given pull request, the first row that matches says which pull request to read:
 
 | The fields | Read |
 |---|---|
 | an `outcome=` or a `part=` | this branch's |
 | a context page with a `Branch:` line and no plan file: a ticket drafted from its pull request | the `elsewhere=` branch's, or this branch's when that is empty |
-| no context page, and a status among those, ignoring case | this branch's when its name starts with the key; else one `search_pull_requests` for `repo:<owner/repo> is:pr <key>` |
+| no context page, and a status among those, ignoring case | this branch's when its name starts with the key; else one `search_pull_requests` for `repo:<owner/repo> is:pr <key>`, or on a GitHub tracker `repo:<owner/repo> is:pr in:body "Ticket: #<n>"` |
 | anything else | none |
 
 Each read is one `pr-reader` in `state` mode, its block written to `.review/work-state.txt`.
@@ -97,7 +109,8 @@ session.
 Then run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/next_phase.py" --fields .review/work-fields.txt`,
 adding:
 - `--state .review/work-state.txt` when there is one, and `--pr <n>` when a pull request was given;
-- `--ticket-status <status>` when the status was read;
+- `--ticket-status <status>` when a Jira status was read; on a GitHub tracker, `--issue-state
+  <open|closed>` and one `--label <name>` for each of the issue's labels, when the issue was read;
 - `--local-review .review/pr-<n>-review-submission.md` when that file exists for the pull
   request, so a review the person chose to keep local does not send them back to `pr-review`;
 - `--me <login>` with a state block: the login `get_me` returns on the server `pr-reader` used
@@ -107,8 +120,9 @@ adding:
   asked for by name, through **Something else**;
 - `--reviewed-this-loop` after `pr-review` posted in this invocation;
 - with a `part=` in the fields, the ticket ships as several pull requests: find them with one
-  search for its key, write `#<n> <open|merged|closed> <head branch> <the Claims: line's
-  criteria>` per line to `.review/work-stack.txt`, and add `--stack .review/work-stack.txt` and
+  search for its key, on a GitHub tracker the table's `in:body "Ticket: #<n>"`, write `#<n>
+  <open|merged|closed> <head branch> <the Claims: line's criteria>` per line to
+  `.review/work-stack.txt`, and add `--stack .review/work-stack.txt` and
   `--criteria` with the ticket's Acceptance Criteria.
 
 Its row decides: `phase:` is the skill to run, `argument:` its argument, `why:` the row, `lock:`
@@ -146,7 +160,7 @@ options are **Retry the build** (`implement-change`, resuming), **Open the pull 
 outcome line: Open anyway when the build was blocked by a pre-existing failure, Retry when it
 stopped for a person who has since acted, and Let's discuss when the review cap was reached or a
 finding kept returning, since a retry meets the same finding. On `why: unfiled`, the three
-lines name the slug's `.jira.txt` to file in Jira and `ticket-draft <slug>`, which files it or
+lines name the slug's `.jira.txt` to file in the tracker and `ticket-draft <slug>`, which files it or
 takes its key and renames the page; stop there.
 
 ## 4. Run it, then look again

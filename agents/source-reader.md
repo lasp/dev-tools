@@ -35,7 +35,7 @@ sets out, `<server>: not connected` or `<server>: failed: <error, verbatim>`, fo
 could not be read, and nothing else; never ask:
 
 - `ticket`, `page` and `plan`, and a ticket sweep without Atlassian: return the failure. `ticket`
-  and `page` can read a file instead.
+  and `page` can read a file instead. On a GitHub tracker, `ticket` needs GitHub, not Atlassian.
 - `search` without Atlassian: return the GitHub half of the block, with `Jira: not read: <error
   verbatim>` in place of the table, `Components:` and `References:`; without GitHub, the Jira
   half, with `GitHub: not read: <error verbatim>`.
@@ -71,6 +71,17 @@ returns its heading. The caller passes the person's yes back as a line in the ta
 `jira_search` with `key = <key>` and the fields `description,comment`, which returns them as
 stored, in Jira's wiki markup with their line endings; `jira_get_issue` converts both to
 Markdown, so it is not the text verbatim.
+
+On a GitHub tracker, where `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
+issue_tracker.kind` prints `github`, the key is an issue's number: read it with `issue_read`,
+methods `get`, `get_comments` and `get_labels`, on the repository `--field issue_tracker.location`
+names, or the caller's repository when it prints `none`. The block's heading is `## #<n> — ticket`,
+its `Fields:` line reads `<title · state (its state_reason when closed) · labels, comma-separated,
+or none · assignees, or none · author · created>`, `Description:` holds the issue's body verbatim,
+`Comments:` its comments as below, `Sections:` its Markdown headings, `Links:` the parent issue `get` names, or `none`,
+`Markup:` reads `intact`, since an issue's body is stored as Markdown, and `Original request
+comment:` reads `no`. A pull request's number is not an issue: when `get`'s `html_url` holds
+`/pull/`, return `## #<n> — ticket`, then `Not an issue: #<n> is a pull request`, and `Questions:`.
 
 ```
 ## <key> — ticket

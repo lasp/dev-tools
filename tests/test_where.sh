@@ -142,7 +142,7 @@ line=$(bash "$hook" --fields)
 check "a page under a slug is a drafted ticket not yet filed: its slug, no ticket and no context" \
   '[[ "$line" == "ticket="$'"'"'\nbranch=feature/z\ncontext=\n'"'"'* ]] && [[ "$line" == *$'"'"'\nslug=retry-policy\nelsewhere='"'"' ]]'
 line=$(python3 "$root/scripts/next_phase.py" --fields <(bash "$hook" --fields))
-check "and work stops on it, naming the file to put in Jira" \
+check "and work stops on it, naming the file to file in the tracker" \
   '[[ "$line" == *"why: unfiled"* ]] && [[ "$line" == *".review/context/retry-policy.jira.txt"* ]]'
 printf '# retry-policy · Retry a failed download\nBranch: feature/z\n' >.review/context.md
 line=$(bash "$hook" --fields)
@@ -336,6 +336,49 @@ check "--fields names the profile file the repository runs on" \
 rm -r standards
 line=$(bash "$hook" --fields)
 check "and none for a repository with no standard" '[[ "$line" == *$'"'"'\nprofile=none\n'"'"'* ]]'
+
+# A standard whose tracker is GitHub's and records no pattern: the key is the issue number.
+github="issue_tracker:\n  kind: github\n  statuses:\n    - {name: ready, next: implement-change, role: approved}\n  pr_statuses: []\n"
+for b in 59-words issue-59-words Issue-59-words feature/59-x feature/issue-59-x; do
+  d=$(scratch "$b") && made+=("$d") && cd "$d" || exit 1
+  printf "$github" >standards/profile.yaml
+  line=$(bash "$hook" --fields | head -1)
+  check "on a GitHub tracker, the branch $b names issue 59 by its number" '[ "$line" = "ticket=59" ]'
+done
+line=$(bash "$hook" --fields)
+check "and its plan and reopened file are the number's" \
+  '[[ "$line" == *"plan=$(pwd -P)/.review/implementation-plan-59.md"* ]] && [[ "$line" == *"reopened_file=$(pwd -P)/.review/reopened/59.txt"* ]]'
+line=$(where)
+check "and the session-start line shows it as #59" '[ "${line%% · next*}" = "#59 · feature/issue-59-x · no plan · no build" ]'
+line=$(bash "$hook" --fields --ticket 12 | head -1)
+check "--ticket 12, a bare number, is the issue" '[ "$line" = "ticket=12" ]'
+line=$(bash "$hook" --fields --ticket issue-12 | head -1)
+check "and so is issue-12, reduced to its number" '[ "$line" = "ticket=12" ]'
+bash "$hook" --fields --ticket '#12' >/dev/null 2>&1; rc=$?
+line="exit $rc"
+check "but #12 is not a key: an argument is the bare number" '[ "$rc" = 1 ]'
+d=$(scratch fix/no-number) && made+=("$d") && cd "$d" || exit 1
+printf "$github" >standards/profile.yaml
+mkdir -p .review/context
+printf '# #59 · Retry a failed download\nBranch: fix/no-number\n' >.review/context/59.md
+cp .review/context/59.md .review/context.md
+echo .review/ >>.git/info/exclude
+line=$(bash "$hook" --fields)
+check "a context page headed # #59 names issue 59 and is its page" \
+  '[[ "$line" == "ticket=59"$'"'"'\n'"'"'* ]] && [[ "$line" == *"context=$(pwd -P)/.review/context/59.md"* ]] && [[ "$line" == *$'"'"'\nslug=\n'"'"'* ]]'
+printf '# #59 · Retry\nBranch: 59-elsewhere\n' >.review/context.md
+line=$(where)
+check "and one built on another branch says so as #59" '[[ "$line" == "#59 is on 59-elsewhere, not here · fix/no-number · "* ]]'
+d=$(scratch GH-7-x) && made+=("$d") && cd "$d" || exit 1
+printf "ticket:\n  pattern: 'GH-\\\\d+'\n$github" >standards/profile.yaml
+line=$(bash "$hook" --fields | head -1)
+check "a GitHub tracker's recorded pattern names the issue, reduced to its number" '[ "$line" = "ticket=7" ]'
+d=$(scratch 59-words) && made+=("$d") && cd "$d" || exit 1
+line=$(bash "$hook" --fields | head -1)
+check "a Jira repository's branch 59-words names no ticket" '[ "$line" = "ticket=" ]'
+bash "$hook" --fields --ticket 59 >/dev/null 2>&1; rc=$?
+line="exit $rc"
+check "and --ticket 59 is not one of its keys" '[ "$rc" = 1 ]'
 
 d=$(scratch proj-5-lower) && made+=("$d") && cd "$d" || exit 1
 printf "ticket:\n  pattern: 'proj-\\d+'\n" >standards/profile.yaml

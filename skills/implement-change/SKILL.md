@@ -8,7 +8,7 @@ description: >
 argument-hint: "[file | ticket key | issue | description]"
 metadata:
   author: llm-tooling
-  version: 1.18.1
+  version: 1.19.0
 ---
 
 # Implement Change
@@ -119,7 +119,11 @@ search for what the tool does, never a server prefix.
   says, naming only the ticket, where it sits and the warning, quoted, and describing nothing of it, not
   even where it stopped, never asking for its text; on the person's yes run the task again with a
   `Cleared: <key>` line.
-- **A GitHub issue or discussion**: search `github issue read`.
+- **A GitHub issue or discussion**: search `github issue read`. Where the profile's tracker is
+  GitHub's (`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
+  issue_tracker.kind` prints `github`), an issue is a ticket and its number its key, as `work`
+  passes it, `59`: read it with one `source-reader` running the task `ticket 59`, and give
+  `where.sh` `--ticket 59`.
 - Anything else the person points at: a URL, a pasted transcript, a design doc.
 
 Follow a link one level deep when the source leans on it. Say what you read. Any source here,

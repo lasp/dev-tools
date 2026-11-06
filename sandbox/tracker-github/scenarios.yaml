@@ -1,0 +1,99 @@
+# The GitHub tracker pack: scenarios in which `work` reads a GitHub issue as the ticket, served by
+# fixture/github-mcp-server-stub.py from fixture/github.json, in `widgets` with its own standard
+# recording a GitHub tracker whose labels map to the workflow and no ticket pattern. Build the
+# sandbox as the generic pack's README says, then write its mcp.json naming the stub through
+# $SBX_FIXTURES, which run.py sets for the session to this pack's fixture/:
+#
+#   {"mcpServers": {"github": {"command": "python3",
+#     "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py"]}}}
+#
+# The stub's file name holds github-mcp-server, so run.py gives the server the GitHub rules. It has
+# no write tools. The issues: #9 closed as completed, #12 open with no label, #14 open and labeled
+# `ready` and `enhancement`; #15 is a merged pull request. The fields are those of ../scenarios.yaml.
+
+scenarios:
+  - id: tracker-gh-work-unlabeled
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+    origin: "#59: work routes a GitHub issue by its state and labels"
+    why: >-
+      Works issue 12, open with no label, so work reads it from GitHub as an issue, not a pull
+      request, and routes it as filed, to ticket-draft, and stops to ask.
+    turns:
+      - /lasp-dev:work 12
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: >-
+      work reads #12 with issue_read and finds an open issue with no label; next_phase.py routes
+      it: Next: ticket-draft, the first line naming #12, then asks whether to continue. No pull
+      request is read.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_read]
+      says: ["(?m)^Next: ticket-draft\\."]
+      not_says: ["(?m)^Next: (implement-change|pr-review|pr-fix)"]
+
+  - id: tracker-gh-work-labeled
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+    origin: "#59: work routes a GitHub issue by its state and labels"
+    why: >-
+      Works issue 14, open and labeled ready, which the standard maps to implement-change, beside
+      a label it does not map, so work routes it by the mapped label and stops to ask.
+    turns:
+      - /lasp-dev:work 14
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: >-
+      work reads #14's state and labels, and next_phase.py routes it by `ready`: Next:
+      implement-change, with 14 as its argument, then asks whether to continue. `enhancement` is
+      passed over. No pull request is read, since ready is not among the pull request statuses.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_read]
+      says: ["(?m)^Next: implement-change\\."]
+      not_says: ["(?m)^Next: (ticket-draft|pr-review|pr-fix)"]
+
+  - id: tracker-gh-work-closed
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+    origin: "#59: work routes a GitHub issue by its state and labels"
+    why: >-
+      Works issue 9, closed as completed, so work says it is past the build and runs nothing.
+    turns:
+      - /lasp-dev:work 9
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: >-
+      work reads #9, closed, and next_phase.py routes it to nothing: "#9 is closed", then
+      "Nothing: the ticket is past the build; open it in the tracker to see why." No phase runs.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_read]
+      says: ["(?m)^Nothing: the ticket is past the build"]
+      not_says: ["(?m)^Next: "]
+
+  - id: tracker-gh-work-branch
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - git checkout -q -B issue-14-low-stock
+    origin: "#59: a branch named issue-<n>-words names issue n on a GitHub tracker"
+    why: >-
+      Works the branch issue-14-low-stock with no argument, in a standard that records no ticket
+      pattern, so the branch names issue 14, which work reads and routes by its ready label.
+    turns:
+      - /lasp-dev:work
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: >-
+      where.sh gives ticket=14 from the branch; work reads #14 and routes it: Next:
+      implement-change, then asks whether to continue. It never asks which ticket.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_read]
+      says: ["(?m)^Next: implement-change\\."]
+      not_says: ["(?m)^Next: (ticket-draft|pr-review|pr-fix)"]

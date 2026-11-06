@@ -20,7 +20,7 @@ things read it:
   `quickstart` does of `claude plugin list`; `must_not_try` counts a denied use too, for a command
   the sandbox denies but the run must not even try, as the rebase scenarios hold every push.
 
-This repository holds two scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
+This repository holds several scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
 scenario runs offline in `widgets`, a made-up repository `fixture/make_widgets.sh` builds with the
 same commits every time, so it needs no server and no access to anyone's repositories. It holds
 `quickstart`, `quickstart-what-applies`, which lists a fixture standard's rules and decisions with their statuses, 
@@ -67,6 +67,15 @@ shows, and each scenario's `mcp:` expectation fails a run the stub did not answe
 names no key returns the whole project, Done tickets included. The stub has no write tools, as a
 read-only server has none, so a write plan's gate is never reached: each run hands its writes over
 to paste.
+
+The GitHub tracker pack, `tracker-github/scenarios.yaml`, runs in `widgets` given a standard whose
+tracker is GitHub's, its labels mapped to the workflow and no ticket pattern recorded, against
+issues `tracker-github/fixture/github-mcp-server-stub.py` serves read-only from `github.json`:
+`work` routing an open issue with no label, an open one with a mapped label, a closed one, and a
+branch named `issue-<n>-words`. Its `mcp.json` names the stub as
+`${SBX_FIXTURES}/github-mcp-server-stub.py`, as the pack's header shows; the file name holds
+`github-mcp-server`, so `run.py` gives it the GitHub rules. The stub's tools carry
+github-mcp-server's names, arguments and output shapes, and none writes.
 
 A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
