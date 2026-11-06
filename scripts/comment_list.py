@@ -28,7 +28,8 @@ no one commented on, each item:
 - `created`, its timestamp as GitHub gave it: `created_at`, or a review's `submitted_at`;
 - `nominated`, what the comment nominates for the standard: the rest of each of its own lines
   (`record.py`'s `own_lines`, so not a quoted or fenced line) that opens `For agents:` or
-  `Standard:`, case aside, as a list item too and bold or italic too, in order; empty when none does (`README.md`, "Nominating guidance");
+  `Standard:`, case aside, as a list item too and bold or italic too, followed on the same line by
+  text that opens with a letter or digit, its trailing emphasis left off, in order; empty when none does (`README.md`, "Nominating guidance");
 - `body`, its text, unchanged.
 
 A review with a blank body, such as one posted with a batch of thread replies, is no comment and
@@ -55,7 +56,7 @@ class Refused(Exception):
     """A dump the list cannot be built from."""
 
 
-NOMINATION = re.compile(r"(?i)(?:[-*+] +)?(?:\*\*|__|\*|_)?(?:for agents|standard)(?::(?:\*\*|__|\*|_)?|(?:\*\*|__|\*|_)?:)\s*(\S.*)")
+NOMINATION = re.compile(r"(?i)(?:[-*+] +)?(?:\*\*|__|\*|_)?(?:for agents|standard)(?::(?:\*\*|__|\*|_)?|(?:\*\*|__|\*|_)?:)\s*(\w.*?)[*_\s]*")
 
 
 def load_record():
@@ -85,7 +86,7 @@ def build(dump: Path, record) -> dict:
             "pr": pr, "id": id_, "url": url, "author": author,
             "authorship": record.authorship_of({"author": author, "body": body}),
             "kind": kind, "thread": thread, "path": path, "line": line, "created": created,
-            "nominated": [m[1] for m in map(NOMINATION.match, record.own_lines(body)) if m], "body": body,
+            "nominated": [m[1] for m in map(NOMINATION.fullmatch, record.own_lines(body)) if m], "body": body,
         })
 
     for t in read(dump, "comments.json")["review_threads"]:

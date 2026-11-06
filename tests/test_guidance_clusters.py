@@ -199,7 +199,19 @@ class Clusters(unittest.TestCase):
         clusters["clusters"].pop()
         code, lines = self.run_clusters(clusters)
         self.assertEqual(code, 1)
-        self.assertIn("refused · nominated 71 in pr-0107 · not extracted, and a note in no cluster, not one", lines)
+        self.assertIn("refused · nominated 71 in pr-0107 · not extracted, and a note in no cluster, not one: "
+                      "Bump the version in one commit.", lines)
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9 ·", "nominated · pr-0107 · 71 · erin · not extracted · u71 · alpha\n"
+                                                          "nominated · pr-0107 · 71 · erin · not extracted · u71 · beta\nitems: 9 ·"))
+        two = self.two()
+        for n, text in ((3, "alpha"), (4, "beta")):
+            two["clusters"].append({"id": f"C{n}", "kind": "process", "principle": text, "items": [],
+                                    "notes": [f"pr-0107 · erin · human · nominated 71: {text}"], "held": None})
+        self.assertEqual(self.run_clusters(two)[0], 0)
+        two["clusters"][3]["notes"] = ["pr-0107 · erin · human · nominated 71: gamma"]
+        lines = self.run_clusters(two)[1]
+        self.assertIn("refused · nominated 71 in pr-0107 · a note no `not extracted` tally line names: gamma", lines)
+        self.assertIn("refused · nominated 71 in pr-0107 · not extracted, and a note in no cluster, not one: beta", lines)
 
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {

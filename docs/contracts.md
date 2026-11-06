@@ -412,7 +412,7 @@ Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admit
 
 ## The guidance clusters
 
-Version: 3
+Version: 4
 
 Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
 object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
@@ -432,8 +432,9 @@ refuses, one `refused · <where> · <why>` line each and exit 1, a file of any o
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
 no `--ledger`. It refuses, too, a tally `nominated` line `not extracted` that is not a
-note `pr-NNNN · <login> · human · nominated <comment id>: <text>` in exactly one cluster, and counts
-such a note under the cluster's `admit` (version 3). Otherwise it
+note `pr-NNNN · <login> · human · nominated <comment id>: <its text>` in exactly one cluster, and counts
+such a note under the cluster's `admit`, and refuses a note no `not extracted` line names, matched
+by pull request, comment id and text (version 4). Otherwise it
 prints per cluster, its `admit` count only the `admit` lines of its kind and any other counted as
 `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·

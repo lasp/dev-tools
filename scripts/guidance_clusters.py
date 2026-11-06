@@ -32,8 +32,8 @@ support <n> · prs <n> · people <n> · <principle>`, its kind the destination `
 "Destinations" sends it to. `admit` counts its `admit` lines of that kind alone, since only those
 admit it, and its notes that carry a nomination the extractor took nothing from; an `admit` line of
 another kind counts under `hold`. Each tally `nominated` line `not extracted` must be such a note,
-`pr-NNNN · <login> · human · nominated <comment id>: <text>`, in exactly one cluster, or it is
-refused, so no nomination is dropped. Its pull requests are those a person asked on, of
+`pr-NNNN · <login> · human · nominated <comment id>: <its text>`, in exactly one cluster, and every
+such note a `not extracted` line, or it is refused, so no nomination is dropped or invented. Its pull requests are those a person asked on, of
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
@@ -98,16 +98,16 @@ def tally_lines(text: str) -> dict[str, dict]:
 
 
 NOTE = re.compile(r"(pr-\d{4,}) · (\S+) · (human|ai-drafted|bot) · \S.*|pasted (\S+) · ([^·]+?) · \S.*")
-NOMINATED = re.compile(r"(pr-\d{4,}) · \S+ · human · nominated (\d+): \S.*")
+NOMINATED = re.compile(r"(pr-\d{4,}) · \S+ · human · nominated (\d+): (\S.*)")
 
 
-def unextracted(text: str) -> set[tuple[str, str]]:
-    """The tally's nominations no item was taken from, as (pr-NNNN, comment id)."""
+def unextracted(text: str) -> set[tuple[str, str, str]]:
+    """The tally's nominations no item was taken from, as (pr-NNNN, comment id, text)."""
     out = set()
     for line in text.splitlines():
         cells = line.split(" · ")
         if cells[0] == "nominated" and len(cells) >= 7 and cells[4] == "not extracted":
-            out.add((cells[1], cells[2]))
+            out.add((cells[1], cells[2], " · ".join(cells[6:])))
     return out
 
 
@@ -143,7 +143,7 @@ def priorities() -> tuple[int, int, int]:
 
 
 def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None,
-          nominations: set[tuple[str, str]] = frozenset()) -> list[str]:
+          nominations: set[tuple[str, str, str]] = frozenset()) -> list[str]:
     if not isinstance(clusters, dict) or set(clusters) != {"clusters"} or not isinstance(clusters["clusters"], list):
         return ["refused · clusters · not an object with a clusters list"]
     faults, seen, ids = [], {}, set()
@@ -189,10 +189,13 @@ def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None
             elif c["held"].rstrip(".") not in headings:
                 faults.append(f"refused · {where} · no held candidate headed {c['held']!r} in the ledger")
     faults += [f"refused · {key} · in no cluster" for key in lines if key not in seen]
-    noted = [(m[1], m[2]) for c in clusters["clusters"] if isinstance(c, dict) and isinstance(c.get("notes"), list)
+    noted = [(m[1], m[2], m[3]) for c in clusters["clusters"] if isinstance(c, dict) and isinstance(c.get("notes"), list)
              for m in (NOMINATED.fullmatch(n) for n in c["notes"] if isinstance(n, str)) if m]
-    faults += [f"refused · nominated {cid} in {pr} · not extracted, and a note in {noted.count((pr, cid)) or 'no'} cluster"
-               f"{'s' if noted.count((pr, cid)) > 1 else ''}, not one" for pr, cid in sorted(nominations) if noted.count((pr, cid)) != 1]
+    faults += [f"refused · nominated {cid} in {pr} · not extracted, and a note in {noted.count((pr, cid, t)) or 'no'} cluster"
+               f"{'s' if noted.count((pr, cid, t)) > 1 else ''}, not one: {t}"
+               for pr, cid, t in sorted(nominations) if noted.count((pr, cid, t)) != 1]
+    faults += [f"refused · nominated {cid} in {pr} · a note no `not extracted` tally line names: {t}"
+               for pr, cid, t in sorted(set(noted) - set(nominations))]
     return faults
 
 

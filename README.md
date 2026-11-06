@@ -641,8 +641,9 @@ thresholds are `standards/dials.md`.
 
 Anyone reviewing a pull request can put guidance forward for the standard by opening a line of a
 review comment, a reply or a review summary with `For agents:` or `Standard:`, as a list item or in
-bold too, followed by the guidance in a sentence: `For agents: install a missing system library in
-CI; never mock its import.` The next revision lists every such line: as a proposal when it meets
+bold too, followed on the same line by the guidance in a sentence: `For agents: install a missing
+system library in CI; never mock its import.` A line that opens `Standard:` as a label is read as a
+nomination too, so write it only to nominate. The next revision lists every such line: as a proposal when it meets
 its kind's bar, as support for the live rule or entry that already says it, or held with the
 reason, never dropped (`skills/revise/harvest.md`, "Guidance"). The line must be your own words,
 not quoted, and the skills never write one for you; you may add one to a reply a skill drafted.
