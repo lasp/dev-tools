@@ -13,7 +13,8 @@ API does; `list_issues`, whose states are upper-case, as the server's GraphQL gi
 `search_issues`, which returns the issues sharing a word of three letters or more with the query;
 and `search_pull_requests`, which returns the pull requests whose title or body holds every quoted
 phrase of the query and every bare word that is not a qualifier such as `repo:`, `is:`, `in:` or
-`state:`. Every repository is served the same fixture, whatever the owner. A number the fixture
+`state:`, its links naming the repository the query's `repo:` gives when the call names none. Every
+repository is served the same fixture, whatever the owner. A number the fixture
 does not hold is an error result. Stdlib only.
 """
 
@@ -123,11 +124,17 @@ def call(name: str, args: dict):
         return {"issues": rows, "pageInfo": {"endCursor": "", "hasNextPage": False, "hasPreviousPage": False, "startCursor": ""},
                 "totalCount": len(rows)}
     if name == "search_issues":
+        named = re.search(r"\brepo:([^/\s]+)/(\S+)", str(args.get("query", "")))
+        if named and not args.get("owner"):
+            args = {**args, "owner": named.group(1), "repo": named.group(2)}
         words = {w for w in re.findall(r"[a-z]{3,}", str(args.get("query", "")).lower())}
         hits = [i for i in ISSUES.values() if words & set(re.findall(r"[a-z]{3,}", (i["title"] + " " + i["body"]).lower()))]
         return {"incomplete_results": False, "items": [chosen(item(args, i), args.get("fields")) for i in hits], "total_count": len(hits)}
     if name == "search_pull_requests":
         query = str(args.get("query", ""))
+        named = re.search(r"\brepo:([^/\s]+)/(\S+)", query)
+        if named and not args.get("owner"):
+            args = {**args, "owner": named.group(1), "repo": named.group(2)}
         phrases = [p.lower() for p in re.findall(r'"([^"]*)"', query)]
         rest = re.sub(r'"[^"]*"', " ", query)
         words = [w.lower() for w in rest.split() if not re.match(r"^-?[a-z]+:", w, re.I)]

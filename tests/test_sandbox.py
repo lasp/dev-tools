@@ -305,6 +305,8 @@ class TrackerGithubPack(unittest.TestCase):
     def test_a_pull_request_search_matches_the_ticket_line_quoted(self):
         found = self.read("search_pull_requests", query='repo:example/widgets is:pr in:body "Ticket: #9"')
         self.assertEqual([p["number"] for p in found["items"]], [15])
+        named = json.loads(self.call("search_pull_requests", query='repo:example/widgets is:pr "Ticket: #9"')["content"][0]["text"])
+        self.assertEqual(named["items"][0]["html_url"], "https://github.com/example/widgets/pull/15")
         self.assertEqual(self.read("search_pull_requests", query='repo:example/widgets is:pr in:body "Ticket: #14"')["items"], [])
 
     def test_list_and_search_issues(self):
