@@ -436,7 +436,8 @@ prints per cluster, its `admit` count only the `admit` lines of its kind and any
 `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·
 <low|medium|high> · <n> pull request(s)`, its pull requests and, when it has people, those its
-continued held candidate's `prs:` line names and its `support` lines', at the Recurring ask Dial's counts, which it refuses to run without (version 3), a `held · <id> · <title>`
+continued held candidate's `prs:` line names and its `support` lines', at the Recurring ask Dial's counts,
+then `asked · <id> · pr-NNNN, ...` or `none`, the pull requests counted, which it refuses to run without (version 3), a `held · <id> · <title>`
 line when it continues one, a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
 from a pull request and a person not yet quoted while one is left; then `clusters: <n> · lines:
@@ -954,8 +955,11 @@ in an adopting repository's `standards/review-rules.md`. Everything from it to t
 file is the held candidates, each with its evidence and the criterion or check it fails, so the
 section is the ledger's last. Each candidate opens with a `### <title>` heading or a bullet `-
 **<title>**`, its bold title not a label ending `:`, and may carry a `kind: <kind>` line, its kind when not a rule, and a `prs: pr-NNNN,
-...` line, the merged pull requests its people asked on, accumulated across revisions, which
-`scripts/guidance_clusters.py` reads for a cluster's priority (version 2). `scripts/standard_file.sh` writes the ledger into the standard up
+...` line, the merged pull requests its people asked on, with those whose agent findings the author
+changed as asked, accumulated across revisions, which `scripts/guidance_clusters.py` reads for a
+cluster's priority; a candidate without the line counts none (version 2). A `###` candidate's body
+opens no bullet with a bold title other than a label ending `:`, since that bullet would start a
+candidate. `scripts/standard_file.sh` writes the ledger into the standard up
 to that line, a ledger without it whole, and exits 1, writing nothing, when the words head a line
 at another level or with anything after them. `scripts/ratchet_counts.py`'s ledger entries end
 at it as at any heading of level one to three.

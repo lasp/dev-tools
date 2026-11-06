@@ -37,7 +37,9 @@ for either, then `prs · <id> · pr-NNNN, ...`, `people ·
 <id> · <login>, ...`, `priority · <id> · <low|medium|high> · <n> pull request(s)`, at the
 Recurring ask Dial's counts in `standards/dials.md`, of its pull requests and, when it has
 people, those its continued held candidate's `prs:` line names, accumulated across revisions, and
-those of its `support` lines, an agent's finding the author changed as asked, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
+those of its `support` lines, an agent's finding the author changed as asked, then `asked · <id> ·
+pr-NNNN, ...` or `none`, the pull requests it counted, which `apply` carries into the candidate's
+`prs:` line, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
 note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
@@ -108,7 +110,7 @@ def held_titles(ledger: str) -> dict[str, set[str]]:
     out: dict[str, set[str]] = {}
     title = None
     for line in lines[at + 1:]:
-        m = re.match(r"### (.+)", line) or re.match(r"[-*] \*\*(.+?[^:])\*\*", line)
+        m = re.match(r"### (.+)", line) or re.match(r"[-*] \*\*([^*]*[^*:])\*\*", line)
         if m:
             title = m[1].strip().rstrip(".")
             out.setdefault(title, set())
@@ -224,9 +226,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"prs · {c['id']} · {', '.join(prs) or 'none'}")
         print(f"people · {c['id']} · {', '.join(people) or 'none'}")
         earlier = headings[c["held"].rstrip(".")] if c["held"] and people else set()
-        asked = len(set(prs) | earlier | ({lines[k]["pr"] for k in keys if lines[k]["word"] == "support"} if people else set()))
-        level = "high" if asked >= high else "medium" if asked >= medium else "low"
-        print(f"priority · {c['id']} · {level} · {asked} pull request{'' if asked == 1 else 's'}")
+        asked = set(prs) | earlier | ({lines[k]["pr"] for k in keys if lines[k]["word"] == "support"} if people else set())
+        level = "high" if len(asked) >= high else "medium" if len(asked) >= medium else "low"
+        print(f"priority · {c['id']} · {level} · {len(asked)} pull request{'' if len(asked) == 1 else 's'}")
+        print(f"asked · {c['id']} · {', '.join(sorted(asked)) or 'none'}")
         if c["held"]:
             print(f"held · {c['id']} · {c['held']}")
         for note in c["notes"]:
