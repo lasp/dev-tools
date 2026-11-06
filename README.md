@@ -640,10 +640,12 @@ thresholds are `standards/dials.md`.
 ### Asking for guidance
 
 Anyone reviewing a pull request can ask for a point to be kept beyond it, in a review comment, a
-reply or a review summary, in their own words: "can we make this a rule", "agents keep doing
-this", "worth adding to our conventions". No prefix or phrase is needed. The next revision's
-extractor reads every comment for such an ask and marks it `asks for guidance`, and the revision
-lists each one with who asked: as a proposal when it meets its kind's bar, as support for the
+reply, a review summary or a conversation comment, in their own words: "can we make this a rule",
+"agents keep doing this, let's teach them not to", "worth adding to our conventions". No prefix or
+phrase is needed. The next revision's extractor reads the comments of the pull requests merged in
+its window, in the repositories its guidance harvest covers, and marks such an ask `asks for
+guidance`; an ask on a pull request still open waits for its merge. The revision lists each one
+with who asked: as a proposal when it meets its kind's bar, as support for the
 live rule or entry that already says it, or held with the reason (`skills/revise/harvest.md`,
 "Guidance"). An ask in a comment an agent drafted is read as the agent's, not yours.
 

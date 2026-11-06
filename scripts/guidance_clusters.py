@@ -30,7 +30,8 @@ this script refuses, one `refused · <where> · <why>` line per fault and exit 1
 Otherwise it prints, per cluster in the file's order, `cluster · <id> · <kind> · admit <n> · hold <n> ·
 support <n> · prs <n> · people <n> · <principle>`, its kind the destination `harvest.md`'s
 "Destinations" sends it to. `admit` counts its `admit` lines of that kind alone, since only those
-admit it; an `admit` line of another kind counts under `hold`. Its pull requests are those a person asked on, of
+admit it, and its `admit` lines of any kind that the tally's `ask` lines name, a person asking for
+the point to be kept; an `admit` line of another kind counts under `hold`. Its pull requests are those a person asked on, of
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
@@ -39,7 +40,8 @@ Recurring ask Dial's counts in `standards/dials.md`, of its pull requests and, w
 people, those its continued held candidate's `prs:` line names, accumulated across revisions, and
 those of its `support` lines, an agent's finding the author changed as asked, then `asked · <id> ·
 pr-NNNN, ...` or `none`, the pull requests it counted, which `apply` carries into the candidate's
-`prs:` line, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
+`prs:` line, `held · <id> · <title>` when it joins one, `ask · <id> · <author> · <url>` for each of its lines
+the tally's `ask` lines name, `note · <id> · <note>` for each
 note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
@@ -73,10 +75,13 @@ def tally_lines(text: str) -> dict[str, dict]:
     """The tally's clustered lines by key: word, pr, author, url and quote, each read by its
     place, the quote last, so a `·` in it splits nothing. Refused unless its last line counts what
     it lists."""
-    out, counts, summary = {}, {w: 0 for w in (*WORDS, "covered")}, None
+    out, counts, summary, asks = {}, {w: 0 for w in (*WORDS, "covered", "asks")}, None, set()
     for line in text.splitlines():
         cells = line.split(" · ")
-        if cells[0] in counts:
+        if cells[0] == "ask" and len(cells) == 5:
+            counts["asks"] += 1
+            asks.add(cells[1])
+        elif cells[0] in counts:
             url_at = 6 if cells[0] == "support" else 7
             if len(cells) <= url_at + 1:
                 raise Refused(f"a tally line with too few cells: {line[:80]}")
@@ -91,6 +96,8 @@ def tally_lines(text: str) -> dict[str, dict]:
     gone = [w for w, n in counts.items() if int(summary.get(w, -1)) != n]
     if gone:
         raise Refused(f"the tally's closing line counts {', '.join(gone)} otherwise than its lines")
+    for key in asks & set(out):
+        out[key]["ask"] = True
     return out
 
 
@@ -213,7 +220,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     for c in clusters["clusters"]:
         keys = c["items"]
-        admits = [k for k in keys if lines[k]["word"] == "admit" and lines[k]["kind"] == c["kind"]]
+        admits = [k for k in keys if lines[k]["word"] == "admit" and (lines[k]["kind"] == c["kind"] or lines[k].get("ask"))]
         count = {"admit": len(admits), "hold": sum(lines[k]["word"] in WORDS[:2] for k in keys) - len(admits),
                  "support": sum(lines[k]["word"] == "support" for k in keys)}
         notes = [NOTE.fullmatch(n) for n in c["notes"]]
@@ -232,6 +239,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"asked · {c['id']} · {', '.join(sorted(asked)) or 'none'}")
         if c["held"]:
             print(f"held · {c['id']} · {c['held']}")
+        for k in keys:
+            if lines[k].get("ask"):
+                print(f"ask · {c['id']} · {lines[k]['author']} · {lines[k]['url']}")
         for note in c["notes"]:
             print(f"note · {c['id']} · {note}")
         for q in quotes(keys, lines):

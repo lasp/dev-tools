@@ -27,8 +27,10 @@ Admission Dial in `standards/dials.md` read it:
 slice's items, from 0, so a later step names one item however many share a comment.
 
 An agent's other items, a bot's and every `pr-specific` item are counted, never listed. Lines run
-in the slices' order, then a last line, `items: <n> · admit: <n> · covered: <n> · hold: <n> ·
-support: <n> · not listed: <n>`. A quote is printed on one line, its whitespace runs as one space. Exits 0;
+in the slices' order; then one `ask · <key> · pr-NNNN · <author> · <url>` per `admit` or `covered`
+line whose item's signal is `asks for guidance`, a person asking for the point to be kept, so the
+report names who asked; then a last line, `items: <n> · admit: <n> · covered: <n> · hold: <n> ·
+support: <n> · not listed: <n> · asks: <n>`. A quote is printed on one line, its whitespace runs as one space. Exits 0;
 exits 1 with the check's lines when it refuses. Stdlib only.
 """
 
@@ -86,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     counts = {"admit": 0, "covered": 0, "hold": 0, "support": 0}
     items = [(f"s{n}-{i}", it) for n, path in enumerate(args.slices, 1)
              for i, it in enumerate(json.loads(path.read_text())["items"])]
+    asks = []
     for key, it in items:
         v = verdict(it)
         if v is None:
@@ -95,8 +98,11 @@ def main(argv: list[str] | None = None) -> int:
         cells = [word, key, f"pr-{it['pr']:04d}", str(it["comment_id"]), it["author"], it["kind"], *([why] if why else []),
                  it["url"], check.flat(it["quote"])]
         print(" · ".join(cells))
+        if word in ("admit", "covered") and it["signal"] == "asks for guidance":
+            asks.append(f"ask · {key} · pr-{it['pr']:04d} · {it['author']} · {it['url']}")
+    print("\n".join(asks), end="\n" if asks else "")
     print(f"items: {len(items)} · " + " · ".join(f"{k}: {n}" for k, n in counts.items())
-          + f" · not listed: {len(items) - sum(counts.values())}")
+          + f" · not listed: {len(items) - sum(counts.values())} · asks: {len(asks)}")
     return 0
 
 

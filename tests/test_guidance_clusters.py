@@ -24,7 +24,7 @@ hold · s1-2 · pr-0104 · 41 · carol · rule · no signal of generality · u41
 support · s1-3 · pr-0104 · 42 · alice · rule · u42 · A missing system library is installed, not mocked.
 admit · s1-4 · pr-0106 · 61 · dave · rule · addresses agents · u61 · Agents: add the dependency · CI, never skip.
 hold · s1-5 · pr-0106 · 62 · dave · process · no signal of generality · u62 · Changelog holds user-visible changes.
-items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3
+items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3 · asks: 0
 """
 LEDGER = ("# Review rules\n\n## R-001 · A rule\n\n## Candidates below the criteria\n\n### Changelog scope\n\nEvidence.\n\n"
           "#### Evidence\n\nprs: pr-48, pr-0104\n\n- **Held:** an agent's ask in pr-0061; fails **Admission** twice.\n\n"
@@ -138,6 +138,19 @@ class Clusters(unittest.TestCase):
         heads = [x for x in lines if x.startswith("cluster ·")]
         self.assertIn("· rule · admit 1 · hold 1 · support 0 ·", heads[0])
         self.assertIn("· process · admit 0 · hold 2 · support 1 ·", heads[1])
+
+    def test_a_persons_ask_admits_its_cluster_whatever_its_kind_and_names_who_asked(self):
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", "ask · s1-4 · pr-0106 · dave · u61\nitems: 9")
+                                            .replace("asks: 0", "asks: 1"))
+        clusters = {"clusters": [
+            {"id": "C1", "kind": "rule", "principle": "Rules.", "items": ["s1-0", "s1-2", "s1-3"], "notes": [], "held": None},
+            {"id": "C2", "kind": "process", "principle": "Asked.", "items": ["s1-4", "s1-5"], "notes": [], "held": None}]}
+        code, lines = self.run_clusters(clusters)
+        self.assertEqual(code, 0, lines)
+        self.assertIn("· process · admit 1 · hold 1 · support 0 ·", [x for x in lines if x.startswith("cluster · C2")][0])
+        self.assertEqual([x for x in lines if x.startswith("ask ·")], ["ask · C2 · dave · u61"])
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", "ask · s1-4 · pr-0106 · dave · u61\nitems: 9"))
+        self.assertIn("counts asks otherwise", "\n".join(self.run_clusters(clusters)[1]))
 
     def test_a_cluster_of_agents_lines_alone_takes_their_kind_and_people_s_lines_outrank_them(self):
         (self.dir / "tally.txt").write_text(TALLY.replace("support · s1-3 · pr-0104 · 42 · alice · rule ·",

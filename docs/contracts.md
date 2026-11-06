@@ -393,8 +393,9 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
 
 An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
 is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
-before it. A last line reads `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> ·
-not listed: <n>`.
+before it. After the items, one `ask · <key> · pr-NNNN · <author> · <url>` line per `admit` or
+`covered` line whose item's signal is `asks for guidance` (version 3). A last line reads `items:
+<n> · admit: <n> · covered: <n> · hold: <n> · support: <n> · not listed: <n> · asks: <n>`.
 
 Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
 "Clusters" and "Destinations", and `revise` `prepare` step 5, for the Admission Dial's single
@@ -405,7 +406,7 @@ Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admit
 
 ## The guidance clusters
 
-Version: 3
+Version: 4
 
 Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
 object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
@@ -425,13 +426,14 @@ refuses, one `refused · <where> · <why>` line each and exit 1, a file of any o
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
 no `--ledger`. Otherwise it
-prints per cluster, its `admit` count only the `admit` lines of its kind and any other counted as
-`hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
+prints per cluster, its `admit` count only the `admit` lines of its kind or that a tally `ask`
+line names (version 4), any other counted as `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·
 <low|medium|high> · <n> pull request(s)`, its pull requests and, when it has people, those its
 continued held candidate's `prs:` line names and its `support` lines', at the Recurring ask Dial's counts,
 then `asked · <id> · pr-NNNN, ...` or `none`, the pull requests counted, which it refuses to run without (version 3), a `held · <id> · <title>`
-line when it continues one, a `note · <id> · <note>` line per note, and up to three `said · <id> ·
+line when it continues one, an `ask · <id> · <author> · <url>` line per line of it a tally `ask` line
+names (version 4), a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
 from a pull request and a person not yet quoted while one is left; then `clusters: <n> · lines:
 <n>` and exit 0. A cluster's pull requests are those a person asked on, of its `admit` and `hold`
