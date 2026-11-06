@@ -27,7 +27,8 @@ hold · s1-5 · pr-0106 · 62 · dave · process · no signal of generality · u
 items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3
 """
 LEDGER = ("# Review rules\n\n## R-001 · A rule\n\n## Candidates below the criteria\n\n### Changelog scope\n\nEvidence.\n\n"
-          "- **Keyword-only arguments for flags.** Evidence: pr-0048. Held: its one ask is AI-drafted.\n")
+          "#### Evidence\n\nprs: pr-48, pr-0104\n\n- **Held:** an agent's ask in pr-0061; overlaps R-002 from pr-0031.\n\n"
+          "- **Keyword-only arguments for flags.** Evidence: pr-0048. Held: its one ask is AI-drafted.\nprs: none\n")
 
 
 class Clusters(unittest.TestCase):
@@ -71,7 +72,7 @@ class Clusters(unittest.TestCase):
             "cluster · C2 · process · admit 0 · hold 1 · support 0 · prs 1 · people 2 · The changelog lists only user-visible changes.",
             "prs · C2 · pr-0106",
             "people · C2 · dave, erin",
-            "priority · C2 · low · 1 pull request",
+            "priority · C2 · high · 3 pull requests",
             "held · C2 · Changelog scope",
             "note · C2 · pasted notes-1.md · erin · keep the changelog to what users see",
             'said · C2 · "Changelog holds user-visible changes." — dave, u62',
@@ -164,7 +165,15 @@ class Clusters(unittest.TestCase):
         self.assertIn("priority · C4 · low · 0 pull requests", lines)
         held = {**one, "held": "Keyword-only arguments for flags"}
         lines = self.run_clusters({"clusters": [held, two, rest]})[1]
+        self.assertIn("priority · C1 · low · 1 pull request", lines)
+        held = {**one, "held": "Changelog scope"}
+        lines = self.run_clusters({"clusters": [held, two, rest]})[1]
         self.assertIn("priority · C1 · medium · 2 pull requests", lines)
+        agents_held = {**agents, "held": "Changelog scope"}
+        lines = self.run_clusters({"clusters": [one, two_only, rest, agents_held]})[1]
+        self.assertIn("priority · C4 · low · 0 pull requests", lines)
+        code, lines = self.run_clusters({"clusters": [{**one, "held": "Held:"}, two, rest]})
+        self.assertIn("no held candidate headed 'Held:'", "\n".join(lines))
         three = {**two, "items": ["s1-0", "s1-2", "s1-4"]}
         lines = self.run_clusters({"clusters": [three, {**one, "id": "C3", "kind": "process", "items": ["s1-3", "s1-5"]}]})[1]
         self.assertIn("priority · C2 · high · 3 pull requests", lines)

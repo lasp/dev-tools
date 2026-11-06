@@ -35,9 +35,9 @@ its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
 <id> · <login>, ...`, `priority · <id> · <low|medium|high> · <n> pull request(s)`, at the
-Recurring ask Dial's counts in `standards/dials.md`, of its pull requests, with the `pr-NNNN` the
-held candidate it continues names in the ledger, accumulated across revisions, and, when it has
-people, those of its `support` lines, an agent's finding the author changed as asked, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
+Recurring ask Dial's counts in `standards/dials.md`, of its pull requests and, when it has
+people, those its continued held candidate's `prs:` line names, accumulated across revisions, and
+those of its `support` lines, an agent's finding the author changed as asked, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
 note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
@@ -96,10 +96,11 @@ NOTE = re.compile(r"(pr-\d{4,}) · (\S+) · (human|ai-drafted|bot) · \S.*|paste
 
 
 def held_titles(ledger: str) -> dict[str, set[str]]:
-    """The ledger's held candidates by title, each with the pull requests its evidence names,
-    `pr-NNNN` up to the next title: each heading under the line `## Candidates below the criteria`,
-    and each bullet there that opens with a bold title, `- **<title>**`, a trailing full stop left
-    off either."""
+    """The ledger's held candidates by title, each with the pull requests its `prs:` line names, the
+    ones its people asked on (`docs/contracts.md`, "The ledger's held-candidates heading"): each
+    `### ` heading under the line `## Candidates below the criteria`, and each bullet there at the
+    line's start that opens with a bold title, `- **<title>**`, not a label ending `:`, a trailing
+    full stop left off either. A `pr-NNNN` anywhere else in a candidate counts for nothing."""
     lines = ledger.splitlines()
     at = next((i for i, line in enumerate(lines) if line.rstrip() == HELD), None)
     if at is None:
@@ -107,12 +108,13 @@ def held_titles(ledger: str) -> dict[str, set[str]]:
     out: dict[str, set[str]] = {}
     title = None
     for line in lines[at + 1:]:
-        m = re.match(r"#{2,4} (.+)", line) or re.match(r"[-*] \*\*(.+?)\*\*", line)
+        m = re.match(r"### (.+)", line) or re.match(r"[-*] \*\*(.+?[^:])\*\*", line)
         if m:
             title = m[1].strip().rstrip(".")
             out.setdefault(title, set())
-        if title is not None:
-            out[title] |= {f"pr-{int(n):04d}" for n in re.findall(r"\bpr-(\d{1,})\b", line)}
+        prs = re.match(r"\s*(?:[-*] )?prs: (.*)", line)
+        if title is not None and prs:
+            out[title] |= {f"pr-{int(n):04d}" for n in re.findall(r"\bpr-(\d+)\b", prs[1])}
     return out
 
 
@@ -221,7 +223,7 @@ def main(argv: list[str] | None = None) -> int:
               + f" · prs {len(prs)} · people {len(people)} · {c['principle']}")
         print(f"prs · {c['id']} · {', '.join(prs) or 'none'}")
         print(f"people · {c['id']} · {', '.join(people) or 'none'}")
-        earlier = headings[c["held"].rstrip(".")] if c["held"] else set()
+        earlier = headings[c["held"].rstrip(".")] if c["held"] and people else set()
         asked = len(set(prs) | earlier | ({lines[k]["pr"] for k in keys if lines[k]["word"] == "support"} if people else set()))
         level = "high" if asked >= high else "medium" if asked >= medium else "low"
         print(f"priority · {c['id']} · {level} · {asked} pull request{'' if asked == 1 else 's'}")
