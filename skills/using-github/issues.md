@@ -13,7 +13,8 @@ picked as `<plugin root>/skills/using-github/SKILL.md` says.
 
 - **Title**: one line, starting with a verb, at most twelve words.
 - **Body**: the description in `<plugin root>/standards/ticket-format.md`'s format, in Markdown as
-  that file shows it. GitHub stores the body as it is sent, so nothing is converted.
+  that file shows it, each section under its `#` or `##` heading, never a bold line in its place.
+  GitHub stores the body as it is sent, so nothing is converted.
 - **Labels**: only labels the repository already has, from `issue_read` `get_labels` on an issue or
   the labels its issues carry; a label is never created, and a label the repository lacks is left
   out and said so. A role's label is `--defaults --field issue_tracker.roles.<role>`, `none` for a

@@ -162,7 +162,8 @@ scenarios:
     look_at: >-
       The plan holds, in order, the Original request comment carrying #12's body as alice-example
       wrote it, the body update in the format, and the Session comment; no labels change, since
-      nobody asked for the approval. .review/context/12.md opens `# #12 · `.
+      nobody asked for the approval; a follow-up the questions add is a create. The body's
+      sections are Markdown headings, `# Motivation` first. .review/context/12.md opens `# #12 · `.
     expect:
       ends: success
       mcp: [mcp__github__issue_read, mcp__github__issue_write, mcp__github__add_issue_comment]
@@ -171,12 +172,12 @@ scenarios:
       - test ! -e .review/github-approval.json
       - >-
         python3 -c 'import json; w = [json.loads(l) for l in open(".git/github-writes.jsonl")];
-        t = [(x["tool"], x["arguments"].get("issue_number")) for x in w];
-        assert all(n == 12 for _, n in t), t;
-        u = [i for i, x in enumerate(w) if x["tool"] == "issue_write"];
+        t = [(x["tool"], x["arguments"].get("method"), x["arguments"].get("issue_number")) for x in w];
+        assert all(n == 12 or m == "create" for _, m, n in t), t;
+        u = [i for i, x in enumerate(w) if x["tool"] == "issue_write" and x["arguments"].get("issue_number") == 12];
         o = [i for i, x in enumerate(w) if x["tool"] == "add_issue_comment" and x["arguments"]["body"].lstrip().startswith("Original request")];
         assert len(u) == 1 and o and o[0] < u[0], t;
-        assert "# Motivation" in w[u[0]]["arguments"]["body"] and "labels" not in w[u[0]]["arguments"], w[u[0]]'
+        assert "Motivation" in w[u[0]]["arguments"]["body"] and "labels" not in w[u[0]]["arguments"], w[u[0]]'
 
   - id: tracker-gh-ticket-draft-declined
     repo: widgets
