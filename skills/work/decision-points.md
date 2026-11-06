@@ -53,7 +53,8 @@ items, tool names and keys.
 - **Gates.** Anything hard to undo, a post, a push, a commit or a write to Jira or Confluence, waits
   for a yes to exactly what it does: a request the person typed that names it, or an answer to a
   question or option that names it. A gate may share a widget with other questions at the same
-  point; it is never implied by an answer to something else.
+  point; it is never implied by an answer to something else, nor by one given before the gate
+  was asked, such as "take the recommended answer on every question": show the gate and ask it.
 - **The text is shown with the gate.** A gate that posts or writes text, a review, a comment, a
   reply, a pull request body, a Jira description or comment, a Confluence page or section, shows
   that text as it will be sent in the message that asks, never by pointing to "above", an earlier
