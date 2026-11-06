@@ -1,5 +1,5 @@
 <!-- A ticket in several pull requests: the template's own Ticket: line, never a second one,
-becomes `Ticket: <key> · part k of n · base: <branch>`, and the line after it
+becomes `Ticket: <key> · part k of n · base: <branch>`, a GitHub issue's key written `#<n>`, and the line after it
 `Claims: AC-1, AC-3`, the Acceptance Criteria this part claims. A ticket in one pull request
 keeps the template's line as it is and has no Claims: line. -->
 

@@ -49,5 +49,18 @@ profile_raw() {
   [ "$v" = "not yet recorded" ] || printf '%s' "$v"
 }
 
+# The defaults, read when the profile did not need them; call it outside $( ) to read them once.
+profile_read_defaults() { [ -n "$profile_defaults" ] || profile_defaults=$(profile_ask --defaults) || profile_defaults=""; }
+
+# A project field as the defaults under the standard's give it, which profile.py prints for no
+# repository and never detects, such as issue_tracker.kind; empty when it reads `not yet recorded`
+# or the defaults cannot be read.
+profile_project() {
+  local v
+  profile_read_defaults
+  v=$(printf '%s\n' "$profile_defaults" | sed -n "s/^$1: //p" | head -1)
+  [ "$v" = "not yet recorded" ] || printf '%s' "$v"
+}
+
 # A profile pattern as grep -E reads it: `\d` becomes `[0-9]`.
 profile_ere() { printf '%s' "${1//\\d/[0-9]}"; }

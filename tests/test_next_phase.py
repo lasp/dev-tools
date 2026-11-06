@@ -366,7 +366,7 @@ class Rows(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
             rc = next_phase.main(["--fields", str(self.fields(context="")), "--ticket-status", "To Do"])
         self.assertEqual(rc, 1)
-        self.assertIn("the Jira statuses could not be read", err.getvalue())
+        self.assertIn("the tracker's statuses could not be read", err.getvalue())
         self.assertEqual(self.why(self.fields()), ("implement-change", "plan"))
 
     def test_with_no_workflow_recorded_every_status_routes_to_ticket_draft(self):
@@ -391,19 +391,21 @@ class Rows(unittest.TestCase):
                 rc, out = self.run_it(self.fields(context=""), None, "--ticket-status", status)
                 self.assertEqual(rc, 0, out)
                 self.assertIn("phase: ticket-draft\n", out)
-                self.assertIn(f"PROJ-7 is {status}, and no Jira workflow is recorded", out)
+                self.assertIn(f"PROJ-7 is {status}, and no workflow is recorded", out)
 
-    def test_a_github_tracker_routes_as_no_workflow_recorded(self):
+    def github(self, labels: str, pr_statuses: str = "[]") -> None:
+        """This test's working directory: a repository whose standard records a GitHub tracker
+        mapping `labels`, under a plugin top level with the default profile alone."""
         plugin = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, plugin)
         (plugin / "scripts").mkdir()
         shutil.copy(ROOT / "scripts/profile.py", plugin / "scripts")
         (plugin / "standards").mkdir()
         shutil.copy(ROOT / "standards/default-profile.yaml", plugin / "standards")
-        repo = self.tmp / "github"
-        (repo / "standards").mkdir(parents=True)
-        (repo / "standards/profile.yaml").write_text(
-            "issue_tracker:\n  kind: github\n  statuses:\n    - {name: ready, next: implement-change, role: approved}\n  pr_statuses: [ready]\n")
+        repo = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, repo)
+        (repo / "standards").mkdir()
+        (repo / "standards/profile.yaml").write_text(f"issue_tracker:\n  kind: github\n  statuses:{labels}\n  pr_statuses: {pr_statuses}\n")
         git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@example.org"]
         for args in (["init", "-q"], ["remote", "add", "origin", "git@github.com:example-org/github.git"], ["commit", "-q", "--allow-empty", "-m", "x"]):
             subprocess.run(git + args, check=True)
@@ -412,13 +414,81 @@ class Rows(unittest.TestCase):
         self.addCleanup(os.chdir, cwd)
         next_phase.ROOT = plugin
         os.chdir(repo)
-        kind = subprocess.run([sys.executable, str(plugin / "scripts/profile.py"), "--defaults", "--field", "issue_tracker.kind"],
-                              capture_output=True, text=True)
-        self.assertEqual(kind.stdout, "github\n", kind.stderr)
-        rc, out = self.run_it(self.fields(context=""), None, "--ticket-status", "ready")
+
+    LABELS = ("\n    - {name: needs-refinement, next: ticket-draft, role: filed}\n    - {name: ready, next: implement-change, role: approved}"
+              "\n    - {name: in progress, next: implement-change, role: implementation}\n    - {name: blocked, next: nothing}")
+
+    def test_an_open_github_issue_goes_where_its_mapped_label_says(self):
+        self.github(self.LABELS)
+        issue = self.fields(context="", ticket="59", branch="59-x")
+        self.assertEqual(self.why(issue, None, "--issue-state", "open", "--label", "Ready"), ("implement-change", "ticket-to-do"))
+        self.assertEqual(self.why(issue, None, "--issue-state", "open", "--label", "bug", "--label", "in progress"), ("implement-change", "ticket-to-do"))
+        self.assertEqual(self.why(issue, None, "--issue-state", "open", "--label", "needs-refinement"), ("ticket-draft", "ticket-draft"))
+        self.assertEqual(self.why(issue, None, "--issue-state", "open", "--label", "blocked"), ("nothing", "ticket-closed"))
+        rc, out = self.run_it(issue, None, "--issue-state", "open", "--label", "ready")
+        self.assertEqual(out.splitlines()[1:5], ["argument: 59", "why: ticket-to-do", "lock: none", "#59 · #59 is labeled ready, with no context page here"])
+
+    def test_an_open_github_issue_with_no_mapped_label_is_filed_and_goes_to_ticket_draft(self):
+        for labels in (self.LABELS, " []"):
+            with self.subTest(labels=labels):
+                self.github(labels)
+                issue = self.fields(context="", ticket="59", branch="59-x")
+                for given in ((), ("--label", "bug")):
+                    rc, out = self.run_it(issue, None, "--issue-state", "open", *given)
+                    self.assertEqual(rc, 0, out)
+                    self.assertIn("phase: ticket-draft\nargument: 59\nwhy: ticket-draft\n", out)
+                    self.assertIn("#59 · no context page; #59 is open with no status label\n", out)
+
+    def test_a_closed_github_issue_is_past_the_build_whatever_its_labels(self):
+        self.github(self.LABELS)
+        issue = self.fields(context="", ticket="59", branch="59-x")
+        for labels in ((), ("--label", "ready"), ("--label", "ready", "--label", "blocked")):
+            with self.subTest(labels=labels):
+                self.assertEqual(self.why(issue, None, "--issue-state", "closed", *labels), ("nothing", "ticket-closed"))
+        rc, out = self.run_it(issue, None, "--issue-state", "closed")
+        self.assertIn("#59 · #59 is closed\nNothing: the ticket is past the build; open it in the tracker to see why.\n", out)
+
+    def test_a_github_issue_with_two_mapped_labels_is_refused(self):
+        self.github(self.LABELS)
+        err = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            rc = next_phase.main(["--fields", str(self.fields(context="", ticket="59")), "--issue-state", "open", "--label", "ready", "--label", "Blocked"])
+        self.assertEqual(rc, 1)
+        self.assertIn("#59 carries ready, Blocked, 2 of the labels the profile's issue_tracker maps; it takes at most one", err.getvalue())
+
+    def test_a_github_label_among_the_pr_statuses_needs_the_state_block(self):
+        self.github(self.LABELS, "[in progress]")
+        issue = self.fields(context="", ticket="59", branch="59-x")
+        self.assertEqual(self.run_it(issue, None, "--issue-state", "open", "--label", "in progress")[0], 1)
+        self.assertEqual(self.why(issue, "pull request: none\n", "--issue-state", "open", "--label", "in progress"), ("implement-change", "ticket-to-do"))
+        self.assertEqual(self.why(issue, None, "--issue-state", "open", "--label", "ready"), ("implement-change", "ticket-to-do"))
+        opened = state([], ticket="#59", n=12)
+        self.assertEqual(self.why(issue, opened, "--issue-state", "open", "--label", "in progress"), ("nothing", "answered"))
+
+    def test_a_github_tracker_refuses_the_inputs_of_another(self):
+        self.github(self.LABELS)
+        issue = self.fields(context="", ticket="59")
+        self.assertEqual(self.run_it(issue, None, "--ticket-status", "ready")[0], 1)
+        self.assertEqual(self.run_it(issue, None, "--label", "ready")[0], 1)
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            next_phase.main(["--fields", str(issue), "--issue-state", "shut"])
+        # The state unread, as with the server unreachable, routes as with no status.
+        self.assertEqual(self.why(issue), ("ticket-draft", "ticket-draft"))
+
+    def test_issue_state_on_a_jira_tracker_is_refused(self):
+        self.assertEqual(self.run_it(self.fields(context=""), None, "--issue-state", "open")[0], 1)
+        self.assertEqual(self.why(self.fields(context=""), None, "--ticket-status", "To Do"), ("implement-change", "ticket-to-do"))
+
+    def test_a_pull_request_body_naming_a_github_issue_gives_its_number(self):
+        for line in ("#59 · part 1 of 2 · base: main", "[#59](https://github.com/o/r/issues/59) · x"):
+            with self.subTest(line=line):
+                self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "59")
+        self.assertEqual(next_phase.read_state(state([], ticket="PROJ-7 · fixes #59"))["ticket"], "PROJ-7")
+        self.assertEqual(next_phase.read_state(state([], ticket="none, tooling work"))["ticket"], "")
+        rc, out = self.run_it(self.fields(ticket="59", branch="59-x"), state([], ticket="#59"), "--pr", "7")
         self.assertEqual(rc, 0, out)
-        self.assertIn("phase: ticket-draft\n", out)
-        self.assertIn("PROJ-7 is ready, and no Jira workflow is recorded", out)
+        self.assertIn("\n#59 · pull request #7 · every thread answered\n", out)
+        self.assertEqual(self.run_it(self.fields(ticket="58", branch="58-x"), state([], ticket="#59"), "--pr", "7")[0], 1)
 
     def test_a_drafted_ticket_not_filed_stops_and_names_the_file_to_file(self):
         rc, out = self.run_it(self.fields(context="", ticket="", slug="retry-policy"))
@@ -429,8 +499,8 @@ class Rows(unittest.TestCase):
                 "argument: retry-policy",
                 "why: unfiled",
                 "lock: none",
-                "no ticket · drafted as retry-policy, not filed in Jira",
-                "Nothing: file `.review/context/retry-policy.jira.txt` in Jira, or have `/lasp-dev:ticket-draft retry-policy` file it; "
+                "no ticket · drafted as retry-policy, not filed",
+                "Nothing: file `.review/context/retry-policy.jira.txt` in the tracker, or have `/lasp-dev:ticket-draft retry-policy` file it; "
                 "give it the key to rename the page, then run `/lasp-dev:work <key>`.",
                 "It will ask you: nothing.",
             ],

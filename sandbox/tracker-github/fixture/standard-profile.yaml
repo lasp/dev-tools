@@ -1,0 +1,7 @@
+issue_tracker:
+  kind: github
+  statuses:
+    - {name: needs-refinement, next: ticket-draft, role: filed}
+    - {name: ready, next: implement-change, role: approved}
+    - {name: in progress, next: implement-change, role: implementation}
+  pr_statuses: [in progress]
