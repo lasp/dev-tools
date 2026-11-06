@@ -1,0 +1,26 @@
+PROJ-57 · Refuse a negative count in by_part
+Task · New · no estimate · epic: none · reporter: bob, 2026-02-02 · Original request comment: no
+
+ticket-draft: drafted 2026-02-02 by bob · open questions: 0
+h1. Motivation
+A count below zero in an inventory file is a typing mistake, and by_part passes it on into every total.
+
+*Impact:*
+* The weekly stock report shows parts with fewer widgets than were counted
+
+h1. Driving Requirements
+by_part refuses an inventory that holds a negative count.
+
+h2. Technical Requirements
+* by_part raises ValueError for a count below zero, as it does for a part listed twice
+
+h2. Acceptance Criteria
+# An inventory with a negative count raises ValueError from by_part
+# An inventory with no negative count returns the same mapping as now
+
+h1. The code today
+*Touches:* {{src/widgets/inventory.py}}
+*Already true:*
+* by_part raises ValueError for a part listed twice
+*Missing:*
+* No check on a count's sign

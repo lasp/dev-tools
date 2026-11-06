@@ -56,5 +56,6 @@ nothing from the mapping: say so in one line and offer the full draft, `ticket-d
    from step 3. The `Session comment` is a reformat pass's, as `using-jira` opens it. The status
    line keeps its `drafted`, and its `updated` names this pass; a ticket with none gets one,
    `drafted` naming the ticket's reporter and created date. The plan holds the `Original request`
-   comment when the ticket has none, the description, the links and fields from step 2, and the
+   comment when the ticket has none, the description, the links and fields from step 2, a new
+   summary when SKILL.md step 7 proposes one, and the
    follow-up tickets from step 3.
