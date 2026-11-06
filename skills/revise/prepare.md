@@ -254,7 +254,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     context refreshes among them, one line each, grouped by priority, high, medium and low, and
     within a group by impact: the number of merged pull requests in its evidence, then the number
     of files it would change, most first, both written in its Impact cell. A
-    proposal from a cluster takes the priority `guidance_clusters.py` prints for it, by the
+    proposal from a cluster takes the priority `guidance_clusters.py` prints for it, and a held
+    candidate step 6 proposes with no cluster this window the level its `prs:` line counts, by the
     Recurring ask Dial: what people wrote, the author's own comments and other developers', and
     the agent findings authors changed as asked, counted by merged pull request. A `ticket/` on a
     break still on `main` is high; a proposal that rests only on AI findings' agree rates is low,
