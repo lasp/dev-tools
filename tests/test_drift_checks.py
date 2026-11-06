@@ -6,6 +6,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -153,6 +154,24 @@ class Drift(unittest.TestCase):
         lines = self.run_drift()[1]
         self.assertEqual(lines[0], "claim · C-7 · judged 3 · follows 0 · breaks 1 · not touched 0 · not judged 2 · drift")
 
+    def test_a_template_section_is_dated_to_the_second_and_from_its_first_wording(self):
+        for text, when in (("## Checklist\n\n- [ ] done\n", "2030-01-01T23:30:00+0000"),
+                           ("## Checklist ##\n\n- [ ] done, and tested\n", "2030-06-01T00:00:00+0000")):
+            self.write(".github/PULL_REQUEST_TEMPLATE.md", TEMPLATE + "\n" + text)
+            self.git("add", "-A")
+            subprocess.run(["git", "-C", str(self.repo), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "Template"],
+                           check=True, env={**os.environ, "GIT_COMMITTER_DATE": when})
+        (self.dir / "claims.md").write_text("### C-7 · .github/PULL_REQUEST_TEMPLATE.md:12 · every change · script: template\n")
+        for n, opened in ((1, "2030-01-01T23:29:00Z"), (2, "2030-01-01T23:31:00Z"), (3, "2031-02-01T00:00:00Z")):
+            (self.dumps / f"pr-000{n}" / "pr.json").write_text(json.dumps({"body": "## Summary", "created_at": opened}))
+        lines = self.run_drift()[1]
+        self.assertEqual(lines[0], "claim · C-7 · judged 3 · follows 0 · breaks 2 · not touched 0 · not judged 1 · drift")
+
+    def test_reads_a_path_with_a_space(self):
+        self.write("src/my app.py", "# TODO nothing\n")
+        sha = self.commit("Add a spaced file")
+        self.assertIn(("src/my app.py", 1, "# TODO nothing"), drift_checks.added(self.repo, sha))
+
     def test_refuses_what_it_cannot_judge(self):
         cases = {
             "the todo check needs --ticket-pattern": (CLAIMS, ()),
@@ -170,6 +189,19 @@ class Drift(unittest.TestCase):
                 code, lines, err = self.run_drift(*extra)
                 self.assertEqual((code, lines), (2, []))
                 self.assertIn(why, err)
+
+        (self.dumps / "pr-0001" / "pr.json").write_text(json.dumps({"body": "Ticket: x", "created_at": "2026-10-01"}))
+        (self.dir / "claims.md").write_text(CLAIMS)
+        code, lines, err = self.run_drift("--ticket-pattern", "x")
+        self.assertEqual((code, lines), (2, []))
+        self.assertIn("is not like 2026-10-01T12:00:00Z", err)
+
+    def test_refuses_a_template_part_no_commit_added(self):
+        real = drift_checks.git
+        self.addCleanup(setattr, drift_checks, "git", real)
+        drift_checks.git = lambda repo, *args: "" if args[0] == "log" else real(repo, *args)
+        with self.assertRaisesRegex(drift_checks.CannotRun, "no commit on main adds the label 'Ticket'"):
+            drift_checks.template_part(self.repo, ".github/PULL_REQUEST_TEMPLATE.md", 1, "main")
 
 
 if __name__ == "__main__":

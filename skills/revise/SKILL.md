@@ -127,7 +127,9 @@ In this repository's `.review/`:
   of it, checked by `scripts/guidance_clusters.py`.
 - `backtest/<id>.entry.md`, a proposal's drafted entry, and `backtest/R-NNN.md`, a rule's
   `rule-probe` blocks.
-- `revision/claims.md`, the rules and documented claims the sweep judges, and
+- `revision/claims.md`, the rules and documented claims the sweep judges;
+  `revision/merges.txt`, the window's merged pull requests, from `scripts/window_merges.py`;
+  `revision/drift.txt`, the scripted claims' lines, from `scripts/drift_checks.py`; and
   `revision/sweep/pr-NNNN.md`, each `diff-probe` block, written by the probe.
 - `harvest/context-refresh.md`, from `context-refresh.md`.
 - `checks/`, the drafted checks for graduation candidates.
@@ -161,7 +163,8 @@ One report and one diff: one pull request here, from the driver's diff, and, wit
 the standard's repository, merged first. Every proposal carries its evidence pointers.
 One `guidance-extractor` per slice of about 300 comments, as `harvest.md`'s "Guidance" cuts them.
 One `thread-analyst` per merged pull request with a record, within `harvest.md`'s cap, and one
-`diff-probe` per pull request merged in the window, at most thirty. If
+`diff-probe` per pull request of the five merged most recently, only when a rule or a claim no
+script judges is owed; `scripts/drift_checks.py` judges the rest with no agent. If
 the corpus is over its line budget, the proposal names a retirement. Every proposal reaches the
 report, in the overview's order; one the meeting leaves blank is deferred, and a deferred
 admission is held as a candidate. Jira is written only by `ticket-draft`, one ticket at a time,

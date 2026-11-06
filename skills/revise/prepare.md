@@ -139,7 +139,7 @@ record `sources`.
    proposal rests on it; step 6 turns a break still on `main` into a `ticket/` proposal and a
    `drift` into a `doc/` one. It runs after step 1's harvest of this repository, never beside an
    earlier one: `diff-probe` reads each description from that harvest's
-   `.review/harvest/threads/pr-NNNN/pr.json`, which every harvest empties. First remove `.review/revision/sweep/`, `.review/revision/claims.md` and `.review/revision/merges.txt`, which a
+   `.review/harvest/threads/pr-NNNN/pr.json`, which every harvest empties. First remove `.review/revision/sweep/`, `.review/revision/claims.md`, `.review/revision/merges.txt` and `.review/revision/drift.txt`, which a
    last revision may have left. Run `python3 "<plugin root>/scripts/window_merges.py" --repo .
    --ref origin/main --since <the window's first day> --ledger <standard files>/review-rules.md`,
    writing its output to `.review/revision/merges.txt`, which the rerun below replaces; it
@@ -176,7 +176,7 @@ record `sources`.
    its `predates` or `no opened day`, and every `code` claim, none of them scripted, and the path
    `.review/revision/sweep/pr-NNNN.md`, where it writes its block and returns `wrote <path>`.
    Never repeat a block: a probe that returns `write failed: <error>` could not write it, and you
-   write the block that follows that line, without it, to its path. Then run `python3 "<plugin
+   write the block that follows that line, without it, to its path. When a probe ran, run `python3 "<plugin
    root>/scripts/block_tally.py" sweep --claims .review/revision/claims.md [--merges
    .review/revision/merges.txt] .review/revision/sweep/ <pr-NNNN ...>`, the `--merges` when the
    rerun wrote it, naming each pull request probed; an exit 2 names the block that
@@ -266,7 +266,9 @@ record `sources`.
    made below the Revision floor too, since they rest on no count of records:
    - `ticket/<slug>`, one per distinct problem still in the code: a thread step 2 lists as
      `unanswered` with `diff: does not` whose analyst `by:` is `human`, a sweep `breaks` line, a probe's or a
-     `break` line in `.review/revision/drift.txt`, of a claim not marked `drift`, or a `tool/` proposal held for its violations on `origin/main`;
+     `break` line in `.review/revision/drift.txt` of a `todo` or `history` claim not marked `drift`,
+     never a `template` or `changelog` one, which names a merged description or file list and no
+     line still in the code, or a `tool/` proposal held for its violations on `origin/main`;
      each only while `git grep -nF -e '<the line>' origin/main --
      <path>` still finds the line it names. Its evidence is the pull request and the thread id or
      `path:line`.

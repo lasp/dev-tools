@@ -18,9 +18,9 @@ claim on every one listed. Checks:
 - `template`: the claim's path is the pull request template, as --ref holds it, and its line the
   part it claims: a label opening that line (`Ticket:`), which the body, from `<dumps>/pr-NNNN/
   pr.json`, must open a line with, or else the heading on or above it, which the body must hold as
-  a heading, case and level aside. A pull request opened before that label or heading first
-  appeared in the template on --ref is not judged on it; one with no `pr.json`, an empty body or no
-  `created_at` is not judged either.
+  a heading, case and level aside. A pull request opened before the first commit on --ref's first
+  parents that added a line with that label or heading, to the second, is not judged on it; one
+  with no `pr.json`, an empty body or no `created_at` is not judged either.
 - `changelog <file> <path>[,<path>]`: a pull request that changes a file under one of the paths,
   the code a user sees, also changes <file>; one that changes none of them is not touched.
 - `todo`: no comment it adds, a line opening `#`, `//`, `/*`, `*` or `<!--`, holds the word `TODO`
@@ -35,13 +35,15 @@ color, external diff or text conversion, whatever the person's config. `drift` f
 broken in more than half of the pull requests it touched. Exits 2 naming why, printing nothing, for
 a claims or merges file that cannot be read, a heading marked ` · script:` that is not of the
 form, a `todo` with no --ticket-pattern or one that is not a regular expression, an `every change`
-claim whose document has no `doc` line, a template line with no heading or label at or above it, a
-`pr.json` that is not JSON, or a git that cannot read a listed commit. Stdlib only, Python 3.9.
+claim whose document has no `doc` line, a template line with no heading or label at or above it or
+none any commit on --ref added, a `pr.json` that is not JSON or whose `created_at` is not of the
+form `2026-10-01T12:00:00Z`, or a git that cannot read a listed commit. Stdlib only, Python 3.9.
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import importlib.util
 import json
 import re
@@ -82,7 +84,7 @@ def added(repo: Path, sha: str) -> list[tuple[str, int, str]]:
         if row.startswith("diff --git "):
             path, header = None, True
         elif header and row.startswith("+++ "):
-            path = row[6:] if row.startswith("+++ b/") else None
+            path = row[6:].split("\t")[0] if row.startswith("+++ b/") else None
         elif row.startswith("@@"):
             header = False
             line = int(re.match(r"@@ -\S+ \+(\d+)", row)[1])
@@ -92,28 +94,49 @@ def added(repo: Path, sha: str) -> list[tuple[str, int, str]]:
     return out
 
 
-def template_part(repo: Path, path: str, line: int, ref: str) -> tuple[str, str, str]:
-    """The claim's part of the template, ("heading" | "label", its text, the day it first appeared
-    on --ref, a day): the label opening its line, or the heading on or above it."""
+def ere(text: str) -> str:
+    """`text` as a POSIX extended regular expression matching it literally."""
+    return re.sub(r"([.\[\]()*+?{}|^$\\])", r"\\\1", text)
+
+
+def template_part(repo: Path, path: str, line: int, ref: str) -> tuple[str, str, int]:
+    """The claim's part of the template, ("heading" | "label", its text, when a line with that label
+    or heading first reached --ref, as a Unix time): the label opening its line, or the heading on
+    or above it, however its line was worded since."""
     lines = git(repo, "show", f"{ref}:{path}").splitlines()
     for n in range(min(line, len(lines)), 0, -1):
         h, label = HEADING.match(lines[n - 1]), LABEL.match(lines[n - 1])
         if (label and n == line) or h:
-            kind, text, source = ("label", label[1], lines[n - 1]) if label and n == line else ("heading", h[1].strip(), lines[n - 1])
-            dates = git(repo, "log", "--first-parent", "--format=%cs", "-S", source, ref, "--", path).split()
-            return kind, text, min(dates) if dates else ""
+            kind, text = ("label", label[1]) if label and n == line else ("heading", h[1].strip())
+            pattern = f"^{ere(text)}:" if kind == "label" else f"^#{{1,6}}[[:space:]]+{ere(text)}([[:space:]]|#|$)"
+            times = git(repo, "log", "--first-parent", "--diff-merges=first-parent", "--no-patch", "--format=%ct",
+                        "-G", pattern, ref, "--", path).split()
+            if not times:
+                raise CannotRun(f"{path}:{line}: no commit on {ref} adds the {kind} {text!r}")
+            return kind, text, min(map(int, times))
     raise CannotRun(f"{path}:{line} has no heading or label at or above it to require")
 
 
+def opened(pr_json: dict) -> int | None:
+    """When a pull request was opened, from its pr.json, as a Unix time; None without `created_at`."""
+    stamp = pr_json.get("created_at")
+    if not stamp:
+        return None
+    try:
+        return int(datetime.datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).timestamp())
+    except (TypeError, ValueError) as e:
+        raise CannotRun(f"created_at {stamp!r} is not like 2026-10-01T12:00:00Z") from e
+
+
 def judge(check: str, arg, files: list[str], pr_json: dict | None, repo: Path, sha: str,
-          part: tuple[str, str, str] | None, ticket: re.Pattern | None) -> tuple[str, str, str]:
+          part: tuple[str, str, int] | None, ticket: re.Pattern | None) -> tuple[str, str, str]:
     """(verdict, where, what) for one claim on one pull request."""
     if check == "template":
-        body, opened = (pr_json or {}).get("body"), (pr_json or {}).get("created_at")
-        if not body or not body.strip() or not opened:
+        body, when = (pr_json or {}).get("body"), opened(pr_json or {})
+        if not body or not body.strip() or when is None:
             return "not judged", "", ""
         kind, text, since = part
-        if since and opened[:10] < since:
+        if when < since:
             return "not judged", "", ""
         lines = body.splitlines()
         if kind == "heading":
