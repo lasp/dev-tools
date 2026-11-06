@@ -54,6 +54,17 @@ checkouts, after a change to a skill's `description:`:
 sandbox/smoke.py --scenarios sandbox/triggers/scenarios.yaml --base ../dev-tools-main --head . --sandbox ~/sbx/1002 --repeat 3
 ```
 
+The tracker pack, `tracker/scenarios.yaml`, runs in `widgets` given its own standard with a Jira
+workflow, against a Jira project that `tracker/fixture/mcp-atlassian-stub.py` serves read-only from
+`jira.json`: `ticket-draft` drafting a new ticket and reformatting an older one through to the paste
+file, its format triage on a ticket in the older layout and one in the current format, and `work`
+routing a To Do ticket with no context page. Its `mcp.json` names the stub as
+`${SBX_FIXTURES}/mcp-atlassian-stub.py`, which `run.py` sets for the session, as the pack's header
+shows, and each scenario's `mcp:` expectation fails a run the stub did not answer. A search that
+names no key returns the whole project, Done tickets included. The stub has no write tools, as a
+read-only server has none, so a write plan's gate is never reached: each run hands its writes over
+to paste.
+
 A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
 directory beside this file, given with `--scenarios`, with a README that lists its scenarios and
@@ -190,8 +201,8 @@ verified. Inside it every Bash command is allowed without a rule, so the
 compound commands a skill composes (`mkdir -p .review && bash …`, `source .venv/bin/activate &&
 pytest`, a heredoc) run as they would for a person. A command that fails in the sandbox is not
 retried outside it, and a session refuses to start where the sandbox cannot, rather than run
-unsandboxed. Sandboxed commands lose the environment variables `mcp.json` reads and `GH_TOKEN` and
-`GITHUB_TOKEN`, cannot read `~/.config/gh`, `~/.netrc` or `~/.git-credentials`, cannot write the
+unsandboxed. Sandboxed commands lose the environment variables `mcp.json` reads, `GH_TOKEN`,
+`GITHUB_TOKEN` and `SBX_FIXTURES`, cannot read `~/.config/gh`, `~/.netrc` or `~/.git-credentials`, cannot write the
 sandbox's `settings.json` or `mcp.json`, and get no answer from a git credential helper, which
 `sbx-claude` clears: a scenario's fetches read public repositories, and a command cannot push to a
 URL it names. Claude Code still sends some commands, such as a `for` loop, `eval` or one that

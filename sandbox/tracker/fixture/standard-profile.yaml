@@ -1,0 +1,13 @@
+ticket:
+  pattern: 'PROJ-\d+'
+  project: PROJ
+jira:
+  statuses:
+    - {name: New, next: ticket-draft, role: filed}
+    - {name: To Do, next: implement-change, role: approved}
+    - {name: Upcoming, next: implement-change}
+    - {name: Under Development, next: implement-change, role: implementation}
+    - {name: In Review, next: nothing}
+    - {name: Done, next: nothing, role: finished}
+    - {name: Abandoned, next: nothing, role: abandoned}
+  pr_statuses: [Under Development, In Review]
