@@ -15,7 +15,8 @@ window: <from YYYY-MM-DD>..<to YYYY-MM-DD>
 
 ## Head                                     steps 1, 2
 standard: <where it is stored>
-scope, one line per repository covered: <repo> · <the rules that reach it> · <threads read and diffs swept | archived and counted, threads not read | archived only, no rule reaches it>
+scope, one line per repository covered: <repo> · <the rules that reach it> · <comments read, threads analyzed and diffs swept | comments read, archived and counted | comments read and archived, no rule reaches it>
+skipped: <stage> · <reason>, one line per stage `revise_state.py check` printed as skipped
 records: <n> harvested · <n> missing (<the Missing-record alarm Dial, when it fires>) · <n> baseline
 cost: open-to-merge median <d>, longest <d> · <n> merged without a build · corrections: <n>, on <ids>
 agree rate by severity · share unanswered · share of agreed findings changed as asked

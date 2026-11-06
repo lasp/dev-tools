@@ -10,7 +10,9 @@ and in whatever words (`skills/revise/harvest.md`, "Clusters"), and writes the g
                    "held": "<a held candidate's title in the ledger>" | null}, ...]}
 
 Given that file with --clusters, the tally's printout with --tally (what `guidance_tally.py`
-printed, saved to a file) and, when a cluster names a held candidate, the ledger with --ledger,
+printed, saved to a file), for a standard covering several repositories each other repository's
+tally with --tally-from <repo>=<file>, its keys read `<repo>:s<n>-<i>` and its pull requests
+`<repo>/pr-NNNN`, as a note and a `prs:` line name them too, with this repository's name in --repo, and, when a cluster names a held candidate, the ledger with --ledger,
 this script refuses, one `refused · <where> · <why>` line per fault and exit 1:
 
 - a tally whose closing `items:` line is missing or counts its words otherwise than its lines, or a
@@ -37,7 +39,8 @@ such note a `not extracted` line, or it is refused, so no nomination is dropped 
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
-<id> · <login>, ...`, `priority · <id> · <low|medium|high> · <n> pull request(s)`, at the
+<id> · <login>, ...`, with --tally-from `repos · <id> · <repo>, ...`, the repositories its pull
+requests are in, `priority · <id> · <low|medium|high> · <n> pull request(s)`, at the
 Recurring ask Dial's counts in `standards/dials.md`, of its pull requests and, when it has
 people, those its continued held candidate's `prs:` line names, accumulated across revisions, and
 those of its `support` lines, an agent's finding the author changed as asked, then `asked · <id> ·
@@ -72,7 +75,7 @@ class Refused(Exception):
     """Input the clusters cannot be checked against."""
 
 
-def tally_lines(text: str) -> dict[str, dict]:
+def tally_lines(text: str, repo: str = "") -> dict[str, dict]:
     """The tally's clustered lines by key: word, pr, author, url and quote, each read by its
     place, the quote last, so a `·` in it splits nothing. Refused unless its last line counts what
     it lists."""
@@ -85,7 +88,8 @@ def tally_lines(text: str) -> dict[str, dict]:
                 raise Refused(f"a tally line with too few cells: {line[:80]}")
             counts[cells[0]] += 1
             if cells[0] != "covered":
-                out[cells[1]] = {"word": cells[0], "pr": cells[2], "author": cells[4], "kind": cells[5], "url": cells[url_at],
+                out[f"{repo}:{cells[1]}" if repo else cells[1]] = {
+                    "word": cells[0], "pr": f"{repo}/{cells[2]}" if repo else cells[2], "author": cells[4], "kind": cells[5], "url": cells[url_at],
                                  "quote": " · ".join(cells[url_at + 1:])}
         elif line.startswith("items: "):
             summary = dict(re.findall(r"(\w+): (\d+)", line))
@@ -97,17 +101,18 @@ def tally_lines(text: str) -> dict[str, dict]:
     return out
 
 
-NOTE = re.compile(r"(pr-\d{4,}) · (\S+) · (human|ai-drafted|bot) · \S.*|pasted (\S+) · ([^·]+?) · \S.*")
-NOMINATED = re.compile(r"(pr-\d{4,}) · \S+ · human · nominated (\d+): (\S.*)")
+PR = r"(?:[\w.-]+/)?pr-\d{4,}"
+NOTE = re.compile(rf"({PR}) · (\S+) · (human|ai-drafted|bot) · \S.*|pasted (\S+) · ([^·]+?) · \S.*")
+NOMINATED = re.compile(rf"({PR}) · \S+ · human · nominated (\d+): (\S.*)")
 
 
-def unextracted(text: str) -> set[tuple[str, str, str]]:
+def unextracted(text: str, repo: str = "") -> set[tuple[str, str, str]]:
     """The tally's nominations no item was taken from, as (pr-NNNN, comment id, text)."""
     out = set()
     for line in text.splitlines():
         cells = line.split(" · ")
         if cells[0] == "nominated" and len(cells) >= 7 and cells[4] == "not extracted":
-            out.add((cells[1], cells[2], " · ".join(cells[6:])))
+            out.add((f"{repo}/{cells[1]}" if repo else cells[1], cells[2], " · ".join(cells[6:])))
     return out
 
 
@@ -130,7 +135,7 @@ def held_titles(ledger: str) -> dict[str, set[str]]:
             out.setdefault(title, set())
         prs = re.match(r"\s*(?:[-*] )?prs: (.*)", line)
         if title is not None and prs:
-            out[title] |= {f"pr-{int(n):04d}" for n in re.findall(r"\bpr-(\d+)\b", prs[1])}
+            out[title] |= {f"{r}pr-{int(n):04d}" for r, n in re.findall(r"(?<![\w.-])((?:[\w.-]+/)?)pr-(\d+)\b", prs[1])}
     return out
 
 
@@ -219,12 +224,24 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--clusters", type=Path, required=True)
     p.add_argument("--tally", type=Path, required=True)
+    p.add_argument("--tally-from", action="append", default=[], metavar="REPO=FILE",
+                   help="another covered repository's tally; repeatable")
+    p.add_argument("--repo", help="this repository's name, needed with --tally-from")
     p.add_argument("--ledger", type=Path)
     args = p.parse_args(argv)
     try:
         clusters = json.loads(args.clusters.read_text())
         tally = args.tally.read_text()
         lines, nominations = tally_lines(tally), unextracted(tally)
+        if args.tally_from and not args.repo:
+            raise Refused("--tally-from needs --repo, this repository's name")
+        for given in args.tally_from:
+            repo, _, path = given.partition("=")
+            if not re.fullmatch(r"[\w.-]+", repo) or not path or repo == args.repo:
+                raise Refused(f"--tally-from {given!r} is not <another repository>=<its tally>")
+            other = Path(path).read_text()
+            lines.update(tally_lines(other, repo))
+            nominations |= unextracted(other, repo)
         headings = held_titles(args.ledger.read_text()) if args.ledger else None
         _, medium, high = priorities()
     except (OSError, json.JSONDecodeError, Refused) as e:
@@ -242,12 +259,15 @@ def main(argv: list[str] | None = None) -> int:
                  "support": sum(lines[k]["word"] == "support" for k in keys)}
         notes = [NOTE.fullmatch(n) for n in c["notes"]]
         prs = sorted({lines[k]["pr"] for k in keys if lines[k]["word"] != "support"}
-                     | {f"pr-{int(m[1][3:]):04d}" for m in notes if m[3] == "human"})
+                     | {m[1] for m in notes if m[3] == "human"})
         people = sorted({lines[k]["author"] for k in keys if lines[k]["word"] != "support"}
                         | {m[2] for m in notes if m[3] == "human"} | {m[5].strip() for m in notes if m[4]})
         print(f"cluster · {c['id']} · {c['kind']} · " + " · ".join(f"{w} {n}" for w, n in count.items())
               + f" · prs {len(prs)} · people {len(people)} · {c['principle']}")
         print(f"prs · {c['id']} · {', '.join(prs) or 'none'}")
+        if args.tally_from:
+            repos = sorted({pr.split("/")[0] if "/" in pr else args.repo for pr in prs})
+            print(f"repos · {c['id']} · {', '.join(repos) or 'none'}")
         print(f"people · {c['id']} · {', '.join(people) or 'none'}")
         earlier = headings[c["held"].rstrip(".")] if c["held"] and people else set()
         asked = set(prs) | earlier | ({lines[k]["pr"] for k in keys if lines[k]["word"] == "support"} if people else set())

@@ -99,23 +99,24 @@ scenarios:
     why: >-
       Runs revise prepare in a repository whose own standard covers three, with R-001 tagged for
       widgets and R-002 for widgets and gadgets, and no GitHub server, so it says what the run does
-      in each: widgets' threads read and swept, gadgets and sprockets archived and counted only,
-      their threads not read, and on stopping at the harvest it ends with that scope and that
-      nothing in the standard changed.
+      in each: every repository's comments read for guidance, widgets' threads analyzed and swept,
+      gadgets and sprockets archived and counted, and on stopping it ends with that scope, the
+      stages it skipped and why, and that nothing in the standard changed.
     turns:
       - /lasp-dev:revise prepare
     must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)", "mcp__*", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
     look_at: >-
       The fetch of origin fails offline and is said in one line; the adoption date comes from
       origin/main, which setup moved to the adoption commit. The scope list names the window and that the standard is this repository's standards/, then
-      one line per repository: widgets with R-001 and R-002, its threads read and diffs swept;
-      gadgets with R-002, archived and counted, its threads not read; sprockets with no rule,
-      archived only, not skipped. With no GitHub server the harvest stops as servers.md sets out,
-      and the last message gives the scope as planned at the start, the step it stopped at, and
-      that no rule, decision or document changed.
+      one line per repository: widgets with R-001 and R-002, its comments read, threads analyzed
+      and diffs swept; gadgets with R-002, comments read, archived and counted; sprockets with no
+      rule, comments read and archived, not skipped. The project's sources are read, or skipped
+      with the reason, first. With no GitHub server the harvest stops as servers.md sets out, and
+      the last message gives the scope as planned at the start, the step it stopped at, the
+      stages recorded as skipped, and that no rule, decision or document changed.
     expect:
       ends: success
-      says: ['(?i)gadgets[^\n]*(archive|count|no analyst|not read)', '(?i)sprockets[^\n]*(archive|count|no analyst|not read)', '(?i)widgets[^\n]*(swept|analy|threads (are )?read)']
+      says: ['(?i)gadgets[^\n]*(archive|count|comments)', '(?i)sprockets[^\n]*(archive|count|comments)', '(?i)widgets[^\n]*(swept|analy|threads (are )?read)']
       not_says: ['Harvest it too', '(?i)sprockets[^\n]*would count for nothing']
 
   - id: onboard-blanket-answer

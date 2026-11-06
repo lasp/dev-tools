@@ -213,6 +213,28 @@ class Clusters(unittest.TestCase):
         self.assertIn("refused · nominated 71 in pr-0107 · a note no `not extracted` tally line names: gamma", lines)
         self.assertIn("refused · nominated 71 in pr-0107 · not extracted, and a note in no cluster, not one: beta", lines)
 
+    def test_a_cluster_draws_on_every_covered_repository_s_tally(self):
+        other = self.dir / "gadgets.txt"
+        other.write_text("admit · s1-0 · pr-0101 · 21 · frank · rule · states a principle · g21 · Install it in CI.\n"
+                         "items: 1 · admit: 1 · covered: 0 · hold: 0 · support: 0 · not listed: 0 · nominated: 0\n")
+        clusters = self.two(items=["s1-0", "s1-2", "s1-3", "s1-4", "gadgets:s1-0"],
+                            notes=["gadgets/pr-0102 · gina · human · thread PRRT_g: install it"])
+        (self.dir / "clusters.json").write_text(json.dumps(clusters))
+        args = ["--clusters", str(self.dir / "clusters.json"), "--tally", str(self.dir / "tally.txt"),
+                "--ledger", str(self.dir / "rules.md")]
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = guidance_clusters.main([*args, "--repo", "widgets", "--tally-from", f"gadgets={other}"])
+        lines = out.getvalue().splitlines()
+        self.assertEqual(code, 0, lines)
+        self.assertIn("prs · C1 · gadgets/pr-0101, gadgets/pr-0102, pr-0101, pr-0104, pr-0106", lines)
+        self.assertIn("repos · C1 · gadgets, widgets", lines)
+        self.assertIn("repos · C2 · widgets", lines)
+        self.assertIn("priority · C1 · high · 5 pull requests", lines)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args, "--tally-from", f"gadgets={other}"]), 1)
+        self.assertIn("--tally-from needs --repo", out.getvalue())
+
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {
             "'s1-1' is no admit, hold or support line": self.two(items=["s1-0", "s1-1", "s1-2", "s1-3", "s1-4"]),

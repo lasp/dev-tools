@@ -412,7 +412,7 @@ Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admit
 
 ## The guidance clusters
 
-Version: 4
+Version: 5
 
 Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
 object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
@@ -427,7 +427,10 @@ ledger's held candidate it continues, its heading or the bold title its bullet o
 null. Every `admit`, `hold` and `support` line of the
 tally is in exactly one cluster; a cluster holds at least one item or note.
 
-`scripts/guidance_clusters.py --clusters <file> --tally <the tally's printout> [--ledger <ledger>]`
+`scripts/guidance_clusters.py --clusters <file> --tally <the tally's printout> [--ledger <ledger>]
+[--repo <this repository> --tally-from <repo>=<its tally> ...]`, the other covered repositories' tallies
+keyed `<repo>:s<n>-<i>` with pull requests `<repo>/pr-NNNN`, as their notes and `prs:` lines name them,
+adding a `repos · <id> · <repo>, ...` line per cluster (version 5),
 refuses, one `refused · <where> · <why>` line each and exit 1, a file of any other form, a key
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
@@ -1003,6 +1006,24 @@ after the terminology; `scripts/standard_index.py`, which lists each entry's id,
 agent guidance, its `seen` month.
 
 Pinned by: tests/test_entries_lint.py::test_well_formed_files_pass_and_count_their_entries
+
+## The revision's run state
+
+Version: 1
+
+Fields: `.review/revision/state.json`, `{"stages": {"<stage>": {"status": "done" | "skipped",
+"why": "<reason>" | null}}}`, the stages `sources`, `records`, `analysts`, `guidance`, `sweep`,
+`clusters`, `bar` and `checks`. `scripts/revise_state.py start` removes it; `done <stage>` and
+`skip <stage> <reason>` record a stage, a later record winning and a blank reason refused; `check`
+prints `unrecorded · <stage>` per stage not recorded and exits 1, or `skipped · <stage> · <reason>`
+per skipped stage, in order, then `stages: <n> done · <n> skipped`, and exits 0. An unknown stage
+or command, or a file of another form, exits 2.
+
+Writers: `scripts/revise_state.py`, run by `revise` `prepare` after each stage. Readers: `prepare`
+step 10, which writes the report only once `check` passes and puts its `skipped` lines under
+"Head".
+
+Pinned by: tests/test_revise_state.py::test_the_report_waits_until_every_stage_is_done_or_skipped_with_its_reason
 
 ## The analysis blocks
 

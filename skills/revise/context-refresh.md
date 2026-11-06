@@ -1,8 +1,8 @@
 # Refresh the context
 
-Step 8 of `revise`'s `prepare.md`, loaded when the repository has `context/` entries
-or a page or epic was named. Its proposals go under the report's "Proposals", and the
-unreachable, unrefreshable and new pages under "Context".
+Read by `revise`'s `prepare.md` first, as "Then read the project's sources" says, before any
+harvest. Its proposals go under the report's "Proposals" at step 8, and the unreachable,
+unrefreshable and new pages under "Context".
 
 Candidates only: no entry under `context/` is edited here. For each
 entry, from the `Source:` and `Read:` lines `context/README.md` defines:

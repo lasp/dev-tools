@@ -11,8 +11,10 @@ Run `pr-reader` in `harvest` mode, given this repository and the first day the c
 writes each merged pull request's dump to `.review/harvest/threads/pr-NNNN/` and its record to
 `.review/harvest/records/pr-NNNN.yaml`. Given another repository, it writes the same directories,
 emptied first, so the caller copies those records away before the next harvest and harvests this
-repository last; the sections below read this repository's records alone, since they read its
-code.
+repository last; "Analysts" and "The bar" read this repository's records alone, since they read its code;
+"Guidance" runs on each covered repository's comment lists, before its harvest's directories are
+emptied, into `.review/harvest/guidance/<repo>/` for another repository, and "Clusters" pools
+them all.
 
 Then run `python3 "<plugin root>/scripts/comment_list.py"` with each of this repository's dumps,
 `.review/harvest/threads/pr-NNNN/`, which writes `comment-list.json` in each: every comment,
@@ -92,7 +94,10 @@ one pull request's still counts toward the Recurring ask Dial, and each pasted n
 <file> · <name> · <the ask>`; and the title of the ledger's held candidate it continues, when one
 states the same principle, so the evidence of earlier revisions joins it. Then run `python3
 "<plugin root>/scripts/guidance_clusters.py" --clusters .review/harvest/clusters.json --tally
-.review/harvest/guidance/tally.txt --ledger <the ledger>`; on its `refused` lines, correct the file
+.review/harvest/guidance/tally.txt --ledger <the ledger>`, adding, for a standard covering
+several repositories, `--repo <this repository> --tally-from <repo>=.review/harvest/guidance/<repo>/tally.txt`
+for each other, whose tally lines are keyed `<repo>:s<n>-<i>` and pull requests `<repo>/pr-NNNN`
+in the clusters file, its notes and the ledger's `prs:` lines; on its `refused` lines, correct the file
 and run it again. Its printout is the clusters the caller reads: each one's pull requests, people
 and clearest quotes, counted by the script, never by hand: its pull requests are those a person
 asked on, which the Recurring ask Dial counts, and a cluster whose people are none, all its words
