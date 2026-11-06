@@ -157,6 +157,15 @@ class Tally(unittest.TestCase):
         self.assertEqual((code, out), (2, []))
         self.assertIn("pr-0007: no line for C-3", err)
 
+    def test_a_scripted_claim_is_owed_by_no_probe(self):
+        self.write("pr-0007.md", SWEEP_7)
+        code, out, err = self.run_it("sweep", "pr-0007",
+                                     claims=CLAIMS + "\n### C-3 · README.md:4 · every change · script: template\n\nA claim.\n")
+        self.assertEqual(code, 0, err)
+        code, out, err = self.run_it("sweep", "pr-0007", claims=CLAIMS + "\n### C-3 · README.md:4 · every change · scripted\n")
+        self.assertEqual((code, out), (2, []))
+        self.assertIn("is not `### C-n · <path>:<line> · every change|code[ · script: <check>]`", err)
+
     def test_an_every_change_claim_is_owed_only_by_the_pull_requests_opened_after_its_document(self):
         self.write("pr-0007.md", SWEEP_7)
         self.write("pr-0012.md", SWEEP_12.replace("C-1 · not judged · no description\n", ""))

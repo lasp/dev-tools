@@ -4,7 +4,8 @@
 `analysis <dir> pr-NNNN [...]` reads the named pull requests' `pr-NNNN.md`, each a `thread-analyst`
 wrote under `.review/harvest/analysis/`; `sweep --claims <claims.md> [--merges <file>] <dir>
 pr-NNNN [...]` each a `diff-probe` wrote under `.review/revision/sweep/`, every block judging every
-`C-n` claim the claims file heads, except an `every change` claim whose document's `doc` line in
+`C-n` claim the claims file heads, except one marked ` · script: <check>`, which
+`scripts/drift_checks.py` judges, and an `every change` claim whose document's `doc` line in
 `--merges`, `scripts/window_merges.py`'s printout, does not name that pull request. Any other file in the directory, such as a block an earlier run left, is not
 read. docs/contracts.md's "The analysis blocks" and "The sweep blocks" give both forms and both
 printouts.
@@ -152,9 +153,10 @@ def sweep(folder: Path, prs: list[str], claims: Path | None, merges: Path | None
     if merges is not None and not merges.is_file():
         raise CannotRun(f"no merges file {merges}")
     text = claims.read_text()
-    documented = re.findall(r"^### (C-\d+) · (.+?):\d+ · (every change|code)$", text, re.M)
-    if len(documented) != len(re.findall(r"^### C-\d+\b", text, re.M)):
-        raise CannotRun(f"{claims}: a `### C-n` heading is not `### C-n · <path>:<line> · every change|code`")
+    headings = re.findall(r"^### (C-\d+) · (.+?):\d+ · (every change|code)( · script: \w+.*)?$", text, re.M)
+    if len(headings) != len(re.findall(r"^### C-\d+\b", text, re.M)):
+        raise CannotRun(f"{claims}: a `### C-n` heading is not `### C-n · <path>:<line> · every change|code[ · script: <check>]`")
+    documented = [(cid, path, kind) for cid, path, kind, scripted in headings if not scripted]
     after = opened_after(merges) if merges else None
     for cid, path, kind in documented:
         if after is not None and kind == "every change" and path not in after:

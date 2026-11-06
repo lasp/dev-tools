@@ -150,18 +150,28 @@ record `sources`.
    developer docs, each a statement a merged change, its commits or its description can follow or
    break, as `### C-n · <path>:<line> · every change` when it asks something of every pull request,
    or of every one that makes a kind of change, or `· code` when it governs how code is written,
-   and the claim in one line. Show the `C-` claims and ask once: **Sweep these** (Recommended),
+   and the claim in one line. A claim a script can judge carries ` · script: <check>` after that:
+   `template` for a line of the pull request template, its path the template's; `changelog <file>
+   <path>[,<path>]` for an entry a change to that code owes; `todo` for a TODO that names its
+   ticket; `history` for a comment that says how the code used to be (`<plugin
+   root>/scripts/drift_checks.py`). Show the `C-` claims, each with its check or none, and ask once: **Sweep these** (Recommended),
    **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**, removing from
    the claims file every `C-` claim the answer drops. With `every change` claims kept, rerun the
    script adding `--dumps .review/harvest/threads/` and a `--doc <path>` for each document they
    cite, writing its output to `.review/revision/merges.txt`, so each is judged only on the pull
    requests opened after its document reached `main`; an exit 2 on that rerun drops the `every
-   change` claims from the claims file, with its line under "Practice". Then one `diff-probe` per
-   merged pull request the script listed, past thirty the thirty merged most recently, launched as
+   change` claims from the claims file, with its line under "Practice". Run `python3 "<plugin
+   root>/scripts/drift_checks.py" --repo . --claims .review/revision/claims.md --merges
+   .review/revision/merges.txt --dumps .review/harvest/threads/`, with `--ticket-pattern` the
+   profile's `ticket.pattern` for a `todo` claim; it judges every scripted claim on every pull
+   request it is owed by, with no agent, and prints the lines `block_tally.py` prints, which
+   "Practice" takes the same way; an exit 2 leaves those claims to the probes, its line under
+   "Practice". Then, when a rule or a claim with no check is owed, one `diff-probe` per
+   merged pull request the script listed, at most five, the five merged most recently, launched as
    harvest.md's "Analysts" launches agents, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
    each `every change` claim whose document's `doc <path>: pr-…` line names it, never one under
-   its `predates` or `no opened day`, and every `code` claim, and the path
+   its `predates` or `no opened day`, and every `code` claim, none of them scripted, and the path
    `.review/revision/sweep/pr-NNNN.md`, where it writes its block and returns `wrote <path>`.
    Never repeat a block: a probe that returns `write failed: <error>` could not write it, and you
    write the block that follows that line, without it, to its path. Then run `python3 "<plugin
@@ -175,7 +185,7 @@ record `sources`.
    with a record in which no finding cites the claim's rule, any break on such a pull request for
    a `C-` claim. Then the rules the script printed as `not swept: no scope`, the `predates` lines,
    each `doc` line's `predates`, `no opened day` and `not on` pull requests or document,
-   the pull requests past thirty, and each pull request step 1's harvest listed in the window that
+   the pull requests past five not probed, and each pull request step 1's harvest listed in the window that
    the script did not, as `not swept: no merge subject`.
    Record `records` once every repository's harvest is archived, and at step 2 `analysts`,
    `sweep` and `guidance`, the last skipped, naming them, when any repository's guidance did not

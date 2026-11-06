@@ -372,6 +372,14 @@ where the rule before, two pull requests or two people high and one statement me
 20 medium and 1 low. The 20 said once move from medium to low; recall is unchanged, since the
 Dials read nothing the extractor does.
 
+The sweep, under `scripts/drift_checks.py` of 2026-11-06, on the private reference window of 22
+merged pull requests: the agent sweep marked the two pull request template claims broken 30
+times, mostly on pull requests opened before the template existed. The script judges them only on
+the 7 opened after it, and finds the sweep's one break of the first and two of its three of the
+second; the third turned on what the section said, which only a reader judges. With probes run
+only for the rules and claims no script judges, at most five, and `rule-probe` only on request,
+the run's probes fall from 34 to at most 5.
+
 On the private month, the key was drafted by agents, and the extractor's quotes were all in their
 comments (631 of 631); 4 of the key's 117 quotes could not be found in their comments, which
 leaves those labels unfound. A judge read most of the general items no label held, 127 of 164 at
