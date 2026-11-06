@@ -720,6 +720,30 @@ def resolve(repo: str, root: Path, detect: bool = True) -> dict:
     return resolve_here(repo, root, found, mine)
 
 
+def ticket_named(value: str, tracker, pattern: str) -> str:
+    """The ticket a pull request body's `Ticket:` line names, `value` being the text after
+    `Ticket:`, or empty for none. The key is read only where the value starts, after a Markdown
+    link's `[`, so `none — split from #68` names none. On a GitHub tracker, `tracker` being the
+    profile's `issue_tracker`, the key is the issue's number, written `#<n>` when its `location` is
+    `none` and `<location>#<n>` otherwise; on any other, the key in `pattern`. Raises ValueError on
+    a GitHub tracker for a value that starts with another repository's issue, or with a key such as
+    `PROJ-9`, rather than read it as naming none."""
+    v = value.strip().removeprefix("[")
+    if tracker == NOT_RECORDED or tracker["kind"] != "github":
+        m = re.match(rf"({pattern})\b", v)
+        return m.group(1) if m else ""
+    location = tracker["location"]
+    m = re.match(r"([\w.-]+/[\w.-]+)?#(\d+)\b", v)
+    if m and (m.group(1) or "none").lower() == location.lower():
+        return m.group(2)
+    own = "#<n>" if location == "none" else f"{location}#<n>"
+    if m:
+        raise ValueError(f"the Ticket: line names {m.group(0)}; the tracker's issues are written {own}")
+    if (k := re.match(r"[A-Z][A-Z0-9_]*-\d+\b", v)):
+        raise ValueError(f"the Ticket: line names {k.group(0)}, but the tracker is GitHub's, whose issues are written {own}")
+    return ""
+
+
 def render(v) -> str:
     if isinstance(v, bool):
         return "true" if v else "false"

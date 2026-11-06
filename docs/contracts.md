@@ -464,7 +464,7 @@ Pinned by: tests/test_record.py::test_a_judgment_outside_what_the_words_leave_op
 
 ## The local facts
 
-Version: 9
+Version: 10
 
 Fields: `hooks/where.sh --fields`, one `name=value` per line: `ticket`, `branch` (empty with
 none, a detached HEAD included; version 5), `context` (the ticket's context page as an absolute path, or empty; version 5), `plan`
@@ -492,7 +492,11 @@ number: a match is reduced to its digits, `ticket=59`, its plan
 `.review/implementation-plan-59.md`, a context page headed `# #59 · …` is its page, and the
 session-start line shows it as `#59`; the pattern is the `ticket.pattern` the standard records,
 never one detected from the history, and with none it is `(issue-)?\d+`, so `59-x`, `issue-59-x` and `feature/59-x` give `59`. A Jira tracker, or none,
-reads the pattern as recorded (version 9). The files are read from the
+reads the pattern as recorded (version 9). On a GitHub tracker a branch's number is followed by
+`-`, `_` or the name's end and is not a date's year, so `release/1.2.0`, `2fa-x`, `123abc` and
+`2026-11-06-x` name no issue, while `hotfix/3`, a number that is the whole last component, names
+issue 3; and `--ticket` takes the bare number, `--ticket 7`, as well as a key in the pattern
+(version 10). The files are read from the
 repository's top level, wherever in it the command runs (version 5). The lines print with or without
 `.review/`; a key outside the profile's pattern, another argument, no `jq`, or a reopened line
 that is not `Reopened: <id> · <clause>` exits 1.
@@ -504,7 +508,7 @@ Pinned by: tests/test_where.sh::"--fields prints the facts, one per line, on a c
 
 ## The next phase
 
-Version: 5
+Version: 6
 
 Fields: `scripts/next_phase.py`'s printout: `phase:` (a skill, or `nothing`), `argument:`,
 `why:` (the row's name in the script's table, `review-unposted` among them from version 3), `lock:`
@@ -519,10 +523,12 @@ nothing`, `argument: <slug>`, `why: unfiled`, whose second line names
 ticket-closed`; an open one with no label the profile's `issue_tracker.statuses` maps is `why:
 ticket-draft`, and one with a mapped label goes to that label's `next`, a label in
 `issue_tracker.pr_statuses` needing the state block as a Jira status there does. Two mapped
-labels, `--ticket-status` on a GitHub tracker, `--issue-state` on any other, and `--label`
-without `--issue-state` exit 1. The state block's `ticket: Ticket: #<n>` names issue `<n>`; the
-first line writes an issue as `#<n>`, `argument:` as the number. The `unfiled` and
-`ticket-closed` lines name the tracker, not Jira.
+labels and `--label` without `--issue-state` exit 1. The first line writes an issue as `#<n>`,
+`argument:` as the number. The `unfiled` and `ticket-closed` lines name the tracker, not Jira.
+Version 6: `--ticket-status` on a GitHub tracker and `--issue-state` on any other exit 1 whichever
+row decides; the state block's `ticket: Ticket: …` line is read as "The record" reads a body's
+`Ticket:` line, its refusal an exit 1; and the first line names a pull request whose number is
+the issue's.
 
 Writers: `scripts/next_phase.py`. Readers: `work`.
 
@@ -715,9 +721,14 @@ names, first line `contract: 13`. This section is the one
 place the fields are defined; the records directory's own README says how the revision
 reads them.
 
-- `pr`, the number; `ticket`, the key on the body's `Ticket:` line in the profile's ticket
-  pattern, or, where the profile's tracker is GitHub's, the number of the line's `#<n>`, whatever
-  the pattern; or `none`.
+- `pr`, the number; `ticket`, the key the body's `Ticket:` line starts with, after a Markdown
+  link's `[`, so `Ticket: none — split from #68` is `none`: a key in the profile's ticket pattern;
+  or, where the profile's tracker is GitHub's, whatever the pattern, the issue's number, written
+  `#<n>` when `issue_tracker.location` is `none` and `<location>#<n>` otherwise; or `none`. On a
+  GitHub tracker a line that starts with another repository's `<owner/repo>#<n>`, or a bare `#<n>`
+  when the location names one, or a key such as `PROJ-9`, is refused, as a refused profile is,
+  rather than recorded as `none`. `scripts/profile.py`'s `ticket_named` is the one reading, which
+  `scripts/next_phase.py` shares.
 - `stack`, `{part, of, base}` from that line's `part k of n · base: <branch>`, and `claims`, the
   list on the body's `Claims:` line, the criteria this part claims; each `none` when absent.
 - `branch`, the head branch; `head`, the commit the last findings review reviewed, or the merge

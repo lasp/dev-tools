@@ -393,9 +393,10 @@ class Rows(unittest.TestCase):
                 self.assertIn("phase: ticket-draft\n", out)
                 self.assertIn(f"PROJ-7 is {status}, and no workflow is recorded", out)
 
-    def github(self, labels: str, pr_statuses: str = "[]") -> None:
+    def github(self, labels: str, pr_statuses: str = "[]", location: str = "") -> None:
         """This test's working directory: a repository whose standard records a GitHub tracker
-        mapping `labels`, under a plugin top level with the default profile alone."""
+        mapping `labels`, at `location` when given, under a plugin top level with the default
+        profile alone."""
         plugin = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, plugin)
         (plugin / "scripts").mkdir()
@@ -405,7 +406,8 @@ class Rows(unittest.TestCase):
         repo = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, repo)
         (repo / "standards").mkdir()
-        (repo / "standards/profile.yaml").write_text(f"issue_tracker:\n  kind: github\n  statuses:{labels}\n  pr_statuses: {pr_statuses}\n")
+        at = f"  location: {location}\n" if location else ""
+        (repo / "standards/profile.yaml").write_text(f"issue_tracker:\n  kind: github\n{at}  statuses:{labels}\n  pr_statuses: {pr_statuses}\n")
         git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@example.org"]
         for args in (["init", "-q"], ["remote", "add", "origin", "git@github.com:example-org/github.git"], ["commit", "-q", "--allow-empty", "-m", "x"]):
             subprocess.run(git + args, check=True)
@@ -469,6 +471,7 @@ class Rows(unittest.TestCase):
         self.github(self.LABELS)
         issue = self.fields(context="", ticket="59")
         self.assertEqual(self.run_it(issue, None, "--ticket-status", "ready")[0], 1)
+        self.assertEqual(self.run_it(self.fields(ticket="59"), None, "--ticket-status", "ready")[0], 1)
         self.assertEqual(self.run_it(issue, None, "--label", "ready")[0], 1)
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             next_phase.main(["--fields", str(issue), "--issue-state", "shut"])
@@ -477,18 +480,45 @@ class Rows(unittest.TestCase):
 
     def test_issue_state_on_a_jira_tracker_is_refused(self):
         self.assertEqual(self.run_it(self.fields(context=""), None, "--issue-state", "open")[0], 1)
+        self.plan.write_text(PLAN)
+        # Whichever row decides: a context page here, or a pull request's rows.
+        self.assertEqual(self.run_it(self.fields(), None, "--issue-state", "open")[0], 1)
+        self.assertEqual(self.run_it(self.fields(), state([]), "--issue-state", "open")[0], 1)
         self.assertEqual(self.why(self.fields(context=""), None, "--ticket-status", "To Do"), ("implement-change", "ticket-to-do"))
 
+    def test_a_jira_ticket_line_names_the_key_it_starts_with(self):
+        self.assertEqual(next_phase.read_state(state([], ticket="PROJ-7 · fixes #59"))["ticket"], "PROJ-7")
+        for line in ("none, tooling work", "none — split from #68", "none — split from PROJ-68", "#59 · x"):
+            with self.subTest(line=line):
+                self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "")
+
     def test_a_pull_request_body_naming_a_github_issue_gives_its_number(self):
+        self.github(" []")
         for line in ("#59 · part 1 of 2 · base: main", "[#59](https://github.com/o/r/issues/59) · x"):
             with self.subTest(line=line):
                 self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "59")
-        self.assertEqual(next_phase.read_state(state([], ticket="PROJ-7 · fixes #59"))["ticket"], "PROJ-7")
-        self.assertEqual(next_phase.read_state(state([], ticket="none, tooling work"))["ticket"], "")
+        for line in ("none, tooling work", "none — split from #68"):
+            with self.subTest(line=line):
+                self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "")
+        for line, says in (("PROJ-7 · fixes #59", "names PROJ-7, but the tracker is GitHub's"), ("other/r#59 · x", "names other/r#59")):
+            with self.subTest(line=line), self.assertRaisesRegex(next_phase.Refused, says):
+                next_phase.read_state(state([], ticket=line))
         rc, out = self.run_it(self.fields(ticket="59", branch="59-x"), state([], ticket="#59"), "--pr", "7")
         self.assertEqual(rc, 0, out)
         self.assertIn("\n#59 · pull request #7 · every thread answered\n", out)
         self.assertEqual(self.run_it(self.fields(ticket="58", branch="58-x"), state([], ticket="#59"), "--pr", "7")[0], 1)
+
+    def test_a_github_tracker_elsewhere_names_its_issues_by_its_repository(self):
+        self.github(" []", location="o/tracker")
+        self.assertEqual(next_phase.read_state(state([], ticket="o/tracker#59 · x"))["ticket"], "59")
+        with self.assertRaisesRegex(next_phase.Refused, "names #59; the tracker's issues are written o/tracker#<n>"):
+            next_phase.read_state(state([], ticket="#59 · x"))
+
+    def test_the_first_line_names_a_pull_request_whose_number_is_the_issues(self):
+        self.github(" []")
+        rc, out = self.run_it(self.fields(ticket="59", branch="59-x"), state([], ticket="#59", n=59), "--pr", "59")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("\n#59 · pull request #59 · every thread answered\n", out)
 
     def test_a_drafted_ticket_not_filed_stops_and_names_the_file_to_file(self):
         rc, out = self.run_it(self.fields(context="", ticket="", slug="retry-policy"))

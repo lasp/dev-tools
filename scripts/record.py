@@ -195,18 +195,20 @@ def ticket_pattern(repo: str) -> str:
 
 
 def ticket_key(repo: str, line: str) -> str:
-    """The ticket the body's `Ticket:` line names, or `none`: on a GitHub tracker the issue's
-    `#<n>`, recorded as its number, whatever the pattern; otherwise the key in the profile's pattern."""
+    """The ticket the body's `Ticket:` line names, or `none`, as profile.py's `ticket_named` reads
+    it: on a GitHub tracker the issue's number, whatever the pattern; otherwise the key in the
+    profile's pattern. A line that names the wrong tracker's key is refused."""
     profile = load_profile()
     try:
         tracker = profile.defaults(ROOT, repo)["issue_tracker"]
     except (profile.ProfileError, OSError) as e:
         raise Unsupported(f"the profile is refused: {e}") from e
-    if tracker != profile.NOT_RECORDED and tracker["kind"] == "github":
-        t = re.search(r"(?<![\w&])#(\d+)\b", line)
-    else:
-        t = re.search(rf"\b({ticket_pattern(repo)})\b", line)
-    return t.group(1) if t else "none"
+    github = tracker != profile.NOT_RECORDED and tracker["kind"] == "github"
+    try:
+        t = profile.ticket_named(line, tracker, "" if github else ticket_pattern(repo))
+    except ValueError as e:
+        raise Unsupported(str(e)) from e
+    return t or "none"
 
 
 def is_bot(login: str) -> bool:
