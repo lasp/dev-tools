@@ -12,11 +12,12 @@ writes each merged pull request's dump to `.review/harvest/threads/pr-NNNN/` and
 `.review/harvest/records/pr-NNNN.yaml`. Given another repository, it writes the same directories,
 emptied first, so the caller copies those records away before the next harvest and harvests this
 repository last; "Analysts" and "The bar" read this repository's records alone, since they read its code;
-"Guidance" runs on each covered repository's comment lists, before its harvest's directories are
-emptied, into `.review/harvest/guidance/<repo>/` for another repository, and "Clusters" pools
-them all.
+"Guidance" runs on each covered repository's comment lists, before the next harvest empties its
+directories, into `<guidance>`: `.review/harvest/guidance/` for this repository and
+`.review/harvest/guidance-<repo>/` for another, so neither run removes the other's; "Clusters"
+pools them all.
 
-Then run `python3 "<plugin root>/scripts/comment_list.py"` with each of this repository's dumps,
+Then run `python3 "<plugin root>/scripts/comment_list.py"` with each of the harvest's dumps,
 `.review/harvest/threads/pr-NNNN/`, which writes `comment-list.json` in each: every comment,
 replies and review summaries included, with its own authorship (`docs/contracts.md`, "The
 comment list"). An exit 1 stops the step with its line.
@@ -48,14 +49,14 @@ was not read.
 
 ## Guidance
 
-Read every comment for guidance, apart from how its thread was settled. First remove
-`.review/harvest/guidance/`, since its slices are numbered afresh. Then cut this repository's
-comment lists, each `.review/harvest/threads/pr-NNNN/comment-list.json` "Records" wrote, into
+Read every comment for guidance, apart from how its thread was settled, for the repository just
+harvested, into its `<guidance>` ("Records"). First remove that directory alone, since its slices
+are numbered afresh. Then cut the repository's comment lists, each `.review/harvest/threads/pr-NNNN/comment-list.json` "Records" wrote, into
 slices of whole pull requests in order of number, each slice adding pull requests until the next
 would take it past 300 comments; a pull request of more than 300 is a slice alone. Run one
 `guidance-extractor` per slice, launched as "Analysts" launches agents, each given its slice's
 comment lists, the standard's ledger, its decisions file, its agent guidance and data conventions
-files and the instruction file, each path or `none`, and the path `.review/harvest/guidance/slice-<n>.json`, n from 1. Never repeat a slice's
+files and the instruction file, each path or `none`, and the path `<guidance>/slice-<n>.json`, n from 1. Never repeat a slice's
 JSON: an extractor that returns `write failed: <error>` could not write it, and you write the JSON
 that follows that line, without it, to its path.
 
@@ -68,7 +69,7 @@ still refused, after it went back once, is not read: check again without it and 
 lists, and name its pull requests and its lines with what was not read, with each `nominated`
 entry of those lists, its comment id, author and URL, since a nomination needs no extractor. The printout of the
 check that passes is the guidance's count. Then run `python3 "<plugin root>/scripts/guidance_tally.py"`
-with the same slices and lists, writing its printout to `.review/harvest/guidance/tally.txt`: its
+with the same slices and lists, writing its printout to `<guidance>/tally.txt`: its
 `admit`, `covered`, `hold` and `support` lines, each with the comment's own words, and its
 `nominated` lines, one per line a person opened `For agents:` or `Standard:`, are what
 "Clusters" and the caller read (`docs/contracts.md`, "The guidance tally"). With
@@ -95,7 +96,7 @@ one pull request's still counts toward the Recurring ask Dial, and each pasted n
 states the same principle, so the evidence of earlier revisions joins it. Then run `python3
 "<plugin root>/scripts/guidance_clusters.py" --clusters .review/harvest/clusters.json --tally
 .review/harvest/guidance/tally.txt --ledger <the ledger>`, adding, for a standard covering
-several repositories, `--repo <this repository> --tally-from <repo>=.review/harvest/guidance/<repo>/tally.txt`
+several repositories, `--repo <this repository> --tally-from <repo>=.review/harvest/guidance-<repo>/tally.txt`
 for each other, whose tally lines are keyed `<repo>:s<n>-<i>` and pull requests `<repo>/pr-NNNN`
 in the clusters file, its notes and the ledger's `prs:` lines; on its `refused` lines, correct the file
 and run it again. Its printout is the clusters the caller reads: each one's pull requests, people

@@ -234,6 +234,22 @@ class Clusters(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as out:
             self.assertEqual(guidance_clusters.main([*args, "--tally-from", f"gadgets={other}"]), 1)
         self.assertIn("--tally-from needs --repo", out.getvalue())
+        self.assertIn("asked · C1 · gadgets/pr-0101, gadgets/pr-0102, widgets/pr-0101, widgets/pr-0104, widgets/pr-0106", lines)
+        for bad, why in ((f"widgets={other}", "is not <another repository>"), ("gadgets", "is not <another repository>")):
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(guidance_clusters.main([*args, "--repo", "widgets", "--tally-from", bad]), 1)
+            self.assertIn(why, out.getvalue())
+        (self.dir / "rules.md").write_text(LEDGER.replace("prs: pr-48, pr-0104", "prs: widgets/pr-48, gadgets/pr-0101"))
+        clusters["clusters"][0]["notes"] = ["gadget/pr-0102 · gina · human · thread PRRT_g: install it"]
+        (self.dir / "clusters.json").write_text(json.dumps(clusters))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args, "--repo", "widgets", "--tally-from", f"gadgets={other}"]), 1)
+        self.assertIn("a note names gadget, no repository given with --tally-from", out.getvalue())
+        clusters["clusters"][0]["notes"] = []
+        (self.dir / "clusters.json").write_text(json.dumps(clusters))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args, "--repo", "widgets", "--tally-from", f"gadgets={other}"]), 0)
+        self.assertIn("asked · C2 · gadgets/pr-0101, widgets/pr-0048, widgets/pr-0106", out.getvalue())
 
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {

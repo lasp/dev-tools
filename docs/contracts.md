@@ -960,8 +960,8 @@ Fields: the line `## Candidates below the criteria`, word for word, trailing whi
 in an adopting repository's `standards/review-rules.md`. Everything from it to the end of the
 file is the held candidates, each with its evidence and the criterion or check it fails, so the
 section is the ledger's last. Each candidate opens with a `### <title>` heading or a bullet `-
-**<title>**`, its bold title not a label ending `:`, and may carry a `kind: <kind>` line, its kind when not a rule, and a `prs: pr-NNNN,
-...` line, the merged pull requests its people asked on, with those whose agent findings the author
+**<title>**`, its bold title not a label ending `:`, and may carry a `kind: <kind>` line, its kind when not a rule, and a `prs: [<repo>/]pr-NNNN,
+...` line, each with its repository in a standard covering several, the merged pull requests its people asked on, with those whose agent findings the author
 changed as asked, accumulated across revisions, which `scripts/guidance_clusters.py` reads for a
 cluster's priority; a candidate without the line counts none (version 2). A `###` candidate's body
 opens no bullet with a bold title other than a label ending `:`, since that bullet would start a

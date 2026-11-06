@@ -12,7 +12,8 @@ and in whatever words (`skills/revise/harvest.md`, "Clusters"), and writes the g
 Given that file with --clusters, the tally's printout with --tally (what `guidance_tally.py`
 printed, saved to a file), for a standard covering several repositories each other repository's
 tally with --tally-from <repo>=<file>, its keys read `<repo>:s<n>-<i>` and its pull requests
-`<repo>/pr-NNNN`, as a note and a `prs:` line name them too, with this repository's name in --repo, and, when a cluster names a held candidate, the ledger with --ledger,
+`<repo>/pr-NNNN`, as a note and a `prs:` line name them too, with this repository's name in --repo,
+a `prs:` entry `<--repo>/pr-NNNN` read as this repository's and a note naming any other refused, and, when a cluster names a held candidate, the ledger with --ledger,
 this script refuses, one `refused · <where> · <why>` line per fault and exit 1:
 
 - a tally whose closing `items:` line is missing or counts its words otherwise than its lines, or a
@@ -44,8 +45,8 @@ requests are in, `priority · <id> · <low|medium|high> · <n> pull request(s)`,
 Recurring ask Dial's counts in `standards/dials.md`, of its pull requests and, when it has
 people, those its continued held candidate's `prs:` line names, accumulated across revisions, and
 those of its `support` lines, an agent's finding the author changed as asked, then `asked · <id> ·
-pr-NNNN, ...` or `none`, the pull requests it counted, which `apply` carries into the candidate's
-`prs:` line, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
+pr-NNNN, ...` or `none`, the pull requests it counted, each `<repo>/pr-NNNN` with --tally-from,
+which `apply` carries into the candidate's `prs:` line, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
 note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
@@ -147,8 +148,14 @@ def priorities() -> tuple[int, int, int]:
     return int(m[1]), int(m[2]), int(m[3])
 
 
+def norm(pr: str) -> str:
+    """A pull request as the tally names it: `pr-` and four digits at least, after any `<repo>/`."""
+    repo, _, number = pr.rpartition("/")
+    return f"{repo + '/' if repo else ''}pr-{int(number[3:]):04d}"
+
+
 def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None,
-          nominations: set[tuple[str, str, str]] = frozenset()) -> list[str]:
+          nominations: set[tuple[str, str, str]] = frozenset(), others: frozenset = frozenset()) -> list[str]:
     if not isinstance(clusters, dict) or set(clusters) != {"clusters"} or not isinstance(clusters["clusters"], list):
         return ["refused · clusters · not an object with a clusters list"]
     faults, seen, ids = [], {}, set()
@@ -178,6 +185,10 @@ def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None
         if not notes_ok:
             faults.append(f"refused · {where} · notes are not each `pr-NNNN · <login> · <human|ai-drafted|bot> · "
                           f"<text>` or `pasted <file> · <name> · <text>`")
+        if notes_ok:
+            stray = sorted({m[1].split("/")[0] for m in map(NOTE.fullmatch, c["notes"]) if m[1] and "/" in m[1]} - others)
+            if stray:
+                faults.append(f"refused · {where} · a note names {', '.join(stray)}, no repository given with --tally-from")
         if not isinstance(c["items"], list) or not (c["items"] or (notes_ok and c["notes"])):
             faults.append(f"refused · {where} · neither an item nor a note")
             continue
@@ -247,7 +258,11 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, json.JSONDecodeError, Refused) as e:
         print(f"refused · input · {e}")
         return 1
-    faults = check(clusters, lines, headings, nominations)
+    others = frozenset(given.partition("=")[0] for given in args.tally_from)
+    if headings and args.repo:
+        headings = {t: {p[len(args.repo) + 1:] if p.startswith(args.repo + "/") else p for p in prs}
+                    for t, prs in headings.items()}
+    faults = check(clusters, lines, headings, nominations, others)
     if faults:
         print("\n".join(faults))
         return 1
@@ -259,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
                  "support": sum(lines[k]["word"] == "support" for k in keys)}
         notes = [NOTE.fullmatch(n) for n in c["notes"]]
         prs = sorted({lines[k]["pr"] for k in keys if lines[k]["word"] != "support"}
-                     | {m[1] for m in notes if m[3] == "human"})
+                     | {norm(m[1]) for m in notes if m[3] == "human"})
         people = sorted({lines[k]["author"] for k in keys if lines[k]["word"] != "support"}
                         | {m[2] for m in notes if m[3] == "human"} | {m[5].strip() for m in notes if m[4]})
         print(f"cluster · {c['id']} · {c['kind']} · " + " · ".join(f"{w} {n}" for w, n in count.items())
@@ -273,7 +288,8 @@ def main(argv: list[str] | None = None) -> int:
         asked = set(prs) | earlier | ({lines[k]["pr"] for k in keys if lines[k]["word"] == "support"} if people else set())
         level = "high" if len(asked) >= high else "medium" if len(asked) >= medium else "low"
         print(f"priority · {c['id']} · {level} · {len(asked)} pull request{'' if len(asked) == 1 else 's'}")
-        print(f"asked · {c['id']} · {', '.join(sorted(asked)) or 'none'}")
+        qualified = sorted(p if "/" in p or not args.tally_from else f"{args.repo}/{p}" for p in asked)
+        print(f"asked · {c['id']} · {', '.join(qualified) or 'none'}")
         if c["held"]:
             print(f"held · {c['id']} · {c['held']}")
         for note in c["notes"]:

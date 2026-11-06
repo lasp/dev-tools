@@ -2,11 +2,12 @@
 """Record which stages of a revision's `prepare` ran, so its report is never written over a stage
 nobody accounted for (`skills/revise/prepare.md`; `docs/contracts.md`, "The revision's run state").
 
-The state is `.review/revision/state.json` under the directory given with --dir, the code
-repository's top level by default: `{"stages": {"<stage>": {"status": "done" | "skipped", "why":
+The state is `.review/revision/state.json` under the directory given with --dir, the current
+directory by default, which `prepare` runs from the code repository's top level: `{"stages": {"<stage>": {"status": "done" | "skipped", "why":
 "<reason>" | null}}}`. The stages, in the order `prepare` runs them:
 
-    sources    the project's sources: watched pages, design docs, epics, the year plan, decisions
+    sources    the project's sources: the context entries, the watched pages and the page or epic
+               named, and the decisions and terms they touch (`context-refresh.md`)
     records    every covered repository's records, harvested and archived
     analysts   this repository's threads, read by `thread-analyst`
     guidance   every covered repository's comments, read by `guidance-extractor`
@@ -56,7 +57,9 @@ def load(path: Path) -> dict:
         raise Refused(f"{path} is not JSON: {e}") from e
     stages = data.get("stages") if isinstance(data, dict) and set(data) == {"stages"} else None
     if not isinstance(stages, dict) or not all(
-            k in STAGES and isinstance(v, dict) and set(v) == {"status", "why"} and v["status"] in ("done", "skipped")
+            k in STAGES and isinstance(v, dict) and set(v) == {"status", "why"}
+            and ((v["status"] == "done" and v["why"] is None)
+                 or (v["status"] == "skipped" and isinstance(v["why"], str) and v["why"].strip()))
             for k, v in stages.items()):
         raise Refused(f"{path} is not a revision's run state")
     return stages

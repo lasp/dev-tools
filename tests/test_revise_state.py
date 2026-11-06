@@ -51,10 +51,14 @@ class State(unittest.TestCase):
                 self.assertEqual(code, 2)
                 self.assertIn(why, err)
         revise_state.path_in(self.dir).parent.mkdir(parents=True, exist_ok=True)
-        revise_state.path_in(self.dir).write_text('{"stages": {"sources": {"status": "maybe", "why": null}}}')
-        code, _, err = self.run_state("check")
-        self.assertEqual(code, 2)
-        self.assertIn("is not a revision's run state", err)
+        for bad in ('{"stages": {"sources": {"status": "maybe", "why": null}}}',
+                    '{"stages": {"sources": {"status": "skipped", "why": null}}}',
+                    '{"stages": {"sources": {"status": "done", "why": "ran"}}}'):
+            with self.subTest(bad=bad):
+                revise_state.path_in(self.dir).write_text(bad)
+                code, _, err = self.run_state("check")
+                self.assertEqual(code, 2)
+                self.assertIn("is not a revision's run state", err)
 
 
 if __name__ == "__main__":

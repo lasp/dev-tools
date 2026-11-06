@@ -169,9 +169,11 @@ conventions file then holds one entry pointing to it, so the knowledge has one h
 
 `revise` proposes rule changes from the evidence of merged pull requests. For a standard covering
 several repositories, it counts each rule's findings in every repository the rule reaches, so the
-whole project shapes whether a rule stays. It archives every covered repository's records, but
-reads only the threads of the repository it runs in, against that repository's code, so new rules
-come from that repository alone; ROADMAP.md tracks reading the others'. For a
+whole project shapes whether a rule stays. It archives every covered repository's records and
+reads every one's comments for guidance, clustered together, so a principle said in two
+repositories joins; its analysts and sweep read only the repository it runs in, against that
+code, and a rule drawn from another repository's evidence is marked "check from" that repository
+at the bar; ROADMAP.md tracks reading the others' threads. For a
 standard elsewhere it writes into a clone of the standard's repository, and its accepted changes
 are one pull request there; for a repository's own standard, they are one pull request in it.
 
