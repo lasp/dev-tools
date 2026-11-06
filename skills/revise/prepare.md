@@ -141,7 +141,8 @@ record `sources`.
    earlier one: `diff-probe` reads each description from that harvest's
    `.review/harvest/threads/pr-NNNN/pr.json`, which every harvest empties. First remove `.review/revision/sweep/`, `.review/revision/claims.md` and `.review/revision/merges.txt`, which a
    last revision may have left. Run `python3 "<plugin root>/scripts/window_merges.py" --repo .
-   --ref origin/main --since <the window's first day> --ledger <standard files>/review-rules.md`, which
+   --ref origin/main --since <the window's first day> --ledger <standard files>/review-rules.md`,
+   writing its output to `.review/revision/merges.txt`, which the rerun below replaces; it
    reads git only; the sweep fetches nothing, so it reads `origin/main` as the last fetch left it,
    and an exit 2 skips it, its line under "Practice". Write `.review/revision/claims.md`: each rule
    on a script line that names a pull request, as `### R-NNN · <title>`, its wording, the
@@ -163,10 +164,11 @@ record `sources`.
    change` claims from the claims file, with its line under "Practice". Run `python3 "<plugin
    root>/scripts/drift_checks.py" --repo . --claims .review/revision/claims.md --merges
    .review/revision/merges.txt --dumps .review/harvest/threads/`, with `--ticket-pattern` the
-   profile's `ticket.pattern` for a `todo` claim; it judges every scripted claim on every pull
-   request it is owed by, with no agent, and prints the lines `block_tally.py` prints, which
-   "Practice" takes the same way; an exit 2 leaves those claims to the probes, its line under
-   "Practice". Then, when a rule or a claim with no check is owed, one `diff-probe` per
+   profile's `ticket.pattern` for a `todo` claim, writing its output to
+   `.review/revision/drift.txt`; it judges every scripted claim on every pull request it is owed
+   by, with no agent, and prints the lines `block_tally.py` prints, which "Practice" takes the same
+   way. On an exit 2, its line goes under "Practice" and ` · script: …` comes off those claims'
+   headings, so the probes judge them. Then, when a rule or a claim with no check is owed, one `diff-probe` per
    merged pull request the script listed, at most five, the five merged most recently, launched as
    harvest.md's "Analysts" launches agents, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
@@ -263,8 +265,8 @@ record `sources`.
    **Tickets and documents.** Two kinds of proposal no Dial governs, marked like any other, and
    made below the Revision floor too, since they rest on no count of records:
    - `ticket/<slug>`, one per distinct problem still in the code: a thread step 2 lists as
-     `unanswered` with `diff: does not` whose analyst `by:` is `human`, a sweep `breaks` line of
-     a claim not marked `drift`, or a `tool/` proposal held for its violations on `origin/main`;
+     `unanswered` with `diff: does not` whose analyst `by:` is `human`, a sweep `breaks` line, a probe's or a
+     `break` line in `.review/revision/drift.txt`, of a claim not marked `drift`, or a `tool/` proposal held for its violations on `origin/main`;
      each only while `git grep -nF -e '<the line>' origin/main --
      <path>` still finds the line it names. Its evidence is the pull request and the thread id or
      `path:line`.

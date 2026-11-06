@@ -1084,7 +1084,8 @@ read:` line missing or repeated.
 
 A claim whose heading ends ` · script: <check> [<arg> ...]` is judged by `scripts/drift_checks.py`,
 `template`, `changelog <file> <path>[,<path>]`, `todo` or `history`, which prints the `claim` and
-`break` lines above from git and the dumps, with no block; `block_tally.py` owes it in no probe's
+`break` lines above from git and the dumps, with no block, its `break` line ending ` · <what>`, what
+it found, into `.review/revision/drift.txt`; `block_tally.py` owes it in no probe's
 block (version 2).
 Writers: `diff-probe`, at the path `revise` `prepare` step 2 gives it. Readers:
 `scripts/block_tally.py`, run by `prepare` step 2 for "Practice".
