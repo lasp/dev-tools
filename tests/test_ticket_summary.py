@@ -69,6 +69,16 @@ class Layouts(unittest.TestCase):
         self.assertEqual(read(text), NEW)
         self.assertIsNone(read(f"Original request (bob, 2026-02-02):\nPROJ-57 · {FILED}\nSummary: {FILED}\n"))
 
+    def test_a_banner_between_rules_ends_the_quoted_comment(self):
+        text = (f"----------- Comment to post -----------\nOriginal request\nPROJ-57 · {FILED}\n\n"
+                f'----------- Session comment -----------\nReworded: summary, "{FILED}" → "{NEW}"\n')
+        self.assertEqual(read(text), NEW)
+
+    def test_an_upper_case_label_ends_the_quoted_comment(self):
+        text = (f"COMMENT TO POST: the original request, by bob\nPROJ-57 · {FILED}\n\n"
+                f'FIELD CHANGES:\n- Summary: "{FILED}" → "{NEW}"\n')
+        self.assertEqual(read(text), NEW)
+
 
 class Forms(unittest.TestCase):
     def test_each_form_of_a_new_summary(self):
@@ -120,6 +130,9 @@ class Forms(unittest.TestCase):
         self.assertEqual(read("Summary: Sum the counts of a part listed twice, none dropped\n"),
                          "Sum the counts of a part listed twice, none dropped")
         self.assertIsNone(read("Field changes: three, none of them the summary\n"))
+        self.assertEqual(read(f"Field changes: none besides the summary\nSummary: {NEW}\n"), NEW)
+        self.assertEqual(read("Summary: Sum a part listed twice - kept as one entry\n"),
+                         "Sum a part listed twice - kept as one entry")
 
 
 class FollowUps(unittest.TestCase):
@@ -153,6 +166,10 @@ class FollowUps(unittest.TestCase):
     def test_a_follow_up_summary_that_names_the_key_in_its_value_stays_the_follow_ups(self):
         text = ("== Follow-up ticket ==\nSummary: Refuse negatives in total, as PROJ-57 does for by_part\n\n"
                 "== PROJ-57 ==\nSummary: " + NEW + "\n")
+        self.assertEqual(read(text), NEW)
+
+    def test_a_follow_up_label_that_names_the_key_stays_the_follow_ups(self):
+        text = f"Follow-up ticket\nSummary (follow-up to PROJ-57): Refuse a negative count in total\n\nSummary: {NEW}\n"
         self.assertEqual(read(text), NEW)
 
     def test_a_jira_list_item_does_not_end_a_follow_up(self):
@@ -230,6 +247,7 @@ class Verifies(unittest.TestCase):
         self.assertTrue(run("- Summary: unchanged\n"))
         self.assertFalse(run("Summary: Refuse every negative count in by_part\n"))
         self.assertFalse(run(f'- Summary: "{FILED}" → "{FILED}"\n'))
+        self.assertFalse(run(f'1. Summary: "{FILED}" -> "{FILED}"\n'))
         self.assertTrue(run(f"Links: relates to PROJ-12 (summary of work -> later)\nSummary: {FILED}\n"))
 
 

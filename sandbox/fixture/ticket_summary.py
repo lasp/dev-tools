@@ -23,8 +23,10 @@ A follow-up ticket's summary is skipped. A line of at most 120 characters that o
 block. The block ends at its first summary line, or at a heading with text (`## …`, `== … ==`) that
 opens no other follow-up; a bare rule, an `h1.` line or a Jira `#` list item ends nothing. A
 summary line whose label names the key, as `Summary (<key>):`, is the ticket's own, inside a block
-or not. A line that opens with `Comment to post` or `Original request` starts a section that quotes
-the ticket as filed, so nothing in it is read, up to the next heading or rule.
+or not, unless the label also names a follow-up. A line that opens with `Comment to post` or
+`Original request` starts a section that quotes the ticket as filed, so nothing in it is read, up
+to the next heading, rule, banner between rules (`----- Session comment -----`), upper-case
+label line (`FIELD CHANGES:`) or `Field changes` line.
 
 The first summary found is printed. With none, the summary a `<key> · <summary>` heading names,
 also as `Ticket: <key> · …` or `h1. <key> · …`, is printed. Otherwise nothing is printed and the
@@ -40,9 +42,12 @@ from pathlib import Path
 from typing import List, Optional
 
 FOLLOW_UP = re.compile(r"^[\s#=>|]*(?:\*\*)?(?:\d+[.)]\s*)?(?:new\s+|file\s+the\s+)?follow-?up\b", re.I)
+FOLLOW_UP_WORD = re.compile(r"follow-?up", re.I)
 HEADING = re.compile(r"^\s*(?:#{2,6}\s*\S|={2,}\s*[^\s=])")
 QUOTE_SECTION = re.compile(r"^[\s#=*>|-]*(?:\d+[.)]\s*)?(?:comment to post|original request)\b", re.I)
 RULE = re.compile(r"^\s*[-=]{3,}\s*$")
+BANNER = re.compile(r"^\s*[-=]{3,}\s*\S.*[-=]{3,}\s*$")
+UPPER_LABEL = re.compile(r"^[A-Z][A-Z ]{3,}:")
 LABEL = re.compile(
     r"^[\s*#=>|-]*(?:\d+\.\s*)?(?:(?:new|proposed)\s+)?"
     r"(?P<label>title \(the summary[^)]*\)|summary(?:\s+field)?)"
@@ -50,8 +55,8 @@ LABEL = re.compile(
     re.I,
 )
 FIELDS = re.compile(r"^[\s*#=-]*(?:\d+\.\s*)?fields?(?:\s+changes?)?\s*=*\s*(?::\s*(?P<v>.*))?$", re.I)
-KEPT = re.compile(r"^[\W_]*(?:unchanged|kept|none|no change)\b", re.I)
-KEPT_TAIL = re.compile(r"(?:\(\s*(?:unchanged|kept)\b[^)]*\)|\s[—–-]+\s*(?:unchanged|kept)\b.*)\s*$", re.I)
+KEPT = re.compile(r"^[\W_]*(?:unchanged|kept|(?:none|no change)(?=\s*(?:[.,;:()]|$)))", re.I)
+KEPT_TAIL = re.compile(r"(?:\(\s*(?:unchanged|kept)\b[^)]*\)|\s[—–]+\s*(?:unchanged|kept)\b.*)\s*$", re.I)
 QUOTED = re.compile(r'["“`](?P<now>[^"”`]+)["”`]\s*(?:→|->|\bto\b)\s*["“`](?P<after>[^"”`]+)["”`]')
 ARROW = re.compile(r"\s*→\s*|\s->\s")
 WAS = re.compile(r"\s*\((?:was:?|changed from)\b.*\)\s*$", re.I)
@@ -111,7 +116,7 @@ def summary(text: str, key: str, filed: str) -> Optional[str]:
             quoting = True
             continue
         if quoting:
-            if HEADING.match(line) or RULE.match(line):
+            if HEADING.match(line) or RULE.match(line) or BANNER.match(line) or UPPER_LABEL.match(line) or FIELDS.match(line):
                 quoting = False
             else:
                 continue
@@ -121,7 +126,7 @@ def summary(text: str, key: str, filed: str) -> Optional[str]:
         label = LABEL.match(line)
         if label:
             qualifier = re.match(r"\s*\([^)]*\)", label.group("rest"))
-            own = bool(qualifier) and key in qualifier.group(0)
+            own = bool(qualifier) and key in qualifier.group(0) and not FOLLOW_UP_WORD.search(qualifier.group(0))
             if follow_up and not own:
                 follow_up = False
                 continue

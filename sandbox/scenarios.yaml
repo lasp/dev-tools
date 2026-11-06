@@ -288,7 +288,7 @@ scenarios:
     verify:
       - test -f .review/context/PROJ-57.jira.txt
       - "out=$(python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part'); [ -z \"$out\" ] || printf '%s\\n' \"$out\" | grep -qiE '^Refuse a negative count in \\W*by_part\\W*$'"
-      - "! grep -qiE '^[[:space:]*#=|>-]*(new |proposed )?summary[^,;]*(→|->)' .review/context/PROJ-57.jira.txt"
+      - "! grep -qiE '^[[:space:]*#=|>-]*([0-9]+\\. *)?(new |proposed )?summary[^,;]*(→|->)' .review/context/PROJ-57.jira.txt"
     expect:
       ends: success
       files: [".review/context/PROJ-57.jira.txt"]
