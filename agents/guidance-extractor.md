@@ -40,6 +40,9 @@ that make the same point are one item, two points are two. Not guidance: thanks,
 ("ready for another look"), a question asking only for information, a report that something was
 done, a restatement of the comment being answered, and a verdict word alone (`Agree`, `Disagree`).
 An answer that gives a reason, such as "No: we never fall back to a cached product", is guidance.
+An ask to keep a point, "+1, worth adding to our conventions", is guidance even when the point is
+in the comment it answers: quote the ask's own words and take `principle` from the comment
+answered.
 
 Each item is an object with exactly these keys:
 
@@ -50,10 +53,19 @@ Each item is an object with exactly these keys:
   word.
 - `generality`: `general` when the statement reaches beyond this pull request: it states a
   principle, names a habit, says "in general", "always", "never", "we", "going forward", or speaks
-  to agents or future readers; or it asks for a change for a reason that would hold in other code.
+  to agents or future readers; or it asks for a change for a reason that would hold in other code;
+  or it asks that the point be kept for later work, whatever it is about.
   `pr-specific` when it asks for one change here and nothing in it reaches further: a rename, a
   typo, a missing test for this function.
-- `signal`: what in the words shows the generality, one of `addresses agents` (it speaks to or
+- `signal`: what in the words shows the generality, one of `asks for guidance` (the person asks,
+  in whatever words, that the point be kept for later work: written into the standard, a rule, the
+  team's guidelines or conventions, or the project's standing instructions, or taught to agents or
+  reviewers, as in "can we make this a rule", "agents keep doing this, let's teach them not to",
+  "worth adding to our conventions"; no phrase or prefix is needed. Not an ask: a change to this
+  pull request, its own docs included ("fix this here", "add this to the README" for this
+  feature), against "make this the rule"; a habit named with no ask to keep anything, which is
+  `names a habit`; agreement; and a question asking only for information),
+  `addresses agents` (it speaks to or
   about AI agents or future automated readers), `states a principle` (a general "should" or "never"),
   `names a habit` (it calls out a recurring pattern, someone's or an agent's), `cites a source` (a
   document, standard, decision or owner), or `none`; for a `pr-specific` item, `none`. When two

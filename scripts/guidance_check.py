@@ -34,7 +34,7 @@ import sys
 from pathlib import Path
 
 GENERALITY = ("general", "pr-specific")
-SIGNALS = ("addresses agents", "states a principle", "names a habit", "cites a source", "none")
+SIGNALS = ("asks for guidance", "addresses agents", "states a principle", "names a habit", "cites a source", "none")
 KINDS = ("rule", "agent-guidance", "data-convention", "process", "decision", "tool-config", "exemplar",
          "review-calibration", "open-question")
 AUTHORSHIP = ("human", "ai-drafted", "bot")

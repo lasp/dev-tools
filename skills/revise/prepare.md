@@ -190,10 +190,15 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    `guidance_clusters.py` printout, when "Guidance" ran, each cluster's pull requests, people and
    `said` quotes as it prints them.
 
-   **Single statements.** A cluster admits on one guidance tally `admit` line of its own kind
-   alone, a person's general statement, the `admit` count `guidance_clusters.py` prints, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
+   **Single statements.** A cluster admits on one guidance tally `admit` line of its own kind, or
+   one a tally `ask` line names, alone, a person's general statement, the `admit` count `guidance_clusters.py` prints, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
    note admits the same way when a named person states a principle or asks for a change in it,
-   cited `pasted <file>` with that person's name. Each admitted cluster is a proposal of its kind,
+   cited `pasted <file>` with that person's name. A reviewer who asked for a point to be kept, a
+   tally `ask` line, is named with it in the report: an ask on an `admit` line admits its cluster
+   whatever the cluster's kind, an `ask · <cluster>` line in the `guidance_clusters.py`
+   printout, and the cluster is a proposal or, failing its cluster's kind's bar in harvest.md's
+   "Destinations", held with that bar's reason; an ask on a `covered` line, an `ask ·
+   <covered_by>` line there, is listed under the live entry it names. Each admitted cluster is a proposal of its kind,
    with the id and destination harvest.md's "Destinations" gives it. A cluster with no `admit` line and a `hold`
    line is held with the tally's criterion. A `covered` line supports the live rule, decision,
    agent guidance entry, data convention or instruction it names, listed under it in "Rules", and
