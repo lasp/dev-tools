@@ -1,0 +1,26 @@
+PROJ-58 · Log a warning in by_part for a part listed twice
+Task · New · no estimate · epic: none · reporter: bob, 2026-02-09 · Original request comment: no
+
+ticket-draft: drafted 2026-02-09 by bob · open questions: 0
+h1. Motivation
+A part listed twice in an inventory file stops the weekly stock run at the first one, and the person fixing the file finds the next only on the next run.
+
+*Impact:*
+* The weekly stock report waits on one rerun per repeated part
+
+h1. Driving Requirements
+by_part logs a warning for a part listed twice and goes on, rather than stopping the run.
+
+h2. Technical Requirements
+* by_part logs one warning per part listed twice, through the logging module, and keeps the part's last count
+
+h2. Acceptance Criteria
+# An inventory with a part listed twice returns a mapping and logs a warning naming that part
+# An inventory with no part listed twice returns the same mapping as now, with no warning
+
+h1. The code today
+*Touches:* {{src/widgets/inventory.py}}
+*Already true:*
+* by_part raises ValueError at the first part listed twice
+*Missing:*
+* No logging in by_part
