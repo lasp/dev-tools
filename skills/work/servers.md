@@ -55,11 +55,15 @@ For example, onboarding with no GitHub server:
 Where the tracker is GitHub's, the ticket is an issue and GitHub is the server that reads it, in the
 same four parts:
 
-> The GitHub server is connected, but reading issue #59 failed: `404 Not Found`. Other GitHub
-> reads work, so your token's account most likely cannot see the issue tracker's repository. Work
-> goes on without its state and labels, routing it as a ticket whose status is unknown;
-> `/mcp` shows the server's status, and the README's "MCP servers" says how to give the token
-> access. Paste the issue's text here to go on without it.
+> The GitHub server is connected, but reading issue #59 at my-org/tracker failed: `404 Not Found`.
+> Other GitHub reads work, and #59 is not a pull request here, so either the tracker has no issue
+> #59 or your token's account cannot see my-org/tracker. Work stops here, since it cannot tell
+> which; `/mcp` shows the server's status, and the README's "MCP servers" says how to give the
+> token access. Paste the issue's text here to go on without it.
+
+For a number that is this repository's pull request, a 404 at another repository's tracker is not
+a failure: the number is the pull request, and `work` says the 404 in one line, as its step 1
+sets out.
 
 And a Jira ticket read that failed:
 
