@@ -36,7 +36,8 @@ step 7. What differs from SKILL.md's steps is below; the rest runs as written, `
     one line. `jira.roles` is not read.
 - **Step 8.** The paste file `<ticket>.issue.md` is written first, as `issues.md`'s "The paste
   file" lays it out. Then, on Write all:
-  1. Write `.review/github-approval.json` listing the approved items, as `issues.md` says.
+  1. Write each text to `.review/context/<ticket>.send/<item>.md`, then
+     `.review/github-approval.json` listing the approved items, as `issues.md` says.
   2. Make each call in order. A create's number, the last part of its `url`, replaces
      `new:<slug>` in the items after it, which go in the record once it is written again.
   3. Read each issue back as `issues.md`'s "Read it back" says, record each item's outcome in
@@ -48,5 +49,6 @@ step 7. What differs from SKILL.md's steps is below; the rest runs as written, `
   Without the write tools, or on Paste it all, the paste file is the hand-off: say so in one
   line and give its path. The closing summary names each issue written as `#12` with the URL the
   create or the read-back gave. Unless the plan moved it, the last line says a ticket writer
-  approves the issue next, by the `approved` role's label or, with none mapped, on the issue
-  itself, and names `/lasp-dev:work 12`.
+  approves the issue next by adding the label `--defaults --field issue_tracker.roles.approved`
+  prints, naming it, or, where that prints `none`, on the issue itself, and names
+  `/lasp-dev:work 12`.

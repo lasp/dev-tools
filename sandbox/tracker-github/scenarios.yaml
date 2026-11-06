@@ -126,7 +126,8 @@ scenarios:
       The plan shows a create on example/widgets with the title and the Markdown body, then the
       Comment to post and the Session comment as comments. After Write all, the issue is #16;
       .review/context/16.md opens `# #16 · `, and 16.issue.md, 16.original.txt and 16.writes.md sit
-      beside it. The closing summary names #16, and the approval record is gone.
+      beside it. A follow-up the questions add is a second create, #17. The closing summary names
+      #16 and says a ticket writer's approval is the `ready` label, and the approval record is gone.
     expect:
       ends: success
       mcp: [mcp__github__issue_write, mcp__github__issue_read]
@@ -136,10 +137,10 @@ scenarios:
       - >-
         python3 -c 'import json; w = [json.loads(l) for l in open(".git/github-writes.jsonl")];
         c = [x["arguments"] for x in w if x["tool"] == "issue_write" and x["arguments"]["method"] == "create"];
-        assert len(c) == 1 and "# Motivation" in c[0]["body"], c;
-        assert set(c[0].get("labels") or []) <= {"needs-refinement", "ready", "in progress", "enhancement"}, c;
+        assert c and "# Motivation" in c[0]["body"], c;
+        assert all(set(x.get("labels") or []) <= {"needs-refinement", "ready", "in progress", "enhancement"} for x in c), c;
         assert any(x["tool"] == "add_issue_comment" and x["arguments"]["issue_number"] == 16 for x in w), w'
-      - head -1 .review/context/16.md | grep -q '^# #16 · '
+      - "python3 -c 'import sys; sys.exit(not open(\".review/context/16.md\").readline().startswith(\"# #16 · \"))'"
 
   - id: tracker-gh-ticket-draft-refine
     repo: widgets
