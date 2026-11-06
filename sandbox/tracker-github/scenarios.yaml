@@ -154,7 +154,7 @@ scenarios:
       so the original body is posted as the Original request comment before the body is replaced,
       each through the issue gate, and the issue is read back.
     turns:
-      - /lasp-dev:ticket-draft #12
+      - /lasp-dev:ticket-draft 12
       - The goal is right. Draft this ticket.
       - Take the recommended answer on every question.
       - Looks right. Write all.
