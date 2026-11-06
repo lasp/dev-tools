@@ -27,7 +27,7 @@ hold · s1-5 · pr-0106 · 62 · dave · process · no signal of generality · u
 items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3
 """
 LEDGER = ("# Review rules\n\n## R-001 · A rule\n\n## Candidates below the criteria\n\n### Changelog scope\n\nEvidence.\n\n"
-          "#### Evidence\n\nprs: pr-48, pr-0104\n\n- **Held:** an agent's ask in pr-0061; overlaps R-002 from pr-0031.\n\n"
+          "#### Evidence\n\nprs: pr-48, pr-0104\n\n- **Held:** an agent's ask in pr-0061; fails **Admission** twice.\n\n"
           "- **Keyword-only arguments for flags.** Evidence: pr-0048. Held: its one ask is AI-drafted.\nprs: none\n")
 
 
@@ -64,6 +64,7 @@ class Clusters(unittest.TestCase):
             "prs · C1 · pr-0101, pr-0104, pr-0106, pr-0108",
             "people · C1 · bob, carol, dave, erin",
             "priority · C1 · high · 4 pull requests",
+            "asked · C1 · pr-0101, pr-0104, pr-0106, pr-0108",
             "note · C1 · pr-0108 · erin · human · thread PRRT_x: add libhdf5 · the image",
             "note · C1 · pr-0109 · copilot · bot · thread PRRT_y: mock the import",
             'said · C1 · "Install the library in CI; never mock it away." — bob, u11',
@@ -73,6 +74,7 @@ class Clusters(unittest.TestCase):
             "prs · C2 · pr-0106",
             "people · C2 · dave, erin",
             "priority · C2 · high · 3 pull requests",
+            "asked · C2 · pr-0048, pr-0104, pr-0106",
             "held · C2 · Changelog scope",
             "note · C2 · pasted notes-1.md · erin · keep the changelog to what users see",
             'said · C2 · "Changelog holds user-visible changes." — dave, u62',

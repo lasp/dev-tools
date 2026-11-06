@@ -73,7 +73,8 @@ it exists, each entry holding its rule's wording as `> ` lines, the one copy), `
 Rule and decision wording follows `<plugin root>/skills/writing/SKILL.md`. `review-rules.md` ends
 with a section headed exactly `## Candidates below the criteria`, the line `standard_file.sh` stops
 the loaded standard at: every cluster not admitted, with its evidence pull requests, authors and
-the criterion it fails. Nothing under `standards/`. A person cuts the candidates and commits.
+the criterion it fails, and a `prs: pr-NNNN, ...` line, the pull requests a person asked on, which
+a later revision counts from (`docs/contracts.md`, "The ledger's held-candidates heading"). Nothing under `standards/`. A person cuts the candidates and commits.
 
 Every harvested thread is one record, and these fields are what the monthly revision later filters on:
 
