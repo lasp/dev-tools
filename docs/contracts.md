@@ -406,7 +406,7 @@ Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admit
 
 ## The guidance clusters
 
-Version: 4
+Version: 5
 
 Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
 object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
@@ -421,7 +421,11 @@ ledger's held candidate it continues, its heading or the bold title its bullet o
 null. Every `admit`, `hold` and `support` line of the
 tally is in exactly one cluster; a cluster holds at least one item or note.
 
-`scripts/guidance_clusters.py --clusters <file> --tally <the tally's printout> [--ledger <ledger>]`
+`scripts/guidance_clusters.py --clusters <file> --tally <the tally's printout> [--ledger <ledger>]
+[--repo <this repository> --tally-from <repo>=<its tally> ...]`, the other covered repositories' tallies
+keyed `<repo>:s<n>-<i>` with pull requests `<repo>/pr-NNNN`, as their notes and `prs:` lines name them,
+and, with `--repo`, given whenever the standard has `profiles/`, a `repos · <id> · <repo>, ...` line
+per cluster and every `asked` entry `<repo>/pr-NNNN` (version 5),
 refuses, one `refused · <where> · <why>` line each and exit 1, a file of any other form, a key
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
@@ -920,7 +924,8 @@ convention entry reads it the same way. It is one line, `repos:` at its
 start, anywhere in the block outside a code fence and outside the rule's wording; a block with two
 is refused by the lint, and only the first is read (version 2). A rule's wording is the entry's `> ` lines, the one
 copy; a ledger whose wording is still in an instruction file has none there and a `Wording:` link
-to its heading instead (version 3).
+to its heading instead (version 3). An entry admitted from another repository's evidence alone carries
+`check from <repo>` on its evidence line until its `scope:` and `example:` are checked there.
 
 Writers: `onboard`'s first rules and `revise` (`apply` and `correct`). Readers:
 `scripts/rule_lint.py`, `scripts/window_merges.py`, for `scope:`, and `rule-probe`;
@@ -964,8 +969,8 @@ Fields: the line `## Candidates below the criteria`, word for word, trailing whi
 in an adopting repository's `standards/review-rules.md`. Everything from it to the end of the
 file is the held candidates, each with its evidence and the criterion or check it fails, so the
 section is the ledger's last. Each candidate opens with a `### <title>` heading or a bullet `-
-**<title>**`, its bold title not a label ending `:`, and may carry a `kind: <kind>` line, its kind when not a rule, and a `prs: pr-NNNN,
-...` line, the merged pull requests its people asked on, with those whose agent findings the author
+**<title>**`, its bold title not a label ending `:`, and may carry a `kind: <kind>` line, its kind when not a rule, and a `prs: [<repo>/]pr-NNNN,
+...` line, each with its repository in a standard covering several, the merged pull requests its people asked on, with those whose agent findings the author
 changed as asked, accumulated across revisions, which `scripts/guidance_clusters.py` reads for a
 cluster's priority; a candidate without the line counts none (version 2). A `###` candidate's body
 opens no bullet with a bold title other than a label ending `:`, since that bullet would start a
@@ -1010,6 +1015,24 @@ after the terminology; `scripts/standard_index.py`, which lists each entry's id,
 agent guidance, its `seen` month.
 
 Pinned by: tests/test_entries_lint.py::test_well_formed_files_pass_and_count_their_entries
+
+## The revision's run state
+
+Version: 1
+
+Fields: `.review/revision/state.json`, `{"stages": {"<stage>": {"status": "done" | "skipped",
+"why": "<reason>" | null}}}`, the stages `sources`, `records`, `analysts`, `guidance`, `sweep`,
+`clusters`, `bar` and `checks`. `scripts/revise_state.py start` removes it; `done <stage>` and
+`skip <stage> <reason>` record a stage, a later record winning and a blank reason refused; `check`
+prints `unrecorded · <stage>` per stage not recorded and exits 1, or `skipped · <stage> · <reason>`
+per skipped stage, in order, then `stages: <n> done · <n> skipped`, and exits 0. An unknown stage
+or command, or a file of another form, exits 2.
+
+Writers: `scripts/revise_state.py`, run by `revise` `prepare` after each stage. Readers: `prepare`
+step 10, which writes the report only once `check` passes and puts its `skipped` lines under
+"Head".
+
+Pinned by: tests/test_revise_state.py::test_the_report_waits_until_every_stage_is_done_or_skipped_with_its_reason
 
 ## The analysis blocks
 

@@ -17,15 +17,30 @@ is stored (this repository's `standards/`, or the repository its pointer names),
 standard whose `profiles/` covers several repositories, what the run does in each. Every
 covered repository is harvested and its records archived. A rule reaches a repository when its
 `repos:` line names it or it has none (`docs/contracts.md`, "The ledger's bar lines"):
-- **This repository** feeds the analysts: its threads are read and clustered and its merged diffs
-  swept, so its records can admit, reword, promote or retire a rule.
-- **Every other repository** is archive-only: its records are counted against the rules that
-  reach it, none when no rule does, and its threads reach no analyst and no cluster, since those
-  read this repository's code. The window is shared, so its asks from this window reach no analyst
-  in any later run either.
+- **Every covered repository** is read for guidance: its comments are extracted and clustered
+  with the others', so one run revises the whole standard, and a cluster may draw on several.
+- **This repository** also feeds the analysts and the sweep, which read its code: its threads'
+  `diff:` verdicts and its merged diffs. A rule drafted only from another repository's evidence
+  is marked "check from <repo>" at the bar, since its `scope:` and `example:` lines are checked in
+  the repository they name.
+- **Every other repository**'s records are counted against the rules that reach it, none when no
+  rule does.
 
 Write it as a short list, one repository a line, each with the rules that reach it and what the
-run does there, such as "gadgets: R-002; archived and counted, its threads not read", then go on.
+run does there, such as "gadgets: R-002; archived, counted and its comments read", then go on.
+
+**Record each stage.** Run `python3 "<plugin root>/scripts/revise_state.py" start`, and after each
+stage below `revise_state.py done <stage>`, or `skip <stage> <the reason, in a few words>` when it
+did not run, a server it needs not connected or the person's answer included
+(`docs/contracts.md`, "The revision's run state"). The report waits on its `check`.
+
+**Then read the project's sources**, before any harvest, since what changed in the project frames
+what the threads say: run `<plugin root>/skills/revise/context-refresh.md`, read then, on the
+context entries, the watched pages and the page or epic given with `prepare`, the year plan and
+design docs only when they are among those, and say under "Context" that the others were not
+read; and read the decisions and terminology the changed pages and epics touch, each a candidate for a `D-NNN` or a term where it conflicts with
+`decisions.md` or `terminology.md` or adds to them. Its proposals go where step 8 puts them. Then
+record `sources`.
 
 1. **Harvest the records.** Run harvest.md's "Records" for each other covered repository, from
    the later of the window's first day and that repository's adoption date (`revise`'s "The standard's repository"),
@@ -35,7 +50,10 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    records into its `<log>` (`revise`'s "The standard's repository") before the next harvest
    starts, with `python3 "<plugin root>/scripts/archive_records.py" <its records> <its log>`, each
    replacing a record of the same number, and making `<log>` on the repository's first harvest; the threads stay the source, and the copy lets the
-   history be read without GitHub. The script refuses, copying nothing, when a harvested record
+   history be read without GitHub. Before the first harvest, remove every
+   `.review/harvest/guidance-*/`, so no earlier run's tally is read. Before the next harvest empties its directories, run
+   harvest.md's "Guidance" on each other repository's comment lists, into
+   `.review/harvest/guidance-<repo>/`. The script refuses, copying nothing, when a harvested record
    would drop findings the log's record holds, which the threads cannot rebuild. Show its
    `refused` lines and ask: **Keep those records** (Recommended: rerun with `--keep <n>` for each,
    so the log's record stays as it is and is named under "Head" with its kept findings),
@@ -47,7 +65,7 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    and ask: **Stop here**, nothing committed and any clone's path named (Recommended: below the
    floor the Dial allows counts and no proposal, and the next month adds records), **Write the
    counts only**, or **Let's discuss**. Counts only
-   runs the rest of this step, steps 2, 5 and 6 with no rule proposal, every candidate going
+   records `skip bar` and `skip checks` "below the Revision floor" and runs the rest of this step, steps 2, 5 and 6 with no rule proposal, every candidate going
    under "Held candidates" and step 6's `ticket/` and `doc/` proposals still made, and step 10, so the window's asks reach the ledger when `apply` writes the
    held candidates; the report's second line says it rests on few records, and how many.
 
@@ -76,8 +94,10 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    window's pull requests, and the count merged without a build, whose body has no Already checked
    block.
 2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 wrote; the report
-   cites thread ids. Then run harvest.md's "Guidance" on this repository's comment lists; into
-   "Head", the guidance line from its check's printout, never counted by hand. What either did not
+   cites thread ids. Then run harvest.md's "Guidance" on this repository's comment lists, the
+   others' having run at step 1; into
+   "Head", one guidance line per repository from its check's printout, never counted by hand, and
+   under "Not read" each repository's unread slices. What either did not
    read goes under "Not read".
 
    From the blocks, leaving out lines with `asked: none`, the counts from harvest.md's
@@ -157,6 +177,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    each `doc` line's `predates`, `no opened day` and `not on` pull requests or document,
    the pull requests past thirty, and each pull request step 1's harvest listed in the window that
    the script did not, as `not swept: no merge subject`.
+   Record `records` once every repository's harvest is archived, and at step 2 `analysts`,
+   `sweep` and `guidance`, the last skipped, naming them, when any repository's guidance did not
+   run.
 3. **Check breadth before promoting anything.** A rule's breadth is the `distinct-prs-agreed`
    column of the all-records table: the pull requests with an agreed finding on it, whoever wrote
    or agreed, since on a small team one person's well-founded ask counts as anyone's. A rule
@@ -210,6 +233,10 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    this is a gap in the check, not a missing rule; if it retired at a low agree rate, the evidence
    line says what changed; if it expired unfired, say how long it sat idle, which argues for a
    check.
+   Each cluster whose `repos` line names one repository is that repository's: its proposal
+   carries `repos: [<it>]` in a standard with `profiles/`; a cluster naming several applies
+   project-wide, unless its principle is plainly about those repositories' code, which its
+   proposal then says. Record `clusters`.
 6. **Merge the held candidates.** Merge this window's clusters into the ledger's "Candidates below
    the criteria", a cluster whose `held` line names a candidate into that one, re-judge each
    against the Dials, and propose each that now meets them. The rest
@@ -246,13 +273,22 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    gate fails goes under "Held by the bar". Every other proposal is held to its kind's bar as
    harvest.md's "Destinations" sets out, and one that fails it goes there too.
 
+   A proposal whose evidence is only another repository's runs only the bar's `fields`, `status`
+   and `wording` gates here (`--checks`), with no probe, and is marked "check from <that
+   repository>" rather than held, as `revise`'s "The standard's repository" says; one with this
+   repository's evidence takes its `example:` anchors from it. An `exemplar/` or `tool/` proposal
+   from another repository is marked the same way. Record `bar`.
+
    With measures on, read `<plugin root>/skills/revise/measures.md` now and run it.
-8. **Refresh the context**, when the repository has `context/` entries or a page or epic was
-   named, as `<plugin root>/skills/revise/context-refresh.md` sets out; read it then.
-9. **Draft the checks.** For each graduation candidate, draft the check into `.review/checks/`
+8. **The context's proposals**, from the project's sources read first: each refresh and new page
+   as `<plugin root>/skills/revise/context-refresh.md` sets them out, and each decision or term
+   they bear on.
+9. **Draft the checks**, then record `checks`. For each graduation candidate, draft the check into `.review/checks/`
    and report under "Graduation checks" what it would have caught in the window, and any false
    positive on `main`.
-10. **Write the report.** First write the overview: every proposal, the held ones and the
+10. **Write the report.** First run `python3 "<plugin root>/scripts/revise_state.py" check`: an
+    `unrecorded` line is a stage nobody accounted for, so run or skip it with its reason first, and
+    the report is not written until the check passes. Its `skipped` lines go under "Head". Then write the overview: every proposal, the held ones and the
     context refreshes among them, one line each, grouped by priority, high, medium and low, and
     within a group by impact: the number of merged pull requests in its evidence, then the number
     of files it would change, most first, both written in its Impact cell. A
@@ -267,6 +303,7 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     decision or entry with no `repos:` line or a `context/` entry, or the repositories its
     `repos:` line names, or, for a
     `ticket/`, `doc/` or `tool/`, the repository whose code, document or configuration it names;
+    a proposal from a cluster applies where step 5 tagged it;
     and where `apply` would change it: the standard's repository, this repository's diff, Jira
     through `ticket-draft` for a `ticket/`, or, for a `question/`, the standard's repository once
     answered. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
@@ -295,7 +332,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     same result as far as it got: the scope, and what it changed and did not.
     - **Scope**: where the standard is stored, the window, the scope list from the start of this
       file, each repository with what the run does there as planned at the start, then the step
-      the run stopped at.
+      the run stopped at, and `revise_state.py check`'s lines: the stages skipped, with why, and
+      those not reached.
     - **Proposals**: how many, by priority, then a table of each, its id, what it proposes, what
       it applies to and where `apply` would change it, in the overview's order; the held by the
       bar and the held candidates as counts.

@@ -212,6 +212,55 @@ class Clusters(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("no Recurring ask Dial reading", "\n".join(lines))
 
+    def test_a_cluster_draws_on_every_covered_repository_s_tally(self):
+        other = self.dir / "gadgets.txt"
+        other.write_text("admit · s1-0 · pr-0101 · 21 · frank · rule · asks for guidance · g21 · Install it in CI.\n"
+                         "ask · s1-0 · pr-0101 · frank · g21\n"
+                         "items: 1 · admit: 1 · covered: 0 · hold: 0 · support: 0 · not listed: 0 · asks: 1\n")
+        clusters = self.two(items=["s1-0", "s1-2", "s1-3", "s1-4", "gadgets:s1-0"],
+                            notes=["gadgets/pr-0102 · gina · human · thread PRRT_g: install it"])
+        (self.dir / "clusters.json").write_text(json.dumps(clusters))
+        args = ["--clusters", str(self.dir / "clusters.json"), "--tally", str(self.dir / "tally.txt"),
+                "--ledger", str(self.dir / "rules.md")]
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = guidance_clusters.main([*args, "--repo", "widgets", "--tally-from", f"gadgets={other}"])
+        lines = out.getvalue().splitlines()
+        self.assertEqual(code, 0, lines)
+        self.assertIn("prs · C1 · gadgets/pr-0101, gadgets/pr-0102, pr-0101, pr-0104, pr-0106", lines)
+        self.assertIn("repos · C1 · gadgets, widgets", lines)
+        self.assertIn("ask · C1 · frank · g21", lines)
+        self.assertIn("repos · C2 · widgets", lines)
+        self.assertIn("priority · C1 · high · 5 pull requests", lines)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args, "--tally-from", f"gadgets={other}"]), 1)
+        self.assertIn("--tally-from needs --repo", out.getvalue())
+        self.assertIn("asked · C1 · gadgets/pr-0101, gadgets/pr-0102, widgets/pr-0101, widgets/pr-0104, widgets/pr-0106", lines)
+        for bad, why in ((f"widgets={other}", "is not <another repository>"), ("gadgets", "is not <another repository>")):
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(guidance_clusters.main([*args, "--repo", "widgets", "--tally-from", bad]), 1)
+            self.assertIn(why, out.getvalue())
+        (self.dir / "rules.md").write_text(LEDGER.replace("prs: pr-48, pr-0104", "prs: widgets/pr-48, gadgets/pr-0101"))
+        clusters["clusters"][0]["notes"] = ["gadget/pr-0102 · gina · human · thread PRRT_g: install it"]
+        (self.dir / "clusters.json").write_text(json.dumps(clusters))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args, "--repo", "widgets", "--tally-from", f"gadgets={other}"]), 1)
+        self.assertIn("a note names gadget, no repository given with --tally-from", out.getvalue())
+        clusters["clusters"][0]["notes"] = []
+        (self.dir / "clusters.json").write_text(json.dumps(clusters))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args, "--repo", "widgets", "--tally-from", f"gadgets={other}"]), 0)
+        self.assertIn("asked · C2 · gadgets/pr-0101, widgets/pr-0048, widgets/pr-0106", out.getvalue())
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args[:4], "--repo", "widgets"]), 1)
+        self.assertIn("gadgets:s1-0", out.getvalue())
+        alone = self.two(notes=["widgets/pr-0108 · erin · human · thread PRRT_x: add libhdf5"])
+        (self.dir / "clusters.json").write_text(json.dumps(alone))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(guidance_clusters.main([*args, "--repo", "widgets"]), 0)
+        self.assertIn("asked · C1 · widgets/pr-0101, widgets/pr-0104, widgets/pr-0106, widgets/pr-0108", out.getvalue())
+        self.assertIn("repos · C1 · widgets", out.getvalue())
+
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {
             "'s1-1' is no admit, hold or support line": self.two(items=["s1-0", "s1-1", "s1-2", "s1-3", "s1-4"]),
