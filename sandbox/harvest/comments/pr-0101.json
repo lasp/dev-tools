@@ -12,7 +12,6 @@
    "path": "tests/conftest.py",
    "line": 12,
    "created": "2026-10-01T09:17:41Z",
-   "nominated": [],
    "body": "**Should fix** — `netCDF4` is replaced with a `MagicMock` for the whole test session\n\n`conftest.py` inserts a `MagicMock` into `sys.modules['netCDF4']` when the import fails. Every test in `test_netcdf_reader.py` then runs against the mock, so none of them exercises the real decoding path (scale factors, `_FillValue` masking, CF time units). The tests pass in CI only because nothing real is read.\n\nOptions:\n1. Install `libnetcdf-dev` in the CI image and drop the mock.\n2. Mark the reader tests `skipif` netCDF4 is unavailable and run them in a job that has it.\n\n🤖 _AI-assisted comment, posted by @bob. AI assistance level: 5/5 (not read by a person)._"
   },
   {
@@ -26,7 +25,6 @@
    "path": "tests/conftest.py",
    "line": 12,
    "created": "2026-10-01T10:08:39Z",
-   "nominated": [],
    "body": "Disagree, installing system packages in CI slows every job and the reader logic is covered by the mock. I'd keep the mock and add a separate integration marker later.\n\n🤖 _AI-assisted reply, posted by @alice. AI assistance level: 5/5 (not read by a person)._"
   },
   {
@@ -40,7 +38,6 @@
    "path": "tests/conftest.py",
    "line": 12,
    "created": "2026-10-01T11:45:54Z",
-   "nominated": [],
    "body": "> Disagree, installing system packages in CI slows every job and the reader logic is covered by the mock.\n\nIt isn't covered, that's the point. The mock returns whatever we tell it to. Install libnetcdf in the workflow and delete the sys.modules hack.\n\nFor future agents: if a test needs a system library that isn't there, put the library in CI. Mocking the import away just means the test checks the mock."
   },
   {
@@ -54,7 +51,6 @@
    "path": "tests/conftest.py",
    "line": 12,
    "created": "2026-10-01T14:10:26Z",
-   "nominated": [],
    "body": "ok, fair. Pushed 3f1c2e0, the workflow installs libnetcdf-dev now and the mock is gone."
   },
   {
@@ -68,7 +64,6 @@
    "path": "src/widgets/readers/netcdf_reader.py",
    "line": 48,
    "created": "2026-10-01T14:29:15Z",
-   "nominated": [],
    "body": "**Suggestion** — Accept `pathlib.Path` rather than `str`\n\n`open_station(path: str)` calls `os.path.exists` and builds the sidecar name by string concatenation. As a general rule, file-handling functions should take `pathlib.Path` and let callers convert at the edge; it avoids the `str | Path` ambiguity and makes the type contract explicit.\n\n🤖 _AI-assisted comment, posted by @bob. AI assistance level: 5/5 (not read by a person)._"
   },
   {
@@ -82,7 +77,6 @@
    "path": "src/widgets/readers/netcdf_reader.py",
    "line": 48,
    "created": "2026-10-01T15:34:21Z",
-   "nominated": [],
    "body": "Changed to Path."
   },
   {
@@ -96,7 +90,6 @@
    "path": "tests/test_netcdf_reader.py",
    "line": 30,
    "created": "2026-10-01T17:26:44Z",
-   "nominated": [],
    "body": "**Should fix** — test fixture `tests/data/station_small.nc` grew from 4 KB to 2.1 MB\n\nThe commit regenerates the fixture with a full day of 1 Hz samples. The tests only read the first 10 records. A smaller fixture keeps the repository light and the test fast.\n\n🤖 _AI-assisted comment, posted by @bob. AI assistance level: 4/5 (read by a person, not edited)._"
   },
   {
@@ -110,7 +103,6 @@
    "path": "tests/test_netcdf_reader.py",
    "line": 30,
    "created": "2026-10-01T20:06:24Z",
-   "nominated": [],
    "body": "Yeah, my agent rebuilt it from a full day by accident. Shrunk back to 10 records. For future agents reading this: files under tests/data are small on purpose. Trim to the records the test reads; never regenerate them from a full day of output."
   },
   {
@@ -124,7 +116,6 @@
    "path": "src/widgets/readers/netcdf_reader.py",
    "line": 71,
    "created": "2026-10-01T20:40:21Z",
-   "nominated": [],
    "body": "nit: `ds_var` -> `variable`, it's not a dataset."
   },
   {
@@ -138,7 +129,6 @@
    "path": "src/widgets/readers/netcdf_reader.py",
    "line": 71,
    "created": "2026-10-01T22:00:35Z",
-   "nominated": [],
    "body": "done"
   },
   {
@@ -152,7 +142,6 @@
    "path": "src/widgets/readers/netcdf_reader.py",
    "line": 90,
    "created": "2026-10-02T00:08:06Z",
-   "nominated": [],
    "body": "The `try`/`except Exception` block around `Dataset(path)` returns `None` on any failure. Callers do not check for `None`, which may cause an `AttributeError` later. Consider raising a descriptive error instead."
   },
   {
@@ -166,7 +155,6 @@
    "path": "src/widgets/readers/netcdf_reader.py",
    "line": 90,
    "created": "2026-10-02T03:02:54Z",
-   "nominated": [],
    "body": "Agree with the bot here. Third `except Exception: pass` around a file open I've seen this month — let the open fail and the traceback name the file. Swallowing it is exactly the silent fallback we said we don't do."
   },
   {
@@ -180,7 +168,6 @@
    "path": "src/widgets/readers/netcdf_reader.py",
    "line": 105,
    "created": "2026-10-02T03:50:59Z",
-   "nominated": [],
    "body": "Can you add a test for a file with no `time` variable? I think this line raises IndexError instead of the ValueError the docstring promises."
   },
   {
@@ -194,7 +181,6 @@
    "path": "src/widgets/readers/netcdf_reader.py",
    "line": 105,
    "created": "2026-10-02T05:26:21Z",
-   "nominated": [],
    "body": "Added `test_missing_time_raises`, and you were right, it was an IndexError."
   },
   {
@@ -208,7 +194,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-02T07:49:00Z",
-   "nominated": [],
    "body": "Copilot reviewed 4 out of 4 changed files in this pull request and generated 1 comment."
   },
   {
@@ -222,7 +207,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-02T08:05:56Z",
-   "nominated": [],
    "body": "Looks good once the test is in. One thing to keep in mind as more readers land: don't assume one fill value for the whole file. Temperature uses -9999.0 but the count fields use -1, and the reader has to take `_FillValue` per variable."
   },
   {
@@ -236,7 +220,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-02T09:09:09Z",
-   "nominated": [],
    "body": "Coverage report: `widgets/readers/netcdf_reader.py` 94% (+94%). Total 88.1%."
   },
   {
@@ -250,7 +233,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-02T10:59:39Z",
-   "nominated": [],
    "body": "LGTM, thanks!"
   }
  ]

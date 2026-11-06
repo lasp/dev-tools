@@ -637,18 +637,15 @@ Who does what:
 How a rule is admitted, established and retired: `GUIDE.md` "How the rules change"; the
 thresholds are `standards/dials.md`.
 
-### Nominating guidance
+### Asking for guidance
 
-Anyone reviewing a pull request can put guidance forward for the standard by opening a line of a
-review comment, a reply or a review summary with `For agents:` or `Standard:`, as a list item or in
-bold too, followed on the same line by the guidance in a sentence: `For agents: install a missing
-system library in CI; never mock its import.` A line that opens `Standard:` as a label is read as a
-nomination too, so write it only to nominate. The next revision lists every such line: as a proposal when it meets
-its kind's bar, as support for the live rule or entry that already says it, or held with the
-reason, never dropped (`skills/revise/harvest.md`, "Guidance"). The line must be your own words,
-not quoted, and the skills never write one for you; you may add one to a reply a skill drafted.
-The `Nominated:` line of a pull request body's Already checked block is another thing, the
-corrections a build's author made, and does nothing in a comment.
+Anyone reviewing a pull request can ask for a point to be kept beyond it, in a review comment, a
+reply or a review summary, in their own words: "can we make this a rule", "agents keep doing
+this", "worth adding to our conventions". No prefix or phrase is needed. The next revision's
+extractor reads every comment for such an ask and marks it `asks for guidance`, and the revision
+lists each one with who asked: as a proposal when it meets its kind's bar, as support for the
+live rule or entry that already says it, or held with the reason (`skills/revise/harvest.md`,
+"Guidance"). An ask in a comment an agent drafted is read as the agent's, not yours.
 
 ![A rule's life: candidate, provisional, established, graduated; an established rule under half agree with is reworded, and one still disputed, or a provisional rule left unused, is retired](docs/img/rule-life.svg)
 

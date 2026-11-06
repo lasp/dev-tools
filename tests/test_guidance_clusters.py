@@ -186,33 +186,6 @@ class Clusters(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("no Recurring ask Dial reading", "\n".join(lines))
 
-    def test_a_nomination_not_extracted_is_a_note_in_one_cluster_and_admits_it(self):
-        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9 ·", "nominated · pr-0107 · 71 · erin · not extracted · u71 · "
-                                                          "Bump the version in one commit.\nitems: 9 ·"))
-        clusters = self.two()
-        clusters["clusters"].append({"id": "C3", "kind": "process", "principle": "One commit bumps the version.", "items": [],
-                                     "notes": ["pr-0107 · erin · human · nominated 71: Bump the version in one commit."],
-                                     "held": None})
-        code, lines = self.run_clusters(clusters)
-        self.assertEqual(code, 0, lines)
-        self.assertIn("cluster · C3 · process · admit 1 · hold 0 · support 0 · prs 1 · people 1 · One commit bumps the version.", lines)
-        clusters["clusters"].pop()
-        code, lines = self.run_clusters(clusters)
-        self.assertEqual(code, 1)
-        self.assertIn("refused · nominated 71 in pr-0107 · not extracted, and a note in no cluster, not one: "
-                      "Bump the version in one commit.", lines)
-        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9 ·", "nominated · pr-0107 · 71 · erin · not extracted · u71 · alpha\n"
-                                                          "nominated · pr-0107 · 71 · erin · not extracted · u71 · beta\nitems: 9 ·"))
-        two = self.two()
-        for n, text in ((3, "alpha"), (4, "beta")):
-            two["clusters"].append({"id": f"C{n}", "kind": "process", "principle": text, "items": [],
-                                    "notes": [f"pr-0107 · erin · human · nominated 71: {text}"], "held": None})
-        self.assertEqual(self.run_clusters(two)[0], 0)
-        two["clusters"][3]["notes"] = ["pr-0107 · erin · human · nominated 71: gamma"]
-        lines = self.run_clusters(two)[1]
-        self.assertIn("refused · nominated 71 in pr-0107 · a note no `not extracted` tally line names: gamma", lines)
-        self.assertIn("refused · nominated 71 in pr-0107 · not extracted, and a note in no cluster, not one: beta", lines)
-
     def test_refuses_a_partition_that_is_not_one(self):
         cases = {
             "'s1-1' is no admit, hold or support line": self.two(items=["s1-0", "s1-1", "s1-2", "s1-3", "s1-4"]),

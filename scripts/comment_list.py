@@ -26,11 +26,6 @@ no one commented on, each item:
   commit it was made on, else `line`, and null at file level; both null for a review or a
   conversation comment;
 - `created`, its timestamp as GitHub gave it: `created_at`, or a review's `submitted_at`;
-- `nominated`, what the comment nominates for the standard: the rest of each of its own lines
-  (`record.py`'s `own_lines`, so not a quoted or fenced line) that opens `For agents:` or
-  `Standard:`, case aside, as a bulleted or numbered list item too and bold or italic too, with
-  text after it on the same line, an emphasis the line opened before the marker left off its end,
-  in order; empty when none does (`README.md`, "Nominating guidance");
 - `body`, its text, unchanged.
 
 A review with a blank body, such as one posted with a batch of thread replies, is no comment and
@@ -55,23 +50,6 @@ DISCUSSION = re.compile(r"#discussion_r(\d+)$")
 
 class Refused(Exception):
     """A dump the list cannot be built from."""
-
-
-MARKER = re.compile(r"(?i)(\*\*|__|\*|_)?(?:for agents|standard)(\*\*|__|\*|_)?:(\*\*|__|\*|_)?\s*(.*)")
-
-
-def nomination(line: str) -> str | None:
-    """The guidance a stripped own line nominates, or None: the line, past a list item's bullet or
-    number, opens `For agents:` or `Standard:`, bold or italic or not, and text follows on it. An
-    emphasis opened before the marker and not closed by the colon is left off the text's end."""
-    m = MARKER.fullmatch(re.sub(r"^(?:[-*+]|\d+[.)]) +", "", line))
-    if not m:
-        return None
-    opener, closed_before, closed_after, text = m.groups()
-    text = text.strip()
-    if opener and not (closed_before or closed_after) and text.endswith(opener):
-        text = text[: -len(opener)].rstrip()
-    return text if text.strip("*_ ") else None
 
 
 def load_record():
@@ -100,8 +78,7 @@ def build(dump: Path, record) -> dict:
         items.append({
             "pr": pr, "id": id_, "url": url, "author": author,
             "authorship": record.authorship_of({"author": author, "body": body}),
-            "kind": kind, "thread": thread, "path": path, "line": line, "created": created,
-            "nominated": [n for n in map(nomination, record.own_lines(body)) if n], "body": body,
+            "kind": kind, "thread": thread, "path": path, "line": line, "created": created, "body": body,
         })
 
     for t in read(dump, "comments.json")["review_threads"]:

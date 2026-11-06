@@ -50,10 +50,16 @@ Each item is an object with exactly these keys:
   word.
 - `generality`: `general` when the statement reaches beyond this pull request: it states a
   principle, names a habit, says "in general", "always", "never", "we", "going forward", or speaks
-  to agents or future readers; or it asks for a change for a reason that would hold in other code.
+  to agents or future readers; or it asks for a change for a reason that would hold in other code;
+  or it asks that the point be kept beyond this pull request, whatever it is about.
   `pr-specific` when it asks for one change here and nothing in it reaches further: a rename, a
   typo, a missing test for this function.
-- `signal`: what in the words shows the generality, one of `addresses agents` (it speaks to or
+- `signal`: what in the words shows the generality, one of `asks for guidance` (the person asks,
+  in whatever words, that the point be kept for later work: written into the standard, a rule, the
+  guidelines, the instructions or the docs, or taught to agents or reviewers, as in "can we make
+  this a rule", "agents keep doing this, they should stop", "worth adding to our conventions"; no
+  phrase or prefix is needed, and a comment that only agrees or asks a question does not count),
+  `addresses agents` (it speaks to or
   about AI agents or future automated readers), `states a principle` (a general "should" or "never"),
   `names a habit` (it calls out a recurring pattern, someone's or an agent's), `cites a source` (a
   document, standard, decision or owner), or `none`; for a `pr-specific` item, `none`. When two

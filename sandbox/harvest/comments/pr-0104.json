@@ -12,7 +12,6 @@
    "path": "tests/test_summary.py",
    "line": 44,
    "created": "2026-10-08T08:50:44Z",
-   "nominated": [],
    "body": "**Should fix** — expected values changed in `test_daily_mean_rounding`\n\nThe diff changes the expected mean from `21.35` to `21.34` and from `18.05` to `18.04`. The commit message says the tests were \"updated to match the new output\". If the rounding change is correct, the expected values should be derived again by hand; if the old values were right, the code is wrong.\n\n🤖 _AI-assisted comment, posted by @erin. AI assistance level: 3/5 (lightly edited by a person)._"
   },
   {
@@ -26,7 +25,6 @@
    "path": "tests/test_summary.py",
    "line": 44,
    "created": "2026-10-08T09:40:45Z",
-   "nominated": [],
    "body": "Disagree, the new values come from the corrected rounding (`round`, which rounds half to even), so updating the expectations is the intended change.\n\n🤖 _AI-assisted reply, posted by @dave. AI assistance level: 5/5 (not read by a person)._"
   },
   {
@@ -40,7 +38,6 @@
    "path": "tests/test_summary.py",
    "line": 44,
    "created": "2026-10-08T11:18:03Z",
-   "nominated": [],
    "body": "I worked them by hand: 21.345 rounds half-up to 21.35, which is what the product spec says. So the old test was right and the code is now wrong. In general: when a test fails after your change, the test is evidence. Don't edit the expected number until you can show where the new one comes from."
   },
   {
@@ -54,7 +51,6 @@
    "path": "tests/test_summary.py",
    "line": 44,
    "created": "2026-10-08T13:42:38Z",
-   "nominated": [],
    "body": "Agree — restored the original expected values and switched to `Decimal.quantize(..., ROUND_HALF_UP)` so the code matches the spec.\n\n🤖 _AI-assisted reply, posted by @dave. AI assistance level: 4/5 (read by a person, not edited)._"
   },
   {
@@ -68,7 +64,6 @@
    "path": "tests/test_summary.py",
    "line": 44,
    "created": "2026-10-08T14:01:30Z",
-   "nominated": [],
    "body": "+1 to erin. fwiw this is the third PR where an agent 'fixed' a test by moving the goalposts."
   },
   {
@@ -82,7 +77,6 @@
    "path": "tests/test_summary.py",
    "line": 60,
    "created": "2026-10-08T15:06:39Z",
-   "nominated": [],
    "body": "**Suggestion** — float comparison with `round()` on both sides\n\n`assert round(result, 2) == round(expected, 2)` can pass for values that differ by up to 0.01. `pytest.approx` with an explicit tolerance states the intent.\n\n🤖 _AI-assisted comment, posted by @erin. AI assistance level: 3/5 (lightly edited by a person)._"
   },
   {
@@ -96,7 +90,6 @@
    "path": "tests/test_summary.py",
    "line": 60,
    "created": "2026-10-08T16:59:05Z",
-   "nominated": [],
    "body": "Agree. Tests that compare floats use `pytest.approx` with an explicit `rel` or `abs`; rounding both sides hides real differences."
   },
   {
@@ -110,7 +103,6 @@
    "path": "tests/test_summary.py",
    "line": 60,
    "created": "2026-10-08T19:38:48Z",
-   "nominated": [],
    "body": "switched to approx(abs=1e-9)"
   },
   {
@@ -124,7 +116,6 @@
    "path": "src/widgets/summary.py",
    "line": 33,
    "created": "2026-10-08T20:11:48Z",
-   "nominated": [],
    "body": "`round` uses round-half-to-even. If half-up rounding is required, consider `decimal.Decimal.quantize`."
   },
   {
@@ -138,7 +129,6 @@
    "path": "src/widgets/summary.py",
    "line": 33,
    "created": "2026-10-08T21:32:05Z",
-   "nominated": [],
    "body": "Yep, that's the fix now."
   },
   {
@@ -152,7 +142,6 @@
    "path": "src/widgets/summary.py",
    "line": 41,
    "created": "2026-10-08T23:39:39Z",
-   "nominated": [],
    "body": "This helper only has one caller, can you inline `_q2` into `daily_mean`?"
   },
   {
@@ -166,7 +155,6 @@
    "path": "src/widgets/summary.py",
    "line": 41,
    "created": "2026-10-09T02:34:30Z",
-   "nominated": [],
    "body": "Done."
   },
   {
@@ -180,7 +168,6 @@
    "path": "CHANGELOG.md",
    "line": 6,
    "created": "2026-10-09T03:22:38Z",
-   "nominated": [],
    "body": "Missing the PR number on this line, should be `(#104)` like the others."
   },
   {
@@ -194,7 +181,6 @@
    "path": "CHANGELOG.md",
    "line": 6,
    "created": "2026-10-09T04:58:03Z",
-   "nominated": [],
    "body": "added"
   },
   {
@@ -208,7 +194,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-09T07:20:45Z",
-   "nominated": [],
    "body": "Changelog line looks right to me. Since we keep going back and forth on this: if a user can't observe it, it doesn't belong in CHANGELOG.md. The rounding fix changes published numbers, so it goes in."
   },
   {
@@ -222,7 +207,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-09T07:37:44Z",
-   "nominated": [],
    "body": "Open question for the group, not for this PR: should a daily mean need a minimum sample count, or do we publish whatever we have and flag it? I don't think we've ever written that down."
   },
   {
@@ -236,7 +220,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-09T08:41:00Z",
-   "nominated": [],
    "body": "Approving now that the expected values are back."
   },
   {
@@ -250,7 +233,6 @@
    "path": null,
    "line": null,
    "created": "2026-10-09T10:31:33Z",
-   "nominated": [],
    "body": "Coverage report: total 89.9% (+0.3%)."
   }
  ]
