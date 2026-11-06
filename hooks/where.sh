@@ -26,7 +26,8 @@
 # names this one, or empty). `--fields --ticket <key>` takes the ticket
 # from the key, in the profile's ticket key pattern, rather than from the branch or context.md.
 # Where the profile's tracker is GitHub's, the key is the issue's number, `ticket=59`, and the
-# session-start line shows it as `#59`; with no pattern recorded, the pattern is `(issue-)?\d+`.
+# session-start line shows it as `#59`; the pattern is the standard's, never one detected, and
+# with none recorded it is `(issue-)?\d+`.
 #
 # .review/ is the one at the repository's top level, found from the SessionStart payload's cwd, or
 # the working directory when there is none, so a session in a subdirectory reads the same files.
@@ -68,13 +69,18 @@ branch=$(git symbolic-ref --short -q HEAD 2>/dev/null || echo "")
 # elsewhere only as last fetched; with --fields, for a skill, it may fetch one never fetched.
 [ -n "$fields" ] || export STANDARD_OFFLINE=1
 helper="$here/../scripts/profile.sh"
-if [ -f "$helper" ]; then . "$helper"; else profile_field() { printf '%s' "$2"; }; profile_ere() { printf '%s' "${1//\\d/[0-9]}"; }; profile_project() { :; }; fi
+if [ -f "$helper" ]; then . "$helper"; else profile_field() { printf '%s' "$2"; }; profile_ere() { printf '%s' "${1//\\d/[0-9]}"; }; profile_project() { :; }; profile_read_defaults() { :; }; fi
 key=$(profile_ere "$(profile_field ticket.pattern '')" 2>/dev/null) || key=""
-# A GitHub tracker's key is the issue number: a match is reduced to its digits, and with no pattern
-# recorded, `59-x`, `issue-59-x` and `feature/59-x` all name issue 59. A Jira tracker, or none,
-# keeps the pattern as recorded.
+# A GitHub tracker's key is the issue number: a match is reduced to its digits. Its pattern is the
+# one the standard records, never one detected from a Jira-keyed history, and with none,
+# `59-x`, `issue-59-x` and `feature/59-x` all name issue 59. A Jira tracker, or none, keeps the
+# profile's pattern.
+profile_read_defaults
 tracker=$(profile_project issue_tracker.kind 2>/dev/null) || tracker=""
-[ "$tracker" = github ] && [ -z "$key" ] && key='(issue-)?[0-9]+'
+if [ "$tracker" = github ]; then
+  key=$(profile_ere "$(profile_project ticket.pattern)" 2>/dev/null) || key=""
+  [ -n "$key" ] || key='(issue-)?[0-9]+'
+fi
 
 # A GitHub key, the last run of digits in what the pattern matched.
 number() { printf '%s' "$1" | grep -oE '[0-9]+' | tail -1; }

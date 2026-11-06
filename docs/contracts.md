@@ -490,8 +490,8 @@ and that has its own plan, `.review/implementation-plan-<branch>.md`, stays its 
 ticket (version 8). Where the profile's `issue_tracker.kind` is `github`, the key is the issue's
 number: a match is reduced to its digits, `ticket=59`, its plan
 `.review/implementation-plan-59.md`, a context page headed `# #59 · …` is its page, and the
-session-start line shows it as `#59`; with no `ticket.pattern` recorded, the pattern is
-`(issue-)?\d+`, so `59-x`, `issue-59-x` and `feature/59-x` give `59`. A Jira tracker, or none,
+session-start line shows it as `#59`; the pattern is the `ticket.pattern` the standard records,
+never one detected from the history, and with none it is `(issue-)?\d+`, so `59-x`, `issue-59-x` and `feature/59-x` give `59`. A Jira tracker, or none,
 reads the pattern as recorded (version 9). The files are read from the
 repository's top level, wherever in it the command runs (version 5). The lines print with or without
 `.review/`; a key outside the profile's pattern, another argument, no `jq`, or a reopened line

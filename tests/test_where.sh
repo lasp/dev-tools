@@ -374,6 +374,11 @@ printf "ticket:\n  pattern: 'GH-\\\\d+'\n$github" >standards/profile.yaml
 line=$(bash "$hook" --fields | head -1)
 check "a GitHub tracker's recorded pattern names the issue, reduced to its number" '[ "$line" = "ticket=7" ]'
 d=$(scratch 59-words) && made+=("$d") && cd "$d" || exit 1
+printf "$github" >standards/profile.yaml
+for b in PROJ-42-csv PROJ-43-x PROJ-44-y; do git branch "$b"; done
+line=$(bash "$hook" --fields | head -1)
+check "a GitHub tracker reads no pattern detected from a Jira-keyed history" '[ "$line" = "ticket=59" ]'
+d=$(scratch 59-words) && made+=("$d") && cd "$d" || exit 1
 line=$(bash "$hook" --fields | head -1)
 check "a Jira repository's branch 59-words names no ticket" '[ "$line" = "ticket=" ]'
 bash "$hook" --fields --ticket 59 >/dev/null 2>&1; rc=$?

@@ -57,8 +57,10 @@ gives it as `slug=`.
 issue_tracker.kind` prints `github`, a ticket is a GitHub issue at `issue_tracker.location`
 (`--field issue_tracker.location`, `none` meaning this repository's own issues), and its key is
 the issue's number: `59` in file names, `where.sh` and the scripts' arguments, `#59` wherever
-a person reads it. With no pattern recorded, `where.sh` reads a branch with `(issue-)?\d+`, so
-`59-retry`, `issue-59-retry` and `feature/59-retry` all name issue 59. A number given as the
+a person reads it. The pattern is the one the standard records (`--defaults --field
+ticket.pattern`), never one detected from the repository's history, and with none, `where.sh`
+reads a branch with `(issue-)?\d+`, so `59-retry`, `issue-59-retry` and `feature/59-retry` all
+name issue 59. A number given as the
 argument, `59` or `#59`, is an issue or a pull request: one `issue_read` `get` on it, at the
 tracker's location, decides, a pull request being one whose `html_url` holds `/pull/`. An issue is
 the ticket, given to `where.sh` as `--ticket 59`. Anywhere else a bare number is a pull request.
