@@ -33,7 +33,11 @@ not written from the diff:
   (Context on a ticket in the earlier format), from the context page when there is one, and
   otherwise from one `source-reader` running the task `ticket <key>`, asking the author for it,
   as the why-gate does, when the server cannot be reached, said as
-  `<plugin root>/skills/work/servers.md` sets out with the ticket's sentence as what is lost. Read a context page's first line
+  `<plugin root>/skills/work/servers.md` sets out with the ticket's sentence as what is lost.
+  Where the tracker is GitHub's (`python3 "<plugin root>/scripts/profile.py" --defaults --field
+  issue_tracker.kind` prints `github`), the key is the issue's number and the line writes it
+  `Ticket: #<n> · <sentence>`, the sentence its first under Motivation, or the body's first without one, never `Closes #<n>` or another
+  closing keyword, since a ticket may take more than one pull request. Read a context page's first line
   on its own before the rest (`<plugin root>/skills/writing/references/short.md`, "Controlled content"). A context page that opens with a `Controlled:` line
   puts its key on the line and no sentence yet: name only the key, where it sits and the warning, quoted,
   describe nothing of it, not even where you stopped, and ask whether to read the page; on a yes,

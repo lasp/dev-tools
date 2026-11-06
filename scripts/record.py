@@ -10,7 +10,8 @@ the shape of `tests/fixtures/pr-0042/expected.yaml`.
 The record is the harvest's working form: the pull request's threads are the record, and
 `revise` regenerates this file from them at each revision; nothing writes it at review
 time. The ticket is the key on the body's `Ticket:` line, in the ticket key pattern of the
-repository's profile (`scripts/profile.py`), or `none`; a body with a `Ticket:` line under a
+repository's profile (`scripts/profile.py`), or on a GitHub tracker the issue's `#<n>`, recorded
+as its number, or `none`; a body with a `Ticket:` line under a
 profile that profile.py refuses, or one whose pattern reads `not yet recorded`, or a body with
 more than one `Ticket:` line, is refused. A
 ticket in several pull requests gives `stack:` from that line's `part k of n · base: <branch>`
@@ -191,6 +192,21 @@ def ticket_pattern(repo: str) -> str:
     if ticket == profile.NOT_RECORDED or ticket["pattern"] == profile.NOT_RECORDED:
         raise Unsupported(f"the profile for {repo} has no ticket.pattern recorded")
     return ticket["pattern"]
+
+
+def ticket_key(repo: str, line: str) -> str:
+    """The ticket the body's `Ticket:` line names, or `none`: on a GitHub tracker the issue's
+    `#<n>`, recorded as its number, whatever the pattern; otherwise the key in the profile's pattern."""
+    profile = load_profile()
+    try:
+        tracker = profile.defaults(ROOT, repo)["issue_tracker"]
+    except (profile.ProfileError, OSError) as e:
+        raise Unsupported(f"the profile is refused: {e}") from e
+    if tracker != profile.NOT_RECORDED and tracker["kind"] == "github":
+        t = re.search(r"(?<![\w&])#(\d+)\b", line)
+    else:
+        t = re.search(rf"\b({ticket_pattern(repo)})\b", line)
+    return t.group(1) if t else "none"
 
 
 def is_bot(login: str) -> bool:
@@ -948,8 +964,7 @@ def build(
             f"  ripple: {ripple(block)}",
         ]
     line = ticket_line(body)
-    t = re.search(rf"\b({ticket_pattern(repo)})\b", line) if line else None
-    ticket = t.group(1) if t else "none"
+    ticket = ticket_key(repo, line) if line else "none"
     # A ticket in several pull requests: this one's part, and the criteria it claims.
     part = re.search(r"· part (\d+) of (\d+) · base: (\S+)", line) if line else None
     stack = f"{{part: {part.group(1)}, of: {part.group(2)}, base: {q(part.group(3))}}}" if part else "none"

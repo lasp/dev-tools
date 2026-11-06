@@ -1,0 +1,69 @@
+{
+  "me": {"login": "sbx-person", "id": 1001},
+  "labels": [
+    {"id": "LA_1", "name": "needs-refinement", "color": "fbca04", "description": "Filed; to be vetted and refined"},
+    {"id": "LA_2", "name": "ready", "color": "0e8a16", "description": "Approved; ready to build"},
+    {"id": "LA_3", "name": "in progress", "color": "1d76db", "description": "Being built"},
+    {"id": "LA_4", "name": "enhancement", "color": "a2eeef", "description": "New feature or request"}
+  ],
+  "issues": [
+    {
+      "number": 9,
+      "title": "Count widgets by part",
+      "body": "## Motivation\n\nThe warehouse team counts stock by part number, and the inventory only gives one total.\n\n## Acceptance Criteria\n\n1. `by_part` returns each part's count.\n",
+      "state": "closed",
+      "state_reason": "completed",
+      "labels": [],
+      "assignees": [{"id": 1002, "login": "bob-example"}],
+      "user": {"id": 1002, "login": "bob-example"},
+      "created_at": "2026-01-08T10:00:00Z",
+      "updated_at": "2026-01-12T16:00:00Z",
+      "closed_at": "2026-01-12T16:00:00Z",
+      "closed_by": "bob-example",
+      "comments": [
+        {"id": 9001, "body": "Done in #15.", "user": {"id": 1002, "login": "bob-example"}, "created_at": "2026-01-12T16:00:00Z", "updated_at": "2026-01-12T16:00:00Z", "author_association": "MEMBER"}
+      ]
+    },
+    {
+      "number": 12,
+      "title": "Warn when a restock run reads an empty inventory",
+      "body": "The nightly restock run reads the inventory and orders whatever is short. An empty inventory, as after a failed export, reads as every part short, so it orders everything. It should stop and say the inventory is empty.",
+      "state": "open",
+      "labels": [],
+      "assignees": [],
+      "user": {"id": 1003, "login": "alice-example"},
+      "created_at": "2026-02-02T09:30:00Z",
+      "updated_at": "2026-02-02T09:30:00Z",
+      "comments": []
+    },
+    {
+      "number": 14,
+      "title": "Report parts below a minimum count",
+      "body": "## Motivation\n\nThe warehouse team needs the parts to reorder before the nightly restock run.\n\n## Driving Requirements\n\n### Acceptance Criteria\n\n1. `low_stock(minimum)` lists each part whose count is under `minimum`, in part order.\n2. A negative `minimum` raises `ValueError`.\n",
+      "state": "open",
+      "labels": ["ready", "enhancement"],
+      "assignees": [],
+      "user": {"id": 1003, "login": "alice-example"},
+      "created_at": "2026-02-10T14:00:00Z",
+      "updated_at": "2026-02-11T08:00:00Z",
+      "comments": [
+        {"id": 14001, "body": "Approved for the next restock release.", "user": {"id": 1002, "login": "bob-example"}, "created_at": "2026-02-11T08:00:00Z", "updated_at": "2026-02-11T08:00:00Z", "author_association": "MEMBER"}
+      ]
+    }
+  ],
+  "pulls": [
+    {
+      "number": 15,
+      "title": "Count widgets by part",
+      "body": "Ticket: #9 · The warehouse team counts stock by part number.\n\n## Summary\n\nAdds `by_part`.\n",
+      "state": "closed",
+      "merged": true,
+      "draft": false,
+      "user": {"id": 1002, "login": "bob-example"},
+      "head": "9-by-part",
+      "created_at": "2026-01-10T10:00:00Z",
+      "updated_at": "2026-01-12T16:00:00Z",
+      "closed_at": "2026-01-12T16:00:00Z"
+    }
+  ]
+}

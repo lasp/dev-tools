@@ -30,10 +30,10 @@ of it. The first row that matches decides:
 | mark-ready: a draft, every thread answered | nothing: mark it ready for review; a fix taken as made from a judged reply is named, to confirm |
 | answered: every thread answered | nothing: the merge is a person's; discuss threads, and a fix taken as made from a judged reply, are named |
 | elsewhere: the ticket's context page names other branches, not this one | nothing: switch to its branch |
-| unfiled: no key, and the fields' `slug=` names a ticket `ticket-draft` drafted that is not filed in Jira | nothing: file its `.jira.txt`, or have `ticket-draft <slug>` file it or take its key |
-| ticket-draft: no context page, the ticket in a status whose `next` is ticket-draft, or unknown, or no key | ticket-draft |
-| ticket-to-do: no context page, the ticket in a status whose `next` is implement-change (`--ticket-status`) and no pull request | implement-change |
-| ticket-closed: no context page, the ticket in a status whose `next` is nothing, and no pull request | nothing |
+| unfiled: no key, and the fields' `slug=` names a ticket `ticket-draft` drafted that is not filed | nothing: file its `.jira.txt`, or have `ticket-draft <slug>` file it or take its key |
+| ticket-draft: no context page, the ticket in a status whose `next` is ticket-draft, or unknown, or no key; or an open GitHub issue with no mapped label | ticket-draft |
+| ticket-to-do: no context page, the ticket in a status whose `next` is implement-change (`--ticket-status`, or an open GitHub issue's mapped label) and no pull request | implement-change |
+| ticket-closed: no context page, the ticket in a status whose `next` is nothing, or a closed GitHub issue, and no pull request | nothing |
 | plan: a context page and no plan file, or one with no `Approved by:` line, a draft | implement-change, at its plan review |
 | build: an approved plan and no outcome for this branch | implement-change, resuming |
 | diff-gate: an outcome and a dirty tree | implement-change, at its diff gate |
@@ -52,10 +52,15 @@ criterion is claimed by a merged pull request. A ticket with no context page her
 `issue_tracker.pr_statuses` of the repository's standard, or the default profile, needs the state
 block, since its pull request may exist elsewhere. A missing, unreadable or contradictory input
 exits 1 with the reason, as do statuses (the profile's `issue_tracker`) that cannot be read when the
-status is needed. Where no Jira workflow is recorded, as for a repository whose standard records
-none or whose tracker is GitHub's, every
-status routes to ticket-draft, as with no status read, and the reason names the status and that no
-workflow is recorded.
+status is needed. Where no workflow is recorded, every status routes to ticket-draft, as with no
+status read, and the reason names the status and that no workflow is recorded.
+
+On a GitHub tracker the ticket is an issue, its key the number, which the first line writes `#<n>`.
+Its status is `--issue-state open|closed` and a `--label` for each of its labels: a closed issue is
+ticket-closed, an open one with no label the profile's `issue_tracker.statuses` maps is ticket-draft,
+and one with a mapped label goes to that label's `next`; an issue with two mapped labels exits 1, as
+do `--ticket-status` on a GitHub tracker, `--issue-state` on any other, and `--label` without
+`--issue-state`. A label the profile does not map is not a status and is passed over.
 Stdlib only.
 """
 
@@ -91,20 +96,27 @@ class Refused(Exception):
     """An input this script does not read."""
 
 
-def workflow() -> tuple[dict[str, str], tuple[str, ...]] | None:
-    """The Jira statuses, lowercased, each with where a ticket with no context page here goes,
-    and the statuses at which its pull request may exist with no local page, which work reads
-    first; from the repository's standard over the default profile, whose refusal is this script's. None when no workflow is recorded."""
+def workflow() -> tuple[str, dict[str, str], tuple[str, ...]] | None:
+    """The tracker's kind, `jira` or `github`; its statuses, Jira statuses or GitHub labels,
+    lowercased, each with where a ticket with no context page here goes; and the statuses at which
+    its pull request may exist with no local page, which work reads first; from the repository's
+    standard over the default profile, whose refusal is this script's. None when no workflow is
+    recorded."""
     spec = importlib.util.spec_from_file_location("profile", ROOT / "scripts" / "profile.py")
     profile = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(profile)
     try:
-        jira = profile.defaults(ROOT)["issue_tracker"]
+        tracker = profile.defaults(ROOT)["issue_tracker"]
     except (profile.ProfileError, OSError) as e:
-        raise Refused(f"the Jira statuses could not be read: {e}") from e
-    if jira == profile.NOT_RECORDED or jira["kind"] != "jira":
+        raise Refused(f"the tracker's statuses could not be read: {e}") from e
+    if tracker == profile.NOT_RECORDED:
         return None
-    return {s["name"].lower(): s["next"] for s in jira["statuses"]}, tuple(s.lower() for s in jira["pr_statuses"])
+    return tracker["kind"], {s["name"].lower(): s["next"] for s in tracker["statuses"]}, tuple(s.lower() for s in tracker["pr_statuses"])
+
+
+def shown(ticket: str) -> str:
+    """The ticket as people see it: a GitHub issue's number as `#<n>`, a Jira key as it is."""
+    return f"#{ticket}" if ticket.isdigit() else ticket
 
 
 def read_local_review(text: str) -> dict | None:
@@ -157,9 +169,11 @@ def read_state(text: str) -> dict:
         raise Refused("the state block has no '## pr-NNNN — state' heading, head:, draft:, state: or author: line")
     if not re.search(r"^contract: 6\s*$", text, re.M):
         raise Refused("the state block is not contract 6")
-    # The first ticket key on the body's Ticket: line, as record.py reads it, a link included.
+    # The first ticket key on the body's Ticket: line, as record.py reads it, a link included: a
+    # Jira key, or a GitHub issue's `#<n>`, read as its number.
     line = re.search(r"^ticket: Ticket:(.*)$", text, re.M)
-    ticket = re.search(r"\b([A-Z][A-Z0-9_]*-\d+)\b", line.group(1)) if line else None
+    key = re.search(r"\b([A-Z][A-Z0-9_]*-\d+)\b|(?<![\w&])#(\d+)\b", line.group(1)) if line else None
+    ticket = (key.group(1) or key.group(2)) if key else ""
     reviewed = re.findall(r"^findings review: \S+ reviewed: ([0-9a-f]{7,40})", text, re.M)
     rows = []
     table = text.split("\nid | ", 1)
@@ -190,7 +204,7 @@ def read_state(text: str) -> dict:
         "draft": draft.group(1) == "true",
         "state": state.group(1),
         "author": author.group(1),
-        "ticket": ticket.group(1) if ticket else "",
+        "ticket": ticket,
         "reviewed": reviewed,
         "rows": rows,
     }
@@ -217,10 +231,33 @@ def row(phase: str, argument: str, why: str, say: str) -> dict:
     return {"phase": phase, "argument": argument, "why": why, "say": say}
 
 
+def issue_row(ticket: str, state: str, labels: list[str], statuses: dict[str, str], pr_statuses: tuple[str, ...], pr: dict | None) -> dict:
+    """The row for a GitHub issue with no context page here, from its state and the labels the
+    profile maps: a closed issue is past the build, an open one with no mapped label is filed, and
+    one with a mapped label goes where that label says. Two mapped labels are refused."""
+    n = shown(ticket)
+    if state == "closed":
+        return row("nothing", ticket, "ticket-closed", f"{n} is closed")
+    mapped = [label for label in labels if label.strip().lower() in statuses]
+    if len(mapped) > 1:
+        raise Refused(f"{n} carries {', '.join(mapped)}, {len(mapped)} of the labels the profile's issue_tracker maps; it takes at most one")
+    if not mapped:
+        return row("ticket-draft", ticket, "ticket-draft", f"no context page; {n} is open with no status label")
+    label = mapped[0].strip()
+    if label.lower() in pr_statuses and pr is None:
+        raise Refused(f"{n} is labeled {label}: pass the state block of its pull request, or pull request: none")
+    phase = statuses[label.lower()]
+    if phase == "implement-change":
+        return row("implement-change", ticket, "ticket-to-do", f"{n} is labeled {label}, with no context page here")
+    if phase == "nothing":
+        return row("nothing", ticket, "ticket-closed", f"{n} is labeled {label}")
+    return row("ticket-draft", ticket, "ticket-draft", f"no context page; {n} is labeled {label}")
+
+
 def decide(
     fields: dict, pr: dict | None, ticket_status: str, reviewed_this_loop: bool, pr_given: str,
     stack: list[dict] | None = None, criteria: list[str] | None = None,
-    local_review: dict | None = None, me: str = "",
+    local_review: dict | None = None, me: str = "", issue_state: str = "", labels: list[str] | None = None,
 ) -> dict:
     """The row that matches, as phase, argument and why."""
     ticket = fields["ticket"]
@@ -232,7 +269,7 @@ def decide(
         raise Refused(f"--pr {pr_given} needs that pull request's state block")
     if has_pr and pr_given and pr["ticket"] != ticket:
         if pr["ticket"]:
-            raise Refused(f"the fields are {ticket or 'no ticket'}'s, but #{pr['number']} is {pr['ticket']}'s: pass where.sh --fields --ticket {pr['ticket']}")
+            raise Refused(f"the fields are {shown(ticket) or 'no ticket'}'s, but #{pr['number']} is {shown(pr['ticket'])}'s: pass where.sh --fields --ticket {pr['ticket']}")
         # A pull request that names no ticket: this working tree's ticket facts, its stack among
         # them, are not its.
         fields = dict(fields, ticket="", reopened="", part="", elsewhere="")
@@ -343,12 +380,18 @@ def decide(
     if fields["elsewhere"]:
         return row("nothing", ticket, "elsewhere", f"built on {fields['elsewhere']}, not here")
     if fields["slug"]:
-        return row("nothing", fields["slug"], "unfiled", f"drafted as {fields['slug']}, not filed in Jira")
+        return row("nothing", fields["slug"], "unfiled", f"drafted as {fields['slug']}, not filed")
     if not fields["context"]:
         status = ticket_status.strip().lower()
-        known = workflow() if ticket and status else None
+        known = workflow() if ticket and (status or issue_state) else None
+        if ticket and issue_state and (not known or known[0] != "github"):
+            raise Refused("--issue-state is a GitHub tracker's, and the profile's issue_tracker records no GitHub tracker")
+        if known and known[0] == "github":
+            if status:
+                raise Refused("a GitHub tracker's status is --issue-state with a --label per label, not --ticket-status")
+            return issue_row(ticket, issue_state, labels or [], known[1], known[2], pr)
         if known:
-            statuses, pr_statuses = known
+            _, statuses, pr_statuses = known
             if status not in statuses:
                 raise Refused(f"the ticket status {ticket_status!r} is not one of the statuses the profile's issue_tracker names")
             if status in pr_statuses and pr is None:
@@ -358,7 +401,7 @@ def decide(
             if statuses[status] == "nothing":
                 return row("nothing", ticket, "ticket-closed", f"{ticket} is {ticket_status}")
         if ticket and status and not known:
-            return row("ticket-draft", ticket, "ticket-draft", f"no context page; {ticket} is {ticket_status}, and no Jira workflow is recorded")
+            return row("ticket-draft", ticket, "ticket-draft", f"no context page; {ticket} is {ticket_status}, and no workflow is recorded")
         return row("ticket-draft", ticket, "ticket-draft", "no context page")
     if not Path(fields["plan"]).is_file():
         return row("implement-change", ticket, "plan", "no plan yet")
@@ -390,16 +433,17 @@ NEXT = {
     "mark-ready": "Nothing: mark it ready for review on GitHub, then run work again after reviewers answer.",
     "answered": "Nothing: settle any discuss thread by saying whether you agree; the merge is a person's.",
     "build-stopped": "Nothing yet: retry the build, open the pull request anyway, or discuss.",
-    "ticket-closed": "Nothing: the ticket is past the build; open it in Jira to see why.",
-    "unfiled": "Nothing: file `.review/context/{argument}.jira.txt` in Jira, or have `/lasp-dev:ticket-draft {argument}` file it; "
+    "ticket-closed": "Nothing: the ticket is past the build; open it in the tracker to see why.",
+    "unfiled": "Nothing: file `.review/context/{argument}.jira.txt` in the tracker, or have `/lasp-dev:ticket-draft {argument}` file it; "
     "give it the key to rename the page, then run `/lasp-dev:work <key>`.",
 }
 
 
 def lines(ticket: str, d: dict, stack: list[dict] | None = None) -> list[str]:
+    # An argument of digits is a pull request's number, except a GitHub issue's own, the ticket.
     listed = "stack: " + ", ".join(f"#{s['number']} {s['state']}" for s in stack) if stack and len(stack) > 1 else ""
     head = " · ".join(
-        p for p in (ticket or "no ticket", listed, f"pull request #{d['argument']}" if d["argument"].isdigit() else "", d["say"]) if p
+        p for p in (shown(ticket) or "no ticket", listed, f"pull request #{d['argument']}" if d["argument"].isdigit() and d["argument"] != ticket else "", d["say"]) if p
     )
     if d["phase"] == "nothing":
         return [head, NEXT[d["why"]].format(argument=d["argument"]), "It will ask you: nothing."]
@@ -412,6 +456,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--state", type=Path, help="pr-reader's state block, saved to a file")
     p.add_argument("--pr", default="", help="the pull request work was given")
     p.add_argument("--ticket-status", default="", help="the ticket's Jira status, when it has no context page here")
+    p.add_argument("--issue-state", choices=("open", "closed"), default="", help="a GitHub issue's state, when it has no context page here")
+    p.add_argument("--label", action="append", default=[], help="one of that issue's labels; once per label")
     p.add_argument("--reviewed-this-loop", action="store_true", help="pr-review posted in this invocation of work")
     p.add_argument("--stack", type=Path, help="the ticket's pull requests, one `#<n> <state> <branch> <claims>` per line")
     p.add_argument("--criteria", default="", help="the ticket's Acceptance Criteria, such as AC-1,AC-2")
@@ -424,7 +470,9 @@ def main(argv: list[str] | None = None) -> int:
         stack = read_stack(args.stack.read_text()) if args.stack else None
         criteria = [c.strip() for c in args.criteria.split(",") if c.strip()]
         local = read_local_review(args.local_review.read_text()) if args.local_review else None
-        d = decide(fields, pr, args.ticket_status, args.reviewed_this_loop, args.pr, stack, criteria, local, args.me)
+        if args.label and not args.issue_state:
+            raise Refused("--label needs --issue-state")
+        d = decide(fields, pr, args.ticket_status, args.reviewed_this_loop, args.pr, stack, criteria, local, args.me, args.issue_state, args.label)
     except (Refused, OSError) as e:
         print(f"next_phase.py: {e}", file=sys.stderr)
         return 1
