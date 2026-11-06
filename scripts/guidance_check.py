@@ -39,7 +39,7 @@ KINDS = ("rule", "agent-guidance", "data-convention", "process", "decision", "to
          "review-calibration", "open-question")
 AUTHORSHIP = ("human", "ai-drafted", "bot")
 OUTCOMES = ("changed as asked", "changed differently", "declined", "discussed", "unanswered")
-COVERED = re.compile(r"(R|D)-\d+|instruction file")
+COVERED = re.compile(r"[RDAF]-\d+|instruction file")
 ITEM = {
     "pr": int, "comment_id": int, "url": str, "author": str, "authorship": AUTHORSHIP, "quote": str,
     "generality": GENERALITY, "signal": SIGNALS, "kind": KINDS, "principle": str, "rationale": (str, None),

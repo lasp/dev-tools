@@ -327,7 +327,7 @@ Pinned by: tests/test_comment_list.py::test_lists_every_comment_with_its_own_aut
 
 ## The guidance items
 
-Version: 1
+Version: 2
 
 Fields: `.review/harvest/guidance/slice-<n>.json`, one `guidance-extractor` run, a JSON object:
 `prs`, the pull request numbers whose comment lists it read, each once; `comments_read`, the
@@ -343,7 +343,7 @@ each with exactly these keys:
 | `kind` | `rule`, `agent-guidance`, `data-convention`, `process`, `decision`, `tool-config`, `exemplar`, `review-calibration` or `open-question` |
 | `principle` | one sentence in the extractor's words |
 | `rationale` | the comment's own reason, one passage of 1 to 40 of its own words, or `null` |
-| `covered_by` | `R-<n>`, `D-<n>`, `instruction file`, or `null` |
+| `covered_by` | `R-<n>`, `D-<n>`, `A-<n>`, `F-<n>`, `instruction file`, or `null` (version 2 adds `A-<n>` and `F-<n>`) |
 | `outcome` | `changed as asked`, `changed differently`, `declined`, `discussed` or `unanswered` |
 
 `scripts/guidance_check.py <slice> [...] --comments <comment-list.json> [...]`, given every slice
@@ -368,22 +368,25 @@ Pinned by: tests/test_guidance_check.py::test_a_run_true_to_its_comments_passes
 
 ## The guidance tally
 
-Version: 1
+Version: 2
 
 Fields: what `scripts/guidance_tally.py <slice> [...] --comments <comment-list.json> [...]` prints,
 given a run's slices and lists as `guidance_check.py` takes them, and refusing, with that check's
 lines and exit 1, any run the check refuses. One line per `general` item, in the slices' order,
 `<key>` being `s<n>-<i>`, the n-th slice given, from 1, and the item's index in it, from 0:
 
-- `admit · <key> · pr-NNNN · <comment id> · <author> · rule · <signal> · <url> · <quote>`: a
-  person's words (`authorship` `human`) of kind `rule` whose `signal` is `states a principle`,
-  `addresses agents` or `names a habit`, with `covered_by` null;
+- `admit · <key> · pr-NNNN · <comment id> · <author> · <kind> · <signal> · <url> · <quote>`: a
+  person's words (`authorship` `human`) with `covered_by` null, of kind `rule`, `agent-guidance`
+  or `process` with a `signal` of `states a principle`, `addresses agents` or `names a habit`, of
+  kind `data-convention` or `decision` with one of those or `cites a source`, or of kind `tool-config`, `exemplar`, `review-calibration` or
+  `open-question` with any signal;
 - `covered · <key> · pr-NNNN · <comment id> · <author> · <kind> · <covered_by> · <url> · <quote>`:
-  a person's general item a live rule, decision or the instruction file already says;
+  a person's general item a live rule, decision, agent guidance entry, data convention or the
+  instruction file already says;
 - `hold · <key> · pr-NNNN · <comment id> · <author> · <kind> · <criterion> · <url> · <quote>`: a
-  person's other general items, the criterion `no signal of generality` for signal `none`,
-  `signal <signal>, not one that admits`, or `a <kind> statement: revise proposes rules only` for
-  one of another kind that would otherwise admit;
+  person's other general items, the criterion `no signal of generality` for signal `none` or
+  `signal <signal>, not one that admits` (version 2: every kind admits; version 1 held all but
+  `rule` as `a <kind> statement: revise proposes rules only`);
 - `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
   general item the pull request's author changed as asked.
 
@@ -393,18 +396,22 @@ before it. A last line reads `items: <n> · admit: <n> · covered: <n> · hold: 
 not listed: <n>`.
 
 Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
-"Clusters" and `revise` `prepare` step 5, for the Admission Dial's single statements;
+"Clusters" and "Destinations", and `revise` `prepare` step 5, for the Admission Dial's single
+statements;
 `scripts/guidance_clusters.py`, which reads each line's fields by place.
 
 Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admits_and_the_rest_is_held_or_supports
 
 ## The guidance clusters
 
-Version: 1
+Version: 2
 
 Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
 object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
-once; `principle`, one sentence; `items`, the keys of the guidance tally's `admit`, `hold` and
+once; `kind`, the cluster's destination, one of the guidance items' nine kinds and, in a cluster
+with tally lines, the kind of at least one of its people's lines, or of a `support` line when it
+has no other, as harvest.md's "Destinations" reads it
+(version 2); `principle`, one sentence; `items`, the keys of the guidance tally's `admit`, `hold` and
 `support` lines it holds ("The guidance tally"); `notes`, other evidence, one line each, an
 analyst's ask as `pr-NNNN · <login> · <human|ai-drafted|bot> · <text>` or a pasted note as `pasted
 <file> · <name> · <text>`; and `held`, the title of the
@@ -417,7 +424,8 @@ refuses, one `refused · <where> · <why>` line each and exit 1, a file of any o
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
 no `--ledger`. Otherwise it
-prints per cluster `cluster · <id> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
+prints per cluster, its `admit` count only the `admit` lines of its kind and any other counted as
+`hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, a `held · <id> · <title>`
 line when it continues one, a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
@@ -950,7 +958,7 @@ Pinned by: tests/test_standard_file.sh::"the ledger stops before its held candid
 
 ## Agent guidance and data conventions
 
-Version: 1
+Version: 2
 
 Fields: the entries of a standard's `agent-guidance.md` and `data-conventions.md`, each a `###
 A-NNN · <title>` or `### F-NNN · <title>` heading, numbered in order, one series per file. Under
@@ -965,7 +973,11 @@ after the date line come in any order, and a code fence shows an example without
 leaves the file for the standard's `archive/`. `standards/templates/` holds a starting copy of each
 file.
 
-Writers: a person, from the templates. Readers: `scripts/entries_lint.py`, which checks the form;
+A data convention's owner may follow its source, `source: <document or owner> · owner: <name> ·
+<YYYY-MM>`, when a revision wrote a change the owner accepted (version 2).
+
+Writers: a person, from the templates; `revise` `apply`, which adds entries, moves an agent
+guidance entry's `seen` month and writes an accepted change to a data convention. Readers: `scripts/entries_lint.py`, which checks the form;
 `scripts/standard_file.sh`, which loads both files into the standard every build and review reads,
 after the terminology; `scripts/standard_index.py`, which lists each entry's id, title and, for
 agent guidance, its `seen` month.

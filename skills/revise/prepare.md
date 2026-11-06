@@ -175,7 +175,9 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    rate line reads `keep, insufficient evidence`; admission, establishment and expiry rest on no
    rate. A candidate that meets the Admission Dial is proposed whatever the rule count. The Low
    agree rate Dial's "still below at the next revision" reads the rules the previous report, the
-   newest `ratchet-*.md` in any `<log>` of the standard, proposed rewording under that Dial.
+   newest `ratchet-*.md` in any `<log>` of the standard, proposed rewording under that Dial. An
+   agent guidance entry past the Agent guidance expiry Dial, its `seen` month moved first as
+   harvest.md's "Destinations" says, is a proposal `A-NNN · retire`.
 
    **Dials at the margin.** For each Dial with values in its Either way column, list the rules
    and candidates whose measured value lies between the default and either value, and the
@@ -190,13 +192,14 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    `guidance_clusters.py` printout, when "Guidance" ran, each cluster's pull requests, people and
    `said` quotes as it prints them.
 
-   **Single statements.** A cluster admits on one guidance tally `admit` line alone, a person's
-   general statement, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
-   note admits the same way when a named person states a principle or asks for a rule in it,
-   cited `pasted <file>` with that person's name, when it is of kind `rule`. The tally holds a
-   statement of any other kind with its criterion. A cluster with no `admit` line and a `hold`
-   line is held with the tally's criterion. A `covered` line supports the live rule, decision or
-   instruction it names, listed under it in "Rules", and is no candidate. A `support` line, an agent's statement the author
+   **Single statements.** A cluster admits on one guidance tally `admit` line of its own kind
+   alone, a person's general statement, the `admit` count `guidance_clusters.py` prints, whatever the Recurring ask Dial counts, its quote the evidence. A pasted
+   note admits the same way when a named person states a principle or asks for a change in it,
+   cited `pasted <file>` with that person's name. Each admitted cluster is a proposal of its kind,
+   with the id and destination harvest.md's "Destinations" gives it. A cluster with no `admit` line and a `hold`
+   line is held with the tally's criterion. A `covered` line supports the live rule, decision,
+   agent guidance entry, data convention or instruction it names, listed under it in "Rules", and
+   is no candidate. A `support` line, an agent's statement the author
    changed as asked, never admits; it is listed under its cluster. Every line the tally prints
    reaches the report, as a proposal's evidence, a rule's support or a held candidate, never
    dropped.
@@ -207,17 +210,23 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
 6. **Merge the held candidates.** Merge this window's clusters into the ledger's "Candidates below
    the criteria", a cluster whose `held` line names a candidate into that one, re-judge each
    against the Dials, and propose each that now meets them. The rest
-   go under "Held candidates", each with its updated evidence, its quotes, and the criterion
-   still failing, never as a proposal to mark; drop one under the Candidate drop Dial and say so.
-   Then consolidate: proposals acting on the same rule become one; candidates asking for the same
-   change become one, with both sets of evidence; a candidate a live rule already covers becomes a
-   proposal to reword that rule, except a tally `covered` line, which only supports it.
+   go under "Held candidates", each with its updated evidence, its quotes, its kind and the
+   criterion still failing, never as a proposal to mark; drop one under the Candidate drop Dial
+   and say so. A held candidate's kind is its `kind:` line; one without whose criterion reads `a
+   <kind> statement: revise proposes rules only`, as an earlier revision wrote it, is that kind,
+   re-judged without that criterion; any other without is a rule. A cluster that names a held
+   candidate takes the cluster's kind. Then
+   consolidate: proposals acting on the same entry become one; candidates asking for the same
+   change become one, with both sets of evidence; a candidate a live entry of its kind already
+   covers changes that entry, as harvest.md's "Destinations" says, except a tally `covered` line,
+   which only supports it.
 
    **Tickets and documents.** Two kinds of proposal no Dial governs, marked like any other, and
    made below the Revision floor too, since they rest on no count of records:
    - `ticket/<slug>`, one per distinct problem still in the code: a thread step 2 lists as
-     `unanswered` with `diff: does not` whose analyst `by:` is `human`, or a sweep `breaks` line of
-     a claim not marked `drift`; either only while `git grep -nF -e '<the line>' origin/main --
+     `unanswered` with `diff: does not` whose analyst `by:` is `human`, a sweep `breaks` line of
+     a claim not marked `drift`, or a `tool/` proposal held for its violations on `origin/main`;
+     each only while `git grep -nF -e '<the line>' origin/main --
      <path>` still finds the line it names. Its evidence is the pull request and the thread id or
      `path:line`.
    - `doc/<path>`, for a documented claim the sweep marks `drift`: change the document to say what
@@ -231,7 +240,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    ships no `decisions.md`, so none is passed from `<plugin root>/standards/`. With `profiles/`,
    add `--profiles <standard files>/profiles/`; a rule that applies to only some repositories carries their `repos:`
    line. A proposal a
-   gate fails goes under "Held by the bar".
+   gate fails goes under "Held by the bar". Every other proposal is held to its kind's bar as
+   harvest.md's "Destinations" sets out, and one that fails it goes there too.
 
    With measures on, read `<plugin root>/skills/revise/measures.md` now and run it.
 8. **Refresh the context**, when the repository has `context/` entries or a page or epic was
@@ -248,11 +258,13 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
     medium when it rests on one person's statement in one pull request; low when it rests only on AI findings' agree
     rates, since a person's comment is more often about the design and a finding agreed to may
     have missed the mark; medium otherwise. No cap: the group takes them in order and leaves the
-    rest blank. Each line also says what the proposal applies to: project-wide, for a rule with no
-    `repos:` line or a `context/` entry, or the repositories its `repos:` line names, or, for a
-    `ticket/` or `doc/`, the repository whose code or document it names; and where `apply` would
-    change it: the standard's repository, this repository's diff, or, for a `ticket/`, Jira through
-    `ticket-draft`. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
+    rest blank. Each line also says what the proposal applies to: project-wide, for a rule,
+    decision or entry with no `repos:` line or a `context/` entry, or the repositories its
+    `repos:` line names, or, for a
+    `ticket/`, `doc/` or `tool/`, the repository whose code, document or configuration it names;
+    and where `apply` would change it: the standard's repository, this repository's diff, Jira
+    through `ticket-draft` for a `ticket/`, or, for a `question/`, the standard's repository once
+    answered. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
     diff and no archive entry. Ask, so `apply` can check the branch out: **Commit and push the
     branch** (Recommended: the group marks it on GitHub or in any checkout), **Commit only**,
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,

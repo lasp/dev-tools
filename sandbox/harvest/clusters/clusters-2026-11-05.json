@@ -2,6 +2,7 @@
  "clusters": [
   {
    "id": "C1",
+   "kind": "rule",
    "principle": "A test that needs a system library gets it installed in CI and the dev environment, never mocked or skipped away.",
    "items": [
     "s1-0",
@@ -16,6 +17,7 @@
   },
   {
    "id": "C2",
+   "kind": "agent-guidance",
    "principle": "Test data files stay small, trimmed to the records the test reads.",
    "items": [
     "s1-4",
@@ -26,6 +28,7 @@
   },
   {
    "id": "C3",
+   "kind": "data-convention",
    "principle": "A fill value is a property of each variable or column, looked up per field, never assumed file-wide or defaulted.",
    "items": [
     "s1-10",
@@ -40,6 +43,7 @@
   },
   {
    "id": "C4",
+   "kind": "data-convention",
    "principle": "Every timestamp read or written is UTC with a trailing Z, and anything else raises.",
    "items": [
     "s1-12",
@@ -51,6 +55,7 @@
   },
   {
    "id": "C5",
+   "kind": "tool-config",
    "principle": "A check reviewers keep making by eye is enabled in the linter configuration, covering every file.",
    "items": [
     "s1-14",
@@ -63,6 +68,7 @@
   },
   {
    "id": "C6",
+   "kind": "rule",
    "principle": "A comment describes what the code as it stands does, not past alternatives or history.",
    "items": [
     "s1-15",
@@ -76,6 +82,7 @@
   },
   {
    "id": "C7",
+   "kind": "data-convention",
    "principle": "A daily product never drops a day; a day with no samples gets a filled row with n_samples 0.",
    "items": [
     "s1-19"
@@ -85,6 +92,7 @@
   },
   {
    "id": "C8",
+   "kind": "agent-guidance",
    "principle": "No compatibility layers or shims for an installed base that does not exist yet.",
    "items": [
     "s1-21",
@@ -96,6 +104,7 @@
   },
   {
    "id": "C9",
+   "kind": "process",
    "principle": "The changelog records only changes a user of the package can observe.",
    "items": [
     "s1-23",
@@ -107,6 +116,7 @@
   },
   {
    "id": "C10",
+   "kind": "process",
    "principle": "Released changelog sections are frozen; new lines go under Unreleased.",
    "items": [
     "s1-82",
@@ -117,6 +127,7 @@
   },
   {
    "id": "C11",
+   "kind": "agent-guidance",
    "principle": "A diff stays within what its ticket asks.",
    "items": [
     "s1-25"
@@ -126,6 +137,7 @@
   },
   {
    "id": "C12",
+   "kind": "decision",
    "principle": "Config keys are snake_case everywhere, user YAML included.",
    "items": [
     "s1-29"
@@ -135,6 +147,7 @@
   },
   {
    "id": "C13",
+   "kind": "agent-guidance",
    "principle": "When a change makes a test fail, the expected values are derived independently, never edited, loosened or regenerated from the code under test.",
    "items": [
     "s1-30",
@@ -150,6 +163,7 @@
   },
   {
    "id": "C14",
+   "kind": "data-convention",
    "principle": "Rounding follows the product spec: half-up.",
    "items": [
     "s1-32"
@@ -159,6 +173,7 @@
   },
   {
    "id": "C15",
+   "kind": "rule",
    "principle": "Float comparisons in tests use pytest.approx with an explicit rel or abs tolerance.",
    "items": [
     "s1-35",
@@ -169,6 +184,7 @@
   },
   {
    "id": "C16",
+   "kind": "open-question",
    "principle": "Open question: whether a daily mean needs a minimum sample count.",
    "items": [
     "s1-41"
@@ -178,6 +194,7 @@
   },
   {
    "id": "C17",
+   "kind": "review-calibration",
    "principle": "Type hints are not required on private helpers.",
    "items": [
     "s1-48"
@@ -187,6 +204,7 @@
   },
   {
    "id": "C18",
+   "kind": "agent-guidance",
    "principle": "A failing lint check is fixed, and a noqa goes in only with a reason on the same line.",
    "items": [
     "s1-59",
@@ -197,6 +215,7 @@
   },
   {
    "id": "C19",
+   "kind": "process",
    "principle": "Every CI job pins the Python minor version.",
    "items": [
     "s1-61"
@@ -206,6 +225,7 @@
   },
   {
    "id": "C20",
+   "kind": "exemplar",
    "principle": "csv_reader.read_station is the exemplar reader.",
    "items": [
     "s1-74"
@@ -215,6 +235,7 @@
   },
   {
    "id": "C21",
+   "kind": "review-calibration",
    "principle": "Findings about test helper names are not worth a review thread.",
    "items": [
     "s1-75"
@@ -224,6 +245,7 @@
   },
   {
    "id": "C22",
+   "kind": "process",
    "principle": "Below 1.0, a breaking change bumps the minor version.",
    "items": [
     "s1-77"
@@ -233,6 +255,7 @@
   },
   {
    "id": "C23",
+   "kind": "agent-guidance",
    "principle": "A lookup that misses raises KeyError naming what was asked for, never returns None.",
    "items": [
     "s1-87",
@@ -243,6 +266,7 @@
   },
   {
    "id": "C24",
+   "kind": "open-question",
    "principle": "Open question: whether readers return xarray Datasets or pandas DataFrames.",
    "items": [
     "s1-94"
@@ -252,6 +276,7 @@
   },
   {
    "id": "C25",
+   "kind": "data-convention",
    "principle": "Every written variable carries a units attribute, dimensionless ones included.",
    "items": [
     "s1-100",
@@ -262,6 +287,7 @@
   },
   {
    "id": "C26",
+   "kind": "rule",
    "principle": "A writer refuses to overwrite an existing product rather than replacing it.",
    "items": [
     "s1-105"
@@ -271,6 +297,7 @@
   },
   {
    "id": "C27",
+   "kind": "tool-config",
    "principle": "pytest runs with DeprecationWarning as an error.",
    "items": [
     "s1-108"
@@ -280,6 +307,7 @@
   },
   {
    "id": "C28",
+   "kind": "rule",
    "principle": "File-handling functions take pathlib.Path and callers convert at the edge.",
    "items": [
     "s1-3"
@@ -289,6 +317,7 @@
   },
   {
    "id": "C29",
+   "kind": "data-convention",
    "principle": "Station files are small enough that the proposed change is not needed.",
    "items": [
     "s1-71"
