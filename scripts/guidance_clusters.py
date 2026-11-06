@@ -34,9 +34,10 @@ admit it; an `admit` line of another kind counts under `hold`. Its pull requests
 its `admit` and `hold` lines and its `human` notes, which the Recurring ask Dial counts, and its
 people the authors of those and of its pasted notes, an agent's or a bot's words never counting
 for either, then `prs · <id> · pr-NNNN, ...`, `people ·
-<id> · <login>, ...`, `priority · <id> · <low|medium|high> · <n> pull requests`, its pull requests
-with those of its `support` lines, an agent's finding the author changed as asked, at the
-Recurring ask Dial's counts in `standards/dials.md`, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
+<id> · <login>, ...`, `priority · <id> · <low|medium|high> · <n> pull request(s)`, at the
+Recurring ask Dial's counts in `standards/dials.md`, of its pull requests, with the `pr-NNNN` the
+held candidate it continues names in the ledger, accumulated across revisions, and, when it has
+people, those of its `support` lines, an agent's finding the author changed as asked, `held · <id> · <title>` when it joins one, `note · <id> · <note>` for each
 note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
@@ -94,19 +95,24 @@ def tally_lines(text: str) -> dict[str, dict]:
 NOTE = re.compile(r"(pr-\d{4,}) · (\S+) · (human|ai-drafted|bot) · \S.*|pasted (\S+) · ([^·]+?) · \S.*")
 
 
-def held_titles(ledger: str) -> set[str]:
-    """The titles of the ledger's held candidates: each heading under the line `## Candidates
-    below the criteria`, and each bullet there that opens with a bold title, `- **<title>**`, a
-    trailing full stop left off either."""
+def held_titles(ledger: str) -> dict[str, set[str]]:
+    """The ledger's held candidates by title, each with the pull requests its evidence names,
+    `pr-NNNN` up to the next title: each heading under the line `## Candidates below the criteria`,
+    and each bullet there that opens with a bold title, `- **<title>**`, a trailing full stop left
+    off either."""
     lines = ledger.splitlines()
     at = next((i for i, line in enumerate(lines) if line.rstrip() == HELD), None)
     if at is None:
-        return set()
-    out = set()
+        return {}
+    out: dict[str, set[str]] = {}
+    title = None
     for line in lines[at + 1:]:
         m = re.match(r"#{2,4} (.+)", line) or re.match(r"[-*] \*\*(.+?)\*\*", line)
         if m:
-            out.add(m[1].strip().rstrip("."))
+            title = m[1].strip().rstrip(".")
+            out.setdefault(title, set())
+        if title is not None:
+            out[title] |= {f"pr-{int(n):04d}" for n in re.findall(r"\bpr-(\d{1,})\b", line)}
     return out
 
 
@@ -118,7 +124,7 @@ def priorities() -> tuple[int, int, int]:
     return int(m[1]), int(m[2]), int(m[3])
 
 
-def check(clusters, lines: dict[str, dict], headings: set[str] | None) -> list[str]:
+def check(clusters, lines: dict[str, dict], headings: dict[str, set[str]] | None) -> list[str]:
     if not isinstance(clusters, dict) or set(clusters) != {"clusters"} or not isinstance(clusters["clusters"], list):
         return ["refused · clusters · not an object with a clusters list"]
     faults, seen, ids = [], {}, set()
@@ -215,7 +221,8 @@ def main(argv: list[str] | None = None) -> int:
               + f" · prs {len(prs)} · people {len(people)} · {c['principle']}")
         print(f"prs · {c['id']} · {', '.join(prs) or 'none'}")
         print(f"people · {c['id']} · {', '.join(people) or 'none'}")
-        asked = len(set(prs) | {lines[k]["pr"] for k in keys if lines[k]["word"] == "support"})
+        earlier = headings[c["held"].rstrip(".")] if c["held"] else set()
+        asked = len(set(prs) | earlier | ({lines[k]["pr"] for k in keys if lines[k]["word"] == "support"} if people else set()))
         level = "high" if asked >= high else "medium" if asked >= medium else "low"
         print(f"priority · {c['id']} · {level} · {asked} pull request{'' if asked == 1 else 's'}")
         if c["held"]:

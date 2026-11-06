@@ -1,8 +1,8 @@
 # The plugin's standards
 
 What every project's standard is held to, shipped with the plugin: how every reviewer behaves
-(`review-contract.md`), the bar a rule meets (`rule-bar.md`), the thresholds the revision and the
-planning skills apply (`dials.md`), the ticket description every tracker writes
+(`review-contract.md`), the bar a rule meets (`rule-bar.md`), the thresholds the revision applies
+(`dials.md`), the ticket description every tracker writes
 (`ticket-format.md`) and the default profile (`default-profile.yaml`, with `profile.example.yaml`
 as its template). A project's own standard holds the rest: its vocabulary,
 its decisions, `context/`, `archive/`, each repository's rules and each repository's records. That
@@ -70,7 +70,8 @@ what is detected and the default profile's.
 
 ## Dials
 
-The thresholds the revision and the planning skills apply are in `standards/dials.md`.
+The thresholds the revision applies are in `standards/dials.md`; a threshold another skill applies
+lives in the file that applies it.
 
 ## Numbering
 

@@ -158,6 +158,16 @@ class Clusters(unittest.TestCase):
         self.assertEqual([x for x in lines if x.startswith("priority")],
                          ["priority · C1 · low · 1 pull request", "priority · C2 · medium · 2 pull requests",
                           "priority · C3 · low · 1 pull request"])
+        agents = {**one, "id": "C4", "items": ["s1-3"]}
+        two_only = {**two, "items": ["s1-0"]}
+        lines = self.run_clusters({"clusters": [one, two_only, rest, agents]})[1]
+        self.assertIn("priority · C4 · low · 0 pull requests", lines)
+        held = {**one, "held": "Keyword-only arguments for flags"}
+        lines = self.run_clusters({"clusters": [held, two, rest]})[1]
+        self.assertIn("priority · C1 · medium · 2 pull requests", lines)
+        three = {**two, "items": ["s1-0", "s1-2", "s1-4"]}
+        lines = self.run_clusters({"clusters": [three, {**one, "id": "C3", "kind": "process", "items": ["s1-3", "s1-5"]}]})[1]
+        self.assertIn("priority · C2 · high · 3 pull requests", lines)
         dials = self.dir / "dials.md"
         dials.write_text("| Recurring ask | 2 pull requests |\n")
         with unittest.mock.patch.object(guidance_clusters, "DIALS", dials):

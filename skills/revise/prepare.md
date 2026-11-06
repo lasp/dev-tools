@@ -173,7 +173,8 @@ run does there, such as "gadgets: R-002; archived and counted, its threads not r
    repository with its lines against its budget, `budget ok` or over it. Name the Dial beside each proposal. Below the Minimum settled
    firings before a rate is read Dial, no proposal resting on a rate is made for that rule, and its
    rate line reads `keep, insufficient evidence: <agree> agree, <disagree> disagree of <n> settled
-   since <date>`, its counts the all-records table's, so the group sees them build; admission, establishment and expiry rest on no
+   since <date>`, its counts the all-records table's, or step 3's rerun for a reworded or
+   corrected rule, so the group sees them build; admission, establishment and expiry rest on no
    rate. A candidate that meets the Admission Dial is proposed whatever the rule count. The Low
    agree rate Dial's "still below at the next revision" reads the rules the previous report, the
    newest `ratchet-*.md` in any `<log>` of the standard, proposed rewording under that Dial. An
