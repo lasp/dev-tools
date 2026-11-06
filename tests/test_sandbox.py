@@ -227,6 +227,112 @@ class TrackerPack(unittest.TestCase):
 
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
+class TrackerGithubPack(unittest.TestCase):
+    """sandbox/tracker-github/: scenarios against a GitHub issue tracker the pack's read-only stub serves."""
+
+    PACK = ROOT / "sandbox" / "tracker-github" / "scenarios.yaml"
+    STUB = ROOT / "sandbox" / "tracker-github" / "fixture" / "github-mcp-server-stub.py"
+    SERVER = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py"]}
+
+    def setUp(self):
+        patch = mock.patch.object(run, "SCENARIOS", self.PACK)
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.known = run.scenarios()
+
+    def serve(self, *requests: dict) -> list[dict]:
+        lines = "".join(json.dumps({"jsonrpc": "2.0", **r}) + "\n" for r in requests)
+        out = subprocess.run([sys.executable, "-I", str(self.STUB)], input=lines, capture_output=True, text=True, check=True).stdout
+        return [json.loads(line) for line in out.splitlines()]
+
+    def call(self, name: str, **arguments) -> dict:
+        (reply,) = self.serve({"id": 1, "method": "tools/call", "params": {"name": name, "arguments": arguments}})
+        return reply["result"]
+
+    def read(self, name: str, **arguments) -> dict:
+        result = self.call(name, owner="example", repo="widgets", **arguments)
+        self.assertFalse(result["isError"], result)
+        return json.loads(result["content"][0]["text"])
+
+    def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
+        self.assertEqual(set(self.known), {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch"})
+        well_formed(self, self.known, {"widgets"})
+        for s in self.known.values():
+            self.assertEqual(s["expect"]["mcp"], ["mcp__github__issue_read"], s["id"])
+            for name in re.findall(r'"\$SBX_FIXTURES/([^"]+)"', " ".join(s.get("setup", []))):
+                self.assertTrue((run.fixture_dir() / name).is_file(), (s["id"], name))
+
+    def test_the_documented_server_gets_the_github_rules_and_no_write(self):
+        self.assertIn(json.dumps(self.SERVER["args"][1]), self.PACK.read_text())
+        self.assertEqual(run.server_kind(self.SERVER), "github")
+        sandbox = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, sandbox)
+        (sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"github": self.SERVER}}))
+        run.write_settings(sandbox, ROOT)
+        perms = json.loads((sandbox / "settings.json").read_text())["permissions"]
+        self.assertLessEqual({"mcp__github__issue_read", "mcp__github__search_pull_requests", "mcp__github__get_me"}, set(perms["allow"]))
+        self.assertIn("mcp__github__issue_write", perms["deny"])
+
+    def test_the_stub_lists_github_mcp_servers_read_tools_and_no_write(self):
+        (listed,) = self.serve({"id": 1, "method": "tools/list"})
+        tools = {t["name"]: t["inputSchema"] for t in listed["result"]["tools"]}
+        self.assertEqual(set(tools), {"get_me", "issue_read", "list_issues", "search_issues", "search_pull_requests"})
+        self.assertEqual(tools["issue_read"]["required"], ["method", "owner", "repo", "issue_number"])
+        self.assertEqual(tools["search_pull_requests"]["required"], ["query"])
+
+    def test_an_issue_reads_as_the_server_gives_it(self):
+        got = self.read("issue_read", method="get", issue_number=14)
+        self.assertEqual(got["method"], "get")
+        self.assertEqual(got["issue"]["labels"], ["ready", "enhancement"])
+        self.assertEqual(got["issue"]["html_url"], "https://github.com/example/widgets/issues/14")
+        self.assertEqual((got["issue"]["state"], "state_reason" in got["issue"]), ("open", False))
+        closed = self.read("issue_read", method="get", issue_number=9)["issue"]
+        self.assertEqual((closed["state"], closed["state_reason"]), ("closed", "completed"))
+        self.assertNotIn("labels", self.read("issue_read", method="get", issue_number=12)["issue"])
+        labels = self.read("issue_read", method="get_labels", issue_number=14)
+        self.assertEqual(([label["name"] for label in labels["labels"]], labels["totalCount"]), (["ready", "enhancement"], 2))
+        self.assertEqual(self.read("issue_read", method="get_comments", issue_number=12), {"comments": [], "method": "get_comments"})
+        self.assertEqual(self.read("issue_read", method="get_comments", issue_number=14)["comments"][0]["user"]["login"], "bob-example")
+
+    def test_a_pull_requests_number_reads_as_an_issue_at_a_pull_url(self):
+        self.assertEqual(self.read("issue_read", method="get", issue_number=15)["issue"]["html_url"], "https://github.com/example/widgets/pull/15")
+
+    def test_an_unknown_number_is_an_error_result(self):
+        missing = self.call("issue_read", method="get", owner="example", repo="widgets", issue_number=99)
+        self.assertTrue(missing["isError"])
+        self.assertIn("404 Not Found", missing["content"][0]["text"])
+
+    def test_a_pull_request_search_matches_the_ticket_line_quoted(self):
+        found = self.read("search_pull_requests", query='repo:example/widgets is:pr in:body "Ticket: #9"')
+        self.assertEqual([p["number"] for p in found["items"]], [15])
+        named = json.loads(self.call("search_pull_requests", query='repo:example/widgets is:pr "Ticket: #9"')["content"][0]["text"])
+        self.assertEqual(named["items"][0]["html_url"], "https://github.com/example/widgets/pull/15")
+        self.assertEqual(self.read("search_pull_requests", query='repo:example/widgets is:pr in:body "Ticket: #14"')["items"], [])
+
+    def test_list_and_search_issues(self):
+        listed = self.read("list_issues", state="OPEN")
+        self.assertEqual(([i["number"] for i in listed["issues"]], {i["state"] for i in listed["issues"]}), ([12, 14], {"OPEN"}))
+        self.assertEqual([i["number"] for i in self.read("list_issues", labels=["ready"])["issues"]], [14])
+        self.assertEqual([i["number"] for i in self.read("search_issues", query="nightly restock")["items"]], [12, 14])
+
+    def test_the_get_me_login_is_the_fixtures(self):
+        self.assertEqual(json.loads(self.call("get_me")["content"][0]["text"])["login"], "sbx-person")
+
+    def test_a_call_naming_no_tool_is_a_protocol_error(self):
+        (reply,) = self.serve({"id": 1, "method": "tools/call", "params": {}})
+        self.assertEqual(reply["error"]["code"], -32602)
+
+    def test_the_pack_plants_no_credentials(self):
+        spec = importlib.util.spec_from_file_location("secret_scan_tests", ROOT / "tests" / "test_secret_scan.py")
+        scan = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(scan)
+        pack = "sandbox/tracker-github/"
+        files = [str(p.relative_to(ROOT)) for p in (ROOT / pack).rglob("*") if p.is_file()]
+        self.assertTrue(files)
+        self.assertEqual(scan.planted(files), {})
+
+
+@unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
 class Sandbox(unittest.TestCase):
     def setUp(self):
         self.sandbox = Path(tempfile.mkdtemp())
@@ -244,7 +350,7 @@ class Sandbox(unittest.TestCase):
 
     def test_every_generic_scenario_is_well_formed_and_runs_in_the_fixture(self):
         known = run.scenarios()
-        self.assertEqual(len(known), 27)
+        self.assertEqual(len(known), 30)
         well_formed(self, known, {"widgets"})
 
     def test_every_fixture_a_scenario_copies_is_in_the_pack(self):

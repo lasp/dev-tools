@@ -242,6 +242,95 @@ scenarios:
       says: ["CUI|[Ee]xport"]
       not_says: ["0\\.137", "291\\.4", "\\bK7\\b"]
 
+  - id: ticket-draft-retitle
+    # Unlike the rest of the pack, the three ticket-draft-retitle scenarios check what step 8
+    # writes, after the skill's gates: the last turn is spare, for a run that asks one more round.
+    repo: widgets
+    setup:
+      - cp "$SBX_FIXTURES/retitle-ticket.txt" ticket.txt
+    origin: lasp/dev-tools#93
+    why: >-
+      Refines an existing ticket whose work has moved away from its summary, so the draft proposes
+      a new summary as a field change rather than keeping a title that no longer fits.
+    turns:
+      - >-
+        /lasp-dev:ticket-draft refine PROJ-57. Jira is not connected: the ticket as it stands is
+        in ticket.txt. The work has changed since it was filed: negative counts are fine, since
+        returns are entered as negative counts. What we need now is for by_part to accept a part
+        listed twice and sum its counts, instead of raising ValueError.
+      - Right. Draft this ticket.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
+      - Looks right. Paste it all.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
+    must_not_run: ["mcp__*", "Bash(git push*)"]
+    look_at: >-
+      What changed lists the summary under Reworded, now and after, and PROJ-57's own summary in
+      PROJ-57.jira.txt, read by ticket_summary.py, is one about summing a part listed twice.
+    verify:
+      - test -f .review/context/PROJ-57.jira.txt
+      - "out=$(python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part') && printf '%s\\n' \"$out\" | grep -qiE '\\b(sum\\w*|twice|duplicates?|duplicated|duplication|repeat\\w*|more than once|combines?|combined|combining)\\b'"
+    expect:
+      ends: success
+      files: [".review/context/PROJ-57.jira.txt"]
+
+  - id: ticket-draft-retitle-control
+    repo: widgets
+    setup:
+      - cp "$SBX_FIXTURES/retitle-ticket.txt" ticket.txt
+    origin: lasp/dev-tools#93
+    why: >-
+      Refines the same ticket with a change its summary still covers, so the draft keeps the
+      summary and proposes no field change for it.
+    turns:
+      - >-
+        /lasp-dev:ticket-draft refine PROJ-57. Jira is not connected: the ticket as it stands is
+        in ticket.txt. The point has grown: by_part refuses every negative count in the inventory
+        at once, one ValueError naming each part that holds one, not only the first it meets.
+      - Right. Draft this ticket.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
+      - Looks right. Paste it all.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
+    must_not_run: ["mcp__*", "Bash(git push*)"]
+    look_at: The summary is kept, and no field change names it.
+    verify:
+      - test -f .review/context/PROJ-57.jira.txt
+      - "out=$(python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-57.jira.txt PROJ-57 'Refuse a negative count in by_part'); [ -z \"$out\" ] || printf '%s\\n' \"$out\" | grep -qiE '^Refuse a negative count in \\W*by_part\\W*$'"
+      - "! grep -qiE '^[[:space:]*#=|>-]*([0-9]+\\. *)?(new |proposed )?summary[^,;]*(→|->)' .review/context/PROJ-57.jira.txt"
+    expect:
+      ends: success
+      files: [".review/context/PROJ-57.jira.txt"]
+
+  - id: ticket-draft-retitle-subtle
+    repo: widgets
+    setup:
+      - cp "$SBX_FIXTURES/retitle-subtle-ticket.txt" ticket.txt
+    origin: lasp/dev-tools#93
+    why: >-
+      Refines an existing ticket whose work keeps its subject, a part listed twice in by_part, but
+      changes its mechanism from a warning to one error naming every such part, so the summary
+      still names the area but no longer the work, and the draft proposes a new one.
+    turns:
+      - >-
+        /lasp-dev:ticket-draft refine PROJ-58. Jira is not connected: the ticket as it stands is
+        in ticket.txt. A warning is the wrong answer: nobody reads the run's log, so a bad file
+        would go into the report unnoticed. by_part keeps stopping the run, but with one
+        ValueError that names every part listed twice, so the file is fixed in one pass.
+      - Right. Draft this ticket.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
+      - Looks right. Paste it all.
+      - Take the recommended answer to every question. If the draft is up for review, Looks right, and paste it all.
+    must_not_run: ["mcp__*", "Bash(git push*)"]
+    look_at: >-
+      What changed lists the summary under Reworded, now and after, and PROJ-58's own summary no
+      longer names a warning but the one error that names every part listed twice.
+    verify:
+      - test -f .review/context/PROJ-58.jira.txt
+      - "out=$(python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-58.jira.txt PROJ-58 'Log a warning in by_part for a part listed twice') && printf '%s\\n' \"$out\" | grep -qiE '\\b(raises?|raising|errors?|valueerror|refuses?|refusing|rejects?|rejecting|stops?|stopping|every|all|each|names?|naming)\\b'"
+      - "out=$(python3 \"$SBX_FIXTURES/ticket_summary.py\" .review/context/PROJ-58.jira.txt PROJ-58 'Log a warning in by_part for a part listed twice') && ! printf '%s\\n' \"$out\" | grep -qiE '\\bwarn'"
+    expect:
+      ends: success
+      files: [".review/context/PROJ-58.jira.txt"]
+
   - id: design-doc-controlled-two-items
     repo: widgets
     setup:

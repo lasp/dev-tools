@@ -327,6 +327,24 @@ class Adjudication(unittest.TestCase):
         with self.assertRaisesRegex(record.Unsupported, "the profile is refused"):
             record.build(PR, [REVIEW], [], body, "o/r", "abc1234", issue_comments=[])
 
+    def test_on_a_github_tracker_the_ticket_is_the_issue_number(self):
+        self.addCleanup(standard_for_o, PROJECT)
+        github = "issue_tracker:\n  kind: github\n  statuses: []\n  pr_statuses: []\n"
+        for standard in (github, "ticket:\n  pattern: 'PROJ-\\d+'\n  project: PROJ\n" + github):
+            standard_for_o(standard)
+            with self.subTest(standard=standard):
+                body = "Ticket: #59 · part 1 of 2 · base: main\n" + BODY
+                lines, _ = record.build(PR, [REVIEW], [], body, "o/r", "abc1234", issue_comments=[])
+                self.assertIn("ticket: 59", lines)
+                self.assertIn('stack: {part: 1, of: 2, base: "main"}', lines)
+                lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: PROJ-9 · y\n", "o/r", "abc1234", issue_comments=[])
+                self.assertIn("ticket: none", lines)
+                lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: [#59](https://github.com/o/r/issues/59) · y\n", "o/r", "abc1234", issue_comments=[])
+                self.assertIn("ticket: 59", lines)
+        standard_for_o(PROJECT)
+        lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: #59 · y\n", "o/r", "abc1234", issue_comments=[])
+        self.assertIn("ticket: none", lines)
+
     def test_a_part_of_a_stacked_ticket_reads_its_stack_and_claims(self):
         body = "Ticket: PROJ-9 · part 2 of 3 · base: PROJ-9-one\nClaims: AC-1, AC-3\n" + BODY
         lines, _ = record.build(PR, [REVIEW], [], body, "o/r", "abc1234", issue_comments=[])

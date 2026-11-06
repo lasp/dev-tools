@@ -11,7 +11,7 @@ description: >
 argument-hint: "[investigate | settle | reformat] <ticket key | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
-  version: 1.10.18
+  version: 1.10.19
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
@@ -341,7 +341,14 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
    answered in session and each assumption taken, then the questions kept open, those answered
    for now marked so. For an existing ticket, Removed names every fact of the original the draft
    no longer holds, with its reason, and Reworded every one whose words changed or that moved to a
-   field, a link or For planning. This is the page's What changed and the ticket's `Session comment`. Show
+   field, a link or For planning. This is the page's What changed and the ticket's `Session
+   comment`. When the description of an existing ticket changes, read its summary against the
+   revised Driving Requirements, whose main point a summary names, not each requirement: one that
+   no longer names it, or names work now out of scope, gets a new summary proposed in the form
+   `using-jira`'s "Copy-paste output" sets, shown now and after as a field change and listed under
+   Reworded. One that still names it and names nothing now out of scope is kept as it reads,
+   whatever its form: a summary is not replaced for its form alone. A new summary the person
+   declines here, at Change it, is listed nowhere: not under Reworded, and not in the paste. Show
    the draft as it now stands, each kept-open question's drafted reason and effect named as
    theirs to keep or correct, and ask: **Looks right** (Recommended), which writes the files,
    step 8's page, context copy and paste file; **Change it**, folded in and asked again;

@@ -52,7 +52,16 @@ For example, onboarding with no GitHub server:
 > visibility. `/lasp-dev:quickstart` shows how to connect it, as do the plugin README's "MCP
 > servers" and https://code.claude.com/docs/en/mcp.
 
-And a ticket read that failed:
+Where the tracker is GitHub's, the ticket is an issue and GitHub is the server that reads it, in the
+same four parts:
+
+> The GitHub server is connected, but reading issue #59 failed: `404 Not Found`. Other GitHub
+> reads work, so your token's account most likely cannot see the issue tracker's repository. Work
+> goes on without its state and labels, routing it as a ticket whose status is unknown;
+> `/mcp` shows the server's status, and the README's "MCP servers" says how to give the token
+> access. Paste the issue's text here to go on without it.
+
+And a Jira ticket read that failed:
 
 > The Atlassian server is connected, but reading PROJ-42 failed: `403 Forbidden`. Other Jira
 > reads work, so your token's account most likely cannot see the PROJ project; an expired token
