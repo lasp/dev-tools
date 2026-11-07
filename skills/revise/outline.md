@@ -18,11 +18,12 @@ standard: <where it is stored>
 scope, one line per repository covered: <repo> · <the rules that reach it> · <comments read, threads analyzed and diffs swept | comments read, archived and counted | comments read and archived, no rule reaches it>
 skipped: <stage> · <reason>, one line per stage `revise_state.py check` printed as skipped
 records: <n> harvested · <n> missing (<the Missing-record alarm Dial, when it fires>) · <n> baseline
-cost: open-to-merge median <d>, longest <d> · <n> merged without a build · corrections: <n>, on <ids>
+cost: open-to-merge median <d>d, longest <d>d · <n> merged without a build · <n> pull requests, window_cost.py's line per repository · corrections: <n>, on <ids>
 agree rate by severity · share unanswered · share of agreed findings changed as asked
 counted: <verdicts, firings, contested, missing, from record.py and ratchet_counts.py>; read by the analyst: <categories, outcomes, procedure ids>
 guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general by kind: <kind> <n>, … | none read
-spot check: <n> items · <n> wrong · error rate <n>% | none: no slice passed
+spot check: <n> items · <n> wrong · error rate <n>% | spot check: 0 items | none: no slice passed
+quotes: <n> · from comments: <n> · from notes: <n> · unchecked: <n>, quote_check.py's first line
 
 ## Overview                                 step 10: every proposal below, the held ones included, one line each
 | Priority | Proposal | Applies to | Impact | Rests on | Apply changes |

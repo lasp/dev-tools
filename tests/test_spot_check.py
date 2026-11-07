@@ -77,6 +77,11 @@ class SpotCheck(unittest.TestCase):
             f"refused · {checked} · {ids[0]} not checked",
         ])
 
+    def test_n_below_one_is_refused_and_tally_needs_its_check(self):
+        self.assertEqual(self.run_it("sample", "--seed", "w", "--n", "0"), (1, ["refused · --n · 0 is below 1"]))
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            self.run_it("tally", "--seed", "w")
+
     def test_an_unreadable_slice_is_refused(self):
         Path(self.slices[1]).write_text("{}")
         code, out = self.run_it("sample", "--seed", "w")

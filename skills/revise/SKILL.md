@@ -138,8 +138,8 @@ In this repository's `.review/`:
   `revision/merges.txt`, the window's merged pull requests, from `scripts/window_merges.py`;
   `revision/drift.txt`, the scripted claims' lines, from `scripts/drift_checks.py`; and
   `revision/sweep/pr-NNNN.md`, each `diff-probe` block, written by the probe.
-- `revision/spot-check.md`, the ten guidance items `scripts/spot_check.py` sampled, each right or
-  wrong, from `prepare` step 2; its tally is the report's `spot check:` line.
+- `revision/spot-check.md`, the guidance items `scripts/spot_check.py` sampled, ten or every item
+  when there are fewer, each right or wrong, from `prepare` step 2; its tally is the report's `spot check:` line.
 - `harvest/context-refresh.md`, from `context-refresh.md`.
 - `checks/`, the drafted checks for graduation candidates.
 - `revision/feedback/`, a `skill-feedback` draft per procedure finding, from `prepare` step 2 and

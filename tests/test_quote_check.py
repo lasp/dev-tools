@@ -50,7 +50,7 @@ class QuoteCheck(unittest.TestCase):
         return code, out.getvalue().splitlines()
 
     def test_every_quote_found_where_it_cites_passes_with_its_counts(self):
-        self.assertEqual(self.run_it(REPORT), (0, ["quotes: 3 · from comments: 2 · from notes: 1"]))
+        self.assertEqual(self.run_it(REPORT), (0, ["quotes: 3 · from comments: 2 · from notes: 1 · unchecked: 0"]))
 
     def test_a_quote_absent_from_its_comment_fails_the_report(self):
         code, out = self.run_it(REPORT.replace("a degraded state is broken.", "a degraded state is always broken."))
@@ -83,6 +83,28 @@ class QuoteCheck(unittest.TestCase):
         long = " ".join(["word"] * 41)
         code, out = self.run_it(REPORT + f'  said: "{long}" — bob, {URL}\n')
         self.assertEqual((code, out), (1, ["refused · line 10 · 41 words, not 1 to 40"]))
+
+    def test_a_quote_nested_in_a_list_item_table_or_blockquote_is_refused_not_skipped(self):
+        for nested in ("  - said:", "> said:", "| R-004 | said:"):
+            code, out = self.run_it(REPORT.replace("  said: \"units", nested + ' "units'))
+            self.assertEqual((code, out), (1, ["refused · line 6 · not a line of its own `said: \"<words>\" — <login>, <url>` or `— <name>, pasted <file>`"]), nested)
+
+    def test_a_quote_from_a_pull_request_no_list_holds_is_unchecked_not_passed_silently(self):
+        old = "https://github.com/o/r/pull/3#discussion_r5"
+        code, out = self.run_it(REPORT + f'  said: "an older ask" — bob, {old}\n')
+        self.assertEqual((code, out), (0, ["quotes: 3 · from comments: 2 · from notes: 1 · unchecked: 1",
+                                           f"unchecked · line 10 · {old}: no comment list given holds its pull request"]))
+
+    def test_a_note_named_with_a_space_can_be_cited(self):
+        (self.dir / "notes" / "meeting.md").rename(self.dir / "notes" / "meeting notes.md")
+        self.assertEqual(self.run_it(REPORT.replace("pasted meeting.md", "pasted meeting notes.md"))[0], 0)
+
+    def test_an_unreadable_report_is_a_fault(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = quote_check.main([str(self.dir / "missing.md"), "--comments", str(self.list)])
+        self.assertEqual(code, 1)
+        self.assertIn("missing.md · cannot be read", out.getvalue())
 
     def test_a_pasted_note_that_is_not_under_notes_fails(self):
         code, out = self.run_it(REPORT.replace("pasted meeting.md", "pasted chat.md"))

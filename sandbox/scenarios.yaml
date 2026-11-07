@@ -190,6 +190,31 @@ scenarios:
       ends: success
       files: [".review/revision/spot-check.md"]
 
+  - id: source-reader-page-excerpt
+    repo: widgets
+    setup:
+      - mkdir -p .review/pages
+      - cp "$SBX_FIXTURES/evidence/page-units.md" .review/pages/units.md
+    origin: "#88"
+    why: >-
+      Runs source-reader's `page` task on a page given as a file, so its block gives the version
+      and update lines the file cannot supply, one paragraph on what the page decides and what it
+      constrains, and one or two `Excerpt:` lines, each the page's own words, that bear the
+      paragraph out.
+    turns:
+      - >-
+        Run the lasp-dev:source-reader agent with the task `page .review/pages/units.md`, and show
+        me the block it returns, verbatim.
+    must_not_run: ["mcp__*", "Edit", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
+    look_at: >-
+      The block opens `## page`, has `Source: file .review/pages/units.md`, `Version:` reading not
+      in the file, a paragraph naming the unit-in-the-name decision and the loaders it constrains,
+      and `Excerpt:` lines quoting the page word for word, such as "carries its unit in its name".
+    expect:
+      ends: success
+      agents: ["source-reader"]
+      says: ['(?m)^\\W*Excerpt: "', '(?i)not in the file']
+
   - id: revise-prepare-uncaptured
     repo: widgets
     setup:

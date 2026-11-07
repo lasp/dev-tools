@@ -476,10 +476,14 @@ comment's, or `said: "<words>" — <name>, pasted <file>`, a note in `.review/re
 `scripts/quote_check.py <report> --comments <comment-list.json ...> --notes <dir>` finds each:
 1 to 40 words, in the own words of the comment with that `url` in the comment lists, whose
 `author` is `<login>`, as "The guidance items" finds an item's quote, or in the note's text, every
-line kept, never starting or ending inside a word. It prints `quotes: <n> · from comments: <n> ·
-from notes: <n>` and exits 0, or one `refused · line <n> · <why>` per fault, and `refused · <path> ·
-<why>` per input it cannot read, and exits 1. An ellipsis or a changed word is a fault: a quote is
-one run of the comment, verbatim.
+line kept, never starting or ending inside a word. A line holding `said: "` anywhere that is not
+such a line of its own, a quote nested in a list item, a table or a blockquote, is a fault. A URL
+whose pull request, the URL before its `#`, no comment in the lists shares is unchecked: no list
+holds it. It prints `quotes: <n> · from comments: <n> · from notes: <n> · unchecked: <n>`, then
+`unchecked · line <n> · <url>: no comment list given holds its pull request` per unchecked quote,
+and exits 0, or one `refused · line <n> · <why>` per fault, and `refused · <path> · <why>` per
+input it cannot read, and exits 1. An ellipsis or a changed word is a fault: a quote is one run of
+the comment, verbatim.
 
 Writers: `revise` `prepare` step 10, the report as `outline.md` gives it. Readers:
 `scripts/quote_check.py`, run by `prepare` step 10 before the report is offered for commit.
@@ -505,6 +509,23 @@ Writers: `revise` `prepare` step 2, `.review/revision/spot-check.md`. Readers:
 `scripts/spot_check.py tally`, whose `spot check:` line is the report's Head line.
 
 Pinned by: tests/test_spot_check.py::test_the_tally_counts_wrong_items_into_an_error_rate
+
+## The window's cost
+
+Version: 1
+
+Fields: `scripts/window_cost.py --threads <dir> --records <dir>` reads every `pr-NNNN/pr.json`
+under --threads, a harvest's or a load's dumps, and its record, `<records>/pr-NNNN.yaml`, and
+prints `cost: open-to-merge median <d>d, longest <d>d · <n> merged without a build · <n> pull
+requests`, durations in days to one decimal from `created_at` to `merged_at`, a pull request
+merged without a build one whose record reads `build: none`; or `cost: no merged pull request`. It
+exits 1 with one `refused · <path> · <why>` line per fault: a `pr.json` with no readable
+`created_at` or `merged_at`, a merge before its opening, or no record with a `build:` line.
+
+Writers: `scripts/window_cost.py`. Readers: `revise` `prepare` step 1, whose line is the report's
+Head `cost:` line.
+
+Pinned by: tests/test_window_cost.py::test_the_median_and_longest_open_to_merge_and_the_unbuilt_count
 
 ## The judgments
 
@@ -834,8 +855,9 @@ reads them.
   reviewed heads.
 - `findings:`, every cited finding: `key` (the full finding key `review-contract.md` defines),
   `severity`, `at` (the file and line, or the file alone at file level), `thread` (the review thread the verdict was read from),
-  `reviewer` (the login that posted the finding, who ran the review: the account the attribution
-  line names),
+  `reviewer` (the login of the account that posted the finding's comment, whose token ran the
+  review; the attribution line names it too when the poster is the person, but the record reads the
+  comment's author, not that line),
   `verdict` (agree, disagree, discuss, unanswered, unparsed or contested), with `judged: true` and
   `basis:` when it was judged from a reply's own words, and `done: true` when that reply said the
   change was made, or `basis:` alone when the judge could not tell, `reason` on a
@@ -1205,8 +1227,10 @@ merges file missing, a `### C-n` heading not in its form, an `every change` clai
 no `doc` line in the merges file, a pull request named twice or not as `pr-NNNN`, a heading missing or naming another pull request, a
 line of no form above, a line holding two verdicts, a claim judged twice, a block with no line for a `C-n` claim it owes, or a `Not
 read:` line missing or repeated. A line holds two verdicts when its place or its reason opens a `·`
-field with `follows`, `breaks`, `not touched` or `not judged`, or reads `judged as` one of them;
-the quoted line, which is code, is not read for it (version 3). Such a block is rerun, never
+field with `follows`, `breaks`, `not touched` or `not judged` other than its own verdict, or reads
+`judged as` one of them, the word ending at a space, punctuation other than `/` or `-`, a `.` not
+followed by a letter, or the line's end, so `breaks/x.py` is a path; the quoted line, which is
+code, is not read for it (version 3). Such a block is rerun, never
 counted.
 
 

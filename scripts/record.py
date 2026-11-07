@@ -42,8 +42,8 @@ author opened a thread in their own words: its head is the merge or head sha, it
 the first of those, its standards sha `none`, and it has no findings. A finding is a thread whose first comment opens on one of the four severity lines and
 carries the review's attribution line; one with a `Standard` block and a citation goes under
 `findings:`, and one without, or with a legacy `other` key, under `threads:` with `by: review`,
-its severity and its verdict read as a finding's; each carries `reviewer:`, the login that posted
-it, who ran the review. Every other thread, a person's or a bot's, is
+its severity and its verdict read as a finding's; each carries `reviewer:`, the login of the
+account that posted it, whose token ran the review. Every other thread, a person's or a bot's, is
 listed under `threads:` as a pointer, with the author's verdict from the first of their replies
 in it that starts with one of the three words, or the judgment of one with none, a Discuss settled
 by their next Agree or Disagree, `unanswered` when the author has not replied, on a thread

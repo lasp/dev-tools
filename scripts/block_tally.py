@@ -16,8 +16,8 @@ block does not hold its form: a heading missing or naming another pull request t
 a line of no form the block takes, a `Procedure:`, `Not read:` or `Read:` line missing or
 repeated, a line holding two verdicts, a claim judged twice in one sweep block, or a sweep block
 missing a `C-n` claim it owes. A line holds two verdicts when an ask line carries a second `·
-outcome:` or `· diff:`, or a sweep line's place or reason opens a field with a verdict word or
-reads `judged as` one; the quoted line, which is code, is not read for it.
+outcome:` or `· diff:`, or a sweep line's place or reason opens a field with a verdict word other
+than its own or reads `judged as` one; the quoted line, which is code, is not read for it.
 Stdlib only.
 """
 
@@ -54,8 +54,16 @@ VERDICT = re.compile(
     r"|(?P<untouched>not touched)|(?P<unjudged>not judged · no description))$"
 )
 TAILS = ("Procedure:", "Not read:", "Read:")
-# A second verdict in a sweep line's own words: a field that opens with one, or "judged as" one.
-SECOND_VERDICT = re.compile(r"(?:^|· )(?:follows|breaks|not touched|not judged)\b|\bjudged as (?:follows|breaks|not touched|not judged)\b", re.I)
+SWEEP_VERDICTS = ("follows", "breaks", "not touched", "not judged")
+
+
+def second_verdict(word: str, text: str) -> bool:
+    """Whether a sweep line's own words, its place or reason, give a verdict other than its word:
+    a `·` field that opens with one, or `judged as` one, the word ending at a space, punctuation
+    other than `/` or `-`, a `.` not followed by a letter, or the end, so `breaks/x.py` is a path."""
+    others = "|".join(v for v in SWEEP_VERDICTS if v != word)
+    end = r"(?![\w/-]|\.\w)"
+    return bool(re.search(rf"(?:^|· )(?:{others}){end}|\bjudged as (?:{others}){end}", text, re.I))
 
 
 class CannotRun(Exception):
@@ -192,13 +200,12 @@ def sweep(folder: Path, prs: list[str], claims: Path | None, merges: Path | None
             v = VERDICT.match(line)
             if not v:
                 raise CannotRun(f"{pr}: not a verdict line: {line}")
-            own = (v["follows"], v["place"], v["why"])
-            if any(f and SECOND_VERDICT.search(f) for f in own):
+            word = "follows" if v["follows"] else "breaks" if v["place"] else "not touched" if v["untouched"] else "not judged"
+            if any(f and second_verdict(word, f) for f in (v["follows"], v["place"], v["why"])):
                 raise CannotRun(f"{pr}: two verdicts in one line: {line}")
             if v["id"] in seen:
                 raise CannotRun(f"{pr}: {v['id']} judged twice")
             seen.add(v["id"])
-            word = "follows" if v["follows"] else "breaks" if v["place"] else "not touched" if v["untouched"] else "not judged"
             verdicts.setdefault(v["id"], Counter())[word] += 1
             if word == "breaks":
                 breaks.append((v["id"], f"break · {v['id']} · {pr} · {v['place']}"))

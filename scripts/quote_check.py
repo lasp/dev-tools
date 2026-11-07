@@ -2,18 +2,23 @@
 """Check every quote a revision report gives against the comment or note it cites.
 
 Reads the report, `ratchet-YYYY-MM.md`, and every line in it that opens `said:` once its indent is
-stripped, a drafted entry's included (`docs/contracts.md`, "The report's quotes"). Each must read
-`said: "<words>" — <login>, <url>`, a comment's, or `said: "<words>" — <name>, pasted <file>`, a
-note the driver pasted, and its words must be 1 to 40 and found as `scripts/guidance_check.py`
-finds an item's quote: for a comment, in its own words, one run of its `body` between the lines
-that open `>`, never starting or ending inside a word, a run of whitespace read as one space and
-nothing else forgiven; for a note, in the file's text read the same way, every line kept. A
-comment is the one with that `url` in the comment lists given with --comments, `comment-list.json`
-files, and `<login>` must be its `author`; a note is `<file>` under --notes.
+stripped, a drafted entry's included, or holds `said: "` anywhere (`docs/contracts.md`, "The
+report's quotes"). Each must be a line of its own reading `said: "<words>" — <login>, <url>`, a
+comment's, or `said: "<words>" — <name>, pasted <file>`, a note the driver pasted, so a quote
+nested in a list item, a table or a blockquote is refused, and its words must be 1 to 40 and
+found as `scripts/guidance_check.py` finds an item's quote: for a comment, in its own words, one
+run of its `body` between the lines that open `>`, never starting or ending inside a word, a run
+of whitespace read as one space and nothing else forgiven; for a note, in the file's text read the
+same way, every line kept. A comment is the one with that `url` in the comment lists given with
+--comments, `comment-list.json` files, and `<login>` must be its `author`; a note is `<file>` under
+--notes. A URL whose pull request, the URL before its `#`, no comment in the lists shares is
+unchecked, not refused: no list given holds it, as for a held candidate's quote from before the
+log kept captures.
 
-Prints `quotes: <n> · from comments: <n> · from notes: <n>` and exits 0. Otherwise prints one
-`refused · line <n> · <why>` per fault, every fault found, and exits 1; an input that cannot be
-read is one such line, `refused · <path> · <why>`. Stdlib only.
+Prints `quotes: <n> · from comments: <n> · from notes: <n> · unchecked: <n>`, then `unchecked ·
+line <n> · <url>: no comment list given holds its pull request` per unchecked quote, and exits 0.
+Otherwise prints one `refused · line <n> · <why>` per fault, every fault found, and exits 1; an
+input that cannot be read is one such line, `refused · <path> · <why>`. Stdlib only.
 """
 
 from __future__ import annotations
@@ -28,8 +33,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from guidance_check import MAX_WORDS, flat, holds  # noqa: E402
 
 SAID = re.compile(
-    r'said: "(?P<quote>.+)" — (?:(?P<login>[^\s,]+), (?P<url>https?://\S+)|(?P<name>[^,]+), pasted (?P<file>\S+))'
+    r'said: "(?P<quote>.+)" — (?:(?P<login>[^\s,]+), (?P<url>https?://\S+)|(?P<name>[^,]+), pasted (?P<file>.+))'
 )
+# A quote's opening anywhere in a line, so one nested in a list item, a table or a blockquote is
+# refused for its form rather than passed over.
+OPENING = re.compile(r'(?<![\w`])said: "')
 
 
 def found_in(text: str, quote: str) -> bool:
@@ -60,14 +68,16 @@ def check(report: Path, lists: list[Path], notes: Path | None) -> tuple[list[str
         lines = report.read_text().splitlines()
     except OSError as e:
         return [], [*faults, f"refused · {report} · cannot be read: {e}"]
+    listed = {url.split("#")[0] for url in by_url}
     quoted = pasted = 0
+    unchecked: list[str] = []
     for n, raw in enumerate(lines, 1):
         line = raw.strip()
-        if not line.startswith("said:"):
+        if not (line.startswith("said:") or OPENING.search(line)):
             continue
         m = SAID.fullmatch(line)
         if not m:
-            faults.append(f'refused · line {n} · not `said: "<words>" — <login>, <url>` or `— <name>, pasted <file>`')
+            faults.append(f'refused · line {n} · not a line of its own `said: "<words>" — <login>, <url>` or `— <name>, pasted <file>`')
             continue
         quote = m["quote"]
         if not 1 <= len(quote.split()) <= MAX_WORDS:
@@ -75,7 +85,9 @@ def check(report: Path, lists: list[Path], notes: Path | None) -> tuple[list[str
             continue
         if m["url"]:
             c = by_url.get(m["url"])
-            if c is None:
+            if c is None and m["url"].split("#")[0] not in listed:
+                unchecked.append(f"unchecked · line {n} · {m['url']}: no comment list given holds its pull request")
+            elif c is None:
                 faults.append(f"refused · line {n} · {m['url']} is no comment in the lists given")
             elif c["author"] != m["login"]:
                 faults.append(f"refused · line {n} · {m['url']} is {c['author']}'s, not {m['login']}'s")
@@ -93,7 +105,8 @@ def check(report: Path, lists: list[Path], notes: Path | None) -> tuple[list[str
             pasted += 1
     if faults:
         return [], faults
-    return [f"quotes: {quoted + pasted} · from comments: {quoted} · from notes: {pasted}"], []
+    head = f"quotes: {quoted + pasted} · from comments: {quoted} · from notes: {pasted} · unchecked: {len(unchecked)}"
+    return [head, *unchecked], []
 
 
 def main(argv: list[str] | None = None) -> int:
