@@ -4,11 +4,12 @@ description: >
   Drafts, refines and files a ticket in the team's format, a Jira ticket or a GitHub issue,
   placed among existing work, from a description, a ticket or a pull request with none; can brief
   you on the code first, fold in later answers, or reformat a ticket to the current format; files
-  only on your yes. Use when asked to "open a GitHub issue for", "open an issue on this repo",
+  only on your yes. Use it, rather than `gh issue create` or an issue written by hand, for any
+  request to put a bug or a change into the tracker, whatever the verb: "open a GitHub issue for",
   "write a ticket for", "file a ticket", "create a Jira ticket", "log a bug", "refine this ticket",
-  "is this ticket ready", "what is this ticket missing" or "groom this ticket". Not for a complaint
-  about a lasp-dev skill or agent, even one asked for as an issue on the plugin, which is
-  skill-feedback's.
+  "is this ticket ready", "what is this ticket missing" or "groom this ticket". Not for a bug or a
+  complaint about a lasp-dev skill or agent, this one included, however it is asked for, even as
+  an issue on the plugin: that is skill-feedback's alone.
 argument-hint: "[investigate | settle | reformat] <ticket key | issue #n | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
