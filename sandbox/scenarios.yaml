@@ -175,7 +175,7 @@ scenarios:
       pull requests or writes a report.
     expect:
       ends: success
-      says: ['pr-0007', '(?i)captur']
+      says: ['pr-0007|#7', '(?i)captur']
       not_says: ['(?i)no (pull requests )?merged', '(?i)0 merged']
       files_absent: ["standards/log/widgets/ratchet-*.md"]
 
