@@ -242,7 +242,7 @@ class Tally(unittest.TestCase):
     def test_a_sweep_line_with_a_second_verdict_is_refused_never_counted(self):
         two = SWEEP_7.replace('the pull request changed the public loader', 'judged as follows on a second read')
         self.refused("sweep", "pr-0007.md", two, "pr-0007: two verdicts in one line: C-2 · breaks")
-        self.refused("sweep", "pr-0007.md", SWEEP_7.replace("follows · pkg/loader.py:12", "follows · pkg/loader.py:12 · breaks at 40"), "two verdicts in one line: R-001")
+        self.refused("sweep", "pr-0007.md", SWEEP_7.replace("follows · pkg/loader.py:12", "follows · pkg/loader.py:12 · breaks"), "two verdicts in one line: R-001")
         self.refused("sweep", "pr-0007.md", SWEEP_7.replace("the pull request changed the public loader", "on reflection, judged as follows."), "two verdicts in one line: C-2")
 
     def test_a_verdict_word_inside_a_reason_or_the_quoted_line_is_one_verdict(self):
@@ -258,6 +258,13 @@ class Tally(unittest.TestCase):
         code, out, _ = self.run_it("sweep", "pr-0007")
         self.assertEqual(code, 0)
         self.assertIn("claim · R-001 · judged 1 · follows 1", "\n".join(out))
+
+    def test_a_reason_that_uses_another_verdict_word_in_a_sentence_is_one_verdict(self):
+        for reason in ("follows the old silent-None habit the rule retired", "Not touched by any test, so it went unseen",
+                       "not judged before; this one raises"):
+            self.write("pr-0007.md", SWEEP_7.replace("the pull request changed the public loader", reason))
+            code, out, _ = self.run_it("sweep", "pr-0007")
+            self.assertEqual(code, 0, reason)
 
     def test_an_ask_line_with_a_second_outcome_is_refused(self):
         two = ANALYSIS_7.replace("asked: test the failure path", "asked: test the failure path · outcome: changed as asked · diff: addresses it")

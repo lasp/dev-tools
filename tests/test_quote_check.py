@@ -41,12 +41,13 @@ class QuoteCheck(unittest.TestCase):
         (self.dir / "notes").mkdir()
         (self.dir / "notes" / "meeting.md").write_text("- Dana: units go in\nthe column name, always.\n")
 
-    def run_it(self, report: str) -> tuple[int, list[str]]:
+    def run_it(self, report: str, *extra: str, lists: bool = True) -> tuple[int, list[str]]:
         path = self.dir / "ratchet-2026-10.md"
         path.write_text(report)
         out = io.StringIO()
+        given = ["--comments", str(self.list)] if lists else []
         with contextlib.redirect_stdout(out):
-            code = quote_check.main([str(path), "--comments", str(self.list), "--notes", str(self.dir / "notes")])
+            code = quote_check.main([str(path), *given, "--notes", str(self.dir / "notes"), *extra])
         return code, out.getvalue().splitlines()
 
     def test_every_quote_found_where_it_cites_passes_with_its_counts(self):
@@ -89,11 +90,38 @@ class QuoteCheck(unittest.TestCase):
             code, out = self.run_it(REPORT.replace("  said: \"units", nested + ' "units'))
             self.assertEqual((code, out), (1, ["refused · line 6 · not a line of its own `said: \"<words>\" — <login>, <url>` or `— <name>, pasted <file>`"]), nested)
 
-    def test_a_quote_from_a_pull_request_no_list_holds_is_unchecked_not_passed_silently(self):
+    def test_a_held_candidates_quote_from_a_pull_request_no_list_holds_is_unchecked(self):
         old = "https://github.com/o/r/pull/3#discussion_r5"
-        code, out = self.run_it(REPORT + f'  said: "an older ask" — bob, {old}\n')
+        said = f'said: "an older ask" — bob, {old}'
+        ledger = self.dir / "review-rules.md"
+        ledger.write_text(f"# Rules\n\n## Candidates below the criteria\n\n### Import directly\n{said}\n")
+        code, out = self.run_it(REPORT + f"  {said}\n", "--held", str(ledger))
         self.assertEqual((code, out), (0, ["quotes: 3 · from comments: 2 · from notes: 1 · unchecked: 1",
-                                           f"unchecked · line 10 · {old}: no comment list given holds its pull request"]))
+                                           f"unchecked · line 10 · {old}: a held candidate's, no comment list given holds its pull request"]))
+
+    def test_a_quote_from_a_pull_request_no_list_holds_is_refused_unless_held(self):
+        made_up = "https://github.com/o/r/pull/77#discussion_r1"
+        ledger = self.dir / "review-rules.md"
+        ledger.write_text(f'## Candidates below the criteria\n- **Other**\n  said: "something else" — bob, {made_up}\n')
+        code, out = self.run_it(REPORT + f'  said: "anything I like" — bob, {made_up}\n', "--held", str(ledger))
+        self.assertEqual((code, out[-1]), (1, f"refused · line 10 · {made_up}: no comment list given holds its pull request, and the ledger's held candidates do not carry this line"))
+
+    def test_with_no_comment_lists_every_comment_quote_is_refused(self):
+        code, out = self.run_it(REPORT, lists=False)
+        self.assertEqual(code, 1)
+        self.assertEqual([line.split(" · ")[1] for line in out], ["line 5", "line 9"])
+
+    def test_another_page_of_a_listed_pull_request_is_refused_not_unchecked(self):
+        files = "https://github.com/o/r/pull/7/files#r12"
+        code, out = self.run_it(REPORT.replace(URL, files, 1))
+        self.assertEqual((code, out), (1, [f"refused · line 5 · {files} is no comment in the lists given"]))
+
+    def test_a_pasted_file_outside_notes_or_a_said_in_another_case_is_refused(self):
+        (self.dir / "outside.md").write_text("units go in the column name")
+        code, out = self.run_it(REPORT.replace("pasted meeting.md", "pasted ../outside.md"))
+        self.assertEqual((code, out), (1, ["refused · line 6 · pasted ../outside.md is no file under --notes"]))
+        code, out = self.run_it(REPORT.replace('  said: "units', '  Said: "units'))
+        self.assertEqual((code, out[0].split(" · ")[:2]), (1, ["refused", "line 6"]))
 
     def test_a_note_named_with_a_space_can_be_cited(self):
         (self.dir / "notes" / "meeting.md").rename(self.dir / "notes" / "meeting notes.md")

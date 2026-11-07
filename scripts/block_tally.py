@@ -16,8 +16,9 @@ block does not hold its form: a heading missing or naming another pull request t
 a line of no form the block takes, a `Procedure:`, `Not read:` or `Read:` line missing or
 repeated, a line holding two verdicts, a claim judged twice in one sweep block, or a sweep block
 missing a `C-n` claim it owes. A line holds two verdicts when an ask line carries a second `·
-outcome:` or `· diff:`, or a sweep line's place or reason opens a field with a verdict word other
-than its own or reads `judged as` one; the quoted line, which is code, is not read for it.
+outcome:` or `· diff:`, or a sweep line's place or reason has a `·` field that is a verdict
+word other than its own alone, or reads `judged as` one; the quoted line, which is code, is not
+read for it.
 Stdlib only.
 """
 
@@ -59,11 +60,12 @@ SWEEP_VERDICTS = ("follows", "breaks", "not touched", "not judged")
 
 def second_verdict(word: str, text: str) -> bool:
     """Whether a sweep line's own words, its place or reason, give a verdict other than its word:
-    a `·` field that opens with one, or `judged as` one, the word ending at a space, punctuation
-    other than `/` or `-`, a `.` not followed by a letter, or the end, so `breaks/x.py` is a path."""
+    a `·` field that is one alone, or `judged as` one, the word ending at a space, punctuation
+    other than `/` or `-`, a `.` not followed by a letter, or the end. A field that opens with one
+    in a sentence, `follows the old habit`, is prose, and `breaks/x.py` is a path."""
     others = "|".join(v for v in SWEEP_VERDICTS if v != word)
     end = r"(?![\w/-]|\.\w)"
-    return bool(re.search(rf"(?:^|· )(?:{others}){end}|\bjudged as (?:{others}){end}", text, re.I))
+    return bool(re.search(rf"(?:^|· )(?:{others})\.?(?= ·|$)|\bjudged as (?:{others}){end}", text, re.I))
 
 
 class CannotRun(Exception):

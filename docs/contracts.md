@@ -473,15 +473,18 @@ Version: 1
 Fields: every line of a revision report, `ratchet-YYYY-MM.md`, that opens `said:` once its indent
 is stripped, a drafted entry's under `entry:` included: `said: "<words>" — <login>, <url>`, a
 comment's, or `said: "<words>" — <name>, pasted <file>`, a note in `.review/revision/notes/`.
-`scripts/quote_check.py <report> --comments <comment-list.json ...> --notes <dir>` finds each:
-1 to 40 words, in the own words of the comment with that `url` in the comment lists, whose
-`author` is `<login>`, as "The guidance items" finds an item's quote, or in the note's text, every
-line kept, never starting or ending inside a word. A line holding `said: "` anywhere that is not
-such a line of its own, a quote nested in a list item, a table or a blockquote, is a fault. A URL
-whose pull request, the URL before its `#`, no comment in the lists shares is unchecked: no list
-holds it. It prints `quotes: <n> · from comments: <n> · from notes: <n> · unchecked: <n>`, then
-`unchecked · line <n> · <url>: no comment list given holds its pull request` per unchecked quote,
-and exits 0, or one `refused · line <n> · <why>` per fault, and `refused · <path> · <why>` per
+`scripts/quote_check.py <report> --comments <comment-list.json ...> --notes <dir> [--held
+<ledger>]` finds each: 1 to 40 words, in the own words of the comment with that `url` in the
+comment lists, whose `author` is `<login>`, as "The guidance items" finds an item's quote, or in
+the text of a note inside `--notes`, every line kept, never starting or ending inside a word. A
+line holding `said: "` anywhere that is not such a line of its own, a quote nested in a list item,
+a table or a blockquote, or a `said:` line in another case, is a fault. A URL's pull request is
+its repository and number, whatever page of it the URL names; a quote from a pull request no
+comment in the lists shares is a fault unless its `said:` line, stripped, is a line under the
+`## Candidates below the criteria` heading of the ledger given with `--held`: a held candidate's
+quote from before the log kept captures, which is unchecked. It prints `quotes: <n> · from
+comments: <n> · from notes: <n> · unchecked: <n>`, then `unchecked · line <n> · <url>: a held
+candidate's, no comment list given holds its pull request` per unchecked quote, and exits 0, or one `refused · line <n> · <why>` per fault, and `refused · <path> · <why>` per
 input it cannot read, and exits 1. An ellipsis or a changed word is a fault: a quote is one run of
 the comment, verbatim.
 
@@ -514,13 +517,14 @@ Pinned by: tests/test_spot_check.py::test_the_tally_counts_wrong_items_into_an_e
 
 Version: 1
 
-Fields: `scripts/window_cost.py --threads <dir> --records <dir>` reads every `pr-NNNN/pr.json`
-under --threads, a harvest's or a load's dumps, and its record, `<records>/pr-NNNN.yaml`, and
+Fields: `scripts/window_cost.py --threads <dir>` reads every `pr-NNNN/` dump under --threads, a
+harvest's or a load's, a pull request with no record included: its `pr.json` and `body.md`. It
 prints `cost: open-to-merge median <d>d, longest <d>d · <n> merged without a build · <n> pull
 requests`, durations in days to one decimal from `created_at` to `merged_at`, a pull request
-merged without a build one whose record reads `build: none`; or `cost: no merged pull request`. It
-exits 1 with one `refused · <path> · <why>` line per fault: a `pr.json` with no readable
-`created_at` or `merged_at`, a merge before its opening, or no record with a `build:` line.
+merged without a build one whose body has no Already checked block, as `scripts/record.py` reads
+it; or `cost: no merged pull request`. It exits 1 with one `refused · <path> · <why>` line per
+fault: a `pr.json` with no readable `created_at` or `merged_at`, a merge before its opening, or a
+dump with no `body.md`.
 
 Writers: `scripts/window_cost.py`. Readers: `revise` `prepare` step 1, whose line is the report's
 Head `cost:` line.
@@ -1226,10 +1230,11 @@ exits 2 with a `CANNOT RUN` line, printing nothing, on a named block, the claims
 merges file missing, a `### C-n` heading not in its form, an `every change` claim's document with
 no `doc` line in the merges file, a pull request named twice or not as `pr-NNNN`, a heading missing or naming another pull request, a
 line of no form above, a line holding two verdicts, a claim judged twice, a block with no line for a `C-n` claim it owes, or a `Not
-read:` line missing or repeated. A line holds two verdicts when its place or its reason opens a `·`
-field with `follows`, `breaks`, `not touched` or `not judged` other than its own verdict, or reads
-`judged as` one of them, the word ending at a space, punctuation other than `/` or `-`, a `.` not
-followed by a letter, or the line's end, so `breaks/x.py` is a path; the quoted line, which is
+read:` line missing or repeated. A line holds two verdicts when its place or its reason has a `·`
+field that is `follows`, `breaks`, `not touched` or `not judged` alone, other than its own
+verdict, or reads `judged as` one of them, the word ending at a space, punctuation other than `/`
+or `-`, a `.` not followed by a letter, or the line's end; a field that uses the word in a
+sentence, `follows the old habit`, or a path, `breaks/x.py`, is not one; the quoted line, which is
 code, is not read for it (version 3). Such a block is rerun, never
 counted.
 
