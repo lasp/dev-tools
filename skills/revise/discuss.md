@@ -4,12 +4,20 @@
 about, which cases it rests on, why the bar held it, what a person meant. It is asked at any
 time, before the meeting, in it or after, with `/lasp-dev:revise <the question>`, or in `apply`
 when a comment asks one, and nothing in the report changes for it. `<log>` and
-`<standard files>` are where `revise`'s "The standard's repository" puts them; the report is the
-newest `ratchet-*.md` in `<log>` unless the question names another.
+`<standard files>` are where `revise`'s "The standard's repository" puts them.
+
+**Which report.** With the standard in this repository, the report is in `<log>` here. With it
+in another, this month's report is on the revision branch, `revision/<repo>-YYYY-MM`, until
+`apply` merges it, not on the standard's `main`: read it in the clone `prepare` left when its path
+is known, or through `using-github` from that branch, and the standard's `main` only for a month
+already merged. The report is the month the question names, or else the newest one found; say
+which month and branch it is in the answer's first line. When the month asked about has no
+report where it should be, say so and name where it looked, rather than answering from another
+month's, whose ids may name other proposals.
 
 ## Where each part of the evidence is
 
-Answer from these files, in this order, and from nothing remembered:
+Answer from these files, read from the same place as the report, in this order, and from nothing remembered:
 
 - **The proposal in the report:** its id, its Dial, its evidence pointers, its `said:` lines with
   the comments' URLs, its `Recommended:` line, and its `scope:`, `example:`, `bar:` and `probe:`

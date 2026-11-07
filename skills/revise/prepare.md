@@ -362,10 +362,10 @@ record `sources`.
     through `ticket-draft` for a `ticket/`, or, for a `question/`, the standard's repository once
     answered. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
     diff and no archive entry. A proposal from a cluster names it, `C<n>`, among its evidence
-    pointers, and the `guidance_clusters.py` printout the report was written from is kept beside
-    it as `<log>/ratchet-YYYY-MM.clusters.txt`, written as printed, so a later question about how a
-    proposal came about traces it to its cases (`discuss.md`); with no cluster, there is no such
-    file. Then check its quotes: run `python3 "<plugin
+    pointers. When "Guidance" ran, run `guidance_clusters.py` again with step 5's arguments and
+    write its printout to `<log>/ratchet-YYYY-MM.clusters.txt` beside the report, as printed, its
+    `clusters: 0` line included when there was none, so a later question about how a proposal came
+    about traces it to its cases (`discuss.md`); without "Guidance", no such file is written. Then check its quotes: run `python3 "<plugin
     root>/scripts/quote_check.py" <the report> --comments <each comment-list.json file that exists
     under .review/harvest/threads/pr-*/, .review/harvest/captured-<repo>/threads/pr-*/ and each
     covered repository's <log>/capture/pr-*/, the last holding earlier windows' comments for the

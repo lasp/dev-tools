@@ -1,6 +1,6 @@
 # Apply
 
-`revise`'s `apply` mode: from the marked report to the diff here and, when the standard lives
+`revise`'s `apply` mode: from the report the group decided on to the diff here and, when the standard lives
 elsewhere, the commit in a clone of its repository; `<standard files>`, `<log>`, `<archive>` and
 `<context>` are where `revise`'s "The standard's repository" puts them.
 
@@ -11,41 +11,54 @@ candidates.
 **Settle the marks.** The group decides in its own words, wherever it discussed: on a proposal's
 `Mark:` line; with a clone, in the draft pull request `prepare` may have opened on the report's
 branch, found as step 2 finds it and read through `using-github` (each review comment and its
-replies, by the line it is on, the reviews' bodies and the conversation comments), a server that
-cannot be reached said in one line and the rest read; and in notes the driver pastes into
-`.review/revision/notes/` since `prepare`. Read them all, then settle each proposal to one mark:
+replies, by the line it is on, the reviews' bodies and the conversation comments); and in
+meeting notes the driver pastes into `.review/revision/meeting/`, which `prepare` never reads, so
+an ask pasted for `prepare` into `revision/notes/` is not taken for a decision. When that pull
+request exists, or the check for it fails, and its threads cannot be read, stop here as
+`<plugin root>/skills/work/servers.md` says, since a verdict given there would be missed; the
+person can paste the threads into `revision/meeting/` instead. Read them all, then settle each
+proposal to one mark:
 `accept`, `accept, reworded: "<the words agreed>"`, `decline: <reason>`, `escalate: <reason>`,
-`accept, override: <reason>`, `accept, owner: <name>`, `answer: <the answer>`, or blank, deferred,
-with the rules below on which mark a proposal can take; or `unclear: <why>`, when what was said
-does not settle it, such as two people disagreeing with no outcome, or an accept on a held
-proposal with no reason the discussion gives. Whose words count is `pr-review`'s "Whose reply
-counts", read for the group rather than an author: a person's, and an agent's reply only as its
-poster's when its attribution says a person read it; a mark already in the fixed form stands
-unless a later word from the group changes it. A question a comment asks is answered as
+`accept, override: <reason>`, `accept, owner: <name>`, `answer: <the answer>`, or blank, deferred;
+a held proposal or a change to a live data convention given new words takes both parts,
+`accept, reworded: "<words>", override: <reason>` or `accept, reworded: "<words>", owner: <name>`,
+and agreed words that hold a double quote write it as a single one. Or `unclear: <why>`, when
+what was said does not settle it.
+
+Only people's words decide: a reply an agent drafted, whatever its attribution, and a bot's are
+read for what they say, never as the group's verdict; a person's reply in their own words is read
+for what it decides, as `pr-review`'s "Whose reply counts" judges a reply that opens with no
+word. A proposal settles to `unclear` when people disagree with no outcome, when its sources
+disagree (a `Mark:` line and a thread, or two notes), since neither carries a time to order them,
+when an accept on a held proposal gives no reason, and when an accept on a change to a live data
+convention names no owner. A question a comment asks is answered as
 `<plugin root>/skills/revise/discuss.md` says, and settles nothing on its own.
 
 Show a table of every proposal in the report's order: its id, the mark settled, and what it
-rests on, the comment's link or the `Mark:` line, quoted where short. Then ask: **Write these
-marks** (Recommended, when none is unclear), **Change some**, the person naming the proposal and
-the mark, or **Let's discuss**. An `unclear` mark is settled with the person before anything is
-written, or left blank, deferred, on their word. On the yes, write each mark on its proposal's
-`Mark:` line and tick the box of each accepted one, the report being the record of what the group
-decided; nothing below reads the threads again. Every `Mark:` line empty after that, the meeting
-having deferred everything: stop, there is nothing to write, and name the report's path and, in
-a clone, its branch. Then, by mark:
+rests on, the comment's link, the `Mark:` line or the note's file, quoted where short; above it,
+one line naming each file read from `revision/meeting/`, so a stale one is seen. Then ask:
+**Write these marks** (Recommended, when none is unclear), **Change some**, the person naming the
+proposal and the mark, or **Let's discuss**. An `unclear` mark is settled with the person before
+anything is written, or left blank, deferred, on their word. On the yes, write each mark on its
+proposal's `Mark:` line and tick the box of each accepted one, the report being the record of
+what the group decided; nothing below reads the discussion again. Every `Mark:` line empty after
+that, the meeting having deferred everything: stop, there is nothing to write, and name the
+report's path and, in a clone, its branch. Then, by mark:
 - A proposal not marked `accept` gets no archive entry, no diff line of its own and no ticket. A
   declined, escalated or blank admission, the last one the meeting deferred, returns to the held
   candidates with its evidence and its quotes, a `question/` included, with `kind:
   open-question`; one marked `answer:` is settled, and becomes a decision.
 - A held proposal whose held line says `no override` returns to the held candidates whatever its
   mark.
-- A proposal held by the bar is accepted only by `accept, override: <reason>`. A held admission
-  not so marked returns to the held candidates; a held rewording, promotion or broadening not so
-  marked leaves its rule as it stands. A held proposal marked a plain `accept` stops `apply`,
-  naming it, until its mark carries the reason.
-- A proposal marked `accept, reworded: "<words>"` is drafted with those words in place of its
-  proposed wording, or its `entry:` lines', and is named in the lint like any other change, so
-  the bar judges the words the group agreed.
+- A proposal held by the bar is accepted only by a mark carrying `override: <reason>`. A held
+  admission not so marked returns to the held candidates; a held rewording, promotion or
+  broadening not so marked leaves its rule as it stands. A held proposal marked a plain `accept`,
+  or `accept, reworded` with no override, stops `apply`, naming it, until its mark carries the
+  reason.
+- A mark carrying `reworded: "<words>"` drafts those words in place of the rule's proposed
+  wording, its `> ` lines, or the drafted entry's statement, the rest of its `entry:` lines kept
+  as they are; it is named in the lint like any other change, so the bar judges the words the
+  group agreed.
 
 1. **Archive every rule that leaves.** For each rule graduating, retiring, expiring, demoted to
    the prose tier or rewritten, write all of these:
@@ -93,8 +106,8 @@ a clone, its branch. Then, by mark:
    - `A-NNN` and `F-NNN` entries go at the end of `<standard files>/agent-guidance.md` and
      `data-conventions.md`, each file started from `<plugin root>/standards/templates/` when the
      standard has none, their months the month the entry reaches `main`. A change to a live
-     `F-NNN` is written only when marked `accept, owner: <name>`, its owner the one named, and
-     `owner: <name> · <YYYY-MM>` goes on its `source:` line; marked a plain `accept`, it stops
+     `F-NNN` is written only when its mark carries `owner: <name>`, its owner the one named, and
+     `owner: <name> · <YYYY-MM>` goes on its `source:` line; marked an accept with no owner, it stops
      `apply`, naming it, as a held proposal does. Whatever the marks, each agent guidance entry the
      report's "Rules" lists as seen again takes its new `seen` month.
    - `D-NNN` entries go at the end of `<standard files>/decisions.md`, and so does each answered

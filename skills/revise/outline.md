@@ -47,7 +47,7 @@ quotes: <n> · from comments: <n> · from notes: <n> · unchecked: <n>, quote_ch
 ### Data conventions
 - [ ] F-0NN · <the fact> · source: <document or owner> · <evidence pointers> | F-0NN · change · <what> · owner: <source>
   said: …
-  Recommended: … (a change to a live one: escalate: <its source>; it is accepted only marked accept, owner: <name>)
+  Recommended: … (a change to a live one: escalate: <its source>; it is accepted only by a mark carrying owner: <name>)
   entry: the drafted entry or the changed one, indented
   bar: ok | <lint lines>
   Mark:

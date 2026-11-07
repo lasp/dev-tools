@@ -14,7 +14,16 @@ guidance: 6 comments · 5 items · 4 general, 1 pr-specific · general by kind: 
   Recommended: accept — a person's general statement, changed as asked
   Mark: yes, but word it "raises on input it cannot use", not "fails loudly"; nobody can test "loudly" — erin
 ### Data conventions
-- [ ] F-001 · A column's name carries its units · source: carol · pr-0007 · C2
+- [ ] F-001 · change · a count of -1 is also the fill value in the parts CSV, not only the inventory CSV · owner: the warehouse service's export specification · pr-0007
+  Recommended: escalate: the warehouse service's export specification, section 3
+  entry:
+    ### F-001 · A count of -1 means not counted
+
+    _2026-10_
+    > In an inventory or parts CSV, a count of -1 is the fill value for a part not counted that day. Never sum it or treat it as zero.
+    source: the warehouse service's export specification, section 3
+  Mark: makes sense to me, the parts export works the same way — bob
+- [ ] F-002 · A column's name carries its units · source: carol · pr-0007 · C2
   said: "Units go in the column name so nobody has to guess them." — carol, https://github.com/example/widgets/pull/7#discussion_r104
   Recommended: accept
   Mark:

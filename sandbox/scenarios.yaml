@@ -220,36 +220,40 @@ scenarios:
     setup:
       - mkdir -p standards/log/widgets/capture .review/revision
       - cp "$SBX_FIXTURES/standard-review-rules.md" standards/review-rules.md
+      - cp "$SBX_FIXTURES/shim-data-conventions.md" standards/data-conventions.md
       - cp "$SBX_FIXTURES/discuss/ratchet-2026-10.md" "$SBX_FIXTURES/discuss/ratchet-2026-10.clusters.txt" standards/log/widgets/
       - mkdir -p standards/log/widgets/capture/pr-0007
       - cp "$SBX_FIXTURES/discuss/capture/pr-0007/items.json" "$SBX_FIXTURES/discuss/capture/pr-0007/comment-list.json" standards/log/widgets/capture/pr-0007/
-      - mkdir -p .review/revision/notes
-      - cp "$SBX_FIXTURES/discuss/notes/meeting-2026-11-03.md" .review/revision/notes/
+      - mkdir -p .review/revision/meeting .review/revision/notes
+      - cp "$SBX_FIXTURES/discuss/notes/meeting-2026-11-03.md" .review/revision/meeting/
+      - cp "$SBX_FIXTURES/discuss/notes/chat-2026-10-20.md" .review/revision/notes/
     origin: "#65"
     why: >-
       Runs revise apply's first step on a report the group discussed in its own words: a
-      rewording on R-004's Mark line, an accept for F-001 only in the pasted meeting notes, and two
-      people on D-001 with no outcome. The run should settle R-004 to accept with the agreed
-      words, F-001 to accept from the notes, and D-001 to unclear, show the table, and write
-      nothing before the person's yes.
+      rewording on R-004's Mark line, an accept for F-002 only in the pasted meeting notes, two
+      people on D-001 with no outcome, an agreement to a change to the live convention F-001 that
+      names no owner, and a chat note pasted for prepare that wanted R-004 gone. The run should
+      settle R-004 to accept with the agreed words, F-002 to accept from the meeting notes, D-001
+      and F-001 to unclear, ignore the chat note, show the table, and write nothing before the
+      person's yes.
     turns:
       - >-
-        /lasp-dev:revise apply. Settle the marks from what the group said and show me what you
-        would write, then stop before writing anything.
-    must_not_run: ["mcp__*", "Agent", "Task", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
+        /lasp-dev:revise apply. The group met on 3 November; settle the marks from what it said.
+    must_not_run: ["mcp__*", "Agent", "Task", "Edit", "Write", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
     look_at: >-
-      A table of R-004, F-001 and D-001: R-004 accept, reworded with "raises on input it cannot
-      use", resting on erin's Mark line; F-001 accept, resting on the meeting notes; D-001 unclear,
-      dana for and erin doubting with no outcome, never a plain accept. The report's Mark lines are
-      unchanged and no diff is written.
+      A table of R-004, F-001, F-002 and D-001: R-004 accept, reworded with "raises on input it
+      cannot use", resting on erin's Mark line, not declined from the chat note; F-002 accept,
+      resting on the meeting notes; F-001 unclear, no owner named; D-001 unclear, dana for and erin
+      doubting with no outcome, never a plain accept. The report's Mark lines are unchanged and no
+      diff is written.
     verify:
       - "grep -q '^  Mark: yes, but word it' standards/log/widgets/ratchet-2026-10.md"
       - "grep -q '^  Mark:$' standards/log/widgets/ratchet-2026-10.md"
       - "! test -e .review/ratchet-proposal.diff"
     expect:
       ends: success
-      says: ['(?i)R-004[^\n]*accept, reworded', '(?i)raises on input it cannot use', '(?i)F-001[^\n]*accept', '(?i)D-001[^\n]*unclear']
-      not_says: ['(?i)D-001[^\n|]*\|\s*`?accept`?\s*\|']
+      says: ['(?i)R-004[^\n]*accept, reworded', '(?i)raises on input it cannot use', '(?i)F-002\W*\|\W*accept\b(?!ed)', '(?i)F-001[^\n]*unclear', '(?i)D-001[^\n]*unclear']
+      not_says: ['(?i)^(?!.*unclear).*D-001[^\n]*\baccept\b(?!ed|,? (reworded|owner|override))', '(?i)^(?!.*unclear).*F-001[^\n]*\baccept\b(?!ed)', '(?i)R-004[^\n]*decline']
 
   - id: revise-question-evidence
     repo: widgets
@@ -277,7 +281,7 @@ scenarios:
       request 9 named as having no capture, so its words cannot be shown.
     expect:
       ends: success
-      says: ['discussion_r101', '(?i)pr-0009|pull request 9|#9', '(?i)(no capture|not captured|missing|isn.t captured|no .*capture)']
+      says: ['discussion_r101', '(?i)(pr-0009|pull request 9|#9)[^\n]*(no capture|not captured|missing|isn.t captured|no `?capture|can.t (check|verify|read))|(no capture|not captured|missing|no `?capture)[^\n]*(pr-0009|pull request 9|#9)']
 
   - id: revise-prepare-uncaptured
     repo: widgets

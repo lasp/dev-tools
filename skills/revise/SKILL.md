@@ -4,12 +4,11 @@ description: >
   Prepares the monthly standards revision: from merged pull requests' review records and what
   reviewers said, proposes rules to retire, reword, graduate or add, agent guidance, data
   conventions, decisions, lint settings and questions for the group, tickets for problems still in
-  the code and fixes to documents practice has left behind, for the group to mark, and reports where merged diffs
+  the code and fixes to documents practice has left behind, for the group to decide on, and reports where merged diffs
   follow or break the rules and the documented practice; `capture` keeps each merged pull
-  request's harvest in the log as it merges, `apply` drafts what it
-  accepted, settling each proposal's mark from the group's discussion on the report and its pull
-  request, a question about how a proposal came about is answered from its evidence, and `correct`
-  fixes a misreading in the corpus between revisions. Not for
+  request's harvest in the log as it merges, `apply` settles each proposal's mark from the
+  group's discussion and drafts what it accepted, and `correct` fixes a misreading in the corpus
+  between revisions; a question about how a proposal came about is answered from its evidence. Not for
   disagreeing with a rule, which goes through Disagree and the revision.
 argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | capture [YYYY-MM-DD] | apply | correct <what is wrong, where, what it should say, the source> | <a question about the report>]"
 disable-model-invocation: true
@@ -21,7 +20,7 @@ metadata:
 # Revise the standard
 
 A group session with one driver. The driver runs `prepare` before the meeting, which writes a
-report of proposals with blank checkboxes; the group marks each one in the meeting; the driver
+report of proposals with blank checkboxes; the group discusses and decides each one, in the meeting or on the report's pull request; the driver
 runs `apply` after it, which settles each proposal's mark from what the group said and drafts the accepted changes as one pull request here and, when the
 standard lives elsewhere, one in the standard's repository. It runs in the code repository whose standard it revises. Between
 revisions, `correct` fixes a misreading one person reports, everywhere the corpus carries it.
@@ -38,7 +37,7 @@ requests have merged, so `prepare` finds the month already read.
 
 | Option | Default |
 |---|---|
-| Mode | `prepare`: read `${CLAUDE_SKILL_DIR}/prepare.md`. `capture`, between revisions: read `${CLAUDE_SKILL_DIR}/capture.md`. `apply`, after the group has marked the report: read `${CLAUDE_SKILL_DIR}/apply.md`. `correct`, when a person says the corpus has something wrong: read `${CLAUDE_SKILL_DIR}/correct.md`. A question about a report or a proposal, such as how it came about or which cases it rests on, in any mode or alone: read `${CLAUDE_SKILL_DIR}/discuss.md` and answer it, then go on with the mode, if one was named |
+| Mode | `prepare`: read `${CLAUDE_SKILL_DIR}/prepare.md`. `capture`, between revisions: read `${CLAUDE_SKILL_DIR}/capture.md`. `apply`, after the group has decided on the report: read `${CLAUDE_SKILL_DIR}/apply.md`. `correct`, when a person says the corpus has something wrong: read `${CLAUDE_SKILL_DIR}/correct.md`. A question about a report or a proposal, such as how it came about or which cases it rests on, in any mode or alone: read `${CLAUDE_SKILL_DIR}/discuss.md` and answer it, then go on with the mode, if one was named |
 | Window | From the day after the `window:` line's end in the newest `ratchet-*.md` in any `<log>` of the standard; before the first, from this repository's adoption date ("The standard's repository") |
 | Measures | Not read. `measures`, or the person asking for them, has `prepare` also read `${CLAUDE_SKILL_DIR}/measures.md`: tickets, escaped defects, build yield and what the build missed. No Dial acts on them except the Ticket candidates Dial, which applies only in a run that reads them |
 | Page or epic to add | None. A named Confluence page or Jira epic is read once and drafted as a context-entry candidate, marked like any other proposal, within `context/README.md`'s ten-entry cap |
@@ -84,9 +83,9 @@ outside the sandbox on the person's yes), on a branch `revision/<repo>-YYYY-MM` 
 commit, and push that branch and open its pull request as `using-github` sets out, only on the
 yes each mode's file asks for. After a push, remove the directory and say where it was; any other
 answer leaves it in place and names its path. With no clone, `prepare` writes the records and
-the report into `<log>` in this repository's working tree, uncommitted, where the group marks the
+the report into `<log>` in this repository's working tree, uncommitted, where the group decides on the
 report and `apply` reads it; every other change to `<standard files>` goes into this repository's diff,
-and the driver commits the records, the report and the diff together in the revision's pull
+and the driver commits the records, the report, its clusters file and the diff together in the revision's pull
 request here. Nothing is written into the installed plugin.
 
 "Shared" means the plugin's own `standards/`: `dials.md` and `rule-bar.md`, read from `<plugin
@@ -101,8 +100,8 @@ else or invent a term or a decision to fill the gap; `correct` stops there.
 Each proposal in the report is a checklist line, `- [ ] <R-0NN, A-0NN, F-0NN, D-0NN, tool/<rule>,
 exemplar/<path>, question/<slug>, context/<name>, ticket/<slug> or doc/<path>> · <proposal> · <the Dial that triggered it, for a rule> · <evidence>`, its detail beneath opening with a `Recommended:` line.
 The group discusses each proposal in its own words, on its `Mark:` line, in review comments and
-replies on the draft pull request `prepare` opens on the report's branch, or in notes the driver
-pastes, and asks about any proposal there or in a session, as `discuss.md` answers. `apply` reads
+replies on the draft pull request `prepare` opens on the report's branch when the standard is in a
+clone, or in meeting notes the driver pastes into `.review/revision/meeting/`, and asks about any proposal there or in a session, as `discuss.md` answers. `apply` reads
 all of it and settles each proposal to one mark, which the driver confirms before it is written
 on the `Mark:` line, the box ticked for an accepted one: `accept`, `accept, reworded: "<the words
 agreed>"`, `decline: <reason>` or `escalate: <reason>`, and, on a proposal the bar held, `accept,
@@ -154,6 +153,8 @@ In this repository's `.review/`:
   Review Rules section where a ledger still keeps wording there, the pull request template and the documents an accepted `doc/` proposal names,
   for the driver to apply and open as a pull request.
 - `revision/notes/`, meeting or chat notes the driver pastes before `prepare`, read as asks.
+- `revision/meeting/`, the revision meeting's notes, or a pull request's threads, the driver pastes
+  before `apply`, read by `apply` alone when it settles the marks.
 - `revision/tickets/<n>-<slug>.md`, from `apply`: each accepted `ticket/` proposal as a prompt
   `ticket-draft` takes.
 - `archive-pages/`, from `apply`: a Confluence page body per archive entry, for a person to
