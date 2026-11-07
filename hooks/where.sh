@@ -27,7 +27,8 @@
 # from the key, in the profile's ticket key pattern, rather than from the branch or context.md.
 # Where the profile's tracker is GitHub's, the key is the issue's number, `ticket=59`, and the
 # session-start line shows it as `#59`; the pattern is the standard's, never one detected, and
-# with none recorded it is `(issue-)?\d+`.
+# with none recorded it is `(issue-)?\d+`. There a branch's number ends at `-`, `_` or the name's
+# end, but not by `-NN-NN`, and `--ticket` takes the bare number as well as the pattern.
 #
 # .review/ is the one at the repository's top level, found from the SessionStart payload's cwd, or
 # the working directory when there is none, so a session in a subdirectory reads the same files.
@@ -118,14 +119,27 @@ on=""
 slug=""
 if [ -n "$given" ]; then
   [ -n "$key" ] || { echo "where.sh: no ticket key pattern: the profile could not be read" >&2; exit 1; }
-  printf '%s' "$given" | grep -qxiE "($key)" || { echo "where.sh: $given is not a ticket key in the pattern $key" >&2; exit 1; }
+  # On a GitHub tracker a bare number is an issue's, whatever pattern the standard records, as
+  # work and implement-change pass it.
+  printf '%s' "$given" | grep -qxiE "($key)" || { [ "$tracker" = github ] && printf '%s' "$given" | grep -qxE '[0-9]+'; } \
+    || { echo "where.sh: $given is not a ticket key in the pattern $key" >&2; exit 1; }
   ticket=$(canon "$given")
   page=".review/context/$ticket.md"
   [ -f "$page" ] || page=.review/context.md
   [ "$(key_of "$page")" = "$ticket" ] && on=$(branches_of "$page")
 else
   ticket=""
-  [ -n "$key" ] && ticket=$(printf '%s' "$branch" | grep -oiE "^([A-Za-z]+/)?($key)" | sed 's|.*/||' || true)
+  matched=""
+  [ -n "$key" ] && matched=$(printf '%s' "$branch" | grep -oiE "^([A-Za-z]+/)?($key)" || true)
+  ticket=${matched##*/}
+  # On a GitHub tracker the number is followed by `-`, `_` or the name's end, but not by
+  # `-NN-NN`: `release/1.2.0`, `2fa-support`, `123abc` and `2026-11-06-cleanup` name no issue, while
+  # `hotfix/3`, a number as the whole last component, names issue 3.
+  if [ "$tracker" = github ] && [ -n "$matched" ]; then
+    rest=${branch:${#matched}}
+    case $rest in '' | -* | _*) ;; *) ticket="" ;; esac
+    printf '%s' "$rest" | grep -qE '^-[0-9]{2}-[0-9]{2}([^0-9]|$)' && ticket=""
+  fi
   # A key that matches only ignoring case on a branch that already has its own plan is not taken:
   # that work began before such keys were read, under the branch's name.
   if [ -n "$ticket" ] && ! printf '%s' "$ticket" | grep -qxE "($key)" && [ -f ".review/implementation-plan-${branch//\//-}.md" ]; then

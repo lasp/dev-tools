@@ -9,7 +9,9 @@
 #
 # The stub's file name holds github-mcp-server, so run.py gives the server the GitHub rules. It has
 # no write tools. The issues: #9 closed as completed, #12 open with no label, #14 open and labeled
-# `ready` and `enhancement`; #15 is a merged pull request. The fields are those of ../scenarios.yaml.
+# `ready` and `enhancement`, #17 closed as not planned and still labeled `in progress`; #15 is a
+# merged pull request, its body naming #9, and #16 one naming `o/r#90`. The fields are those of
+# ../scenarios.yaml.
 
 scenarios:
   - id: tracker-gh-work-unlabeled
@@ -69,10 +71,36 @@ scenarios:
     must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
     look_at: >-
       work reads #9, closed, and next_phase.py routes it to nothing: "#9 is closed", then
-      "Nothing: the ticket is past the build; open it in the tracker to see why." No phase runs.
+      "Nothing: the ticket is past the build; open it in the tracker to see why." No phase runs,
+      and no pull request is read: a closed issue reads none.
     expect:
       ends: success
       mcp: [mcp__github__issue_read]
+      agents_absent: [pr-reader]
+      says: ["(?m)^Nothing: the ticket is past the build"]
+      not_says: ["(?m)^Next: "]
+
+  - id: tracker-gh-work-closed-labeled
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+    origin: "#59 (review of #115): a closed issue keeps its labels, and reads no pull request"
+    why: >-
+      Works issue 17, closed as not planned and still labeled `in progress`, one of the pull
+      request statuses, so work must route it by its state, past the build, and read no pull
+      request for the label.
+    turns:
+      - /lasp-dev:work 17
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: >-
+      work reads #17, closed, and next_phase.py routes it to nothing: "#17 is closed", then
+      "Nothing: the ticket is past the build". Its `in progress` label sends work to no pull
+      request search and no pr-reader.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_read]
+      agents_absent: [pr-reader]
       says: ["(?m)^Nothing: the ticket is past the build"]
       not_says: ["(?m)^Next: "]
 
@@ -97,3 +125,26 @@ scenarios:
       mcp: [mcp__github__issue_read]
       says: ["(?m)^Next: implement-change\\."]
       not_says: ["(?m)^Next: (ticket-draft|pr-review|pr-fix)"]
+
+  - id: tracker-gh-work-pr
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+    origin: "#59 (review of #113): a pull request's number on a GitHub tracker is not an issue"
+    why: >-
+      Works 15, the merged pull request for issue 9, so work's one issue_read finds a pull
+      request's /pull/ link and reads it as that pull request, never as a ticket. The stub serves
+      no pull_request_read, so the pull request read itself fails and work stops there.
+    turns:
+      - /lasp-dev:work 15
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)", "Bash(*where.sh*--ticket 15*)"]
+    look_at: >-
+      work reads 15 with issue_read, sees /pull/ in its html_url, and takes it as pull request
+      #15: it never gives where.sh --ticket 15, never routes 15 to ticket-draft or
+      implement-change, and stops at the pull request read the stub cannot serve, saying so.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_read]
+      says: ["(?i)(pull request|PR) #?15"]
+      not_says: ["(?m)^Next: (ticket-draft|implement-change)", "(?m)^#15 · "]

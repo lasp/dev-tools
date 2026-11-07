@@ -36,7 +36,10 @@ not written from the diff:
   `<plugin root>/skills/work/servers.md` sets out with the ticket's sentence as what is lost.
   Where the tracker is GitHub's (`python3 "<plugin root>/scripts/profile.py" --defaults --field
   issue_tracker.kind` prints `github`), the key is the issue's number and the line writes it
-  `Ticket: #<n> · <sentence>`, the sentence its first under Motivation, or the body's first without one, never `Closes #<n>` or another
+  `Ticket: #<n> · <sentence>`, or `Ticket: <owner/repo>#<n> · <sentence>` when `--field
+  issue_tracker.location` prints a repository rather than `none`, so the link opens the tracker's
+  issue and not this repository's `#<n>`; the sentence is the issue's first under Motivation, or
+  the body's first without one. Never `Closes #<n>` or another
   closing keyword, since a ticket may take more than one pull request. Read a context page's first line
   on its own before the rest (`<plugin root>/skills/writing/references/short.md`, "Controlled content"). A context page that opens with a `Controlled:` line
   puts its key on the line and no sentence yet: name only the key, where it sits and the warning, quoted,

@@ -6,7 +6,7 @@ description: >
   "write a PR description".
 metadata:
   author: llm-tooling
-  version: 3.8.0
+  version: 3.8.1
 ---
 
 # Open a Pull Request
