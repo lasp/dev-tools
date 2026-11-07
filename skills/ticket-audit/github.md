@@ -2,8 +2,10 @@
 
 Read by `ticket-audit` where `python3 "<plugin root>/scripts/profile.py" --defaults --field
 issue_tracker.kind` prints `github`. The tickets are the issues at `--field
-issue_tracker.location`, or this repository's when that prints `none`; an issue is `#12` wherever a
-person reads it. The issue's fields, the plan's items, the approval record and the read-back are
+issue_tracker.location`, or, when that prints `none`, this repository's: the owner/repo its
+`origin` remote names, from `git remote get-url origin`, never a name guessed. Give it to each
+reader as `Tracker: github <owner/repo>`; every item's `owner` and `repo` are its. An issue is `#12`
+wherever a person reads it. The issue's fields, the plan's items, the approval record and the read-back are
 `<plugin root>/skills/using-github/issues.md`'s; read it before Apply. What differs from
 `SKILL.md` is below; the rest runs as written.
 

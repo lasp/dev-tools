@@ -358,6 +358,7 @@ scenarios:
         python3 -c 'import json, os; d = json.load(open(os.environ["SBX_FIXTURES"] + "/github.json"));
         w = [json.loads(l) for l in open(".git/github-writes.jsonl")];
         u = [x["arguments"] for x in w if x["tool"] == "issue_write"];
+        assert all((x["arguments"]["owner"], x["arguments"]["repo"]) == ("example", "widgets") for x in w), w;
         assert all(a["method"] == "update" for a in u), u;
         dup = [(a["issue_number"], a.get("duplicate_of")) for a in u if a.get("state") == "closed" and a.get("state_reason") == "duplicate"];
         assert dup in ([(19, 18)], [(18, 19)]), dup;

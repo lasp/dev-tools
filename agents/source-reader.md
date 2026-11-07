@@ -158,12 +158,14 @@ of fetching the pull requests again.
 
 On a GitHub tracker, where `--field issue_tracker.kind` prints `github`, the sweep is `duplicates`
 or `pulls`, as `${CLAUDE_PLUGIN_ROOT}/skills/ticket-audit/github.md` sets out, on the repository
-`--field issue_tracker.location` names, or the caller's repository when it prints `none`, each
-issue written `#<n>`. `duplicates` reads the open issues with `list_issues`, state `OPEN`, paged
+the caller names, `Tracker: github <owner/repo>`, each issue written `#<n>`; a GitHub sweep
+without that line returns `sweep: no issues repository named` and nothing else. `duplicates` reads the open issues with `list_issues`, state `OPEN`, paged
 until `hasNextPage` is false, and the comments of each issue a finding names with `issue_read`
 `get_comments`. `pulls` takes each pull request's issue from its state block's `ticket:` line, as
 `${CLAUDE_PLUGIN_ROOT}/docs/contracts.md`'s "The record" reads a `Ticket:` line on a GitHub
-tracker, and reads that issue with `issue_read` `get` for its state, `state_reason` and labels.
+tracker, and reads that issue with `issue_read` `get` for its state, `state_reason` and labels,
+in the named repository, or in the pull request's own when `--field issue_tracker.location`
+prints `none`.
 
 ```
 ## sweep — <slug>
