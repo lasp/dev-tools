@@ -343,14 +343,15 @@ class Adjudication(unittest.TestCase):
                 self.assertIn("ticket: 59", lines)
                 self.assertIn('stack: {part: 1, of: 2, base: "main"}', lines)
                 for line in ("[#59](https://github.com/o/r/issues/59) · y", "Fixes #59", "https://github.com/o/r/issues/59",
-                             "**#59** · x", "`#59`", "o/r#59 · y"):
+                             "**#59** · x", "`#59`", "o/r#59 · y", "https://www.github.com/o/r/issues/59",
+                             "the UTF-8 fix, #59", "the ISO-8601 dates, #59", "the SHA-256 checks, #59", "none-of-the-above, #59"):
                     with self.subTest(line=line):
                         lines, _ = record.build(PR, [REVIEW], [], BODY + f"Ticket: {line}\n", "o/r", "abc1234", issue_comments=[])
                         self.assertIn("ticket: 59", lines)
-                # Another tracker's key, as in a pull request from before the move to GitHub
-                # Issues, and the none line, record none.
-                for line in ("none — split from #68", "PROJ-9 · y", "https://x.atlassian.net/browse/PROJ-9", "other/r#59 · y",
-                             "https://github.com/other/r/issues/59"):
+                # Another tracker's key leading the line, as in a pull request from before the
+                # move to GitHub Issues, another repository's issue, and the none line, record none.
+                for line in ("none — split from #68", "PROJ-9 · y", "PROJ-7 · fixes #59", "`PROJ-9`", "https://x.atlassian.net/browse/PROJ-9",
+                             "other/r#59 · y", "https://github.com/other/r/issues/59", "NONE-12 · #59"):
                     with self.subTest(line=line):
                         lines, _ = record.build(PR, [REVIEW], [], BODY + f"Ticket: {line}\n", "o/r", "abc1234", issue_comments=[])
                         self.assertIn("ticket: none", lines)

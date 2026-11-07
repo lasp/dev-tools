@@ -117,8 +117,8 @@ read:
 
 Row 3's search, run only when row 3 matches, is one `search_pull_requests` for
 `repo:<owner/repo> is:pr <key>`, or on a GitHub tracker `repo:<owner/repo> is:pr in:body
-"Ticket: <issue>"`, `<issue>` being `#<n>`, or `<location>#<n>` when the location is another
-repository, as `pr-create` writes the line. A closed issue with no `outcome=` or `part=` reads no
+"Ticket: <issue>"`, `<issue>` being `#<n>` when the location is `none` and `<location>#<n>`
+whenever it is not, as `pr-create` writes the line. A closed issue with no `outcome=` or `part=` reads no
 pull request, whatever its labels: no search and no `pr-reader`.
 
 Each read the table names is one `pr-reader` in `state` mode, its block written to `.review/work-state.txt`.

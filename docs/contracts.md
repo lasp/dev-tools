@@ -529,7 +529,10 @@ Version 6: `--ticket-status` on a GitHub tracker and `--issue-state` on any othe
 row decides; the state block's `ticket: Ticket: …` line is read as "The record" reads a body's
 `Ticket:` line, except that a first key of another tracker's form, or a profile that cannot be
 read for a line not starting with `none`, exits 1; and the first line names a pull request whose
-number is the issue's.
+number is the issue's. This repository, for that reading, is the one the working directory's
+`origin` remote names. With no origin, `profile.py` reads no standard for the checkout, so no
+GitHub tracker is in effect and `#<n>` names nothing; were a tracker read without one, an issue
+that counts only as this repository's exits 1, saying there is no origin.
 
 Writers: `scripts/next_phase.py`. Readers: `work`.
 
@@ -723,15 +726,19 @@ place the fields are defined; the records directory's own README says how the re
 reads them.
 
 - `pr`, the number; `ticket`, the first key on the body's `Ticket:` line, anywhere in it, a
-  link, a URL or emphasis included, or `none`. A line whose value starts with `none`, in any case,
-  is `none`, so `Ticket: none — split from #68` is (version 14). The key is one in the profile's
-  ticket pattern; or, where the profile's tracker is GitHub's, whatever the pattern, the
-  tracker's issue, recorded as its number: its issues URL, `<owner/repo>#<n>`, or `#<n>`. With
+  link, a URL or emphasis included, or `none`. A line whose value starts with the word `none`, in
+  any case, is `none`, so `Ticket: none — split from #68` is and `none-of-the-above` is not
+  (version 14). The key is one in the profile's ticket pattern; or, where the profile's tracker
+  is GitHub's, whatever the pattern, the tracker's issue, recorded as its number: its URL on
+  `github.com` (`https://github.com/<owner/repo>/issues/<n>`, `www.` allowed; no other host is
+  read), `<owner/repo>#<n>`, or `#<n>`. With
   `issue_tracker.location` `none` the tracker's issues are this repository's, a bare `#<n>` among
   them; with a location they are that repository's, written `<location>#<n>` (version 14), and a
-  bare `#<n>` counts only when the location is this repository. A line whose first key is another
-  tracker's, a key such as `PROJ-9` or another repository's issue, records `none`, so a
-  repository's pull requests from before it moved to GitHub Issues still regenerate;
+  bare `#<n>` counts only when the location is this repository. A line that is another tracker's,
+  leading with a key such as `PROJ-9`, after a link's `[`, emphasis or a backtick, or whose first
+  issue is another repository's, records `none`, so a
+  repository's pull requests from before it moved to GitHub Issues still regenerate. A key shape
+  further in, such as `the UTF-8 fix, #59`, is a word, and the line's issue counts;
   `scripts/next_phase.py`, routing on the same line, refuses it instead. `scripts/profile.py`'s
   `ticket_named` is the one reading both share.
 - `stack`, `{part, of, base}` from that line's `part k of n · base: <branch>`, and `claims`, the

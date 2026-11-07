@@ -506,16 +506,22 @@ class Rows(unittest.TestCase):
     def test_a_pull_request_body_naming_a_github_issue_gives_its_number(self):
         self.github(" []")
         for line in ("#59 · part 1 of 2 · base: main", "[#59](https://github.com/o/r/issues/59) · x", "Fixes #59", "**#59** · x",
-                     "https://github.com/example-org/github/issues/59", "example-org/github#59 · x"):
+                     "https://github.com/example-org/github/issues/59", "https://www.github.com/example-org/github/issues/59",
+                     "example-org/github#59 · x", "the UTF-8 fix, #59", "the ISO-8601 dates, #59", "the SHA-256 checks, #59"):
             with self.subTest(line=line):
                 self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "59")
-        for line in ("none, tooling work", "none — split from #68"):
+        for line in ("none, tooling work", "none — split from #68", "https://x.atlassian.net/browse/PROJ-7", "see PROJ-7"):
             with self.subTest(line=line):
                 self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "")
-        for line, says in (("PROJ-7 · fixes #59", "names PROJ-7, but the tracker is GitHub's"), ("https://x.atlassian.net/browse/PROJ-7", "names PROJ-7"),
+        for line, says in (("PROJ-7 · fixes #59", "names PROJ-7, but the tracker is GitHub's"), ("[PROJ-7](u) · fixes #59", "names PROJ-7"),
+                           ("**PROJ-7** · x", "names PROJ-7"), ("SHA-256 checks, #59", "names SHA-256"),
                            ("other/r#59 · x", "names other/r#59"), ("https://github.com/other/r/issues/59", "names https://github.com/other/r/issues/59")):
             with self.subTest(line=line), self.assertRaisesRegex(next_phase.Refused, says):
                 next_phase.read_state(state([], ticket=line))
+        # `none` is a word of its own: none-of-the-above and NONE-12 are not it.
+        self.assertEqual(next_phase.read_state(state([], ticket="none-of-the-above, #59"))["ticket"], "59")
+        with self.assertRaisesRegex(next_phase.Refused, "names NONE-12"):
+            next_phase.read_state(state([], ticket="NONE-12 · #59"))
         rc, out = self.run_it(self.fields(ticket="59", branch="59-x"), state([], ticket="#59"), "--pr", "7")
         self.assertEqual(rc, 0, out)
         self.assertIn("\n#59 · pull request #7 · every thread answered\n", out)
@@ -532,6 +538,22 @@ class Rows(unittest.TestCase):
         # A location that is this repository reads a bare #59 as its issue.
         self.github(" []", location="example-org/github")
         self.assertEqual(next_phase.read_state(state([], ticket="#59 · x"))["ticket"], "59")
+
+    def test_with_no_origin_this_repository_is_unknown_and_the_refusal_says_so(self):
+        self.github(" []", location="example-org/github")
+        # The standard read as for this checkout, with no origin to say which repository it is.
+        original = next_phase.this_repository
+        self.addCleanup(setattr, next_phase, "this_repository", original)
+        next_phase.this_repository = lambda profile: None
+        with self.assertRaisesRegex(next_phase.Refused, "names #59, not the tracker's issue.*no origin remote"):
+            next_phase.read_state(state([], ticket="#59 · x"))
+        self.assertEqual(next_phase.read_state(state([], ticket="example-org/github#59 · x"))["ticket"], "59")
+        # With the remote gone for real, the checkout's standard is not read at all: the tracker
+        # is the default profile's, unrecorded, so #59 names no Jira key.
+        next_phase.this_repository = original
+        subprocess.run(["git", "remote", "remove", "origin"], check=True)
+        self.assertEqual(next_phase.read_state(state([], ticket="#59 · x"))["ticket"], "")
+
 
     def test_the_first_line_names_a_pull_request_whose_number_is_the_issues(self):
         self.github(" []")

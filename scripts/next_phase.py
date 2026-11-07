@@ -65,7 +65,11 @@ passed over. The state block's `Ticket:` line names its first key, as `record.py
 none when it starts with `none`: on a GitHub tracker the tracker's issue, from `#<n>`,
 `<location>#<n>` or its URL; on any other a Jira key. A line whose first key is another tracker's
 exits 1, where `record.py` records none, as does a profile that cannot be read for a line that
-does not start with `none`.
+does not start with `none`. This repository, whose bare `#<n>` and `<owner/repo>#<n>` it reads,
+is the one the working directory's `origin` remote names. With no origin, `profile.py` reads no
+standard for the checkout, so no GitHub tracker is in effect and `#<n>` names nothing; were a
+tracker read without one, an issue that counts only as this repository's exits 1, the reason
+saying there is no origin.
 Stdlib only.
 """
 
@@ -107,6 +111,12 @@ def load_profile() -> types.ModuleType:
     profile = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(profile)
     return profile
+
+
+def this_repository(profile: types.ModuleType) -> str | None:
+    """The owner/repo the working directory's origin remote names, or None with no origin."""
+    origin = profile.remote("origin")
+    return "/".join(origin) if origin else None
 
 
 def workflow() -> tuple[str, dict[str, str], tuple[str, ...]] | None:
@@ -183,20 +193,24 @@ def read_state(text: str) -> dict:
     # The first key on the body's Ticket: line, as record.py reads it through profile.py's
     # ticket_named: on a GitHub tracker the issue's number, otherwise a Jira key.
     # A key of another tracker's form is refused here, where record.py records none: routing on it
-    # would take the wrong ticket's facts.
+    # would take the wrong ticket's facts. This repository is the one the origin remote names.
     line = re.search(r"^ticket: Ticket:(.*)$", text, re.M)
     ticket = ""
-    if line and not re.match(r"\s*none\b", line.group(1), re.I):
-        profile = load_profile()
+    profile = load_profile()
+    if line and not profile.NONE.match(line.group(1).strip()):
         try:
             t = profile.defaults(ROOT)["issue_tracker"]
-            origin = profile.remote("origin")
         except (profile.ProfileError, OSError) as e:
             raise Refused(f"pull request #{number.group(1)}'s Ticket: line cannot be read: the profile's issue_tracker is refused: {e}") from e
         try:
-            ticket = profile.ticket_named(line.group(1), t, r"[A-Z][A-Z0-9_]*-\d+", "/".join(origin) if origin else None)
+            origin = this_repository(profile)
+        except profile.ProfileError as e:
+            raise Refused(f"pull request #{number.group(1)}'s Ticket: line cannot be read: {e}") from e
+        try:
+            ticket = profile.ticket_named(line.group(1), t, r"[A-Z][A-Z0-9_]*-\d+", origin)
         except ValueError as e:
-            raise Refused(f"pull request #{number.group(1)}: {e}") from e
+            unknown = "" if origin else "; this repository is not known, since the working directory has no origin remote"
+            raise Refused(f"pull request #{number.group(1)}: {e}{unknown}") from e
     reviewed = re.findall(r"^findings review: \S+ reviewed: ([0-9a-f]{7,40})", text, re.M)
     rows = []
     table = text.split("\nid | ", 1)

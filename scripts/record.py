@@ -13,7 +13,8 @@ time. The ticket is the first key on the body's `Ticket:` line, as `docs/contrac
 record" defines it and `scripts/profile.py`'s `ticket_named` reads it: `none` for a line that
 starts with `none`; otherwise a key in the ticket key pattern of the repository's profile, or on
 a GitHub tracker the tracker's issue, recorded as its number; `none` when the line names no key,
-or when its first key is another tracker's. A body with a `Ticket:` line under a profile that
+or when it is another tracker's, leading with a Jira key on a GitHub tracker or naming another
+repository's issue. A body with a `Ticket:` line under a profile that
 profile.py refuses, under a Jira or unrecorded tracker whose pattern reads `not yet recorded`,
 or with more than one `Ticket:` line, is refused. A
 ticket in several pull requests gives `stack:` from that line's `part k of n · base: <branch>`
@@ -199,9 +200,9 @@ def ticket_pattern(repo: str) -> str:
 def ticket_key(repo: str, line: str) -> str:
     """The ticket the body's `Ticket:` line names, or `none`, as profile.py's `ticket_named` reads
     it: on a GitHub tracker the issue's number, whatever the pattern; otherwise the key in the
-    profile's pattern. A line whose first key is another tracker's, such as a Jira key in a pull
-    request from before the repository moved to GitHub Issues, names `none`, so its record can
-    still be written."""
+    profile's pattern. A line that is another tracker's, leading with a Jira key as a pull request
+    from before the repository moved to GitHub Issues does, or naming another repository's issue,
+    names `none`, so its record can still be written."""
     profile = load_profile()
     try:
         tracker = profile.defaults(ROOT, repo)["issue_tracker"]
