@@ -975,6 +975,41 @@ rules that apply.
 
 Pinned by: tests/test_rule_lint.py::test_the_anchor_form_parses
 
+## The capture
+
+Version: 1
+
+Fields: in `<log>`, `capture/pr-NNNN/`, one per merged pull request a capture harvested, rewritten
+by `scripts/capture.py store` at each capture: `harvest.txt`, its line of `pr-reader`'s harvest
+block, `pr-NNNN · created <YYYY-MM-DD> · merged <YYYY-MM-DD> · ...`; `pr.json`, `body.md`,
+`comments.json`, `reviews.json`, `issue-comments.json`, `judged.json` and `comment-list.json`, as
+"The thread dump" and "The comment list" give them, those its dump had; `items.json`, a slice of
+"The guidance items" holding this pull request alone, absent when its comments were not read; and
+`analysis.md`, its block of "The analysis blocks", when it was analyzed. A pull request whose
+comment list is unchanged since its last capture keeps its `items.json` and `analysis.md`, and
+`capture.py pending --log <log> --threads <dir>` prints `pr-NNNN` for each dump that would not.
+And `capture/covered.txt`, one `<from> <through>` line per capture, days as `YYYY-MM-DD`, the days
+its harvest searched. Its record stays `<log>/pr-NNNN.yaml`, written by `archive_records.py`.
+`store` refuses a report whose `merged: <n>` line does not count its pull request lines.
+
+`scripts/capture.py load --log <log> --since <day> --through <day> --out <dir> --guidance <dir>
+[--merges <file>]` restores the pull requests captured as merged in those days, to `<out>/threads/
+pr-NNNN/`, `<out>/records/`, `<out>/analysis/` and one `slice-<n>.json` each in `<guidance>`,
+and prints `## harvest — <log> since <day>`, `merged: <n>; records written: <n>; labels unparsed:
+<n>`, their `harvest.txt` lines and a `not read · pr-NNNN` line for each with a comment list and no
+items; or exits 2, writing nothing, printing `uncovered · <from> · <to>` for days no `covered.txt`
+line covers, `uncaptured · pr-NNNN · <day>` for a pull request "The window's merges" lists as
+merged in them that no capture holds, `failed · pr-NNNN · <day>` for a capture whose line is
+neither `record` nor `no review`, and `missing · pr-NNNN · <day>` for one whose line says `record`
+and whose log has none. A log not yet made holds no capture.
+
+Writers: `scripts/capture.py store`, run by `revise` `capture`, and by `prepare` step 1 for this
+repository when its git shows a merge the log lacks and for each other covered repository always. Readers: `scripts/capture.py pending`, at `capture` step 3, and
+`scripts/capture.py load`, at `revise` `prepare` step 1, whose later steps read what it restores as
+they read a harvest.
+
+Pinned by: tests/test_capture.py::test_load_refuses_days_and_merges_not_captured_and_writes_nothing
+
 ## The window's merges
 
 Version: 2
@@ -992,7 +1027,8 @@ that adds the document; `doc <path>: predates pr-NNNN [...]`, those opened befor
 opened day pr-NNNN [...]`, those with no `pr.json`; or `doc <path>: not on <ref>` alone (version 2).
 A `--dumps` that is not a directory exits 2.
 
-Writers: `scripts/window_merges.py`. Readers: `revise` `prepare` step 2, which gives each
+Writers: `scripts/window_merges.py`. Readers: `scripts/capture.py load`, at `revise` `prepare`
+step 1, for the pull requests no capture holds; `revise` `prepare` step 2, which gives each
 `diff-probe` the rules whose line names its pull request, and each `every change` claim whose
 document's `doc` line names it.
 
