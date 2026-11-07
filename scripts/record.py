@@ -42,7 +42,8 @@ author opened a thread in their own words: its head is the merge or head sha, it
 the first of those, its standards sha `none`, and it has no findings. A finding is a thread whose first comment opens on one of the four severity lines and
 carries the review's attribution line; one with a `Standard` block and a citation goes under
 `findings:`, and one without, or with a legacy `other` key, under `threads:` with `by: review`,
-its severity and its verdict read as a finding's. Every other thread, a person's or a bot's, is
+its severity and its verdict read as a finding's; each carries `reviewer:`, the login of the
+account that posted it, whose token ran the review. Every other thread, a person's or a bot's, is
 listed under `threads:` as a pointer, with the author's verdict from the first of their replies
 in it that starts with one of the three words, or the judgment of one with none, a Discuss settled
 by their next Agree or Disagree, `unanswered` when the author has not replied, on a thread
@@ -84,7 +85,7 @@ review with no `html_url` or one on a repository other than --repo, or an input 
 JSON, exits 1 with the reason; nothing is guessed. Stdlib only, so the
 plugin needs no environment.
 
-A record's first line is `contract: 14` and the --state printout's `contract: 6`: the version
+A record's first line is `contract: 15` and the --state printout's `contract: 6`: the version
 of each interface as `docs/contracts.md` defines it.
 
 With --state it writes nothing and prints where the pull request stands: the head, then
@@ -144,7 +145,7 @@ AI_SIGNATURES = tuple(
 SEVERITIES = {"must fix before merge": "must-fix", "should fix": "should-fix", "suggestion": "suggestion", "question": "question"}
 # The versions of the --state printout and of the record, as docs/contracts.md defines them.
 CONTRACT = 6
-RECORD_CONTRACT = 14
+RECORD_CONTRACT = 15
 # What a judgment may say a reply means, as docs/contracts.md "The judgments" defines it.
 JUDGED = (*VERDICTS, "answered", "unclear")
 # The Already checked lines a built pull request's body must carry; pr-create's body.md writes them.
@@ -376,6 +377,7 @@ def parse_finding(thread: dict) -> dict | None:
     return {
         "thread": thread["id"],
         "severity": SEVERITIES[m.group(1).lower()] if m else "unparsed",
+        "reviewer": first["author"],
         "title": m.group(2).strip() if m else first_line(first["body"]),
         "label": None if m else first_line(first["body"]),
         "key": key,
@@ -429,6 +431,7 @@ def pointer(thread: dict, pr_author: str, finding: dict | None = None, judgment:
     return {
         "thread": thread["id"],
         "by": by,
+        "reviewer": finding["reviewer"] if finding else None,
         "severity": finding["severity"] if finding else None,
         "at": f"{first['path']}:{line}" if line is not None else first["path"],
         "created": when(first["created_at"]),
@@ -1075,6 +1078,7 @@ def build(
             f"    severity: {f['severity']}",
             f"    at: {q(f['at'])}",
             f"    thread: {f['thread']}",
+            f"    reviewer: {f['reviewer']}",
             f"    verdict: {f['verdict'] if f['state'] == 'answered' else f['state']}",
         ]
         out += judged_lines(f.get("judged"), f.get("unclear", ""))
@@ -1099,6 +1103,7 @@ def build(
             f"    key: {q(f['key'])}",
             f"    at: {q(f['at'])}",
             f"    thread: {f['thread']}",
+            f"    reviewer: {f['reviewer']}",
             f"    a: {q(f['answer'])}" if f["state"] == "answered" else "    unanswered: true",
         ]
 
@@ -1107,6 +1112,7 @@ def build(
         out += [
             f"  - thread: {t['thread']}",
             f"    by: {t['by']}",
+            *([f"    reviewer: {t['reviewer']}"] if t["reviewer"] else []),
             f"    authorship: {t['authorship']}",
             *([f"    severity: {t['severity']}"] if t["severity"] else []),
             f"    at: {q(t['at'])}",

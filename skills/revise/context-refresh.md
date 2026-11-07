@@ -14,7 +14,10 @@ entry, from the `Source:` and `Read:` lines `context/README.md` defines:
   `source-reader` with the task `page <id>`, one per stale entry, launched as
   `<plugin root>/skills/revise/harvest.md`'s "Analysts" launches agents, and draft a
   candidate paragraph from its block, with the new dates and version, into
-  `.review/harvest/context-refresh.md` beside the entry's current paragraph.
+  `.review/harvest/context-refresh.md` beside the entry's current paragraph. The candidate cites
+  the page's ID and version and carries the block's `Excerpt:` lines, so the person marking it
+  can check the summary against the page; a block with no excerpt gives no candidate, and its
+  question goes to the person.
   A page the block lists as `Withheld:` gets no candidate paragraph: its question goes to the
   person, and the entry stays as it is until they clear it.
 - A Jira epic: `jira_get_issue` and its `updated` field, the same way.
@@ -33,7 +36,9 @@ with the previous refresh's record of it. Record every child's version in
 `.review/harvest/context-refresh.md` so the next refresh has a baseline; on the first, every
 child is listed as unseen. These are candidates for new entries, within the cap and the
 retirement `context/README.md` states; at the cap, a new entry's proposal names the retirement
-it displaces.
+it displaces. A new entry's paragraph, from such a page or the page given with `prepare`, comes
+from one `source-reader` `page <id>` block, as a refresh's does, and cites the page's ID and
+version and carries the block's `Excerpt:` lines.
 
 Each candidate joins the report's proposals in their form,
 `- [ ] context/<name> · refresh · <source> · <old date> → <new date>`, marked in the session

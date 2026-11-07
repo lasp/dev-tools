@@ -14,7 +14,11 @@ Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the directo
 or the sweep's claims or merges file is missing, a pull request is named twice or not as `pr-NNNN`, or a
 block does not hold its form: a heading missing or naming another pull request than its file,
 a line of no form the block takes, a `Procedure:`, `Not read:` or `Read:` line missing or
-repeated, a claim judged twice in one sweep block, or a sweep block missing a `C-n` claim it owes.
+repeated, a line holding two verdicts, a claim judged twice in one sweep block, or a sweep block
+missing a `C-n` claim it owes. A line holds two verdicts when an ask line carries a second `·
+outcome:` or `· diff:`, or a sweep line's place or reason has a `·` field that is a verdict
+word other than its own alone, or reads `judged as` one; the quoted line, which is code, is not
+read for it.
 Stdlib only.
 """
 
@@ -51,6 +55,17 @@ VERDICT = re.compile(
     r"|(?P<untouched>not touched)|(?P<unjudged>not judged · no description))$"
 )
 TAILS = ("Procedure:", "Not read:", "Read:")
+SWEEP_VERDICTS = ("follows", "breaks", "not touched", "not judged")
+
+
+def second_verdict(word: str, text: str) -> bool:
+    """Whether a sweep line's own words, its place or reason, give a verdict other than its word:
+    a `·` field that is one alone or opens with one as a label, `breaks:` or `breaks —`, or `judged as` one, the word ending at a space, punctuation
+    other than `/` or `-`, a `.` not followed by a letter, or the end. A field that opens with one
+    in a sentence, `follows the old habit`, is prose, and `breaks/x.py` is a path."""
+    others = "|".join(v for v in SWEEP_VERDICTS if v != word)
+    end = r"(?![\w/-]|\.\w)"
+    return bool(re.search(rf"(?:^|· )(?:{others})(?:\.?(?= ·|$)|:| —| -)|\bjudged as (?:{others}){end}", text, re.I))
 
 
 class CannotRun(Exception):
@@ -120,6 +135,8 @@ def analysis(folder: Path, prs: list[str]) -> list[str]:
             a = ASK.match(line)
             if not a:
                 raise CannotRun(f"{pr}: not an ask line: {line}")
+            if line.count(" · outcome: ") > 1 or line.count(" · diff: ") > 1:
+                raise CannotRun(f"{pr}: two verdicts in one ask line: {line}")
             if a["asked"] == "none":
                 none += 1
                 continue
@@ -185,10 +202,12 @@ def sweep(folder: Path, prs: list[str], claims: Path | None, merges: Path | None
             v = VERDICT.match(line)
             if not v:
                 raise CannotRun(f"{pr}: not a verdict line: {line}")
+            word = "follows" if v["follows"] else "breaks" if v["place"] else "not touched" if v["untouched"] else "not judged"
+            if any(f and second_verdict(word, f) for f in (v["follows"], v["place"], v["why"])):
+                raise CannotRun(f"{pr}: two verdicts in one line: {line}")
             if v["id"] in seen:
                 raise CannotRun(f"{pr}: {v['id']} judged twice")
             seen.add(v["id"])
-            word = "follows" if v["follows"] else "breaks" if v["place"] else "not touched" if v["untouched"] else "not judged"
             verdicts.setdefault(v["id"], Counter())[word] += 1
             if word == "breaks":
                 breaks.append((v["id"], f"break · {v['id']} · {pr} · {v['place']}"))

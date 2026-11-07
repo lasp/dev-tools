@@ -138,7 +138,7 @@ class RecordFromFixture(unittest.TestCase):
 
     def test_date_is_the_first_review_in_local_time_and_merged_the_utc_merge_day(self):
         lines, _ = record.build(PR, [REVIEW, {**REVIEW, "id": 2, "submitted_at": "2026-09-27T00:10:00Z"}], [], BODY, "o/r", "abc1234", issue_comments=[])
-        self.assertEqual(lines[0], "contract: 14")
+        self.assertEqual(lines[0], "contract: 15")
         self.assertIn("date: 2026-09-25\nmerged: 2026-09-27\n", "\n".join(lines) + "\n")
         # 03:00 UTC is the evening before in Denver; the harvest's merged:>= qualifier reads UTC.
         lines, _ = record.build({**PR, "merged_at": "2026-10-01T03:00:00Z"}, [REVIEW], [], BODY, "o/r", "abc1234", issue_comments=[])
@@ -200,7 +200,7 @@ class RecordFromFixture(unittest.TestCase):
         for t in threads:
             self.assertIn(f"thread: {t['id']}", text)
         self.assertEqual(text.count("  - q: "), 0)
-        self.assertIn("  - thread: PRRT_synthetic007\n    by: review\n    authorship: ai-drafted\n    severity: question\n", text)
+        self.assertIn("  - thread: PRRT_synthetic007\n    by: review\n    reviewer: alice\n    authorship: ai-drafted\n    severity: question\n", text)
         self.assertEqual(report, [])
 
 
@@ -502,8 +502,21 @@ class Adjudication(unittest.TestCase):
 
     def test_a_finding_nobody_answered_is_recorded_unanswered(self):
         text, report = self.run_build(thread("Should fix"))
-        self.assertIn('  - key: "R-001/x.py::f"\n    severity: should-fix\n    at: "x.py:3"\n    thread: PRRT_1\n    verdict: unanswered\nquestions:', text)
+        self.assertIn('  - key: "R-001/x.py::f"\n    severity: should-fix\n    at: "x.py:3"\n    thread: PRRT_1\n    reviewer: alice\n    verdict: unanswered\nquestions:', text)
         self.assertEqual(report, ["unanswered: PRRT_1 R-001/x.py::f (no reply from a person)"])
+
+    def test_each_finding_names_the_login_that_posted_it_whoever_answered(self):
+        cited, uncited, asked = thread("Should fix", ("bob", "Agree.")), thread("Should fix", ("bob", "Agree.")), thread("Question")
+        for th, n in ((cited, 1), (uncited, 2), (asked, 3)):
+            th["id"] = f"PRRT_{n}"
+            th["comments"][0]["author"] = "carol"
+            th.update(is_resolved=False, is_outdated=False)
+        uncited["comments"][0]["body"] = uncited["comments"][0]["body"].replace("key: `R-001/x.py::f`", "key: `other/x.py::f`")
+        lines, _ = record.build(PR, [REVIEW], [cited, uncited, asked], BODY, "o/r", "abc1234", issue_comments=[])
+        text = "\n".join(lines)
+        self.assertIn("    thread: PRRT_1\n    reviewer: carol\n    verdict: agree\n    by: bob\n", text)
+        self.assertIn("  - thread: PRRT_2\n    by: review\n    reviewer: carol\n", text)
+        self.assertIn("    thread: PRRT_3\n    reviewer: carol\n    unanswered: true", text)
 
     def test_a_question_nobody_answered_is_kept(self):
         text, _ = self.run_build(thread("Question"))
@@ -827,11 +840,11 @@ class Adjudication(unittest.TestCase):
         lines, report = record.build(PR, [REVIEW], [self.bad_label(("bob", "Agree.")), cited], BODY, "o/r", "abc1234", issue_comments=[])
         text = "\n".join(lines)
         self.assertIn(
-            '  - key: "R-001/x.py::f"\n    severity: unparsed\n    at: "x.py:3"\n    thread: PRRT_1\n    verdict: unparsed\n'
+            '  - key: "R-001/x.py::f"\n    severity: unparsed\n    at: "x.py:3"\n    thread: PRRT_1\n    reviewer: alice\n    verdict: unparsed\n'
             '    line: "**Suggestion — a finding**"\n',
             text,
         )
-        self.assertIn("    thread: PRRT_2\n    verdict: agree\n", text)
+        self.assertIn("    thread: PRRT_2\n    reviewer: alice\n    verdict: agree\n", text)
         self.assertIn("adjudicated_by: bob", text)
         self.assertEqual(report, ["unparsed label: PRRT_1 R-001/x.py::f (first line: **Suggestion — a finding**)"])
         # The rule's firing is still counted, its verdict apart from the unanswered.
@@ -843,7 +856,7 @@ class Adjudication(unittest.TestCase):
         th["comments"][0]["body"] = th["comments"][0]["body"].replace("key: `R-001/x.py::f`", "key: other/x.py::f")
         text, report = self.run_build(th)
         self.assertIn("findings: []", text)
-        self.assertIn("    by: review\n    authorship: ai-drafted\n    severity: unparsed\n", text)
+        self.assertIn("    by: review\n    reviewer: alice\n    authorship: ai-drafted\n    severity: unparsed\n", text)
         self.assertIn('    replies: 1\n    verdict: unparsed\n    line: "**Suggestion — a finding**"\n', text)
         self.assertEqual(report, ["unparsed label: PRRT_1 (first line: **Suggestion — a finding**)"])
 
@@ -889,7 +902,7 @@ class Adjudication(unittest.TestCase):
         self.assertIn("findings: []", text)
         self.assertEqual(report, [])
         self.assertIn(
-            "  - thread: PRRT_1\n    by: review\n    authorship: ai-drafted\n    severity: should-fix\n    at: \"x.py:3\"\n", text
+            "  - thread: PRRT_1\n    by: review\n    reviewer: alice\n    authorship: ai-drafted\n    severity: should-fix\n    at: \"x.py:3\"\n", text
         )
         self.assertIn("    outdated: true\n    replies: 1\n    verdict: agree", text)
         row = record.state({**PR, "head": {"ref": "b", "sha": "c" * 40}}, [REVIEW], [th], BODY, "o/r")[-1].split(" | ")
@@ -908,7 +921,7 @@ class Adjudication(unittest.TestCase):
         th |= {"is_resolved": True, "is_outdated": False}
         text, _ = self.run_build(th)
         self.assertIn("findings: []", text)
-        self.assertIn("    by: review\n    authorship: ai-drafted\n    severity: suggestion\n", text)
+        self.assertIn("    by: review\n    reviewer: alice\n    authorship: ai-drafted\n    severity: suggestion\n", text)
         self.assertNotIn("other/", text)
 
 
