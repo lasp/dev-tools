@@ -222,8 +222,9 @@ item `{"tool": <tool>, "target": <target>}`, the tool named without its server p
 is `<owner>/<repo> <title>` for an `issue_write` whose `method` is `create`, so an item matches one
 create, and `<owner>/<repo>#<n>` for one whose `method` is `update` and for `add_issue_comment`, as
 github-mcp-server names the parameters `owner`, `repo`, `title` and `issue_number`, compared
-byte for byte, case and any trailing newline included. A create's item matches that one call; an
-update's or a comment's matches every such call on that issue in the window, as a Jira item does. `hooks/issue-gate.sh` allows a call from the main session only when the
+byte for byte, case and any trailing newline included. No item is used up: a create's item matches
+every create with that exact title on that repository in the window, and an update's or a comment's
+every such call on that issue, as a Jira item does. `hooks/issue-gate.sh` allows a call from the main session only when the
 record's session is the call's, `t` is under 30 minutes old and not in the future, an item matches
 the tool and target exactly, and the call carries only the arguments a plan sends: a create
 `method`, `owner`, `repo`, `title`, `body` and `labels`; an update those and `issue_number`,

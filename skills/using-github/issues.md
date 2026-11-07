@@ -51,7 +51,9 @@ here.
 ## Showing it
 
 As `write-plan.md`'s "Showing it" says, written to `.review/github-plan.md` in place of
-`.review/jira-plan.md`, each item naming its tool and target. A posted comment can be edited or
+`.review/jira-plan.md`, each item naming its tool and target. Write the file with the Write tool
+before the plan is shown, every time it is shown, and name it as a link at the gate: the texts sent
+are copied from it, and a plan shown without it cannot be run. A posted comment can be edited or
 deleted on GitHub, but its first text reaches whoever watches the repository, so say so.
 
 ## Running it
@@ -84,7 +86,11 @@ deleted on GitHub, but its first text reaches whoever watches the repository, so
   other, so the person's own permissions decide it. Remove both files,
   `rm -f "$(git rev-parse --show-toplevel)"/.review/github-approval{,-items}.json`, when the plan
   has been read back, and as soon as it stops, as `write-plan.md` says of the Jira record.
-- **A failure** is handled as `write-plan.md` says; a no at a permission prompt is one.
+- **A failure** is handled as `write-plan.md` says; a no at a permission prompt is one. The hook
+  does not use an item up, so a create sent again files a second issue: before a create that
+  failed or timed out goes again, search the repository's open issues for its exact title
+  (`search_issues` or `list_issues`), and when one is there, take its number as the create's and
+  go on.
 
 ## Read it back
 

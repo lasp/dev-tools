@@ -144,6 +144,7 @@ scenarios:
         assert all(set(x.get("labels") or []) <= {l["name"] for l in d["labels"]} for x in c), c;
         assert any(x["tool"] == "add_issue_comment" and x["arguments"]["issue_number"] == n for x in w), (n, w);
         assert open(".review/context/%d.md" % n).readline().startswith("# #%d · " % n)'
+      - test -e .review/github-plan.md
 
   - id: tracker-gh-ticket-draft-refine
     repo: widgets
@@ -181,6 +182,7 @@ scenarios:
         o = [i for i, x in enumerate(w) if x["tool"] == "add_issue_comment" and x["arguments"]["body"].lstrip().startswith("Original request")];
         assert len(u) == 1 and o and o[0] < u[0], t;
         assert "Motivation" in w[u[0]]["arguments"]["body"] and "labels" not in w[u[0]]["arguments"], w[u[0]]'
+      - test -e .review/github-plan.md
 
   - id: tracker-gh-ticket-draft-declined
     repo: widgets
@@ -235,6 +237,7 @@ scenarios:
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
+      - test -e .review/github-plan.md
 
   - id: tracker-gh-ticket-draft-standing-answer
     repo: widgets
@@ -263,3 +266,4 @@ scenarios:
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
+      - test -e .review/github-plan.md

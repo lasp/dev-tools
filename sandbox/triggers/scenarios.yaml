@@ -341,7 +341,7 @@ scenarios:
     origin: "#59: ticket-draft files only into this repository's tracker"
     why: Asks for an issue on another project, so a run shows the request does not reach ticket-draft, which files into this repository's tracker only.
     turns:
-      - Open an issue on requests for this timeout bug.
+      - "Open an issue on numpy's GitHub about this dtype bug: np.sum on an int8 array overflows silently"
     must_not_run: ["Skill(*ticket-draft)", "mcp__*", "Bash(gh *)", "Bash(git push*)"]
     look_at: The request does not reach ticket-draft; the session says it cannot file on another project from here, or drafts the text for the person, and files nothing.
     expect:

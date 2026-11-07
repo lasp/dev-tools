@@ -285,8 +285,8 @@ and any write to Confluence. It asks rather than staying silent because a hook's
 prompts in auto mode, where a silent hook leaves the call to the classifier. An `ask` rule you add for a Jira write tool prompts again at each call of a plan,
 whatever the hook decides. Where the tracker is GitHub Issues, `hooks/issue-gate.sh` allows a
 plan's `issue_write` and `add_issue_comment` calls the same way, on any server name, from
-`.review/github-approval.json`, a create by its title, so an item allows one create, and an update or a
-comment by its issue, so an item allows any such call on that issue in the window, as the Jira gate's do, but gives every other call no decision:
+`.review/github-approval.json`, a create by its title, so an item allows any create with that exact title on that
+repository in the window, and an update or a comment by its issue, so an item allows any such call on that issue in the window, as the Jira gate's do, but gives every other call no decision:
 one no record lists, `skill-feedback`'s own create among them, or one carrying an argument no plan
 sends, prompts or passes as your settings say. Your own `ask` rule on `issue_write`
 or `add_issue_comment`, as in the block below, still prompts at each call of a plan. Claude Code's own permission rules are a second
@@ -735,7 +735,7 @@ session-start line or `work` says something unexpected, these files are what it 
 | `context/<ticket>.send/` | `ticket-draft`'s write plan: each description and comment as shown (`.txt`) and as sent (`.md`), and the description as read back (`stored.txt`) | `scripts/jira_markdown.py`; the person, to see what was sent | Rewritten at each plan |
 | `jira-plan.md` | The write plan, run by `ticket-draft` and `ticket-audit`: each item, numbered, with its text in full as it will be sent, written before the plan is shown | You, from the link at the plan's gate | Replaced at the next showing of a plan |
 | `jira-approval.json` | The write plan, run by `ticket-draft` and `ticket-audit`: this session's id, the time and each approved item's tool and target, written at your yes before the first call | `hooks/atlassian-gate.sh`, which allows only a call it lists | Removed by the skill when the plan finishes or stops; allows nothing after 30 minutes |
-| `github-plan.md` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: each item, numbered, with its text in full as it will be sent | You, from the link at the plan's gate | Replaced at the next showing of a plan |
+| `github-plan.md` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: each item, numbered, with its text in full as it will be sent, written before the plan is shown | You, from the link at the plan's gate | Replaced at the next showing of a plan |
 | `github-approval-items.json` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: the approved items, written with the Write tool so a title's quotes never pass through a command | The plan's `jq` command, which builds `github-approval.json` from it | Removed with the record |
 | `github-approval.json` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: this session's id, the time and each approved item's tool and target, written at your yes before the first call | `hooks/issue-gate.sh`, which allows only a call it lists and leaves every other to your own permissions | Removed by the skill when the plan finishes or stops; allows nothing after 30 minutes |
 | `controlled-cleared.json` | `hooks/controlled-gate.sh`, after a read of a `.review/` file marked `Controlled:` that you allowed, or the session's own write of one: this session's id and the items cleared | The same hook, which lets this session's later reads of those items through | Replaced when another session clears an item |

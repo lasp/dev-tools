@@ -383,10 +383,9 @@ mode `${CLAUDE_SKILL_DIR}/reformat.md`.
      "Writing to Jira" allows them, each status as the profile's `jira.roles` names it ("Writes").
 
    Ask **Write all <n>** (Recommended), **Drop some** or **Paste it all**, beside Looks right;
-   the answer counts only with Looks right, and is asked again after a Change it. Only an answer
-   that names the plan's choice answers it: "take the recommended answer on every question", or
-   any standing answer, leaves it open, so Write all is never taken as the recommendation; show
-   the plan and ask it again. Without the write tools, say so in one line and ask no gate.
+   the answer counts only with Looks right, and is asked again after a Change it. Write all is
+   never taken on a standing answer (`${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`,
+   "What does not change"). Without the write tools, say so in one line and ask no gate.
 8. **Write the files, write the plan, and hand off.** Write the page, its `.review/context.md`
    copy except for a pull request source, and `<ticket>.jira.txt` first, so the paste is ready
    whatever follows. Then run the plan, as the plan file sets out, its texts under

@@ -24,7 +24,8 @@ step 7. What differs from SKILL.md's steps is below; the rest runs as written, `
   in The code today, each as `#<n>`. A piece of a split or a follow-up names the issues created
   before it by number and those after it by title. With no `References:`, the estimate says it has
   none to compare with, as step 5 says, and stays in `.review/`.
-- **Step 7's plan** is the items `issues.md` gives, shown in `.review/github-plan.md`:
+- **Step 7's plan** is the items `issues.md` gives, written to `.review/github-plan.md` before it
+  is shown and linked at the gate:
   - For an existing issue: the `Comment to post` unless the block's `Original request comment:`
     is `yes`, then the body, and the title when step 7 proposes a new one, as one update, then the
     `Session comment`.
