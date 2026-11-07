@@ -238,6 +238,7 @@ class TrackerGithubPack(unittest.TestCase):
             "tracker-gh-work-pr", "tracker-gh-work-closed-labeled"}
     DRAFT = {"tracker-gh-ticket-draft-new", "tracker-gh-ticket-draft-refine", "tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket",
              "tracker-gh-ticket-draft-standing-answer"}
+    ONBOARD = {"tracker-gh-onboard", "tracker-gh-onboard-mixed"}
     AUDIT = {"tracker-gh-audit-duplicates", "tracker-gh-audit-pulls", "tracker-gh-audit-declined"}
 
     def setUp(self):
@@ -262,7 +263,7 @@ class TrackerGithubPack(unittest.TestCase):
         return json.loads(result["content"][0]["text"])
 
     def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
-        self.assertEqual(set(self.known), self.WORK | self.DRAFT | self.AUDIT)
+        self.assertEqual(set(self.known), self.WORK | self.DRAFT | self.ONBOARD | self.AUDIT)
         well_formed(self, self.known, {"widgets"})
         for s in self.known.values():
             if s["id"] in self.WORK:
@@ -308,7 +309,7 @@ class TrackerGithubPack(unittest.TestCase):
         (listed,) = self.serve({"id": 1, "method": "tools/list"})
         tools = {t["name"]: t["inputSchema"] for t in listed["result"]["tools"]}
         self.assertEqual(set(tools), {"get_me", "get_label", "issue_read", "list_issues", "search_issues", "search_pull_requests",
-                                      "list_pull_requests", "pull_request_read"})
+                                      "list_pull_requests", "pull_request_read", "search_repositories", "search_code"})
         self.assertEqual(tools["pull_request_read"]["required"], ["method", "owner", "repo", "pullNumber"])
         self.assertEqual(tools["issue_read"]["required"], ["method", "owner", "repo", "issue_number"])
         self.assertEqual(tools["search_pull_requests"]["required"], ["query"])
@@ -462,6 +463,38 @@ class TrackerGithubPack(unittest.TestCase):
         files = [str(p.relative_to(ROOT)) for p in (ROOT / pack).rglob("*") if p.is_file()]
         self.assertTrue(files)
         self.assertEqual(scan.planted(files), {})
+
+    def test_the_onboard_scenarios_read_the_issues_and_write_no_standard(self):
+        for name in self.ONBOARD:
+            s = self.known[name]
+            self.assertEqual(s["expect"]["mcp"], ["mcp__github__list_issues"], name)
+            self.assertIn("standards/*", s["expect"]["files_absent"], name)
+            self.assertIn("mcp__github__issue_write", s["must_not_run"], name)
+            self.assertIn("rm -f .git/github-writes.jsonl", s["setup"], name)
+        self.assertIn(".review/onboard/project.yaml", self.known["tracker-gh-onboard-mixed"]["expect"]["files_absent"])
+        self.assertTrue(any("kind:" in v and "github" in v for v in self.known["tracker-gh-onboard"]["verify"]))
+
+    def test_the_onboard_history_is_github_keyed_or_mixed_as_each_scenario_needs(self):
+        widgets = Path(tempfile.mkdtemp()) / "widgets"
+        self.addCleanup(shutil.rmtree, widgets.parent)
+        subprocess.run(["bash", str(ROOT / "sandbox" / "fixture" / "make_widgets.sh"), str(widgets)], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(widgets), "update-ref", "refs/remotes/origin/PROJ-42-csv-loader", "PROJ-42-csv-loader"], check=True)
+        survey = ROOT / "scripts" / "survey.py"
+        for name, project, issues in (("tracker-gh-onboard", "-", r"pattern (issue-)?\d+"), ("tracker-gh-onboard-mixed", "PROJ", None)):
+            for line in self.known[name]["setup"]:
+                subprocess.run(["bash", "-c", line], cwd=widgets, check=True, capture_output=True)
+            out = subprocess.run([sys.executable, str(survey), "--repo", str(widgets), "--json"], capture_output=True, text=True, check=True)
+            found = {r["family"]: r["value"] for r in json.loads(out.stdout)}
+            self.assertEqual(found["ticket project"], project, name)
+            if issues:
+                self.assertTrue(found["issue key"].endswith(issues), found["issue key"])
+
+    def test_the_stub_answers_onboards_searches(self):
+        repos = self.read("search_repositories", query="repo:example/widgets")
+        self.assertEqual([(r["full_name"], r["private"], r["default_branch"]) for r in repos["items"]], [("example/widgets", False, "main")])
+        self.assertEqual(self.read("search_code", query="path:standards/profiles org:example")["total_count"], 0)
+        listed = self.read("list_issues", orderBy="UPDATED_AT", direction="DESC", perPage=50)
+        self.assertEqual(sorted(label for i in listed["issues"] for label in i["labels"]), ["enhancement", "in progress", "ready"])
 
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
@@ -1685,6 +1718,26 @@ class Reuse(unittest.TestCase):
         git(repo, "remote", "set-url", "origin", "https://github.com/someone/gizmos.git")
         run.reset(self.sandbox)
         self.assertEqual(git(repo, "remote", "get-url", "origin"), built)
+
+    def test_a_reset_restores_the_remotes_branches_and_drops_the_branches_a_setup_made(self):
+        remote, repo = self.sandbox / "remotes" / "gizmos.git", self.sandbox / "repos" / "gizmos"
+        tree = git(remote, "rev-parse", "main^{tree}")
+        pinned = subprocess.run(["git", "-C", str(remote), "-c", "user.name=t", "-c", "user.email=t@t", "commit-tree", tree,
+                                 "-p", "main", "-m", "csv"], check=True, capture_output=True, text=True).stdout.strip()
+        git(remote, "update-ref", "refs/heads/PROJ-42-csv-loader", pinned)
+        git(repo, "fetch", "-q", "origin")
+        pins = self.sandbox / "pins"
+        pins.write_text("".join(f"{n} {s} {'live/abc1234' if n == 'gizmos' else b}\n" for n, (s, b) in run.pins(self.sandbox).items()))
+        for line in ("git update-ref -d refs/remotes/origin/PROJ-42-csv-loader",
+                     "git branch -f 9-by-part main && git branch -f issue-12-empty-inventory main",
+                     "git branch -f PROJ-42-csv-loader main", "git config branch.9-by-part.remote origin",
+                     "git update-ref refs/remotes/origin/gone main"):
+            subprocess.run(["bash", "-c", line], cwd=repo, check=True, capture_output=True)
+        run.reset(self.sandbox)
+        self.assertEqual(git(repo, "rev-parse", "origin/PROJ-42-csv-loader"), pinned)
+        self.assertEqual(git(repo, "for-each-ref", "--format=%(refname:short)", "refs/heads").split(), ["live/abc1234", "main"])
+        self.assertEqual(subprocess.run(["git", "-C", str(repo), "config", "--get", "branch.9-by-part.remote"]).returncode, 1)
+        self.assertNotIn("origin/gone", git(repo, "for-each-ref", "--format=%(refname:short)", "refs/remotes").split())
 
     def conflicting_branches(self) -> Path:
         """The pinned clone with `main` and `side` each changing f.txt's one line, `side` checked out."""

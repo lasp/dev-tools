@@ -323,6 +323,72 @@ scenarios:
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
+  # onboard on a repository with no standard, reading its GitHub issues. The stub also answers
+  # onboard's search_repositories (public, on main) and search_code (nothing), so no standard
+  # elsewhere covers widgets. Each setup makes its own history, and a run's reset restores the branches.
+  - id: tracker-gh-onboard
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - git branch -D PROJ-42-csv-loader 2>/dev/null || true
+      - git update-ref -d refs/remotes/origin/PROJ-42-csv-loader
+      - git branch -f 9-by-part main && git branch -f issue-12-empty-inventory main
+    origin: "#59: onboard detects GitHub Issues as the tracker and maps the labels the repository uses"
+    why: >-
+      Onboards widgets with no Jira key in its history and issues on GitHub, so onboard reads the
+      issues, proposes GitHub Issues as the tracker with the labels mapped to the workflow, and
+      writes the project settings as issue_tracker, never jira, and only under .review/onboard/.
+    turns:
+      - /lasp-dev:onboard
+      - Here.
+      - Take your recommended answers to those questions.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__github__issue_write", "Write(*/repos/widgets/[!.]*)"]
+    look_at: >-
+      The second turn lists the issues, finds no Jira project and proposes GitHub Issues: `ready`
+      mapped to approved and `in progress` to implementation, both to implement-change, with `in
+      progress` the pull request label; `enhancement` passed over as a kind of issue; no label
+      proposed that no issue carries, such as needs-refinement; filed, finished and abandoned left
+      to the issue's state; the issues this repository's, though one pull request names o/r#90;
+      and the branches' pattern the default, not asked. The third turn writes
+      .review/onboard/project.yaml with issue_tracker kind github and no location, then asks step
+      5's question; nothing is written to standards/.
+    expect:
+      ends: success
+      mcp: [mcp__github__list_issues]
+      files: [".review/onboard/project.yaml"]
+      files_absent: ["standards/*"]
+    verify:
+      - grep -Eq '^issue_tracker:' .review/onboard/project.yaml
+      - grep -Eq '^[[:space:]]+kind:[[:space:]]*github' .review/onboard/project.yaml
+      - grep -Eq "name:[[:space:]]*['\"]?ready" .review/onboard/project.yaml
+      - "! grep -Eq '^jira:|^[[:space:]]+location:' .review/onboard/project.yaml"
+      - "! grep -Eq \"name:[[:space:]]*['\\\"]?(enhancement|needs-refinement)\" .review/onboard/project.yaml"
+      - |-
+        python3 -c 'import re, sys; m = re.search(r"^\s+pr_statuses:(.*(?:\n\s+- .*)*)", open(".review/onboard/project.yaml").read(), re.M); sys.exit(not (m and re.search(r"\bin progress\b", m.group(1))))'
+
+  - id: tracker-gh-onboard-mixed
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - git branch -f PROJ-42-csv-loader main
+    origin: "#59: onboard asks which tracker when the history names a Jira project and GitHub holds issues"
+    why: >-
+      Onboards widgets, whose branch PROJ-42-csv-loader names a Jira project while GitHub holds its
+      issues, so the evidence is mixed and onboard asks which tracker holds the project's tickets
+      before any question about the workflow, writing no project settings.
+    turns:
+      - /lasp-dev:onboard
+      - Here.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__github__issue_write", "Write(*/repos/widgets/[!.]*)"]
+    look_at: >-
+      The second turn runs the survey, whose ticket project row names PROJ, lists the issues, and
+      ends asking whether the project's tickets are in Jira or GitHub Issues, with the evidence for
+      each, before mapping a label or a status. No project.yaml is written.
+    expect:
+      ends: success
+      mcp: [mcp__github__list_issues]
+      says: ["(?i)\\bjira\\b", "(?i)\\bgithub issues\\b", "(?is)\\bwhich tracker\\b|(?:\\bwhich one\\b|\\b(?:jira|github issues)\\b[^?]{0,120}\\bor\\b[^?]{0,120}\\b(?:jira|github issues)\\b)[^?]{0,200}\\?"]
+      files_absent: ["standards/*", ".review/onboard/project.yaml"]
 
   - id: tracker-gh-audit-duplicates
     repo: widgets

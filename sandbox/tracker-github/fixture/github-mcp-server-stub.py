@@ -279,7 +279,34 @@ def call(name: str, args: dict):
                              "updated_at": p["updated_at"],
                              "pull_request": {"html_url": url(args, "pull", p["number"]), "diff_url": url(args, "pull", p["number"]) + ".diff"}})
         return {"incomplete_results": False, "items": [chosen(h, args.get("fields")) for h in hits], "total_count": len(hits)}
+    if name in SEARCHES:
+        return searched(name, args)
     raise ValueError(f"unknown tool {name}")
+
+
+# The two searches onboarding makes before it reads the issues: `search_repositories`, which
+# returns the repository its query's `repo:` names, public, on `main`, as the server's minimal
+# output gives it, and `search_code`, which finds nothing, so no standard elsewhere covers the
+# repository.
+SEARCHES = {
+    "search_repositories": ("Find GitHub repositories by name, description, readme, topics, or other metadata.",
+                            {"query": TEXT, "sort": TEXT, "order": TEXT, "page": NUMBER, "perPage": NUMBER, "minimal_output": {"type": "boolean"}},
+                            ["query"]),
+    "search_code": ("Fast and precise code search across ALL GitHub repositories using GitHub's native search engine.",
+                    {"query": TEXT, "sort": TEXT, "order": TEXT, "page": NUMBER, "perPage": NUMBER}, ["query"]),
+}
+TOOLS.update(SEARCHES)
+
+
+def searched(name: str, args: dict) -> dict:
+    named = re.search(r"\brepo:([^/\s]+)/(\S+)", str(args.get("query", "")))
+    if name == "search_code" or not named:
+        return {"total_count": 0, "incomplete_results": False, "items": []}
+    owner, repo = named.groups()
+    return {"total_count": 1, "incomplete_results": False,
+            "items": [{"id": 2001, "name": repo, "full_name": f"{owner}/{repo}", "html_url": f"https://github.com/{owner}/{repo}",
+                       "private": False, "fork": False, "archived": False, "default_branch": "main", "open_issues_count": 2,
+                       "created_at": "2026-01-05T10:00:00Z", "updated_at": "2026-02-11T08:00:00Z"}]}
 
 
 def schema(props: dict, required: list) -> dict:
