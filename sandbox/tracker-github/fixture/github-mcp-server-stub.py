@@ -25,11 +25,17 @@ sharing a word of three letters or more with the query; and `search_pull_request
 the pull requests whose title or body holds every quoted phrase of the query and every bare word
 that is not a qualifier such as `repo:`, `is:`, `in:` or `state:`, matched by whole words and
 numbers, punctuation dropped, as GitHub's search does, its links naming the repository the query's
-`repo:` gives when the call names none. Every
+`repo:` gives when the call names none; `list_pull_requests`, whose states are lower-case and whose `head`, `<owner>:<branch>`, is
+matched by its branch; and
+`pull_request_read` with the methods `get`, `get_reviews`, `get_review_comments` and
+`get_comments`, for an open pull request only, with no review, thread or comment on any, so
+`pr-reader` dumps one. A closed pull request's number is an error result to `pull_request_read`,
+so `work` given a merged pull request's number stops at that read. Every
 repository is served the same fixture, whatever the owner. A number the fixture
 does not hold is an error result. Stdlib only.
 """
 
+import hashlib
 import json
 import re
 import sys
@@ -61,6 +67,15 @@ TOOLS = {
     "search_issues": ("Search issues using natural-language semantic matching. Already scoped to is:issue.", SEARCH, ["query"]),
     "search_pull_requests": ("Search for pull requests in GitHub repositories using issues search syntax already scoped to is:pr",
                              SEARCH, ["query"]),
+    "list_pull_requests": ("List pull requests in a GitHub repository.",
+                           {**REPO, "state": {"type": "string", "enum": ["open", "closed", "all"]}, "head": TEXT, "base": TEXT,
+                            "sort": TEXT, "direction": TEXT, "page": NUMBER, "perPage": NUMBER},
+                           ["owner", "repo"]),
+    "pull_request_read": ("Get information on a specific pull request in GitHub repository.",
+                          {"method": {"type": "string", "enum": ["get", "get_diff", "get_status", "get_files", "get_review_comments",
+                                                                 "get_reviews", "get_comments"]},
+                           **REPO, "pullNumber": NUMBER, "page": NUMBER, "perPage": NUMBER, "after": TEXT},
+                          ["method", "owner", "repo", "pullNumber"]),
 }
 WRITE_TOOLS = {
     "issue_write": ("Create a new or update an existing issue in a GitHub repository.",
@@ -95,6 +110,19 @@ def pull_as_issue(args: dict, p: dict) -> dict:
     out.update({"state": p["state"], "html_url": url(args, "pull", p["number"]), "author_association": "MEMBER", "assignees": [],
                 "reactions": REACTIONS, "has_children": False, "has_parent": False,
                 "closed_by_pull_requests": {"references": [], "total_count": 0}})
+    if p.get("closed_at"):
+        out["closed_at"] = p["closed_at"]
+    return out
+
+
+def pull(args: dict, p: dict) -> dict:
+    """A pull request as `pull_request_read` `get` and `list_pull_requests` give it, its head's sha
+    made from its number."""
+    full = f"{args.get('owner', '')}/{args.get('repo', '')}"
+    out = {k: p[k] for k in ("number", "title", "body", "state", "draft", "merged", "user", "created_at", "updated_at")}
+    out.update({"html_url": url(args, "pull", p["number"]), "mergeable_state": "clean", "additions": 12, "deletions": 2, "changed_files": 1,
+                "head": {"ref": p["head"], "sha": hashlib.sha1(f"pull {p['number']}".encode()).hexdigest(), "repo": {"full_name": full}},
+                "base": {"ref": "main", "sha": hashlib.sha1(b"main").hexdigest(), "repo": {"full_name": full}}})
     if p.get("closed_at"):
         out["closed_at"] = p["closed_at"]
     return out
@@ -215,6 +243,25 @@ def call(name: str, args: dict):
         words = {w for w in re.findall(r"[a-z]{3,}", str(args.get("query", "")).lower())}
         hits = [i for i in ISSUES.values() if words & set(re.findall(r"[a-z]{3,}", (i["title"] + " " + i["body"]).lower()))]
         return {"incomplete_results": False, "items": [chosen(item(args, i), args.get("fields")) for i in hits], "total_count": len(hits)}
+    if name == "list_pull_requests":
+        state = args.get("state") or "open"
+        head = str(args.get("head") or "").split(":")[-1]
+        return [pull(args, p) for p in PULLS.values() if (state == "all" or p["state"] == state) and (not head or p["head"] == head)]
+    if name == "pull_request_read":
+        n = int(args.get("pullNumber") or 0)
+        if n not in PULLS:
+            raise ValueError(f"failed to get pull request: GET https://api.github.com/repos/{args.get('owner')}/{args.get('repo')}/pulls/{n}: 404 Not Found []")
+        if PULLS[n]["state"] != "open":
+            raise ValueError(f"pull request #{n} is closed, and this stub serves open pull requests only")
+        method = args.get("method")
+        if method == "get":
+            return pull(args, PULLS[n])
+        if method in ("get_reviews", "get_comments"):
+            return []
+        if method == "get_review_comments":
+            return {"pageInfo": {"endCursor": "", "hasNextPage": False, "hasPreviousPage": False, "startCursor": ""}, "review_threads": [],
+                    "totalCount": 0}
+        raise ValueError(f"method {method} is not served by this stub")
     if name == "search_pull_requests":
         query = str(args.get("query", ""))
         named = re.search(r"\brepo:([^/\s]+)/(\S+)", query)

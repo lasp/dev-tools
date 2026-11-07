@@ -238,6 +238,7 @@ class TrackerGithubPack(unittest.TestCase):
             "tracker-gh-work-pr", "tracker-gh-work-closed-labeled"}
     DRAFT = {"tracker-gh-ticket-draft-new", "tracker-gh-ticket-draft-refine", "tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket",
              "tracker-gh-ticket-draft-standing-answer"}
+    AUDIT = {"tracker-gh-audit-duplicates", "tracker-gh-audit-pulls", "tracker-gh-audit-declined"}
 
     def setUp(self):
         patch = mock.patch.object(run, "SCENARIOS", self.PACK)
@@ -261,7 +262,7 @@ class TrackerGithubPack(unittest.TestCase):
         return json.loads(result["content"][0]["text"])
 
     def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
-        self.assertEqual(set(self.known), self.WORK | self.DRAFT)
+        self.assertEqual(set(self.known), self.WORK | self.DRAFT | self.AUDIT)
         well_formed(self, self.known, {"widgets"})
         for s in self.known.values():
             if s["id"] in self.WORK:
@@ -269,8 +270,10 @@ class TrackerGithubPack(unittest.TestCase):
             self.assertIn("rm -f .git/github-writes.jsonl", s["setup"], s["id"])
             for name in re.findall(r'"\$SBX_FIXTURES/([^"]+)"', " ".join(s.get("setup", []))):
                 self.assertTrue((run.fixture_dir() / name).is_file(), (s["id"], name))
-        for name in self.DRAFT:
+        for name in self.DRAFT | self.AUDIT:
             self.assertTrue(any("github-writes.jsonl" in v for v in self.known[name]["verify"]), name)
+        for name in ("tracker-gh-audit-pulls", "tracker-gh-audit-declined"):
+            self.assertEqual(self.known[name]["must_not_try"], ["mcp__github__issue_write", "mcp__github__add_issue_comment"], name)
         for name in ("tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket", "tracker-gh-ticket-draft-standing-answer"):
             self.assertEqual(self.known[name]["must_not_try"], ["mcp__github__issue_write", "mcp__github__add_issue_comment"], name)
 
@@ -304,7 +307,9 @@ class TrackerGithubPack(unittest.TestCase):
     def test_the_stub_lists_github_mcp_servers_read_tools_and_no_write(self):
         (listed,) = self.serve({"id": 1, "method": "tools/list"})
         tools = {t["name"]: t["inputSchema"] for t in listed["result"]["tools"]}
-        self.assertEqual(set(tools), {"get_me", "get_label", "issue_read", "list_issues", "search_issues", "search_pull_requests"})
+        self.assertEqual(set(tools), {"get_me", "get_label", "issue_read", "list_issues", "search_issues", "search_pull_requests",
+                                      "list_pull_requests", "pull_request_read"})
+        self.assertEqual(tools["pull_request_read"]["required"], ["method", "owner", "repo", "pullNumber"])
         self.assertEqual(tools["issue_read"]["required"], ["method", "owner", "repo", "issue_number"])
         self.assertEqual(tools["search_pull_requests"]["required"], ["query"])
 
@@ -382,6 +387,34 @@ class TrackerGithubPack(unittest.TestCase):
     def test_a_pull_requests_number_reads_as_an_issue_at_a_pull_url(self):
         self.assertEqual(self.read("issue_read", method="get", issue_number=15)["issue"]["html_url"], "https://github.com/example/widgets/pull/15")
 
+    def test_the_open_pull_requests_list_and_read_as_pr_reader_dumps_them(self):
+        self.assertEqual([p["number"] for p in self.read("list_pull_requests", state="open")], [21, 22, 23])
+        self.assertEqual([p["number"] for p in self.read("list_pull_requests", state="all")], [15, 16, 21, 22, 23])
+        got = self.read("pull_request_read", method="get", pullNumber=21)
+        self.assertEqual((got["number"], got["state"], got["draft"], got["merged"], got["user"]["login"]), (21, "open", False, False, "alice-example"))
+        self.assertTrue(got["body"].startswith("Ticket: #17 "))
+        self.assertRegex(got["head"]["sha"], r"^[0-9a-f]{40}$")
+        self.assertEqual(got["html_url"], "https://github.com/example/widgets/pull/21")
+        self.assertEqual(self.read("pull_request_read", method="get_reviews", pullNumber=22, page=1, perPage=100), [])
+        self.assertEqual(self.read("pull_request_read", method="get_comments", pullNumber=22, page=1, perPage=100), [])
+        threads = self.read("pull_request_read", method="get_review_comments", pullNumber=22)
+        self.assertEqual((threads["review_threads"], threads["totalCount"], threads["pageInfo"]["hasNextPage"]), ([], 0, False))
+
+    def test_list_pull_requests_matches_a_head_by_its_branch(self):
+        for head, found in (("example:9-by-part", [15]), ("9-by-part", [15]), ("example:no-such-branch", []), ("example:9-by", [])):
+            with self.subTest(head=head):
+                self.assertEqual([p["number"] for p in self.read("list_pull_requests", state="all", head=head)], found)
+        self.assertEqual(self.read("list_pull_requests", state="open", head="example:9-by-part"), [])
+
+    def test_a_closed_or_unknown_pull_request_is_an_error_to_pull_request_read(self):
+        for n, said in ((15, "serves open pull requests only"), (99, "404 Not Found")):
+            with self.subTest(n=n):
+                got = self.call("pull_request_read", method="get", owner="example", repo="widgets", pullNumber=n)
+                self.assertTrue(got["isError"])
+                self.assertIn(said, got["content"][0]["text"])
+        diff = self.call("pull_request_read", method="get_diff", owner="example", repo="widgets", pullNumber=21)
+        self.assertTrue(diff["isError"])
+
     def test_an_unknown_number_is_an_error_result(self):
         missing = self.call("issue_read", method="get", owner="example", repo="widgets", issue_number=99)
         self.assertTrue(missing["isError"])
@@ -410,7 +443,7 @@ class TrackerGithubPack(unittest.TestCase):
 
     def test_list_and_search_issues(self):
         listed = self.read("list_issues", state="OPEN")
-        self.assertEqual(([i["number"] for i in listed["issues"]], {i["state"] for i in listed["issues"]}), ([12, 14], {"OPEN"}))
+        self.assertEqual(([i["number"] for i in listed["issues"]], {i["state"] for i in listed["issues"]}), ([12, 14, 18, 19, 20], {"OPEN"}))
         self.assertEqual([i["number"] for i in self.read("list_issues", labels=["ready"])["issues"]], [14])
         self.assertEqual([i["number"] for i in self.read("search_issues", query="nightly restock")["items"]], [12, 14])
 

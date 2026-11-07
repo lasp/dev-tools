@@ -10,7 +10,7 @@ description: >
 argument-hint: "[question]"
 metadata:
   author: dev-tools
-  version: 1.11.0
+  version: 1.11.1
 ---
 
 # Quickstart
@@ -156,7 +156,7 @@ their bold label; part 1 has none.
    | Start | `/lasp-dev:onboard` | Survey this repository and record its settings, on your yes |
    | Tickets | `/lasp-dev:ticket-draft` | Draft or refine a Jira ticket; writes to Jira on your yes |
    | | `/lasp-dev:design-doc` | Turn your notes into a design doc for work across several tickets |
-   | | `/lasp-dev:ticket-audit` | Sweep the Jira project and apply the fixes you approve |
+   | | `/lasp-dev:ticket-audit` | Sweep the Jira project or the GitHub issues and apply the fixes you approve |
    | Build | `/lasp-dev:work <ticket key>` | Run a ticket's next phase, from draft to merged pull request |
    | | `/lasp-dev:implement-change` | Plan, build and verify one change |
    | Pull requests | `/lasp-dev:pr-create` | Write the description and open a draft pull request |

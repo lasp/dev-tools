@@ -235,7 +235,7 @@ not parse in this shape, a subagent's call, a call with any other argument, such
 missing.
 
 Writers: the GitHub write plan (`skills/using-github/issues.md`, "Running it"), run by
-`ticket-draft`, at the person's yes, with `jq` from the items it writes to
+`ticket-draft` and `ticket-audit`, at the person's yes, with `jq` from the items it writes to
 `.review/github-approval-items.json`; both removed when the plan finishes or stops. Readers:
 `hooks/issue-gate.sh`.
 
@@ -290,7 +290,7 @@ Pinned by: tests/test_next_phase.py::test_an_agree_that_carries_its_response_is_
 
 ## The thread dump
 
-Version: 6
+Version: 7
 
 Fields: `.review/threads/pr-NNNN/` (and `.review/harvest/threads/pr-NNNN/`): `pages/`, each
 `pull_request_read` result as the server returned it, one file per call, from which
@@ -308,7 +308,9 @@ version 3 states the `html_url` requirement; version 4 added `pages/` and `threa
 checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`; version 6 lets a
 list be paged below 100, named by `--per-page`, and has `save_page.py` refuse a response that is
 not JSON, such as the harness's size-limit notice, and clear a pull request's
-`get_review_comments` pages at its first page. Beside them, `judged.json`, "The
+`get_review_comments` pages at its first page. Version 7 has `save_page.py` save the text of a
+response that is a list of one text block, as Claude Code passes some servers' results, a stdio server's among them, and
+refuse any other list. Beside them, `judged.json`, "The
 judgments", is `pr-reader`'s own.
 
 Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
@@ -803,7 +805,7 @@ Pinned by: tests/test_profile.py::test_a_value_of_the_wrong_shape
 
 ## The ticket shape
 
-Version: 2
+Version: 3
 
 Fields: a ticket, in whatever tracker files it, is an id (a Jira key, `<KEY>-NNNN`, or a GitHub
 issue's number), a title (Jira's summary), a description in `standards/ticket-format.md`'s format,
@@ -824,13 +826,14 @@ A Jira workflow maps each role to exactly one status. A GitHub tracker maps each
 label, and `--defaults --field issue_tracker.roles.<role>` prints `none` for a role with no label:
 an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. On a GitHub
 tracker `ticket-draft` reads `issue_tracker.roles.<role>` and skips a move into a role whose label
-is `none` (version 2); `ticket-audit` still reads `jira.roles`, which prints `not yet recorded` for
-a GitHub tracker, and stops.
+is `none` (version 2); `ticket-audit` reads `issue_tracker.roles` there in place of `jira.roles`,
+for the label a close removes or adds and, in `source-reader`'s `pulls` sweep, for the `approved`
+and `implementation` labels an open issue lacks when its pull request waits on approval (version 3).
 An open issue that carries no mapped label is in `filed`, and `work` sends it to `ticket-draft`.
 
 Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`
 and the tracker's skill, `using-jira`, for the description. Readers: `scripts/profile.py`, and
-through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, the skills that read `jira.roles`, and `ticket-draft` on a GitHub tracker.
+through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, the skills that read `jira.roles`, and `ticket-draft` and `ticket-audit` on a GitHub tracker.
 
 Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_to_each_role
 
