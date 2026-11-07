@@ -239,6 +239,41 @@ class Tally(unittest.TestCase):
     def test_a_line_of_no_verdict_form_is_refused(self):
         self.refused("sweep", "pr-0007.md", SWEEP_7.replace("C-1 · not touched", "C-1 · breaks, judged as follows on the evidence"), "not a verdict line: C-1")
 
+    def test_a_sweep_line_with_a_second_verdict_is_refused_never_counted(self):
+        two = SWEEP_7.replace('the pull request changed the public loader', 'judged as follows on a second read')
+        self.refused("sweep", "pr-0007.md", two, "pr-0007: two verdicts in one line: C-2 · breaks")
+        self.refused("sweep", "pr-0007.md", SWEEP_7.replace("follows · pkg/loader.py:12", "follows · pkg/loader.py:12 · breaks"), "two verdicts in one line: R-001")
+        self.refused("sweep", "pr-0007.md", SWEEP_7.replace("the pull request changed the public loader", "on reflection, judged as follows."), "two verdicts in one line: C-2")
+
+    def test_a_verdict_word_inside_a_reason_or_the_quoted_line_is_one_verdict(self):
+        self.write("pr-0007.md", SWEEP_7.replace("the pull request changed the public loader", "the change breaks callers that follows the old API").replace('"no CHANGELOG.md change"', '"# breaks · follows"'))
+        code, out, _ = self.run_it("sweep", "pr-0007")
+        self.assertEqual(code, 0)
+        self.assertIn("break · C-2 · pr-0007 · none", out)
+
+    def test_a_reason_opening_with_its_own_verdict_or_a_path_named_like_one_is_one_verdict(self):
+        own = SWEEP_7.replace("the pull request changed the public loader", "Breaks the changelog rule: the loader changed")
+        own = own.replace("follows · pkg/loader.py:12", "follows · breaks/loader.py:12")
+        self.write("pr-0007.md", own)
+        code, out, _ = self.run_it("sweep", "pr-0007")
+        self.assertEqual(code, 0)
+        self.assertIn("claim · R-001 · judged 1 · follows 1", "\n".join(out))
+
+    def test_a_reason_that_uses_another_verdict_word_in_a_sentence_is_one_verdict(self):
+        for reason in ("follows the old silent-None habit the rule retired", "Not touched by any test, so it went unseen",
+                       "not judged before; this one raises"):
+            self.write("pr-0007.md", SWEEP_7.replace("the pull request changed the public loader", reason))
+            code, out, _ = self.run_it("sweep", "pr-0007")
+            self.assertEqual(code, 0, reason)
+
+    def test_an_ask_line_with_a_second_outcome_is_refused(self):
+        two = ANALYSIS_7.replace("asked: test the failure path", "asked: test the failure path · outcome: changed as asked · diff: addresses it")
+        self.refused("analysis", "pr-0007.md", two, "pr-0007: two verdicts in one ask line: thread PRRT_a3")
+
+    def test_a_second_verdict_written_as_a_label_is_refused(self):
+        for label in ("breaks: pkg/loader.py:3 lacks the guard", "breaks — the guard is gone"):
+            self.refused("sweep", "pr-0007.md", SWEEP_7.replace("follows · pkg/loader.py:12", f"follows · pkg/loader.py:12 · {label}"), "two verdicts in one line: R-001")
+
     def test_a_claim_judged_twice_is_refused(self):
         self.refused("sweep", "pr-0007.md", SWEEP_7.replace("C-1 · not touched", "R-001 · not touched"), "R-001 judged twice")
 

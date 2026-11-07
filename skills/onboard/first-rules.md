@@ -128,9 +128,10 @@ the share of AI-drafted threads in its own right, separate from which rules it d
    R-001, since a repository with no ledger has no rule ids to collide with, or, for a standard
    elsewhere, from its next free id.
 6. Extract terms where two names mean one thing, or a name carries a unit, frame or epoch.
-7. Reduce each listed page to a link, today's date and one paragraph saying what it decides and
-   which parts of the code it constrains, from one `source-reader` with the task `page <id>` per
-   page, all in one message. Copy nothing. A page the block lists as `Withheld:` gets no paragraph
+7. Reduce each listed page to a link, its version, today's date and one paragraph saying what it
+   decides and which parts of the code it constrains, with the block's `Excerpt:` lines under it,
+   from one `source-reader` with the task `page <id>` per page, all in one message. Copy nothing
+   else. A page the block lists as `Withheld:` gets no paragraph
    until the person clears it; its question goes to them.
 8. Run harvest.md's "The bar" on each candidate that meets admission, with the decisions files
    `<standard>/decisions.md` and, when this run wrote one, `.review/harvest/decisions.md`. Each

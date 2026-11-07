@@ -141,8 +141,10 @@ Epic candidates: <each: key, summary, the milestone it serves>
 ```
 
 **`page <id | path>`**: `confluence_get_page`. Returns `## page <id> — <title>`, a line `Version: <n> ·
-Updated: <date>`, and one paragraph: what the page decides, and which code or process it
-constrains.
+Updated: <date>`, one paragraph: what the page decides, and which code or process it
+constrains, then one or two lines `Excerpt: "<the page's words>"`, each one run of the page's
+text, verbatim, at most 40 words, that bears out the paragraph, so a reader can find it on the
+page. A paragraph no excerpt bears out goes to `Questions:` instead.
 
 **A file in place of a key or an id.** `ticket` and `page` take a file path the caller names
 instead: build the block from the file's text, with `Source: file <path>` as its first line, and
