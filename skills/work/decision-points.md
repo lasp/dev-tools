@@ -46,14 +46,19 @@ one, remove it first with `rm -f <path>`, a plain command, then write it.
 Bash runs scripts and git, and these stay commands: a script's output redirected to a file, such
 as `bash standard_file.sh > .review/standard.md.tmp`; `commit`'s message handed to git with `git
 commit -F - <<'MSG'`; and `write-plan.md`'s `jq` approval record, which holds only fixed-form
-items, tool names and keys.
+items, tool names and keys. An approval record whose items hold free text, as a GitHub create's
+title does, has its items written with the Write tool and read by `jq` from that file
+(`using-github`'s `issues.md`).
 
 ## What does not change
 
-- **Gates.** Anything hard to undo, a post, a push, a commit or a write to Jira or Confluence, waits
-  for a yes to exactly what it does: a request the person typed that names it, or an answer to a
-  question or option that names it. A gate may share a widget with other questions at the same
-  point; it is never implied by an answer to something else.
+- **Gates.** Anything hard to undo, a post, a push, a commit, a write to Jira or Confluence or a
+  GitHub issue write, waits for a yes to exactly what it does: a request the person typed that
+  names it, or an answer to a question or option that names it. A gate may share a widget with
+  other questions at the same point; it is never implied by an answer to something else, nor by a
+  standing answer that does not name it, such as "take the recommended answer on every
+  question", whether it came before the gate was asked or after: show the gate, or show it again,
+  and ask it. A yes given in advance that names the gate, such as "commit this to main", is one.
 - **The text is shown with the gate.** A gate that posts or writes text, a review, a comment, a
   reply, a pull request body, a Jira description or comment, a Confluence page or section, shows
   that text as it will be sent in the message that asks, never by pointing to "above", an earlier

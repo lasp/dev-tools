@@ -1,14 +1,17 @@
-# The GitHub tracker pack: scenarios in which `work` reads a GitHub issue as the ticket, served by
+# The GitHub tracker pack: scenarios in which `work` reads a GitHub issue as the ticket, and
+# `ticket-draft` drafts and files one, served by
 # fixture/github-mcp-server-stub.py from fixture/github.json, in `widgets` with its own standard
 # recording a GitHub tracker whose labels map to the workflow and no ticket pattern. Build the
 # sandbox as the generic pack's README says, then write its mcp.json naming the stub through
 # $SBX_FIXTURES, which run.py sets for the session to this pack's fixture/:
 #
 #   {"mcpServers": {"github": {"command": "python3",
-#     "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py"]}}}
+#     "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py", "--writes", ".git/github-writes.jsonl"]}}}
 #
-# The stub's file name holds github-mcp-server, so run.py gives the server the GitHub rules. It has
-# no write tools. The issues: #9 closed as completed, #12 open with no label, #14 open and labeled
+# The stub's file name holds github-mcp-server, so run.py gives the server the GitHub rules, and
+# `--writes` makes it record each issue_write and add_issue_comment to .git/github-writes.jsonl,
+# which each scenario's setup removes and its verify reads. run.py neither allows nor denies those
+# two tools for it, so under dontAsk only hooks/issue-gate.sh's allow lets a write through. The issues: #9 closed as completed, #12 open with no label, #14 open and labeled
 # `ready` and `enhancement`, #17 closed as not planned and still labeled `in progress`; #15 is a
 # merged pull request, its body naming #9, and #16 one naming `o/r#90`. The fields are those of
 # ../scenarios.yaml.
@@ -19,6 +22,7 @@ scenarios:
     setup:
       - mkdir -p standards && echo standards/ >> .git/info/exclude
       - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
     origin: "#59: work routes a GitHub issue by its state and labels"
     why: >-
       Works issue 12, open with no label, so work reads it from GitHub as an issue, not a pull
@@ -41,6 +45,7 @@ scenarios:
     setup:
       - mkdir -p standards && echo standards/ >> .git/info/exclude
       - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
     origin: "#59: work routes a GitHub issue by its state and labels"
     why: >-
       Works issue 14, open and labeled ready, which the standard maps to implement-change, beside
@@ -63,6 +68,7 @@ scenarios:
     setup:
       - mkdir -p standards && echo standards/ >> .git/info/exclude
       - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
     origin: "#59: work routes a GitHub issue by its state and labels"
     why: >-
       Works issue 9, closed as completed, so work says it is past the build and runs nothing.
@@ -85,6 +91,7 @@ scenarios:
     setup:
       - mkdir -p standards && echo standards/ >> .git/info/exclude
       - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
     origin: "#59 (review of #115): a closed issue keeps its labels, and reads no pull request"
     why: >-
       Works issue 17, closed as not planned and still labeled `in progress`, one of the pull
@@ -109,6 +116,7 @@ scenarios:
     setup:
       - mkdir -p standards && echo standards/ >> .git/info/exclude
       - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
       - git checkout -q -B issue-14-low-stock
     origin: "#59: a branch named issue-<n>-words names issue n on a GitHub tracker"
     why: >-
@@ -131,6 +139,7 @@ scenarios:
     setup:
       - mkdir -p standards && echo standards/ >> .git/info/exclude
       - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
     origin: "#59 (review of #113): a pull request's number on a GitHub tracker is not an issue"
     why: >-
       Works 15, the merged pull request for issue 9, so work's one issue_read finds a pull
@@ -148,3 +157,164 @@ scenarios:
       mcp: [mcp__github__issue_read]
       says: ["(?i)(pull request|PR) #?15"]
       not_says: ["(?m)^Next: (ticket-draft|implement-change)", "(?m)^#15 · "]
+
+  - id: tracker-gh-ticket-draft-new
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
+    origin: "#59: ticket-draft drafts and files a GitHub issue under an approved write plan"
+    why: >-
+      Drafts a new issue from a description on a GitHub tracker and says yes to its write plan, so
+      the plan's create reaches the stub only through the approval record and the issue gate, and
+      the issue is read back and the slug's files take its number.
+    turns:
+      - "/lasp-dev:ticket-draft make total() refuse a negative count with a ValueError naming the part, since a bad export once gave a count of -3 and the total came out low without anyone noticing. Title it \"Don't count a negative part in total()\"."
+      - The goal is right. Draft this ticket.
+      - Take the recommended answer on every question.
+      - Looks right. Write all.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__github__sub_issue_write", "mcp__github__update_issue_comment"]
+    look_at: >-
+      The plan shows a create on example/widgets with the title, apostrophe and all, and the
+      Markdown body, then the Comment to post and the Session comment as comments. After Write all,
+      the issue takes the next number after every issue and pull request in github.json, N; its
+      context page opens `# #N · `, with N.issue.md, N.original.txt and N.writes.md beside it. A
+      follow-up the questions add is a second create, N+1. The closing summary names #N and says a
+      ticket writer's approval is the `ready` label, and the approval record is gone.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_write, mcp__github__issue_read]
+      files: [".review/context/[0-9]*.md", ".review/context/[0-9]*.issue.md"]
+    verify:
+      - test ! -e .review/github-approval.json
+      - >-
+        python3 -c 'import json, os; d = json.load(open(os.environ["SBX_FIXTURES"] + "/github.json"));
+        n = max(i["number"] for i in d["issues"] + d["pulls"]) + 1;
+        w = [json.loads(l) for l in open(".git/github-writes.jsonl")];
+        c = [x["arguments"] for x in w if x["tool"] == "issue_write" and x["arguments"]["method"] == "create"];
+        assert c and "# Motivation" in c[0]["body"], c;
+        assert all(set(x.get("labels") or []) <= {l["name"] for l in d["labels"]} for x in c), c;
+        assert any(x["tool"] == "add_issue_comment" and x["arguments"]["issue_number"] == n for x in w), (n, w);
+        assert open(".review/context/%d.md" % n).readline().startswith("# #%d · " % n)'
+      - test -e .review/github-plan.md
+
+  - id: tracker-gh-ticket-draft-refine
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
+    origin: "#59: ticket-draft refines a GitHub issue under an approved write plan"
+    why: >-
+      Refines #12, an open issue with a title and a few sentences, and says yes to its write plan,
+      so the original body is posted as the Original request comment before the body is replaced,
+      each through the issue gate, and the issue is read back.
+    turns:
+      - /lasp-dev:ticket-draft 12
+      - The goal is right. Draft this ticket.
+      - Take the recommended answer on every question.
+      - Looks right. Write all.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__github__sub_issue_write", "mcp__github__update_issue_comment"]
+    look_at: >-
+      The plan holds, in order, the Original request comment carrying #12's body as alice-example
+      wrote it, the body update in the format, and the Session comment; no labels change, since
+      nobody asked for the approval; a follow-up the questions add is a create. The body's
+      sections are Markdown headings, `# Motivation` first. .review/context/12.md opens `# #12 · `.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_read, mcp__github__issue_write, mcp__github__add_issue_comment]
+      files: [".review/context/12.md", ".review/context/12.issue.md", ".review/context/12.original.txt"]
+    verify:
+      - test ! -e .review/github-approval.json
+      - >-
+        python3 -c 'import json; w = [json.loads(l) for l in open(".git/github-writes.jsonl")];
+        t = [(x["tool"], x["arguments"].get("method"), x["arguments"].get("issue_number")) for x in w];
+        assert all(n == 12 or m == "create" for _, m, n in t), t;
+        u = [i for i, x in enumerate(w) if x["tool"] == "issue_write" and x["arguments"].get("issue_number") == 12];
+        o = [i for i, x in enumerate(w) if x["tool"] == "add_issue_comment" and x["arguments"]["body"].lstrip().startswith("Original request")];
+        assert len(u) == 1 and o and o[0] < u[0], t;
+        assert "Motivation" in w[u[0]]["arguments"]["body"] and "labels" not in w[u[0]]["arguments"], w[u[0]]'
+      - test -e .review/github-plan.md
+
+  - id: tracker-gh-ticket-draft-declined
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
+    origin: "#59: ticket-draft writes nothing to GitHub without a yes to its write plan"
+    why: >-
+      Drafts the same new issue and answers the write plan's gate with Paste it all, so no write
+      call is made and the issue's paste file is the hand-off.
+    turns:
+      - "/lasp-dev:ticket-draft make total() refuse a negative count with a ValueError naming the part, since a bad export once gave a count of -3 and the total came out low without anyone noticing"
+      - The goal is right. Draft this ticket.
+      - Take the recommended answer on every question.
+      - Looks right, but do not write anything to GitHub. Paste it all.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)"]
+    must_not_try: ["mcp__github__issue_write", "mcp__github__add_issue_comment"]
+    look_at: >-
+      The files are written under the slug, .review/context/<slug>.issue.md holding Title:, Labels:,
+      the Markdown body, then Comment to post and Session comment; no write call is made, no
+      approval record is written, and the closing summary points at the paste file.
+    expect:
+      ends: success
+      files: [".review/context/*.issue.md"]
+    verify:
+      - test ! -e .git/github-writes.jsonl
+      - test ! -e .review/github-approval.json
+
+  - id: tracker-gh-ticket-draft-blanket
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
+    origin: "#59: a standing answer given before the write plan's gate is no yes to it"
+    why: >-
+      Drafts the new issue and stops after the third turn, "Take the recommended answer on every
+      question", so a run shows that answer files nothing, whether or not the write plan's gate was shown: it does not name the gate.
+    turns:
+      - "/lasp-dev:ticket-draft make total() refuse a negative count with a ValueError naming the part, since a bad export once gave a count of -3 and the total came out low without anyone noticing"
+      - The goal is right. Draft this ticket.
+      - Take the recommended answer on every question.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)"]
+    must_not_try: ["mcp__github__issue_write", "mcp__github__add_issue_comment"]
+    look_at: >-
+      The answers are folded into the draft, which is shown with step 7's review and the write
+      plan's gate, Write all among its options; nothing is filed and no approval record is written.
+    expect:
+      ends: success
+      says: ["(?i)\\bWrite all\\b"]
+    verify:
+      - test ! -e .git/github-writes.jsonl
+      - test ! -e .review/github-approval.json
+
+  - id: tracker-gh-ticket-draft-standing-answer
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - rm -f .git/github-writes.jsonl
+    origin: "#59: a request to file, then a standing answer, is no yes to the write plan's gate"
+    why: >-
+      Asks in plain words to file an issue, which names no plan, then answers every question with
+      its recommendation, so a run shows the plan's gate is shown and nothing is filed: neither
+      the request nor the standing answer names the plan.
+    turns:
+      - "File an issue for this bug: by_part raises ValueError on a part listed twice, and the warehouse team needs the counts summed instead."
+      - The goal is right. Draft this ticket.
+      - Take the recommended answer on every question.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)"]
+    must_not_try: ["mcp__github__issue_write", "mcp__github__add_issue_comment"]
+    look_at: >-
+      ticket-draft runs, and the third turn ends at step 7's review with the write plan's gate,
+      Write all among its options; nothing is filed.
+    expect:
+      ends: success
+      skills: [ticket-draft]
+      says: ["(?i)\\bWrite all\\b"]
+    verify:
+      - test ! -e .git/github-writes.jsonl
+      - test ! -e .review/github-approval.json

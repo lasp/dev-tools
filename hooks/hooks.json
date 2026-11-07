@@ -49,6 +49,16 @@
         ]
       },
       {
+        "matcher": "mcp__.*__(issue_write|add_issue_comment)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/issue-gate.sh\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "Bash|mcp__.*",
         "hooks": [
           {

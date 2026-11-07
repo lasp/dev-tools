@@ -212,6 +212,35 @@ and `ticket-audit`, at the person's yes; removed when the plan finishes or stops
 
 Pinned by: tests/test_atlassian_gate.sh::with this session's record, every write it lists is allowed
 
+## The GitHub approval record
+
+Version: 1
+
+Fields: `.review/github-approval.json`, at the repository's top level, which the hook finds from
+the payload's `cwd`; one JSON object in the Jira record's shape: `session`, `t` and `items`, each
+item `{"tool": <tool>, "target": <target>}`, the tool named without its server prefix. The target
+is `<owner>/<repo> <title>` for an `issue_write` whose `method` is `create`, so an item matches one
+create, and `<owner>/<repo>#<n>` for one whose `method` is `update` and for `add_issue_comment`, as
+github-mcp-server names the parameters `owner`, `repo`, `title` and `issue_number`, compared
+byte for byte, case and any trailing newline included. No item is used up: a create's item matches
+every create with that exact title on that repository in the window, and an update's or a comment's
+every such call on that issue, as a Jira item does. `hooks/issue-gate.sh` allows a call from the main session only when the
+record's session is the call's, `t` is under 30 minutes old and not in the future, an item matches
+the tool and target exactly, and the call carries only the arguments a plan sends: a create
+`method`, `owner`, `repo`, `title`, `body` and `labels`; an update those and `issue_number`,
+`state`, `state_reason` and `duplicate_of`; a comment `owner`, `repo`, `issue_number` and `body`.
+It gives every other call no decision, so the person's own permissions apply: a record that does
+not parse in this shape, a subagent's call, a call with any other argument, such as `assignees`,
+`milestone`, `type`, `parent_issue_number`, `issue_fields` or a `reaction`, and any call when jq is
+missing.
+
+Writers: the GitHub write plan (`skills/using-github/issues.md`, "Running it"), run by
+`ticket-draft`, at the person's yes, with `jq` from the items it writes to
+`.review/github-approval-items.json`; both removed when the plan finishes or stops. Readers:
+`hooks/issue-gate.sh`.
+
+Pinned by: tests/test_issue_gate.sh::with this session's record, a listed create, update and comment are allowed
+
 ## The `--state` printout
 
 Version: 5
@@ -530,7 +559,7 @@ Pinned by: tests/test_where.sh::"--fields prints the facts, one per line, on a c
 
 ## The next phase
 
-Version: 6
+Version: 7
 
 Fields: `scripts/next_phase.py`'s printout: `phase:` (a skill, or `nothing`), `argument:`,
 `why:` (the row's name in the script's table, `review-unposted` among them from version 3), `lock:`
@@ -555,6 +584,8 @@ number is the issue's. This repository, for that reading, is the one the working
 `origin` remote names. With no origin, `profile.py` reads no standard for the checkout, so no
 GitHub tracker is in effect and `#<n>` names nothing; were a tracker read without one, an issue
 that counts only as this repository's exits 1, saying there is no origin.
+Version 7: on a GitHub tracker the `unfiled` line names `.review/context/<slug>.issue.md`, the
+issue's paste file.
 
 Writers: `scripts/next_phase.py`. Readers: `work`.
 
@@ -707,7 +738,7 @@ Pinned by: tests/test_profile.py::test_a_value_of_the_wrong_shape
 
 ## The ticket shape
 
-Version: 1
+Version: 2
 
 Fields: a ticket, in whatever tracker files it, is an id (a Jira key, `<KEY>-NNNN`, or a GitHub
 issue's number), a title (Jira's summary), a description in `standards/ticket-format.md`'s format,
@@ -726,15 +757,15 @@ the profile's `issue_tracker.statuses` ("The profile"):
 
 A Jira workflow maps each role to exactly one status. A GitHub tracker maps each to at most one
 label, and `--defaults --field issue_tracker.roles.<role>` prints `none` for a role with no label:
-an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. With #59, a skill
-that would move a ticket into `approved` or `implementation` with no label for it skips the move;
-until then every skill that moves a ticket reads `jira.roles`, which prints `not yet recorded` for a
-GitHub tracker, and stops.
+an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. On a GitHub
+tracker `ticket-draft` reads `issue_tracker.roles.<role>` and skips a move into a role whose label
+is `none` (version 2); `ticket-audit` still reads `jira.roles`, which prints `not yet recorded` for
+a GitHub tracker, and stops.
 An open issue that carries no mapped label is in `filed`, and `work` sends it to `ticket-draft`.
 
 Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`
 and the tracker's skill, `using-jira`, for the description. Readers: `scripts/profile.py`, and
-through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, and the skills that read `jira.roles`.
+through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, the skills that read `jira.roles`, and `ticket-draft` on a GitHub tracker.
 
 Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_to_each_role
 

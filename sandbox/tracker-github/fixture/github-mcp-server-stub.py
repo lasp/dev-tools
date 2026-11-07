@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
-"""A read-only stand-in for github-mcp-server, serving the fixed issues and pull requests in
-`github.json` beside it over stdio, so a scenario reads a GitHub issue tracker with no GitHub. Its
-name holds `github-mcp-server`, so `run.py` gives it the GitHub rules: the read tools allowed and
-every write denied, which it has none of.
+"""A stand-in for github-mcp-server, serving the fixed issues and pull requests in `github.json`
+beside it over stdio, so a scenario reads a GitHub issue tracker with no GitHub. Its name holds
+`github-mcp-server`, so `run.py` gives it the GitHub rules: the read tools allowed and every write
+denied. Read-only unless given `--writes <file>`:
 
-    {"command": "python3", "args": ["-I", "<this file>"]}
+    {"command": "python3", "args": ["-I", "<this file>", "--writes", ".git/github-writes.jsonl"]}
+
+With `--writes` it also serves `issue_write` (`create` and `update`) and `add_issue_comment`, and
+appends each call that succeeds to the file, a path relative to the session's directory, as one
+JSON line `{"tool": <name>, "arguments": <its arguments>}`; at start it replays the file, so a
+later turn's server sees the issues an earlier turn wrote. A created issue takes the next number
+after every issue and pull request the fixture holds. Each write returns `{"id", "url"}`, as the
+server's minimal response does. A label is recorded as sent, as GitHub would create one it does not
+know, so a scenario's verify checks the labels it may use. `run.py` neither allows nor denies a
+writing stub's two write tools, so only a hook's allow lets a call through under `dontAsk`.
 
 Its tools are github-mcp-server's by name, arguments and output shape, as read from the real
-server: `get_me`; `issue_read` with the methods `get`, `get_comments`, `get_labels` and
+server: `get_me`; `get_label`, an error for a label the fixture does not hold; `issue_read` with the methods `get`, `get_comments`, `get_labels` and
 `get_parent`, where `get` gives labels by name and `get_labels` as objects, `get_parent` gives a
 null parent, since no fixture issue has one, and `get` on a pull request's number returns it as
 an issue whose `html_url` holds `/pull/`, as GitHub's issue API does; `list_issues`, whose states
@@ -26,6 +35,8 @@ import re
 import sys
 from pathlib import Path
 
+WRITES = Path(sys.argv[sys.argv.index("--writes") + 1]) if "--writes" in sys.argv else None
+
 DATA = json.loads((Path(__file__).with_name("github.json")).read_text())
 ISSUES = {i["number"]: i for i in DATA["issues"]}
 PULLS = {p["number"]: p for p in DATA["pulls"]}
@@ -38,6 +49,7 @@ SEARCH = {"query": TEXT, "owner": TEXT, "repo": TEXT, "sort": TEXT, "order": TEX
 
 TOOLS = {
     "get_me": ("Get details of the authenticated GitHub user.", {}, []),
+    "get_label": ("Get a specific label from a repository.", {**REPO, "name": TEXT}, ["owner", "repo", "name"]),
     "issue_read": ("Get information about a specific issue in a GitHub repository.",
                    {"method": {"type": "string", "enum": ["get", "get_comments", "get_sub_issues", "get_parent", "get_labels"]},
                     **REPO, "issue_number": NUMBER, "page": NUMBER, "perPage": NUMBER},
@@ -50,6 +62,17 @@ TOOLS = {
     "search_pull_requests": ("Search for pull requests in GitHub repositories using issues search syntax already scoped to is:pr",
                              SEARCH, ["query"]),
 }
+WRITE_TOOLS = {
+    "issue_write": ("Create a new or update an existing issue in a GitHub repository.",
+                    {"method": {"type": "string", "enum": ["create", "update"]}, **REPO, "issue_number": NUMBER, "title": TEXT,
+                     "body": TEXT, "labels": FIELDS, "assignees": FIELDS, "state": {"type": "string", "enum": ["open", "closed"]},
+                     "state_reason": {"type": "string", "enum": ["completed", "not_planned", "duplicate"]}, "duplicate_of": NUMBER},
+                    ["method", "owner", "repo"]),
+    "add_issue_comment": ("Add a comment to a specific issue in a GitHub repository.", {**REPO, "issue_number": NUMBER, "body": TEXT},
+                          ["owner", "repo", "issue_number"]),
+}
+if WRITES:
+    TOOLS.update(WRITE_TOOLS)
 REACTIONS = {"+1": 0, "-1": 0, "confused": 0, "eyes": 0, "heart": 0, "hooray": 0, "laugh": 0, "rocket": 0, "total_count": 0}
 
 
@@ -106,9 +129,55 @@ def chosen(row: dict, fields) -> dict:
     return {k: v for k, v in row.items() if k in fields} if fields else row
 
 
+def write(name: str, args: dict) -> dict:
+    """One write applied to the served issues: a create, an update or a comment."""
+    if name == "add_issue_comment":
+        n = int(args.get("issue_number") or 0)
+        if n not in ISSUES:
+            raise missing(args, n)
+        if not args.get("body"):
+            raise ValueError("missing required parameter: body")
+        cid = n * 1000 + len(ISSUES[n]["comments"]) + 1
+        ISSUES[n]["comments"].append({"id": cid, "body": args["body"], "user": {"id": 1001, "login": DATA["me"]["login"]},
+                                      "created_at": "2026-03-01T00:00:00Z", "updated_at": "2026-03-01T00:00:00Z", "author_association": "MEMBER"})
+        return {"id": str(cid), "url": f"{url(args, 'issues', n)}#issuecomment-{cid}"}
+    method = args.get("method")
+    if method == "create":
+        if not args.get("title"):
+            raise ValueError("missing required parameter: title")
+        n = max([*ISSUES, *PULLS]) + 1
+        ISSUES[n] = {"number": n, "title": args["title"], "body": args.get("body", ""), "state": "open", "labels": list(args.get("labels") or []),
+                     "assignees": [], "user": {"id": 1001, "login": DATA["me"]["login"]}, "created_at": "2026-03-01T00:00:00Z",
+                     "updated_at": "2026-03-01T00:00:00Z", "comments": []}
+    elif method == "update":
+        n = int(args.get("issue_number") or 0)
+        if n not in ISSUES:
+            raise missing(args, n)
+        i = ISSUES[n]
+        for key in ("title", "body", "labels", "state"):
+            if key in args:
+                i[key] = list(args[key]) if key == "labels" else args[key]
+        if i["state"] == "closed":
+            i["state_reason"] = args.get("state_reason", i.get("state_reason", "completed"))
+        else:
+            i.pop("state_reason", None)
+    else:
+        raise ValueError(f"unknown method {method!r}")
+    return {"id": str(n * 100), "url": url(args, "issues", n)}
+
+
 def call(name: str, args: dict):
+    if name in WRITE_TOOLS and WRITES:
+        done = write(name, args)
+        with WRITES.open("a") as f:
+            f.write(json.dumps({"tool": name, "arguments": args}) + "\n")
+        return done
     if name == "get_me":
         return {**DATA["me"], "profile_url": f"https://github.com/{DATA['me']['login']}"}
+    if name == "get_label":
+        if args.get("name") not in LABELS:
+            raise ValueError(f"failed to get label: Could not resolve to a Label with the name '{args.get('name')}'.")
+        return {k: LABELS[args["name"]][k] for k in ("color", "description", "name")}
     if name == "issue_read":
         n = int(args.get("issue_number") or 0)
         method = args.get("method")
@@ -124,7 +193,7 @@ def call(name: str, args: dict):
             return {"comments": [{**c, "html_url": f"{url(args, 'issues', n)}#issuecomment-{c['id']}", "reactions": REACTIONS} for c in comments],
                     "method": "get_comments"}
         if method == "get_labels":
-            labels = [LABELS[name] for name in (i["labels"] if i else [])]
+            labels = [LABELS.get(name, {"name": name}) for name in (i["labels"] if i else [])]
             return {"labels": labels, "method": "get_labels", "totalCount": len(labels)}
         if method == "get_parent":
             return {"method": "get_parent", "parent": None}
@@ -178,6 +247,11 @@ def reply(rid, result=None, error=None) -> None:
 
 
 def main() -> None:
+    if WRITES and WRITES.is_file():
+        for line in WRITES.read_text().splitlines():
+            if line.strip():
+                done = json.loads(line)
+                write(done["tool"], done["arguments"])
     for line in sys.stdin:
         if not line.strip():
             continue

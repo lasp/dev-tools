@@ -2,7 +2,9 @@
 
 How a skill writes to Jira: every write a pass proposes, in one numbered list the person approves
 once, run in order, read back and recorded. `ticket-draft` steps 7 and 8 and `ticket-audit`'s
-Apply use it; `SKILL.md`'s "Writing to Jira" says what a plan may hold.
+Apply use it; `SKILL.md`'s "Writing to Jira" says what a plan may hold. Where the tracker is
+GitHub Issues, a plan follows this file with the items, tools, record and read-back
+`<plugin root>/skills/using-github/issues.md` sets in place of Jira's.
 
 ## When the tools are there
 
@@ -87,7 +89,8 @@ and the texts as
 
 Then ask, as a gate in `<plugin root>/skills/work/decision-points.md`: **Write all <n>**
 (Recommended); **Drop some**, the numbers typed under Other; **Paste it all**; **Let's discuss**.
-The yes covers exactly the items shown. A change to any item shows the plan again and asks again.
+The yes covers exactly the items shown; Write all is never taken on a standing answer
+(`decision-points.md`, "What does not change"). A change to any item shows the plan again and asks again.
 Where the skill already asks a widget at that point, the gate is one more question in it.
 
 ## Running it

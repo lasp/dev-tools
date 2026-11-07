@@ -147,7 +147,7 @@ class TrackerPack(unittest.TestCase):
         return [json.loads(line) for line in out.splitlines()]
 
     def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
-        self.assertEqual(len(self.known), 5)
+        self.assertEqual(len(self.known), 6)
         well_formed(self, self.known, {"widgets"})
         for s in self.known.values():
             self.assertTrue(s["id"].startswith("tracker-"), s["id"])
@@ -228,11 +228,16 @@ class TrackerPack(unittest.TestCase):
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
 class TrackerGithubPack(unittest.TestCase):
-    """sandbox/tracker-github/: scenarios against a GitHub issue tracker the pack's read-only stub serves."""
+    """sandbox/tracker-github/: scenarios against a GitHub issue tracker the pack's stub serves,
+    recording the writes it is sent."""
 
     PACK = ROOT / "sandbox" / "tracker-github" / "scenarios.yaml"
     STUB = ROOT / "sandbox" / "tracker-github" / "fixture" / "github-mcp-server-stub.py"
-    SERVER = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py"]}
+    SERVER = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py", "--writes", ".git/github-writes.jsonl"]}
+    WORK = {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch",
+            "tracker-gh-work-pr", "tracker-gh-work-closed-labeled"}
+    DRAFT = {"tracker-gh-ticket-draft-new", "tracker-gh-ticket-draft-refine", "tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket",
+             "tracker-gh-ticket-draft-standing-answer"}
 
     def setUp(self):
         patch = mock.patch.object(run, "SCENARIOS", self.PACK)
@@ -240,9 +245,10 @@ class TrackerGithubPack(unittest.TestCase):
         self.addCleanup(patch.stop)
         self.known = run.scenarios()
 
-    def serve(self, *requests: dict) -> list[dict]:
+    def serve(self, *requests: dict, writes: "Path | None" = None) -> list[dict]:
         lines = "".join(json.dumps({"jsonrpc": "2.0", **r}) + "\n" for r in requests)
-        out = subprocess.run([sys.executable, "-I", str(self.STUB)], input=lines, capture_output=True, text=True, check=True).stdout
+        extra = ["--writes", str(writes)] if writes else []
+        out = subprocess.run([sys.executable, "-I", str(self.STUB), *extra], input=lines, capture_output=True, text=True, check=True).stdout
         return [json.loads(line) for line in out.splitlines()]
 
     def call(self, name: str, **arguments) -> dict:
@@ -255,30 +261,107 @@ class TrackerGithubPack(unittest.TestCase):
         return json.loads(result["content"][0]["text"])
 
     def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
-        self.assertEqual(set(self.known), {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch", "tracker-gh-work-pr", "tracker-gh-work-closed-labeled"})
+        self.assertEqual(set(self.known), self.WORK | self.DRAFT)
         well_formed(self, self.known, {"widgets"})
         for s in self.known.values():
-            self.assertEqual(s["expect"]["mcp"], ["mcp__github__issue_read"], s["id"])
+            if s["id"] in self.WORK:
+                self.assertEqual(s["expect"]["mcp"], ["mcp__github__issue_read"], s["id"])
+            self.assertIn("rm -f .git/github-writes.jsonl", s["setup"], s["id"])
             for name in re.findall(r'"\$SBX_FIXTURES/([^"]+)"', " ".join(s.get("setup", []))):
                 self.assertTrue((run.fixture_dir() / name).is_file(), (s["id"], name))
+        for name in self.DRAFT:
+            self.assertTrue(any("github-writes.jsonl" in v for v in self.known[name]["verify"]), name)
+        for name in ("tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket", "tracker-gh-ticket-draft-standing-answer"):
+            self.assertEqual(self.known[name]["must_not_try"], ["mcp__github__issue_write", "mcp__github__add_issue_comment"], name)
 
-    def test_the_documented_server_gets_the_github_rules_and_no_write(self):
-        self.assertIn(json.dumps(self.SERVER["args"][1]), self.PACK.read_text())
-        self.assertEqual(run.server_kind(self.SERVER), "github")
+    def perms(self, servers: dict) -> dict:
         sandbox = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, sandbox)
-        (sandbox / "mcp.json").write_text(json.dumps({"mcpServers": {"github": self.SERVER}}))
+        (sandbox / "mcp.json").write_text(json.dumps({"mcpServers": servers}))
         run.write_settings(sandbox, ROOT)
-        perms = json.loads((sandbox / "settings.json").read_text())["permissions"]
+        return json.loads((sandbox / "settings.json").read_text())["permissions"]
+
+    def test_the_documented_server_gets_the_github_rules_with_its_issue_writes_left_to_the_hook(self):
+        self.assertIn(json.dumps(self.SERVER["args"])[1:-1], self.PACK.read_text())
+        self.assertEqual(run.server_kind(self.SERVER), "github")
+        perms = self.perms({"github": self.SERVER})
         self.assertLessEqual({"mcp__github__issue_read", "mcp__github__search_pull_requests", "mcp__github__get_me"}, set(perms["allow"]))
-        self.assertIn("mcp__github__issue_write", perms["deny"])
+        for tool in ("issue_write", "add_issue_comment"):
+            self.assertNotIn(f"mcp__github__{tool}", perms["allow"] + perms["deny"])
+        self.assertLessEqual({"mcp__github__sub_issue_write", "mcp__github__update_issue_comment", "mcp__github__create_pull_request"}, set(perms["deny"]))
+
+    def test_a_server_that_is_not_a_packs_writing_stub_keeps_every_write_denied(self):
+        read_only = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py"]}
+        elsewhere = {"command": "docker", "args": ["run", "ghcr.io/github/github-mcp-server", "--writes", "x"]}
+        mounted = {"command": "docker", "args": ["run", "-v", "${SBX_FIXTURES}/github-mcp-server-stub.py:/stub.py", "ghcr.io/github/github-mcp-server", "--writes", "x"]}
+        other_file = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/other-github-mcp-server.py", "--writes", "x"]}
+        with_url = {**self.SERVER, "url": "https://api.githubcopilot.com/mcp/"}
+        perms = self.perms({"stub": read_only, "real": elsewhere, "mounted": mounted, "other": other_file, "url": with_url, "github": self.SERVER})
+        for name in ("stub", "real", "mounted", "other", "url"):
+            self.assertLessEqual({f"mcp__{name}__issue_write", f"mcp__{name}__add_issue_comment"}, set(perms["deny"]), name)
+        self.assertNotIn("mcp__github__issue_write", perms["deny"])
 
     def test_the_stub_lists_github_mcp_servers_read_tools_and_no_write(self):
         (listed,) = self.serve({"id": 1, "method": "tools/list"})
         tools = {t["name"]: t["inputSchema"] for t in listed["result"]["tools"]}
-        self.assertEqual(set(tools), {"get_me", "issue_read", "list_issues", "search_issues", "search_pull_requests"})
+        self.assertEqual(set(tools), {"get_me", "get_label", "issue_read", "list_issues", "search_issues", "search_pull_requests"})
         self.assertEqual(tools["issue_read"]["required"], ["method", "owner", "repo", "issue_number"])
         self.assertEqual(tools["search_pull_requests"]["required"], ["query"])
+
+    def test_with_writes_the_stub_lists_the_issue_writes_and_records_each_call(self):
+        writes = Path(tempfile.mkdtemp()) / "writes.jsonl"
+        self.addCleanup(shutil.rmtree, writes.parent)
+        (listed,) = self.serve({"id": 1, "method": "tools/list"}, writes=writes)
+        tools = {t["name"]: t["inputSchema"] for t in listed["result"]["tools"]}
+        self.assertLessEqual({"issue_write", "add_issue_comment"}, set(tools))
+        self.assertEqual(tools["issue_write"]["required"], ["method", "owner", "repo"])
+        repo = {"owner": "example", "repo": "widgets"}
+        data = json.loads((self.STUB.parent / "github.json").read_text())
+        new = max(i["number"] for i in data["issues"] + data["pulls"]) + 1
+        calls = [{"id": 1, "method": "tools/call", "params": {"name": "issue_write", "arguments": {"method": "create", **repo, "title": "T", "body": "B"}}},
+                 {"id": 2, "method": "tools/call", "params": {"name": "add_issue_comment", "arguments": {**repo, "issue_number": new, "body": "C"}}},
+                 {"id": 3, "method": "tools/call", "params": {"name": "issue_write", "arguments": {"method": "update", **repo, "issue_number": 12, "labels": ["ready"]}}}]
+        made, commented, updated = (json.loads(r["result"]["content"][0]["text"]) for r in self.serve(*calls, writes=writes))
+        self.assertEqual(made["url"], f"https://github.com/example/widgets/issues/{new}")
+        self.assertEqual(commented["url"].split("#")[0], made["url"])
+        self.assertEqual(updated["url"], "https://github.com/example/widgets/issues/12")
+        self.assertEqual([json.loads(line)["tool"] for line in writes.read_text().splitlines()], ["issue_write", "add_issue_comment", "issue_write"])
+        # A later server replays the file, so the next turn reads what this one wrote.
+        replies = self.serve({"id": 1, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get", **repo, "issue_number": new}}},
+                             {"id": 2, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get_comments", **repo, "issue_number": new}}},
+                             {"id": 3, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get", **repo, "issue_number": 12}}},
+                             writes=writes)
+        issue, comments, twelve = (json.loads(r["result"]["content"][0]["text"]) for r in replies)
+        self.assertEqual((issue["issue"]["title"], issue["issue"]["body"], issue["issue"]["state"]), ("T", "B", "open"))
+        self.assertEqual([c["body"] for c in comments["comments"]], ["C"])
+        self.assertEqual(twelve["issue"]["labels"], ["ready"])
+
+    def test_a_label_a_write_sent_reads_back_by_name_and_get_label_knows_only_the_fixtures(self):
+        writes = Path(tempfile.mkdtemp()) / "writes.jsonl"
+        self.addCleanup(shutil.rmtree, writes.parent)
+        repo = {"owner": "example", "repo": "widgets"}
+        self.serve({"id": 1, "method": "tools/call", "params": {"name": "issue_write", "arguments": {"method": "update", **repo, "issue_number": 12, "labels": ["new-one"]}}},
+                   writes=writes)
+        (labels,) = self.serve({"id": 1, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get_labels", **repo, "issue_number": 12}}},
+                               writes=writes)
+        self.assertEqual(json.loads(labels["result"]["content"][0]["text"])["labels"], [{"name": "new-one"}])
+        known, unknown = (r["result"] for r in self.serve(
+            *({"id": n, "method": "tools/call", "params": {"name": "get_label", "arguments": {**repo, "name": label}}} for n, label in ((1, "ready"), (2, "new-one")))))
+        self.assertEqual(json.loads(known["content"][0]["text"])["name"], "ready")
+        self.assertTrue(unknown["isError"])
+
+    def test_a_write_the_stub_cannot_apply_is_an_error_and_not_recorded(self):
+        writes = Path(tempfile.mkdtemp()) / "writes.jsonl"
+        self.addCleanup(shutil.rmtree, writes.parent)
+        repo = {"owner": "example", "repo": "widgets"}
+        bad = [{"method": "update", **repo, "issue_number": 99, "body": "x"}, {"method": "create", **repo}, {"method": "delete", **repo}]
+        replies = self.serve(*({"id": n, "method": "tools/call", "params": {"name": "issue_write", "arguments": a}} for n, a in enumerate(bad, 1)),
+                             {"id": 9, "method": "tools/call", "params": {"name": "add_issue_comment", "arguments": {**repo, "issue_number": 99, "body": "x"}}},
+                             writes=writes)
+        self.assertTrue(all(r["result"]["isError"] for r in replies), replies)
+        self.assertFalse(writes.exists())
+        (refused,) = self.serve({"id": 1, "method": "tools/call", "params": {"name": "issue_write", "arguments": {"method": "create", **repo, "title": "T"}}})
+        self.assertTrue(refused["result"]["isError"])
 
     def test_an_issue_reads_as_the_server_gives_it(self):
         got = self.read("issue_read", method="get", issue_number=14)

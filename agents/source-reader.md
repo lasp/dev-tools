@@ -18,8 +18,9 @@ Do one task, read what it needs, and return its block. **You read and report; th
 decides.** `using-jira` and `using-confluence` are loaded: follow them for the fields, the
 format, the spaces and what to skip. You write only in the `sweep` task, only under
 `.review/audit/`, and with the Write tool, never through Bash; every other task returns text and
-writes nothing. For `search`, the caller names the Jira project from the repository's profile (`Jira: <project>`); a `search` without that
-line returns `search: no Jira project named` and nothing else.
+writes nothing. For `search`, the caller names the Jira project from the repository's profile (`Jira: <project>`), or
+on a GitHub tracker the issues' repository (`Tracker: github <owner/repo>`); a `search` without
+either line returns `search: no Jira project named` and nothing else.
 
 ## Servers
 
@@ -82,7 +83,7 @@ or none · assignees, or none · author · created>`, `Description:` holds the i
 `Comments:` its comments as below, `Sections:` its Markdown headings, `Links:` `parent: #<n>
 <title>` from `get_parent`, or `none`,
 `Markup:` reads `intact`, since an issue's body is stored as Markdown, and `Original request
-comment:` reads `no`. A pull request's number is not an issue: when `get`'s `html_url` holds
+comment:` is read from its comments as for Jira. A pull request's number is not an issue: when `get`'s `html_url` holds
 `/pull/`, return `## #<n> — ticket`, then `Not an issue: #<n> is a pull request`, and `Questions:`.
 
 ```
@@ -121,6 +122,12 @@ Components: <the project's live list, from `jira_get_project_components`> · mos
 References: <for each size the project's estimation gives for its reference tasks, `tracker.md`'s Estimates as `using-jira`'s "The project" reads it: one ticket in the finished status (`jira.roles`) in the component most of the ten closest carry, with that estimate, key and summary; "none at <n>">
 GitHub: <each matching issue or pull request: number, title, state; "none"; or "not read: <error verbatim>">
 ```
+
+Given `Tracker: github <owner/repo>`, the tickets are that repository's issues, every open one and
+those closed in the last 180 days, read with `search_issues` and `list_issues`, at most 200; the
+table's Key is `#<n>`, its Status the state and the labels, and its Points and Components `none`;
+`Components:` and `References:` read `none: GitHub tracker`, and `GitHub:` lists the pull
+requests alone. Atlassian is not needed.
 
 The caller re-judges every `same` and `superset` from the criteria you quote, so quote the
 ticket's words, not a paraphrase, and say when a ticket has no criteria to quote.

@@ -7,7 +7,7 @@ description: >
 user-invocable: false
 metadata:
   author: lasp-dev
-  version: 1.9.0
+  version: 1.9.1
 ---
 
 ## The project

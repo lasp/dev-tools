@@ -120,7 +120,7 @@ Every skill, agent and hook is held to these; a change that breaks one says why.
   header row, so rename or renumber any of them only with those citations.
 - The Python environment is uv's (`pyproject.toml`, `.python-version`; the devcontainer and CI run
   `uv sync`). The dev tools' pins live in `pyproject.toml` only; `uv.lock` is not committed.
-- Before a pull request: `uv run python -m unittest discover -s tests`, the four
+- Before a pull request: `uv run python -m unittest discover -s tests`, the five
   `tests/*.sh`, and `uv run python scripts/check_static.py`, so the tests use the project's
   environment outside the devcontainer too; CI also runs codespell, `claude plugin validate .`, and the unit tests and `check_static.py`
   on Python 3.9, the README's floor.

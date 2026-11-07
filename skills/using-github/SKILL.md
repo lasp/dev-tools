@@ -6,7 +6,7 @@ description: >
 user-invocable: false
 metadata:
   author: lasp-dev
-  version: 1.1.1
+  version: 1.2.0
 ---
 
 ## Resolving the tools
@@ -54,6 +54,13 @@ caller asks the person.
 
 Tell every agent a skill spawns `GitHub: <server name>` or `GitHub: gh`. The agent reads with
 that and nothing else.
+
+## Issues as the tracker
+
+Where the standard's tracker is GitHub Issues, read `${CLAUDE_SKILL_DIR}/issues.md` before drafting,
+filing or changing an issue as a ticket: the issue's fields, a write plan's items, the read-back
+and the paste file. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…`
+there starts at it.
 
 ## Pushing
 

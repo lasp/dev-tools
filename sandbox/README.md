@@ -48,7 +48,7 @@ The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox 
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
 skill, and a second, `trigger-<skill>-<suffix>`, where one request leaves a gap, each expecting that skill's Skill call: whether "file a ticket" reaches `ticket-draft`. A
 `notrigger-` scenario holds the other side, a request that must not reach a skill, named in its
-`must_not_run` as `Skill(...)`: a GitHub issue is not `ticket-draft`'s.
+`must_not_run` as `Skill(...)`: a complaint about a skill, asked as an issue on the plugin, is not `ticket-draft`'s.
 `revise` and `ticket-audit` are not in it, since `disable-model-invocation` keeps them to their
 slash commands. Its `coverage.yaml` names the whole pack as its set, so `smoke.py` runs it on two
 checkouts, after a change to a skill's `description:`:
@@ -60,7 +60,7 @@ sandbox/smoke.py --scenarios sandbox/triggers/scenarios.yaml --base ../dev-tools
 The tracker pack, `tracker/scenarios.yaml`, runs in `widgets` given its own standard with a Jira
 workflow, against a Jira project that `tracker/fixture/mcp-atlassian-stub.py` serves read-only from
 `jira.json`: `ticket-draft` drafting a new ticket and reformatting an older one through to the paste
-file, its format triage on a ticket in the older layout and one in the current format, and `work`
+file, its format triage on a ticket in the older layout and one in the current format, a request for a GitHub issue it answers by naming the Jira tracker and asking, and `work`
 routing a To Do ticket with no context page. Its `mcp.json` names the stub as
 `${SBX_FIXTURES}/mcp-atlassian-stub.py`, which `run.py` sets for the session, as the pack's header
 shows, and each scenario's `mcp:` expectation fails a run the stub did not answer. A search that
@@ -70,12 +70,19 @@ to paste.
 
 The GitHub tracker pack, `tracker-github/scenarios.yaml`, runs in `widgets` given a standard whose
 tracker is GitHub's, its labels mapped to the workflow and no ticket pattern recorded, against
-issues `tracker-github/fixture/github-mcp-server-stub.py` serves read-only from `github.json`:
-`work` routing an open issue with no label, an open one with a mapped label, a closed one, a closed one still carrying a pull request status label, a
-branch named `issue-<n>-words`, and a pull request's number given as the argument. Its `mcp.json` names the stub as
-`${SBX_FIXTURES}/github-mcp-server-stub.py`, as the pack's header shows; the file name holds
-`github-mcp-server`, so `run.py` gives it the GitHub rules. The stub's tools carry
-github-mcp-server's names, arguments and output shapes, and none writes.
+issues `tracker-github/fixture/github-mcp-server-stub.py` serves from `github.json`:
+`work` routing an open issue with no label, an open one with a mapped label, a closed one, a
+closed one still carrying a pull request status label, a branch named `issue-<n>-words`, and a
+pull request's number given as the argument; `ticket-draft` drafting a new issue and refining #12,
+each through a yes to its write plan, a draft whose plan is answered Paste it all, and one whose
+third turn, taking every recommended answer, must file nothing, after a slash command or a plain
+"file an issue for" alike. Its `mcp.json` names the stub as `${SBX_FIXTURES}/github-mcp-server-stub.py`
+with `--writes .git/github-writes.jsonl`, as the pack's header shows; the file name holds
+`github-mcp-server`, so `run.py` gives it the GitHub rules, except that a pack's stub run with
+`--writes` has `issue_write` and `add_issue_comment` neither allowed nor denied. Under `dontAsk`
+such a call then runs only when `hooks/issue-gate.sh` allows it, and the stub records it to that
+file, which each scenario's setup removes and its verify reads; nothing reaches GitHub. The stub's
+tools carry github-mcp-server's names, arguments and output shapes.
 
 A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
