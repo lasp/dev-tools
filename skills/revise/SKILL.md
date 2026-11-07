@@ -13,7 +13,7 @@ argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | capt
 disable-model-invocation: true
 metadata:
   author: lasp-dev
-  version: 2.24.0
+  version: 2.25.0
 ---
 
 # Revise the standard
@@ -138,6 +138,8 @@ In this repository's `.review/`:
   `revision/merges.txt`, the window's merged pull requests, from `scripts/window_merges.py`;
   `revision/drift.txt`, the scripted claims' lines, from `scripts/drift_checks.py`; and
   `revision/sweep/pr-NNNN.md`, each `diff-probe` block, written by the probe.
+- `revision/spot-check.md`, the guidance items `scripts/spot_check.py` sampled, ten or every item
+  when there are fewer, each right or wrong, from `prepare` step 2; its tally is the report's `spot check:` line.
 - `harvest/context-refresh.md`, from `context-refresh.md`.
 - `checks/`, the drafted checks for graduation candidates.
 - `revision/feedback/`, a `skill-feedback` draft per procedure finding, from `prepare` step 2 and

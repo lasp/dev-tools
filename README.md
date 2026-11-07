@@ -437,8 +437,9 @@ The skills a person types, in the order they meet them:
   and writes it to Jira only on your yes.
 - `design-doc`: turns your notes into a design doc for work that spans several tickets, settling the
   problem and goals with you first, and publishes on your yes.
-- `ticket-audit`: sweeps the Jira project for gaps, duplicates, stale tickets and links, and applies
-  the actions you approve in one write plan.
+- `ticket-audit`: sweeps the Jira project for gaps, duplicates, stale tickets and links, or a
+  repository's GitHub issues for duplicates and stale issues, and applies the actions you approve
+  in one write plan.
 
 **Build**
 - `work`: works out where a ticket or its pull request stands and runs the next phase; each phase
@@ -511,7 +512,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `drawio` | typed or asked | Draw a context, component, flow or deployment diagram as draw.io XML, checked by `scripts/drawio_check.py`, to paste into a Confluence draw.io macro; `architecture-doc`, `design-doc` and `process-doc` run it for their diagrams |
 | | `writing` | typed or asked | How tickets, PR bodies, commit bodies and rule wording are structured and worded; run it to review existing text. Never changes a fact |
 | | `revise` | typed only | Monthly: prepare the revision report before the meeting, with `measures` adding tickets, escaped defects and build yield; a sweep of the window's merged diffs reports where they follow or break the rules and the documented practice; `apply` drafts what the group accepted; `correct`, between revisions, corrects something the shared standards got wrong, everywhere it is carried, while a disagreement with a rule goes through Disagree and the revision; `capture`, weekly or whenever pull requests have merged, harvests and reads them into the standard's log so `prepare` reads the month from there |
-| | `ticket-audit` | typed only | Sweeps across the project's Jira, written to `.review/audit/`, then the actions they propose applied in Jira through one write plan on your yes |
+| | `ticket-audit` | typed only | Sweeps across the project's Jira, or on a GitHub tracker its issues' duplicates and its open pull requests, written to `.review/audit/`, then the actions they propose applied in the tracker through one write plan on your yes |
 | | `skill-feedback` | typed or asked | File a complaint about a skill or agent as a `skill-feedback` issue here, in your words, with the session's last turns attached when you choose, or a draft `revise` wrote for a procedure finding; you see the whole issue before your yes |
 | | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts with one objectively clear resolution and stop at any where the two sides differ in intent or approach, showing both with a recommendation; never pushes, and prints the push command, its destination explicit and any `--force-with-lease` pinned to the commit it fetched |
 
@@ -739,9 +740,9 @@ session-start line or `work` says something unexpected, these files are what it 
 | `context/<ticket>.send/` | `ticket-draft`'s write plan: each description and comment as shown (`.txt`) and as sent (`.md`), and the description as read back (`stored.txt`) | `scripts/jira_markdown.py`; the person, to see what was sent | Rewritten at each plan |
 | `jira-plan.md` | The write plan, run by `ticket-draft` and `ticket-audit`: each item, numbered, with its text in full as it will be sent, written before the plan is shown | You, from the link at the plan's gate | Replaced at the next showing of a plan |
 | `jira-approval.json` | The write plan, run by `ticket-draft` and `ticket-audit`: this session's id, the time and each approved item's tool and target, written at your yes before the first call | `hooks/atlassian-gate.sh`, which allows only a call it lists | Removed by the skill when the plan finishes or stops; allows nothing after 30 minutes |
-| `github-plan.md` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: each item, numbered, with its text in full as it will be sent, written before the plan is shown | You, from the link at the plan's gate | Replaced at the next showing of a plan |
-| `github-approval-items.json` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: the approved items, written with the Write tool so a title's quotes never pass through a command | The plan's `jq` command, which builds `github-approval.json` from it | Removed with the record |
-| `github-approval.json` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: this session's id, the time and each approved item's tool and target, written at your yes before the first call | `hooks/issue-gate.sh`, which allows only a call it lists and leaves every other to your own permissions | Removed by the skill when the plan finishes or stops; allows nothing after 30 minutes |
+| `github-plan.md` | The GitHub write plan, run by `ticket-draft` and `ticket-audit` on a GitHub tracker: each item, numbered, with its text in full as it will be sent, written before the plan is shown | You, from the link at the plan's gate | Replaced at the next showing of a plan |
+| `github-approval-items.json` | The GitHub write plan, run by `ticket-draft` and `ticket-audit` on a GitHub tracker: the approved items, written with the Write tool so a title's quotes never pass through a command | The plan's `jq` command, which builds `github-approval.json` from it | Removed with the record |
+| `github-approval.json` | The GitHub write plan, run by `ticket-draft` and `ticket-audit` on a GitHub tracker: this session's id, the time and each approved item's tool and target, written at your yes before the first call | `hooks/issue-gate.sh`, which allows only a call it lists and leaves every other to your own permissions | Removed by the skill when the plan finishes or stops; allows nothing after 30 minutes |
 | `controlled-cleared.json` | `hooks/controlled-gate.sh`, after a read of a `.review/` file marked `Controlled:` that you allowed, or the session's own write of one: this session's id and the items cleared | The same hook, which lets this session's later reads of those items through | Replaced when another session clears an item |
 | `context/<ticket>.writes.md` | `ticket-draft`'s write plan: each item and whether it was written, with its key, failed, dropped or left to paste | The person | Rewritten at each plan |
 | `implementation-plan-<ticket>.md` | `implement-change`: a draft from the planner, before the plan review, `Approved by:` at it, `Base:` at the branch, `## Corrections` at the plan and diff gates, `## Provisional decisions` for each decision made for now, and each `## Revision` with its own `Approved by:`; named for the branch with no ticket | `implement-change` on resume and at step 8 (`Depth:`, and `## Corrections` for a lowered depth), `work` and the session-start line (`Approved by:`), `pr-create` (`Base:`, `Approved by:`, `## Provisional decisions`), `commit` (the reason) | Not cleared by the tools |
@@ -792,7 +793,8 @@ session-start line or `work` says something unexpected, these files are what it 
 | `revision/claims.md`, `revision/merges.txt`, `revision/sweep/` | `revise`'s sweep at `prepare` step 2: the rules and documented claims it judges, `scripts/window_merges.py`'s printout with `--doc`, and one `diff-probe` block per merged pull request (`pr-NNNN.md`) | `revise`, for the report's Practice section, through `scripts/block_tally.py` | Replaced at each revision |
 | `revision/drift.txt` | `revise` `prepare` step 2, through `scripts/drift_checks.py`: the scripted claims' `claim` and `break` lines | `prepare` steps 2 and 6, for "Practice" and `ticket/` and `doc/` proposals | Rewritten at each revision |
 | `revision/state.json` | `revise` `prepare`, through `scripts/revise_state.py`: each stage done or skipped, with why | `prepare` step 10, which writes the report only once every stage is recorded | `revise_state.py start`, at the next `prepare` |
-| `revision/notes/` | The driver, before `revise` `prepare`: meeting or chat notes, pasted | `revise`, read as asks at `prepare` step 5 | Not cleared by the tools |
+| `revision/notes/` | The driver, before `revise` `prepare`: meeting or chat notes, pasted | `revise`, read as asks at `prepare` step 5, and by `scripts/quote_check.py` for the report's pasted quotes | Not cleared by the tools |
+| `revision/spot-check.md` | `revise` `prepare` step 2: one line per guidance item `scripts/spot_check.py` sampled, right or wrong | `scripts/spot_check.py tally`, for the report's Head | Rewritten at each revision |
 | `revision/tickets/` | `revise` `apply`: each accepted `ticket/` proposal as a prompt (`<n>-<slug>.md`) | `ticket-draft`, given a prompt's path, one at a time | Replaced at each `apply` |
 | `revision/feedback/` | `revise`: a `skill-feedback` draft per procedure finding, from `prepare` step 2 and `correct` step 2 | `skill-feedback`, given a draft's path | Not cleared by the tools |
 
@@ -909,6 +911,14 @@ CI (`.github/workflows/checks.yml`) runs, on every pull request:
   `uv run --isolated --python 3.9`.
 - codespell, with `en-GB_to_en-US`, for American spelling.
 - `claude plugin validate .`, on the plugin and marketplace manifests.
+
+Locally, `bash tests/checks.sh` runs the tests of what the branch changed against
+`origin/main`, with `check_static.py` and codespell, one step after another, printing a line per
+step and the output only of a step that fails; its header says how a changed file maps to tests.
+`bash tests/checks.sh next_phase where` runs only `tests/test_next_phase.py` and
+`tests/test_where.sh`, and `--all` runs every step CI runs except its gitleaks scan of the
+history, with the installed `claude` in place of CI's pinned one. How much checking each kind of
+change gets is in `.claude/CLAUDE.md`.
 
 To try a skill change before its pull request, run it in [`sandbox/`](sandbox/README.md): the
 skill's scenario on a worktree of your branch beside the current plugin, repeated, then

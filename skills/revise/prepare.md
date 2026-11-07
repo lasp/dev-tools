@@ -105,7 +105,7 @@ record `sources`.
    before its pointer merged (`revise`'s "The standard's repository"), and the records the script names as predating `merged:`, the corrections and
    notes as counts, never evidence, and the cost: median and longest open-to-merge time of the
    window's pull requests, and the count merged without a build, whose body has no Already checked
-   block.
+   block, the `cost:` line `python3 "<plugin root>/scripts/window_cost.py" --threads <out>/threads` prints for each repository, as it prints it.
 2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 loaded that have no
    block in `.review/harvest/analysis/`, none when the capture analyzed them all, and its
    `block_tally.py analysis` on every record loaded; the report cites thread ids. Then run
@@ -115,6 +115,20 @@ record `sources`.
    "Head", one guidance line per repository from its check's printout, never counted by hand, and
    under "Not read" each repository's unread slices. What either did not
    read goes under "Not read".
+
+   **Spot-check the extraction.** Run `python3 "<plugin root>/scripts/spot_check.py" sample
+   --seed <the window, as the report's `window:` line gives it> <every slice the guidance checks
+   passed, every repository's>`, which picks ten items at random. For each line, read the comment
+   at its URL in its pull request's `comment-list.json`, under `.review/harvest/threads/` or
+   `.review/harvest/captured-<repo>/threads/`, and judge the item against it: the quote is that
+   comment's own words, and its generality, kind and principle say what the comment says, no
+   more. Write one line per item to `.review/revision/spot-check.md`, `<id> · right` or `<id> ·
+   wrong · <what is wrong, in a few words>`, the id as the sample printed it, then run the script
+   with `tally` in place of `sample`, the same seed and slices, and `--checked
+   .review/revision/spot-check.md`. Its `spot check:` line goes into "Head" as it prints it, and
+   each `wrong` line under "About the procedure"; a refusal names the line to fix. You did not
+   extract these items, so you judge them as a reader would; with no slice passed, record none
+   and say so in "Head".
 
    From the blocks, leaving out lines with `asked: none`, the counts from harvest.md's
    `block_tally.py analysis` printout, never counted by hand:
@@ -321,7 +335,14 @@ record `sources`.
    positive on `main`.
 10. **Write the report.** First run `python3 "<plugin root>/scripts/revise_state.py" check`: an
     `unrecorded` line is a stage nobody accounted for, so run or skip it with its reason first, and
-    the report is not written until the check passes. Its `skipped` lines go under "Head". Then write the overview: every proposal, the held ones and the
+    the report is not written until the check passes. Its `skipped` lines go under "Head". Every
+    count and time the report gives of what happened in the window, in "Head", a table, an
+    overview cell or a proposal's evidence, is one a script printed in this run, copied as printed;
+    none is counted or summed by hand, and the steps above name the printout each comes from. A
+    rate or a share, such as an agree rate or the share unanswered, is worked from those printed
+    counts and written with them, `<n> of <n> (<percent>%)`, so a reader can check it against the
+    printout. The one count no script prints is the overview's files a proposal would change, which
+    counts the files its drafted change names, not the window. Then write the overview: every proposal, the held ones and the
     context refreshes among them, one line each, grouped by priority, high, medium and low, and
     within a group by impact: the number of merged pull requests in its evidence, then the number
     of files it would change, most first, both written in its Impact cell. A
@@ -340,7 +361,19 @@ record `sources`.
     and where `apply` would change it: the standard's repository, this repository's diff, Jira
     through `ticket-draft` for a `ticket/`, or, for a `question/`, the standard's repository once
     answered. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
-    diff and no archive entry. Ask, so `apply` can check the branch out: **Commit and push the
+    diff and no archive entry. Then check its quotes: run `python3 "<plugin
+    root>/scripts/quote_check.py" <the report> --comments <each comment-list.json file that exists
+    under .review/harvest/threads/pr-*/, .review/harvest/captured-<repo>/threads/pr-*/ and each
+    covered repository's <log>/capture/pr-*/, the last holding earlier windows' comments for the
+    held candidates> --notes .review/revision/notes --held <standard files>/review-rules.md`,
+    leaving out `--held` when the ledger does not exist. Each `refused` line names a `said:` line whose words
+    are not where it says, a quote not on a line of its own, or a quote from a pull request no list
+    holds whose words and URL the ledger's held candidates do not carry: copy the words again from
+    the comment or note it cites, or, for a held candidate's, from the ledger as it carries them,
+    or write it as its own `said:` line, and run it again until it passes; the report is not
+    offered for commit before. A quote no comment, note or held candidate holds is not the
+    person's, and comes out. An `unchecked` line is a held candidate's quote from a pull request no
+    capture holds: it stays, and the check's first line goes into "Head" as printed. Ask, so `apply` can check the branch out: **Commit and push the
     branch** (Recommended: the group marks it on GitHub or in any checkout), **Commit only**,
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,
     or **Let's discuss**. Either commit answer commits the report in `<log>` with the records and

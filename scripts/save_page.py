@@ -3,8 +3,9 @@
 
 Run by `hooks/save-page.sh` after every `pull_request_read` call, the main session's or an
 agent's. A result the harness keeps in the model's context has no file to copy, and a page a model
-writes out by hand drops or changes text, so this hook writes it: the `tool_response` string,
-byte for byte, under `.review/pages/<owner>-<repo>/pr-NNNN/` at the top level of the git repository
+writes out by hand drops or changes text, so this hook writes it: the `tool_response` string, or
+the text of a `tool_response` that is a list of one text block, as Claude Code passes some
+servers' results, a stdio server's among them, byte for byte, under `.review/pages/<owner>-<repo>/pr-NNNN/` at the top level of the git repository
 the session's cwd is in, as the other hooks find `.review/`, after `review_dir.sh` has made sure git
 ignores `.review/`. Outside a git repository it saves nothing. A page is named as `thread_dump.py`
 reads a dump's `pages/`:
@@ -44,6 +45,9 @@ class NotSaved(Exception):
 
 
 def response_text(response) -> str:
+    if isinstance(response, list) and len(response) == 1 and isinstance(response[0], dict) \
+            and response[0].get("type") == "text" and isinstance(response[0].get("text"), str):
+        response = response[0]["text"]
     if not isinstance(response, str):
         raise NotSaved(f"the response is a {type(response).__name__}, not text")
     try:

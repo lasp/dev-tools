@@ -235,7 +235,7 @@ not parse in this shape, a subagent's call, a call with any other argument, such
 missing.
 
 Writers: the GitHub write plan (`skills/using-github/issues.md`, "Running it"), run by
-`ticket-draft`, at the person's yes, with `jq` from the items it writes to
+`ticket-draft` and `ticket-audit`, at the person's yes, with `jq` from the items it writes to
 `.review/github-approval-items.json`; both removed when the plan finishes or stops. Readers:
 `hooks/issue-gate.sh`.
 
@@ -290,7 +290,7 @@ Pinned by: tests/test_next_phase.py::test_an_agree_that_carries_its_response_is_
 
 ## The thread dump
 
-Version: 6
+Version: 7
 
 Fields: `.review/threads/pr-NNNN/` (and `.review/harvest/threads/pr-NNNN/`): `pages/`, each
 `pull_request_read` result as the server returned it, one file per call, from which
@@ -308,7 +308,9 @@ version 3 states the `html_url` requirement; version 4 added `pages/` and `threa
 checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`; version 6 lets a
 list be paged below 100, named by `--per-page`, and has `save_page.py` refuse a response that is
 not JSON, such as the harness's size-limit notice, and clear a pull request's
-`get_review_comments` pages at its first page. Beside them, `judged.json`, "The
+`get_review_comments` pages at its first page. Version 7 has `save_page.py` save the text of a
+response that is a list of one text block, as Claude Code passes some servers' results, a stdio server's among them, and
+refuse any other list. Beside them, `judged.json`, "The
 judgments", is `pr-reader`'s own.
 
 Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
@@ -494,6 +496,71 @@ Writers: the driver, in harvest.md's "Clusters". Readers: `scripts/guidance_clus
 `prepare` steps 5, 6 and 10, through its printout; `sandbox/harvest_recall.py` `--clusters`.
 
 Pinned by: tests/test_guidance_clusters.py::test_prints_each_cluster_with_its_people_prs_and_quotes
+
+## The report's quotes
+
+Version: 1
+
+Fields: every line of a revision report, `ratchet-YYYY-MM.md`, that opens `said:` once its indent
+is stripped, a drafted entry's under `entry:` included: `said: "<words>" — <login>, <url>`, a
+comment's, or `said: "<words>" — <name>, pasted <file>`, a note in `.review/revision/notes/`.
+`scripts/quote_check.py <report> --comments <comment-list.json ...> --notes <dir> [--held
+<ledger>]` finds each: 1 to 40 words, in the own words of the comment with that `url` in the
+comment lists, whose `author` is `<login>`, as "The guidance items" finds an item's quote, or in
+the text of a note inside `--notes`, every line kept, never starting or ending inside a word. A
+line holding `said: "` anywhere that is not such a line of its own, a quote nested in a list item,
+a table or a blockquote, or a `said:` line in another case, is a fault. A URL's pull request is
+its repository and number, whatever page of it the URL names; a quote from a pull request no
+comment in the lists shares is a fault unless the ledger given with `--held` carries both its
+words and its URL under its `## Candidates below the criteria` heading, however that section lays
+them out: a held candidate's quote from before the log kept captures, which is unchecked. It prints `quotes: <n> · from
+comments: <n> · from notes: <n> · unchecked: <n>`, then `unchecked · line <n> · <url>: a held
+candidate's, no comment list given holds its pull request` per unchecked quote, and exits 0, or one `refused · line <n> · <why>` per fault, and `refused · <path> · <why>` per
+input it cannot read, and exits 1. An ellipsis or a changed word is a fault: a quote is one run of
+the comment, verbatim.
+
+Writers: `revise` `prepare` step 10, the report as `outline.md` gives it. Readers:
+`scripts/quote_check.py`, run by `prepare` step 10 before the report is offered for commit.
+
+Pinned by: tests/test_quote_check.py::test_a_quote_absent_from_its_comment_fails_the_report
+
+## The spot check
+
+Version: 1
+
+Fields: `scripts/spot_check.py sample --seed <text> [--n 10] <slice ...>` prints, for `--n` items
+picked at random from the guidance slices given (every item when there are fewer, the same ones for
+the same seed and slices), `spot · <dir>/<slice>#<n> · pr-NNNN · <url> · <kind> · <generality> ·
+"<quote>" · <principle>`, `<dir>` the slice's directory name, `<slice>` its name without `.json`,
+`<n>` the item's place in it from 1. `.review/revision/spot-check.md` holds one line per sampled
+item, `<id> · right` or `<id> · wrong · <what>`. `spot_check.py tally` with the same seed and slices
+and `--checked <that file>` prints `spot check: <n> items · <n> wrong · error rate <percent>%`, then
+`wrong · <id> · <what>` per wrong item, or `spot check: 0 items` with none. Both exit 1 with one
+`refused · <where> · <why>` line per fault: a slice that cannot be read, `--n` below 1, and for
+`tally` a line of neither form, an id not sampled, or a sampled id with no line or two.
+
+Writers: `revise` `prepare` step 2, `.review/revision/spot-check.md`. Readers:
+`scripts/spot_check.py tally`, whose `spot check:` line is the report's Head line.
+
+Pinned by: tests/test_spot_check.py::test_the_tally_counts_wrong_items_into_an_error_rate
+
+## The window's cost
+
+Version: 1
+
+Fields: `scripts/window_cost.py --threads <dir>` reads every `pr-NNNN/` dump under --threads, a
+harvest's or a load's, a pull request with no record included: its `pr.json` and `body.md`. It
+prints `cost: open-to-merge median <d>d, longest <d>d · <n> merged without a build · <n> pull
+requests`, durations in days to one decimal from `created_at` to `merged_at`, a pull request
+merged without a build one whose body has no Already checked block, as `scripts/record.py` reads
+it; or `cost: no merged pull request`. It exits 1 with one `refused · <path> · <why>` line per
+fault: a `pr.json` missing or with no readable `created_at` or `merged_at`, a merge before its
+opening, a dump with no `body.md`, or a `--threads` that is not a directory.
+
+Writers: `scripts/window_cost.py`. Readers: `revise` `prepare` step 1, whose line is the report's
+Head `cost:` line.
+
+Pinned by: tests/test_window_cost.py::test_the_median_and_longest_open_to_merge_and_the_unbuilt_count
 
 ## The judgments
 
@@ -740,7 +807,7 @@ Pinned by: tests/test_profile.py::test_a_value_of_the_wrong_shape
 
 ## The ticket shape
 
-Version: 2
+Version: 3
 
 Fields: a ticket, in whatever tracker files it, is an id (a Jira key, `<KEY>-NNNN`, or a GitHub
 issue's number), a title (Jira's summary), a description in `standards/ticket-format.md`'s format,
@@ -761,22 +828,23 @@ A Jira workflow maps each role to exactly one status. A GitHub tracker maps each
 label, and `--defaults --field issue_tracker.roles.<role>` prints `none` for a role with no label:
 an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. On a GitHub
 tracker `ticket-draft` reads `issue_tracker.roles.<role>` and skips a move into a role whose label
-is `none` (version 2); `ticket-audit` still reads `jira.roles`, which prints `not yet recorded` for
-a GitHub tracker, and stops.
+is `none` (version 2); `ticket-audit` reads `issue_tracker.roles` there in place of `jira.roles`,
+for the label a close removes or adds and, in `source-reader`'s `pulls` sweep, for the `approved`
+and `implementation` labels an open issue lacks when its pull request waits on approval (version 3).
 An open issue that carries no mapped label is in `filed`, and `work` sends it to `ticket-draft`.
 
 Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`
 and the tracker's skill, `using-jira`, for the description. Readers: `scripts/profile.py`, and
-through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, the skills that read `jira.roles`, and `ticket-draft` on a GitHub tracker.
+through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, the skills that read `jira.roles`, and `ticket-draft` and `ticket-audit` on a GitHub tracker.
 
 Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_to_each_role
 
 ## The record
 
-Version: 14
+Version: 15
 
 Fields: `<log>/pr-NNNN.yaml`, `<log>` the records directory `revise`'s "The standard's repository"
-names, first line `contract: 14`. This section is the one
+names, first line `contract: 15`. This section is the one
 place the fields are defined; the records directory's own README says how the revision
 reads them.
 
@@ -827,6 +895,9 @@ reads them.
   reviewed heads.
 - `findings:`, every cited finding: `key` (the full finding key `review-contract.md` defines),
   `severity`, `at` (the file and line, or the file alone at file level), `thread` (the review thread the verdict was read from),
+  `reviewer` (the login of the account that posted the finding's comment, whose token ran the
+  review; the attribution line names it too when the poster is the person, but the record reads the
+  comment's author, not that line),
   `verdict` (agree, disagree, discuss, unanswered, unparsed or contested), with `judged: true` and
   `basis:` when it was judged from a reply's own words, and `done: true` when that reply said the
   change was made, or `basis:` alone when the judge could not tell, `reason` on a
@@ -840,11 +911,11 @@ reads them.
   first line; its replies are not read, since the severity decides how they read.
   `scripts/ratchet_counts.py` counts it as a firing in its `unlabeled` column, not with the
   unanswered.
-- `questions:`, every cited question: `q`, `key`, `at`, `thread`, and `a`, the answer, or
+- `questions:`, every cited question: `q`, `key`, `at`, `thread`, `reviewer` as on a finding, and `a`, the answer, or
   `unanswered: true`.
 - `threads:`, a pointer to every other review thread: a person's, a bot's, or a finding posted
   with no key. Each carries `thread`; `by`, its opener, `bot` for a bot or `review` for an uncited
-  finding, which also carries its `severity`, `unparsed` with `verdict: unparsed` and `line:` as
+  finding, which also carries `reviewer` as on a finding and its `severity`, `unparsed` with `verdict: unparsed` and `line:` as
   on a finding; `authorship` of its opening comment, as
   "Authorship" below defines it; `at`; `opened`, the day; `resolved` and `outdated`, GitHub's flags; `replies`,
   the count from people; `verdict`, an uncited finding's read as a finding's, otherwise the pull
@@ -882,6 +953,8 @@ Version 13: `authorship` reads the signatures under "Authorship" as well as the 
 and the standard's phrases, so a reply reworded from the attribution line, and an agent's own
 signature, read `ai-drafted` where earlier versions read `human`; a thread the author opened that
 way reads `verdict: none`, where it read `unanswered` or `unparsed`.
+Version 15 added `reviewer` on every finding, cited question and uncited finding, so a finding is
+attributable to the person who ran the review; a record of an earlier version has none.
 
 A harvested record reaches the log through `scripts/archive_records.py`, which refuses to
 replace a record whose findings, counted per rule, the harvested one falls short of, unless told
@@ -1142,7 +1215,7 @@ Pinned by: tests/test_revise_state.py::test_the_report_waits_until_every_stage_i
 
 ## The analysis blocks
 
-Version: 1
+Version: 2
 
 Fields: `.review/harvest/analysis/pr-NNNN.md`, one `thread-analyst` report, its blank lines
 ignored. Either the one line `record mismatch: <ids>`, or the heading `## pr-NNNN — threads read`
@@ -1162,8 +1235,9 @@ which is not the record's verdict; `procedure · pr-NNNN · <the Procedure: text
 pr-NNNN · <the Not read: text>` for each not `none`; and `mismatch · pr-NNNN · <ids>`. It exits 2
 with a `CANNOT RUN` line, printing nothing, on a named block missing, a pull request named twice or
 not as `pr-NNNN`, an empty block, a heading missing or naming another pull request, a `record
-mismatch:` line with more after it, a line of no form above, or a `Procedure:`, `Not read:` or
-`Read:` line missing or repeated.
+mismatch:` line with more after it, a line of no form above, an ask line with a second `·
+outcome:` or `· diff:`, which is two verdicts in one line (version 2), or a `Procedure:`, `Not
+read:` or `Read:` line missing or repeated.
 
 Writers: `thread-analyst`, at the path harvest.md's "Analysts" gives it. Readers:
 `scripts/block_tally.py`, run by harvest.md's "Analysts"; `revise` `prepare` step 2 and `onboard`'s
@@ -1173,7 +1247,7 @@ Pinned by: tests/test_block_tally.py::test_the_analysis_counts_asks_by_who_sourc
 
 ## The sweep blocks
 
-Version: 2
+Version: 3
 
 Fields: `.review/revision/sweep/pr-NNNN.md`, one `diff-probe` block, its blank lines ignored: the
 heading `## pr-NNNN · <sha, 7 characters>` naming the file's pull request; one line per claim,
@@ -1191,8 +1265,14 @@ rules first, `claim · <id> · judged <n> · follows <n> · breaks <n> · not to
 exits 2 with a `CANNOT RUN` line, printing nothing, on a named block, the claims file or a named
 merges file missing, a `### C-n` heading not in its form, an `every change` claim's document with
 no `doc` line in the merges file, a pull request named twice or not as `pr-NNNN`, a heading missing or naming another pull request, a
-line of no form above, a claim judged twice, a block with no line for a `C-n` claim it owes, or a `Not
-read:` line missing or repeated.
+line of no form above, a line holding two verdicts, a claim judged twice, a block with no line for a `C-n` claim it owes, or a `Not
+read:` line missing or repeated. A line holds two verdicts when its place or its reason has a `·`
+field that is `follows`, `breaks`, `not touched` or `not judged` alone, or opens with one as a
+label, `breaks:` or `breaks —`, other than its own verdict, or reads `judged as` one of them, the word ending at a space, punctuation other than `/`
+or `-`, a `.` not followed by a letter, or the line's end; a field that uses the word in a
+sentence, `follows the old habit`, or a path, `breaks/x.py`, is not one; the quoted line, which is
+code, is not read for it (version 3). Such a block is rerun, never
+counted.
 
 
 A claim whose heading ends ` · script: <check> [<arg> ...]` is judged by `scripts/drift_checks.py`,

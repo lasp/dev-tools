@@ -44,13 +44,16 @@ could not be read, and nothing else; never ask:
   sizes or commits, with the error verbatim.
 - The `pulls` sweep without Atlassian: write its file with each ticket's status as `not read:
   <error verbatim>`; without GitHub, return the failure.
+- On a GitHub tracker, a sweep needs GitHub, not Atlassian: without GitHub, return the failure.
 
 A status a task or a skill names by its role (filed, approved, implementation, finished,
 abandoned) is the one `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
 jira.roles` gives that role. An error from it, a non-zero exit, makes each line
 that needs a role `not read: <error verbatim>`, and `not yet recorded` makes it `not read: no Jira
 workflow is recorded for this repository`; a status is never taken from a skill's prose in its
-place.
+place. On a GitHub tracker the role's label is `--defaults --field issue_tracker.roles.<role>`, in
+place of `jira.roles`, `none` meaning the role has no label, and an error from it makes the line
+`not read: <error verbatim>` as above.
 
 ## Tasks
 
@@ -141,8 +144,10 @@ Epic candidates: <each: key, summary, the milestone it serves>
 ```
 
 **`page <id | path>`**: `confluence_get_page`. Returns `## page <id> — <title>`, a line `Version: <n> ·
-Updated: <date>`, and one paragraph: what the page decides, and which code or process it
-constrains.
+Updated: <date>`, one paragraph: what the page decides, and which code or process it
+constrains, then one or two lines `Excerpt: "<the page's words>"`, each one run of the page's
+text, verbatim, at most 40 words, that bears out the paragraph, so a reader can find it on the
+page. A paragraph no excerpt bears out goes to `Questions:` instead.
 
 **A file in place of a key or an id.** `ticket` and `page` take a file path the caller names
 instead: build the block from the file's text, with `Source: file <path>` as its first line, and
@@ -154,6 +159,22 @@ last update, reading `not in the file`.
 written to `.review/audit/<YYYY-MM-DD>-<slug>.md`. For `pulls`, the caller also gives the
 directory holding the state blocks and each pull request's `pr.json`, which you read in place
 of fetching the pull requests again.
+
+On a GitHub tracker, where `--field issue_tracker.kind` prints `github`, the sweep is `duplicates`
+or `pulls`, as `${CLAUDE_PLUGIN_ROOT}/skills/ticket-audit/github.md` sets out, on the repository
+the caller names, `Tracker: github <owner/repo>`, each issue written `#<n>`; a GitHub sweep
+without that line returns `sweep: no issues repository named` and nothing else. `duplicates` reads the open issues with `list_issues`, state `OPEN`, paged
+until `hasNextPage` is false, and the comments of each issue a finding names with `issue_read`
+`get_comments`; for each issue of a pair, the pull requests naming it, with
+`search_pull_requests` on this repository, the owner/repo `git remote get-url origin` names, since
+pull requests live there and not in the tracker's: query `repo:<origin> "#<n>"` when
+`--field issue_tracker.location` prints `none` or names that repository, and otherwise
+`repo:<origin> "<location>#<n>"` and again `repo:<origin> "<location>/issues/<n>"` for a body
+linking the issue, the search that also finds what satisfied an issue. `pulls` takes each pull request's issue from its state block's `ticket:` line, as
+`${CLAUDE_PLUGIN_ROOT}/docs/contracts.md`'s "The record" reads a `Ticket:` line on a GitHub
+tracker, and reads that issue with `issue_read` `get` for its state, `state_reason` and labels,
+in the named repository, or in the pull request's own when `--field issue_tracker.location`
+prints `none`.
 
 ```
 ## sweep — <slug>
