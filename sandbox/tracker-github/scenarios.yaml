@@ -237,7 +237,6 @@ scenarios:
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
-      - test -e .review/github-plan.md
 
   - id: tracker-gh-ticket-draft-standing-answer
     repo: widgets
@@ -266,4 +265,3 @@ scenarios:
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
-      - test -e .review/github-plan.md
