@@ -166,22 +166,27 @@ class Clusters(unittest.TestCase):
                 self.assertIn(f"an ask names no admit or covered line: {key}", "\n".join(self.run_clusters(self.two())[1]))
 
     def test_a_drafted_reply_counts_for_its_poster_and_is_named_and_one_on_no_line_is_refused(self):
-        drafted = "drafted · s1-0 · pr-0101 · bob · 5/5 · u11\ndrafted · s1-2 · pr-0104 · carol · unstated · u41\nitems: 9"
+        drafted = "drafted · s1-0 · pr-0101 · bob · 2/5 · u11\ndrafted · s1-2 · pr-0104 · carol · approved · u41\nitems: 9"
         (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", drafted).replace("drafted: 0", "drafted: 2"))
         code, lines = self.run_clusters(self.two())
         self.assertEqual(code, 0, lines)
         self.assertIn("· rule · admit 2 · hold 1 · support 1 · prs 4 · people 4 ·", [x for x in lines if x.startswith("cluster · C1")][0])
         self.assertEqual([x for x in lines if x.startswith("drafted ·")],
-                         ["drafted · C1 · bob · 5/5 · u11", "drafted · C1 · carol · unstated · u41"])
+                         ["drafted · C1 · bob · 2/5 · u11", "drafted · C1 · carol · approved · u41"])
         on_covered = "drafted · s1-1 · pr-0101 · bob · 4/5 · u12\nitems: 9"
         (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", on_covered).replace("drafted: 0", "drafted: 1"))
         code, lines = self.run_clusters(self.two())
         self.assertEqual((code, [x for x in lines if x.startswith("drafted ·")]), (0, ["drafted · R-002 · bob · 4/5 · u12"]))
         (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", drafted))
         self.assertIn("counts drafted otherwise", "\n".join(self.run_clusters(self.two())[1]))
+        for level in ("5/5", "unstated", "7/5"):
+            with self.subTest(level=level):
+                (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", f"drafted · s1-0 · pr-0101 · bob · {level} · u11\nitems: 9")
+                                                    .replace("drafted: 0", "drafted: 1"))
+                self.assertIn("a drafted line not", "\n".join(self.run_clusters(self.two())[1]))
         for key in ("s1-3", "s1-9"):
             with self.subTest(key=key):
-                (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", f"drafted · {key} · pr-0104 · alice · 5/5 · u42\nitems: 9")
+                (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", f"drafted · {key} · pr-0104 · alice · 4/5 · u42\nitems: 9")
                                                     .replace("drafted: 0", "drafted: 1"))
                 self.assertIn(f"a drafted line names no admit, covered or hold line: {key}",
                               "\n".join(self.run_clusters(self.two())[1]))

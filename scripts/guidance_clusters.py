@@ -18,7 +18,8 @@ this script refuses, one `refused · <where> · <why>` line per fault and exit 1
 
 - a tally whose closing `items:` line is missing or counts its words otherwise than its lines, a
   line with too few cells, an `ask` line whose key is no `admit` or `covered` line, or a `drafted`
-  line whose key is no `admit`, `covered` or `hold` line;
+  line whose level is not `1/5` to `4/5` or `approved` or whose key is no `admit`, `covered` or
+  `hold` line;
 - a cluster without exactly the keys above, an `id` not `C<n>` or given twice, a `kind` that is not
   one of the guidance items' kinds or, in a cluster with tally lines, the kind of none of its
   people's lines, its `admit` and `hold` lines, or of none of its lines when it has only `support`,
@@ -94,7 +95,9 @@ def tally_lines(text: str, repo: str = "") -> tuple[dict[str, dict], list[str]]:
         if cells[0] == "ask" and len(cells) == 5:
             counts["asks"] += 1
             asks.add(cells[1])
-        elif cells[0] == "drafted" and len(cells) == 6:
+        elif cells[0] == "drafted":
+            if len(cells) != 6 or not re.fullmatch(r"[1-4]/5|approved", cells[4]):
+                raise Refused(f"a drafted line not `drafted · <key> · pr-NNNN · <author> · <1-4>/5|approved · <url>`: {line[:80]}")
             counts["drafted"] += 1
             drafted[cells[1]] = cells[4]
         elif cells[0] in counts:

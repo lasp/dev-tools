@@ -391,17 +391,19 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
 - `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
   general item the pull request's author changed as asked.
 
-A person's words are an item whose `authorship` is `human`, or `ai-drafted` in a comment whose
-list entry's `kind` is `reply`, its poster's, except that one whose reply's AI assistance level
-is `5/5` is held at most, the criterion `drafted, not read by a person` (version 4; earlier
-versions read a drafted reply as an agent's). An agent's words are an `ai-drafted` thread opening, review summary or conversation
+A person's words are an item whose `authorship` is `human`, or `ai-drafted` in a reply a person
+read, its poster's: a comment whose list entry's `kind` is `reply` and whose own lines, as
+`record.py`'s `own_lines` reads them, end the last line that states one with an AI assistance
+level of `1/5` to `4/5`, or, stating none, carry the attribution wording `reviewed and approved by
+@` (version 4; earlier versions read every drafted reply as an agent's). A reply at `5/5` or with
+no such sign is an agent's words. An agent's words are an `ai-drafted` thread opening, review summary or conversation
 comment. An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
 is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
 before it. After the items, one `ask · <key> · pr-NNNN · <author> · <url>` line per `admit` or
 `covered` line whose item's signal is `asks for guidance` (version 3); then one `drafted · <key> ·
 pr-NNNN · <author> · <level> · <url>` line per `admit`, `covered` or `hold` line from an
-`ai-drafted` reply, `<level>` the reply's AI assistance level, `<n>/5`, from the last of its lines
-outside a `>` quote that states one, or `unstated` (version 4).
+`ai-drafted` reply, `<level>` the reply's AI assistance level, `1/5` to `4/5`, or `approved` for
+the attribution wording (version 4).
 A last line reads `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> · not listed:
 <n> · asks: <n> · drafted: <n>`.
 
@@ -438,7 +440,8 @@ refuses, one `refused · <where> · <why>` line each and exit 1, a file of any o
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
 no `--ledger`, and a tally `ask` line whose key is no `admit` or `covered` line (version 4) or
-`drafted` line whose key is no `admit`, `covered` or `hold` line (version 6). Otherwise it
+`drafted` line whose level is not `1/5` to `4/5` or `approved`, or whose key is no `admit`,
+`covered` or `hold` line (version 6). Otherwise it
 prints per cluster, its `admit` count only the `admit` lines of its kind or that a tally `ask`
 line names (version 4), any other counted as `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·

@@ -683,8 +683,9 @@ guidance`; an ask on a pull request still open waits for its merge. The revision
 with who asked: as a proposal when it meets its kind's bar, as support for the
 live rule or entry that already says it, or held with the reason (`skills/revise/prepare.md`
 step 5, "Single statements"). A reply you post through `pr-fix` or another skill is read as yours,
-however the agent worded it, and the revision marks it drafted with its AI assistance level; a
-finding or a review an agent opened stays the agent's.
+however the agent worded it, when its AI assistance level says you read it, `4/5` or lower: at the
+default `5/5` it stays the agent's. The revision marks such a line drafted; a finding or a review
+an agent opened stays the agent's.
 
 ## Layout
 

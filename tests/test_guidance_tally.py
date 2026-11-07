@@ -128,20 +128,29 @@ class Tally(unittest.TestCase):
             "drafted · s1-2 · pr-0007 · bob · 3/5 · u12",
             "items: 3 · admit: 1 · covered: 1 · hold: 1 · support: 0 · not listed: 0 · asks: 1 · drafted: 3",
         ])
+        agents = "items: 1 · admit: 0 · covered: 0 · hold: 0 · support: 0 · not listed: 1 · asks: 0 · drafted: 0"
         unread = {**drafted, "body": drafted["body"].replace("3/5 (lightly edited by a person)", "5/5 (not read by a person)")}
-        self.assertEqual(self.tally([unread], item)[1][:2], [
-            "hold · s1-0 · pr-0007 · 12 · bob · rule · drafted, not read by a person · u12 · "
-            "In general, import dependencies directly; no guards.",
-            "drafted · s1-0 · pr-0007 · bob · 5/5 · u12"])
-        quoting = {**drafted, "body": "> Should fix. AI assistance level: 5/5 (not read by a person).\n\n" + drafted["body"]}
-        self.assertEqual(self.tally([quoting], item)[1][1], "drafted · s1-0 · pr-0007 · bob · 3/5 · u12")
-        unstated = {**drafted, "body": "🤖 _beep boop: AI-assisted reply._\n\n" + BODY}
-        self.assertEqual(self.tally([unstated], item)[1][1], "drafted · s1-0 · pr-0007 · bob · unstated · u12")
+        unstated = {**drafted, "body": BODY + "\n\n🤖 Generated with Claude Code"}
+        for name, comment in (("5/5", unread), ("no level", unstated)):
+            with self.subTest(name=name):
+                self.assertEqual(self.tally([comment], item, {**item, "quote": "no guards.", "signal": "asks for guidance",
+                                                                "covered_by": "R-002"})[1],
+                                 [agents.replace("items: 1", "items: 2").replace("not listed: 1", "not listed: 2")])
+                self.assertEqual(self.tally([comment], {**item, "outcome": "changed as asked"})[1][0],
+                                 "support · s1-0 · pr-0007 · 12 · bob · rule · u12 · In general, import dependencies directly; no guards.")
+        approved = {**drafted, "body": "🤖 _beep boop: AI-assisted reply, reviewed and approved by @bob before posting._\n\n" + BODY}
+        self.assertEqual(self.tally([approved], item)[1][1], "drafted · s1-0 · pr-0007 · bob · approved · u12")
+        for name, body in (("a quoted level", "> Should fix. AI assistance level: 5/5 (not read by a person).\n\n" + drafted["body"]),
+                           ("a fenced level", "```\nAI assistance level: 5/5 (not read by a person).\n```\n" + drafted["body"]),
+                           ("the last level", unread["body"] + "\nAI assistance level: 3/5 (lightly edited by a person).")):
+            with self.subTest(name=name):
+                self.assertEqual(self.tally([{**drafted, "body": body}], item)[1][1], "drafted · s1-0 · pr-0007 · bob · 3/5 · u12")
+        self.assertEqual(self.tally([{**drafted, "body": drafted["body"] + "\nAI assistance level: 5/5 (not read by a person)."}],
+                                    item)[1], [agents])
         for kind in ("thread", "review", "comment"):
             with self.subTest(kind=kind):
                 opened = {**drafted, "kind": kind, "thread": "PRRT_a" if kind == "thread" else None}
-                self.assertEqual(self.tally([opened], item)[1],
-                                 ["items: 1 · admit: 0 · covered: 0 · hold: 0 · support: 0 · not listed: 1 · asks: 0 · drafted: 0"])
+                self.assertEqual(self.tally([opened], item)[1], [agents])
 
     def test_refuses_a_run_the_guidance_check_refuses(self):
         code, lines = self.tally([COMMENT], {**ITEM, "quote": "never said"})

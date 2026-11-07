@@ -28,10 +28,10 @@ record = load("record", ROOT / "scripts" / "record.py")
 LISTS = sorted((FIXTURE / "comments").glob("pr-*.json"))
 RUNS = sorted((FIXTURE / "runs").glob("*.json"))
 RECORDED = {
-    "recall": "49/49 = 1.00",
-    "recall · in replies to agents": "30/30 = 1.00",
+    "recall": "48/48 = 1.00",
+    "recall · in replies to agents": "29/29 = 1.00",
     "themes on two prs": "9/9 = 1.00",
-    "precision": "48/50 = 0.96",
+    "precision": "47/49 = 0.96",
     "negatives read general": "1/20 = 0.05",
     "quotes exact": "109/109 = 1.00",
 }
@@ -73,7 +73,7 @@ class Fixture(unittest.TestCase):
             c = self.comments[item["comment_id"]]
             with self.subTest(label=item["id"]):
                 self.assertEqual(c["pr"], item["pr"])
-                self.assertTrue(c["authorship"] == "human" or (c["authorship"], c["kind"]) == ("ai-drafted", "reply"))
+                self.assertTrue(harvest_recall.persons(c))
                 self.assertTrue(guidance_check.holds(c["body"], item["quote"]))
                 self.assertLessEqual(len(item["quote"].split()), guidance_check.MAX_WORDS)
                 self.assertIn(item["kind"], guidance_check.KINDS)
@@ -109,8 +109,8 @@ class Scores(unittest.TestCase):
 
     def test_the_analysts_reading_finds_no_reply(self):
         got = score("--openers")
-        self.assertEqual(got["recall"], "14/49 = 0.29")
-        self.assertEqual(got["recall · in replies"], "0/35 = 0.00")
+        self.assertEqual(got["recall"], "14/48 = 0.29")
+        self.assertEqual(got["recall · in replies"], "0/34 = 0.00")
         self.assertEqual(got["recall · kind · agent-guidance"], "1/14 = 0.07")
         self.assertEqual(got["themes on two prs"], "1/9 = 0.11")
         self.assertNotIn("precision", got)
@@ -178,11 +178,11 @@ class Analyst(unittest.TestCase):
         pairs = self.dir / "pairs.json"
         code, out, _ = self.run_scorer("--pairs", str(pairs))
         self.assertEqual(code, 0)
-        self.assertIn("recall: 1/49", out)
+        self.assertIn("recall: 1/48", out)
         self.assertEqual(out.count("no block · pr-"), 9)
         self.assertEqual([p["lines"] for p in json.loads(pairs.read_text())], [["keep the open loud"]])
         carried = self.dir / "carried.json"
-        for answer, want in (("carried", "1/49"), ("local", "0/49")):
+        for answer, want in (("carried", "1/48"), ("local", "0/48")):
             carried.write_text(json.dumps({self.label["id"]: answer}))
             code, out, _ = self.run_scorer("--carried", str(carried))
             self.assertIn(f"recall (principle carried): {want}", out)
@@ -194,7 +194,7 @@ class Analyst(unittest.TestCase):
 
     def test_reads_a_line_block_tally_reads_with_trailing_spaces(self):
         self.block(self.ask() + "  ")
-        self.assertIn("recall: 1/49", self.run_scorer()[1])
+        self.assertIn("recall: 1/48", self.run_scorer()[1])
 
     def test_refuses_what_it_cannot_place(self):
         carried = self.dir / "carried.json"

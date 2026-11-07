@@ -192,6 +192,17 @@ def guidance_check():
 
 
 GC = guidance_check()
+spec = importlib.util.spec_from_file_location("guidance_tally", ROOT / "scripts" / "guidance_tally.py")
+GT = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(GT)
+RECORD = GT.load_record()
+
+
+def persons(c: dict) -> bool:
+    """A person's words, as `guidance_tally.py` reads them: a human comment, or a drafted reply a
+    person read."""
+    return c["authorship"] == "human" or (c["authorship"] == "ai-drafted" and c["kind"] == "reply"
+                                          and GT.read_level(RECORD, c["body"]) is not None)
 
 
 def spans(quote: str, body: str, elided: bool = False) -> list[tuple[int, int]]:
@@ -294,8 +305,7 @@ def score(comments: dict[int, dict], labels: dict, items: list[dict], mode: str,
         put("kind agreement", sum(any(it.get("kind") == lab["kind"] for it in hits[lab["id"]]) for lab in labs
                                   if found[lab["id"]]), sum(found.values()))
     if mode != "openers":
-        mine = [it for it in items if it["generality"] == "general" and (comments[it["comment_id"]]["authorship"] == "human" or (
-            comments[it["comment_id"]]["authorship"] == "ai-drafted" and comments[it["comment_id"]]["kind"] == "reply"))]
+        mine = [it for it in items if it["generality"] == "general" and persons(comments[it["comment_id"]])]
         unmatched = [it for it in mine if not any(finds(it, lab, comments[it["comment_id"]]["body"]) for lab in labs)]
         put("precision", len(mine) - len(unmatched), len(mine))
         out += [f"unmatched · pr-{it['pr']:04d} · {it['comment_id']} · {it['principle']}" for it in unmatched]
