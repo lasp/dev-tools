@@ -145,11 +145,12 @@ scenarios:
       Step 1 runs window_merges.py, which lists pr-0007 from git, and capture.py load with --merges,
       which restores pr-0007 and prints a harvest block of one merged pull request and no record.
       No agent is started. The run then asks at the Revision floor (Stop here recommended) or stops
-      there, saying the window has one merged pull request, captured, with no record.
+      there, saying the window has no record.
     expect:
       ends: success
       agents_absent: ["lasp-dev:pr-reader", "lasp-dev:thread-analyst", "lasp-dev:guidance-extractor"]
-      says: ['(?i)captur', '(?i)floor']
+      files: [".review/harvest/threads/pr-0007/pr.json", ".review/harvest/guidance/slice-1.json"]
+      says: ['(?i)floor']
 
   - id: revise-prepare-uncaptured
     repo: widgets
