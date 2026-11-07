@@ -60,7 +60,16 @@ Its status is `--issue-state open|closed` and a `--label` for each of its labels
 ticket-closed, an open one with no label the profile's `issue_tracker.statuses` maps is ticket-draft,
 and one with a mapped label goes to that label's `next`; an issue with two mapped labels exits 1, as
 do `--ticket-status` on a GitHub tracker, `--issue-state` on any other, and `--label` without
-`--issue-state`. A label the profile does not map is not a status and is passed over.
+`--issue-state`, whichever row decides. A label the profile does not map is not a status and is
+passed over. The state block's `Ticket:` line names its first key, as `record.py` reads it, or
+none when it starts with `none`: on a GitHub tracker the tracker's issue, from `#<n>`,
+`<location>#<n>` or its URL; on any other a Jira key. A line whose first key is another tracker's
+exits 1, where `record.py` records none, as does a profile that cannot be read for a line that
+does not start with `none`. This repository, whose bare `#<n>` and `<owner/repo>#<n>` it reads,
+is the one the working directory's `origin` remote names. With no origin, `profile.py` reads no
+standard for the checkout, so no GitHub tracker is in effect and `#<n>` names nothing; were a
+tracker read without one, an issue that counts only as this repository's exits 1, the reason
+saying there is no origin.
 Stdlib only.
 """
 
@@ -70,6 +79,7 @@ import argparse
 import importlib.util
 import re
 import sys
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,22 +106,33 @@ class Refused(Exception):
     """An input this script does not read."""
 
 
+def load_profile() -> types.ModuleType:
+    spec = importlib.util.spec_from_file_location("profile", ROOT / "scripts" / "profile.py")
+    profile = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(profile)
+    return profile
+
+
+def this_repository(profile: types.ModuleType) -> str | None:
+    """The owner/repo the working directory's origin remote names, or None with no origin."""
+    origin = profile.remote("origin")
+    return "/".join(origin) if origin else None
+
+
 def workflow() -> tuple[str, dict[str, str], tuple[str, ...]] | None:
     """The tracker's kind, `jira` or `github`; its statuses, Jira statuses or GitHub labels,
     lowercased, each with where a ticket with no context page here goes; and the statuses at which
     its pull request may exist with no local page, which work reads first; from the repository's
     standard over the default profile, whose refusal is this script's. None when no workflow is
     recorded."""
-    spec = importlib.util.spec_from_file_location("profile", ROOT / "scripts" / "profile.py")
-    profile = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(profile)
+    profile = load_profile()
     try:
-        tracker = profile.defaults(ROOT)["issue_tracker"]
+        t = profile.defaults(ROOT)["issue_tracker"]
     except (profile.ProfileError, OSError) as e:
         raise Refused(f"the tracker's statuses could not be read: {e}") from e
-    if tracker == profile.NOT_RECORDED:
+    if t == profile.NOT_RECORDED:
         return None
-    return tracker["kind"], {s["name"].lower(): s["next"] for s in tracker["statuses"]}, tuple(s.lower() for s in tracker["pr_statuses"])
+    return t["kind"], {s["name"].lower(): s["next"] for s in t["statuses"]}, tuple(s.lower() for s in t["pr_statuses"])
 
 
 def shown(ticket: str) -> str:
@@ -169,11 +190,27 @@ def read_state(text: str) -> dict:
         raise Refused("the state block has no '## pr-NNNN — state' heading, head:, draft:, state: or author: line")
     if not re.search(r"^contract: 6\s*$", text, re.M):
         raise Refused("the state block is not contract 6")
-    # The first ticket key on the body's Ticket: line, as record.py reads it, a link included: a
-    # Jira key, or a GitHub issue's `#<n>`, read as its number.
+    # The first key on the body's Ticket: line, as record.py reads it through profile.py's
+    # ticket_named: on a GitHub tracker the issue's number, otherwise a Jira key.
+    # A key of another tracker's form is refused here, where record.py records none: routing on it
+    # would take the wrong ticket's facts. This repository is the one the origin remote names.
     line = re.search(r"^ticket: Ticket:(.*)$", text, re.M)
-    key = re.search(r"\b([A-Z][A-Z0-9_]*-\d+)\b|(?<![\w&])#(\d+)\b", line.group(1)) if line else None
-    ticket = (key.group(1) or key.group(2)) if key else ""
+    ticket = ""
+    profile = load_profile()
+    if line and not profile.NONE.match(line.group(1).strip()):
+        try:
+            t = profile.defaults(ROOT)["issue_tracker"]
+        except (profile.ProfileError, OSError) as e:
+            raise Refused(f"pull request #{number.group(1)}'s Ticket: line cannot be read: the profile's issue_tracker is refused: {e}") from e
+        try:
+            origin = this_repository(profile)
+        except profile.ProfileError as e:
+            raise Refused(f"pull request #{number.group(1)}'s Ticket: line cannot be read: {e}") from e
+        try:
+            ticket = profile.ticket_named(line.group(1), t, r"[A-Z][A-Z0-9_]*-\d+", origin)
+        except ValueError as e:
+            unknown = "" if origin else "; this repository is not known, since the working directory has no origin remote"
+            raise Refused(f"pull request #{number.group(1)}: {e}{unknown}") from e
     reviewed = re.findall(r"^findings review: \S+ reviewed: ([0-9a-f]{7,40})", text, re.M)
     rows = []
     table = text.split("\nid | ", 1)
@@ -386,11 +423,7 @@ def decide(
     if not fields["context"]:
         status = ticket_status.strip().lower()
         known = workflow() if ticket and (status or issue_state) else None
-        if ticket and issue_state and (not known or known[0] != "github"):
-            raise Refused("--issue-state is a GitHub tracker's, and the profile's issue_tracker records no GitHub tracker")
         if known and known[0] == "github":
-            if status:
-                raise Refused("a GitHub tracker's status is --issue-state with a --label per label, not --ticket-status")
             return issue_row(ticket, issue_state, labels or [], known[1], known[2], pr)
         if known:
             _, statuses, pr_statuses = known
@@ -418,6 +451,10 @@ def decide(
     return row("pr-create", ticket, "pr-create", "built, no pull request")
 
 
+# The rows whose argument is a pull request's number, which the first line names; every other
+# row's is the ticket or its slug, a GitHub issue's number among them.
+ON_PR = ("pr-closed", "open-part", "unclaimed", "review-unposted", "pr-review", "reviewers-first", "walk", "fix", "follow-up", "mark-ready", "answered")
+
 # What the phase will ask the person, for work's third line.
 ASKS = {
     "ticket-draft": "questions about the ticket, then a yes to the draft.",
@@ -442,10 +479,9 @@ NEXT = {
 
 
 def lines(ticket: str, d: dict, stack: list[dict] | None = None) -> list[str]:
-    # An argument of digits is a pull request's number, except a GitHub issue's own, the ticket.
     listed = "stack: " + ", ".join(f"#{s['number']} {s['state']}" for s in stack) if stack and len(stack) > 1 else ""
     head = " · ".join(
-        p for p in (shown(ticket) or "no ticket", listed, f"pull request #{d['argument']}" if d["argument"].isdigit() and d["argument"] != ticket else "", d["say"]) if p
+        p for p in (shown(ticket) or "no ticket", listed, f"pull request #{d['argument']}" if d["why"] in ON_PR else "", d["say"]) if p
     )
     if d["phase"] == "nothing":
         return [head, NEXT[d["why"]].format(argument=d["argument"], paste=d.get("paste")), "It will ask you: nothing."]
@@ -474,6 +510,14 @@ def main(argv: list[str] | None = None) -> int:
         local = read_local_review(args.local_review.read_text()) if args.local_review else None
         if args.label and not args.issue_state:
             raise Refused("--label needs --issue-state")
+        # A status in the other tracker's form is refused whichever row decides.
+        if args.issue_state or args.ticket_status:
+            known = workflow()
+            github = known is not None and known[0] == "github"
+            if args.issue_state and not github:
+                raise Refused("--issue-state is a GitHub tracker's, and the profile's issue_tracker records no GitHub tracker")
+            if args.ticket_status and github:
+                raise Refused("a GitHub tracker's status is --issue-state with a --label per label, not --ticket-status")
         d = decide(fields, pr, args.ticket_status, args.reviewed_this_loop, args.pr, stack, criteria, local, args.me, args.issue_state, args.label)
     except (Refused, OSError) as e:
         print(f"next_phase.py: {e}", file=sys.stderr)

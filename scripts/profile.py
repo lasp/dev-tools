@@ -720,6 +720,53 @@ def resolve(repo: str, root: Path, detect: bool = True) -> dict:
     return resolve_here(repo, root, found, mine)
 
 
+# What a Ticket: line can name on a GitHub tracker, the first in the line counting: an issue's URL
+# on github.com, or an issue as `<owner/repo>#<n>` or `#<n>`.
+GITHUB_ISSUE = re.compile(r"https?://(?:www\.)?github\.com/([\w.-]+/[\w.-]+)/issues/(\d+)\b"
+                          r"|(?<![\w&/#])([\w.-]+/[\w.-]+)?#(\d+)\b")
+# A key such as `PROJ-9` leading the value, after a link's `[`, emphasis or a code span's backtick:
+# another tracker's ticket. Further in, `UTF-8` or `SHA-256` is a word, not a key.
+LEADING_KEY = re.compile(r"[\s\[*`]*([A-Z][A-Z0-9_]*-\d+)\b")
+# A value naming no ticket: `none`, as a word of its own, so `none-of-the-above` is not it.
+NONE = re.compile(r"none(?![\w-])", re.I)
+
+
+def ticket_named(value: str, tracker, pattern: str, here: str | None) -> str:
+    """The ticket a pull request body's `Ticket:` line names, `value` being the text after
+    `Ticket:`, or empty for none. A value that starts with the word `none`, in any case, names
+    none, so `none — split from #68` does and `none-of-the-above` does not; otherwise the first key
+    anywhere in it counts, in a link, a URL or emphasis included. On a GitHub tracker, `tracker`
+    being the profile's `issue_tracker`, the key is the issue's number, from its URL on github.com,
+    `<owner/repo>#<n>` or `#<n>`; on any other, the key in `pattern`. `here` is this repository's
+    owner/repo, or None when unknown. A GitHub issue counts when it is the tracker's: with
+    `location` `none`, a bare `#<n>` or this repository's; with a location, that repository's, or a
+    bare `#<n>` when the location is this repository. Raises ValueError on a GitHub tracker when the
+    value leads with a key such as `PROJ-9`, or its first issue is another repository's; the caller
+    decides whether that is a refusal or none."""
+    v = value.strip()
+    if NONE.match(v):
+        return ""
+    if tracker == NOT_RECORDED or tracker["kind"] != "github":
+        m = re.search(rf"\b({pattern})\b", v)
+        return m.group(1) if m else ""
+    location = tracker["location"]
+    written = "#<n>" if location == "none" else f"{location}#<n>"
+    if (k := LEADING_KEY.match(v)):
+        raise ValueError(f"the Ticket: line names {k.group(1)}, but the tracker is GitHub's, whose issues are written {written}")
+    m = GITHUB_ISSUE.search(v)
+    if not m:
+        return ""
+    named, number = (m.group(1), m.group(2)) if m.group(2) else (m.group(3), m.group(4))
+    if named is None:
+        ours = location == "none" or (here is not None and here.lower() == location.lower())
+    else:
+        target = here if location == "none" else location
+        ours = target is not None and named.lower() == target.lower()
+    if not ours:
+        raise ValueError(f"the Ticket: line names {m.group(0)}, not the tracker's issue; its issues are written {written}")
+    return number
+
+
 def render(v) -> str:
     if isinstance(v, bool):
         return "true" if v else "false"

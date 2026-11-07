@@ -13,6 +13,7 @@ profile_repo=$(git remote get-url origin 2>/dev/null | sed -E 's#\.git$##; s#^.*
 profile_py="$(dirname "${BASH_SOURCE[0]}")/profile.py"
 profile_lines=""
 profile_defaults=""
+profile_defaults_read=""
 profile_error=""
 # profile.py's answer to "$@", its error dropped. The error is read by asking again, never through
 # a temporary file, which a sandboxed shell may not be allowed to make.
@@ -27,7 +28,7 @@ if command -v python3 >/dev/null 2>&1; then
   fi
   # The defaults, read once, for the fields the profile has not recorded.
   case "$profile_lines" in
-    *": not yet recorded"*) profile_defaults=$(profile_ask --defaults) || profile_defaults="" ;;
+    *": not yet recorded"*) profile_defaults_read=yes; profile_defaults=$(profile_ask --defaults) || profile_defaults="" ;;
   esac
 fi
 
@@ -49,8 +50,13 @@ profile_raw() {
   [ "$v" = "not yet recorded" ] || printf '%s' "$v"
 }
 
-# The defaults, read when the profile did not need them; call it outside $( ) to read them once.
-profile_read_defaults() { [ -n "$profile_defaults" ] || profile_defaults=$(profile_ask --defaults) || profile_defaults=""; }
+# The defaults, read when the profile did not need them, and only once, a refusal included; call it
+# outside $( ) so the reading is kept.
+profile_read_defaults() {
+  [ -z "$profile_defaults_read" ] || return 0
+  profile_defaults_read=yes
+  profile_defaults=$(profile_ask --defaults) || profile_defaults=""
+}
 
 # A project field as the defaults under the standard's give it, which profile.py prints for no
 # repository and never detects, such as issue_tracker.kind; empty when it reads `not yet recorded`

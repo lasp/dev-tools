@@ -501,7 +501,7 @@ Pinned by: tests/test_record.py::test_a_judgment_outside_what_the_words_leave_op
 
 ## The local facts
 
-Version: 9
+Version: 10
 
 Fields: `hooks/where.sh --fields`, one `name=value` per line: `ticket`, `branch` (empty with
 none, a detached HEAD included; version 5), `context` (the ticket's context page as an absolute path, or empty; version 5), `plan`
@@ -529,7 +529,11 @@ number: a match is reduced to its digits, `ticket=59`, its plan
 `.review/implementation-plan-59.md`, a context page headed `# #59 · …` is its page, and the
 session-start line shows it as `#59`; the pattern is the `ticket.pattern` the standard records,
 never one detected from the history, and with none it is `(issue-)?\d+`, so `59-x`, `issue-59-x` and `feature/59-x` give `59`. A Jira tracker, or none,
-reads the pattern as recorded (version 9). The files are read from the
+reads the pattern as recorded (version 9). On a GitHub tracker a branch's number is followed by
+`-`, `_` or the name's end, but not by `-NN-NN`, so `release/1.2.0`, `2fa-x`, `123abc` and
+`2026-11-06-x` name no issue, while `hotfix/3`, a number that is the whole last component, names
+issue 3; and `--ticket` takes the bare number, `--ticket 7`, as well as a key in the pattern
+(version 10). The files are read from the
 repository's top level, wherever in it the command runs (version 5). The lines print with or without
 `.review/`; a key outside the profile's pattern, another argument, no `jq`, or a reopened line
 that is not `Reopened: <id> · <clause>` exits 1.
@@ -541,7 +545,7 @@ Pinned by: tests/test_where.sh::"--fields prints the facts, one per line, on a c
 
 ## The next phase
 
-Version: 6
+Version: 7
 
 Fields: `scripts/next_phase.py`'s printout: `phase:` (a skill, or `nothing`), `argument:`,
 `why:` (the row's name in the script's table, `review-unposted` among them from version 3), `lock:`
@@ -556,11 +560,18 @@ nothing`, `argument: <slug>`, `why: unfiled`, whose second line names
 ticket-closed`; an open one with no label the profile's `issue_tracker.statuses` maps is `why:
 ticket-draft`, and one with a mapped label goes to that label's `next`, a label in
 `issue_tracker.pr_statuses` needing the state block as a Jira status there does. Two mapped
-labels, `--ticket-status` on a GitHub tracker, `--issue-state` on any other, and `--label`
-without `--issue-state` exit 1. The state block's `ticket: Ticket: #<n>` names issue `<n>`; the
-first line writes an issue as `#<n>`, `argument:` as the number. The `unfiled` and
-`ticket-closed` lines name the tracker, not Jira. Version 6: on a GitHub tracker the `unfiled`
-line names `.review/context/<slug>.issue.md`, the issue's paste file.
+labels and `--label` without `--issue-state` exit 1. The first line writes an issue as `#<n>`,
+`argument:` as the number. The `unfiled` and `ticket-closed` lines name the tracker, not Jira.
+Version 6: `--ticket-status` on a GitHub tracker and `--issue-state` on any other exit 1 whichever
+row decides; the state block's `ticket: Ticket: …` line is read as "The record" reads a body's
+`Ticket:` line, except that a first key of another tracker's form, or a profile that cannot be
+read for a line not starting with `none`, exits 1; and the first line names a pull request whose
+number is the issue's. This repository, for that reading, is the one the working directory's
+`origin` remote names. With no origin, `profile.py` reads no standard for the checkout, so no
+GitHub tracker is in effect and `#<n>` names nothing; were a tracker read without one, an issue
+that counts only as this repository's exits 1, saying there is no origin.
+Version 7: on a GitHub tracker the `unfiled` line names `.review/context/<slug>.issue.md`, the
+issue's paste file.
 
 Writers: `scripts/next_phase.py`. Readers: `work`.
 
@@ -746,16 +757,29 @@ Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_t
 
 ## The record
 
-Version: 13
+Version: 14
 
 Fields: `<log>/pr-NNNN.yaml`, `<log>` the records directory `revise`'s "The standard's repository"
-names, first line `contract: 13`. This section is the one
+names, first line `contract: 14`. This section is the one
 place the fields are defined; the records directory's own README says how the revision
 reads them.
 
-- `pr`, the number; `ticket`, the key on the body's `Ticket:` line in the profile's ticket
-  pattern, or, where the profile's tracker is GitHub's, the number of the line's `#<n>`, whatever
-  the pattern; or `none`.
+- `pr`, the number; `ticket`, the first key on the body's `Ticket:` line, anywhere in it, a
+  link, a URL or emphasis included, or `none`. A line whose value starts with the word `none`, in
+  any case, is `none`, so `Ticket: none — split from #68` is and `none-of-the-above` is not
+  (version 14). The key is one in the profile's ticket pattern; or, where the profile's tracker
+  is GitHub's, whatever the pattern, the tracker's issue, recorded as its number: its URL on
+  `github.com` (`https://github.com/<owner/repo>/issues/<n>`, `www.` allowed; no other host is
+  read), `<owner/repo>#<n>`, or `#<n>`. With
+  `issue_tracker.location` `none` the tracker's issues are this repository's, a bare `#<n>` among
+  them; with a location they are that repository's, written `<location>#<n>` (version 14), and a
+  bare `#<n>` counts only when the location is this repository. A line that is another tracker's,
+  leading with a key such as `PROJ-9`, after a link's `[`, emphasis or a backtick, or whose first
+  issue is another repository's, records `none`, so a
+  repository's pull requests from before it moved to GitHub Issues still regenerate. A key shape
+  further in, such as `the UTF-8 fix, #59`, is a word, and the line's issue counts;
+  `scripts/next_phase.py`, routing on the same line, refuses it instead. `scripts/profile.py`'s
+  `ticket_named` is the one reading both share.
 - `stack`, `{part, of, base}` from that line's `part k of n · base: <branch>`, and `claims`, the
   list on the body's `Claims:` line, the criteria this part claims; each `none` when absent.
 - `branch`, the head branch; `head`, the commit the last findings review reviewed, or the merge

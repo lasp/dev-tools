@@ -234,7 +234,8 @@ class TrackerGithubPack(unittest.TestCase):
     PACK = ROOT / "sandbox" / "tracker-github" / "scenarios.yaml"
     STUB = ROOT / "sandbox" / "tracker-github" / "fixture" / "github-mcp-server-stub.py"
     SERVER = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py", "--writes", ".git/github-writes.jsonl"]}
-    WORK = {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch"}
+    WORK = {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch",
+            "tracker-gh-work-pr", "tracker-gh-work-closed-labeled"}
     DRAFT = {"tracker-gh-ticket-draft-new", "tracker-gh-ticket-draft-refine", "tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket",
              "tracker-gh-ticket-draft-standing-answer"}
 
@@ -375,6 +376,8 @@ class TrackerGithubPack(unittest.TestCase):
         self.assertEqual(([label["name"] for label in labels["labels"]], labels["totalCount"]), (["ready", "enhancement"], 2))
         self.assertEqual(self.read("issue_read", method="get_comments", issue_number=12), {"comments": [], "method": "get_comments"})
         self.assertEqual(self.read("issue_read", method="get_comments", issue_number=14)["comments"][0]["user"]["login"], "bob-example")
+        self.assertFalse(self.read("issue_read", method="get", issue_number=14)["issue"]["has_parent"])
+        self.assertEqual(self.read("issue_read", method="get_parent", issue_number=14), {"method": "get_parent", "parent": None})
 
     def test_a_pull_requests_number_reads_as_an_issue_at_a_pull_url(self):
         self.assertEqual(self.read("issue_read", method="get", issue_number=15)["issue"]["html_url"], "https://github.com/example/widgets/pull/15")
@@ -390,6 +393,20 @@ class TrackerGithubPack(unittest.TestCase):
         named = json.loads(self.call("search_pull_requests", query='repo:example/widgets is:pr "Ticket: #9"')["content"][0]["text"])
         self.assertEqual(named["items"][0]["html_url"], "https://github.com/example/widgets/pull/15")
         self.assertEqual(self.read("search_pull_requests", query='repo:example/widgets is:pr in:body "Ticket: #14"')["items"], [])
+
+    def test_a_pull_request_search_matches_whole_words_and_numbers(self):
+        # GitHub's search reads tokens: `#9` is not the start of `#90`, nor `widget` of `widgets`.
+        for query in ('"Ticket: #9 ·"', "widgets part"):
+            with self.subTest(query=query):
+                self.assertEqual([p["number"] for p in self.read("search_pull_requests", query=f"repo:example/widgets is:pr {query}")["items"]], [15])
+        for query in ("widget", "ware"):
+            with self.subTest(query=query):
+                self.assertEqual(self.read("search_pull_requests", query=f"repo:example/widgets is:pr {query}")["items"], [])
+        # #16's body reads `Ticket: o/r#90`: found whole, and never for o/r#9.
+        for query, found in (('"Ticket: o/r#90"', [16]), ('"Ticket: o/r#9"', []), ('"Ticket: #9"', [15])):
+            with self.subTest(query=query):
+                got = self.read("search_pull_requests", query=f"repo:example/widgets is:pr in:body {query}")["items"]
+                self.assertEqual([p["number"] for p in got], found)
 
     def test_list_and_search_issues(self):
         listed = self.read("list_issues", state="OPEN")

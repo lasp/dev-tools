@@ -16,13 +16,16 @@ know, so a scenario's verify checks the labels it may use. `run.py` neither allo
 writing stub's two write tools, so only a hook's allow lets a call through under `dontAsk`.
 
 Its tools are github-mcp-server's by name, arguments and output shape, as read from the real
-server: `get_me`; `get_label`, an error for a label the fixture does not hold; `issue_read` with the methods `get`, `get_comments` and `get_labels`, where `get`
-on a pull request's number returns it as an issue whose `html_url` holds `/pull/`, as GitHub's issue
-API does; `list_issues`, whose states are upper-case, as the server's GraphQL gives them;
-`search_issues`, which returns the issues sharing a word of three letters or more with the query;
-and `search_pull_requests`, which returns the pull requests whose title or body holds every quoted
-phrase of the query and every bare word that is not a qualifier such as `repo:`, `is:`, `in:` or
-`state:`, its links naming the repository the query's `repo:` gives when the call names none. Every
+server: `get_me`; `get_label`, an error for a label the fixture does not hold; `issue_read` with the methods `get`, `get_comments`, `get_labels` and
+`get_parent`, where `get` gives labels by name and `get_labels` as objects, `get_parent` gives a
+null parent, since no fixture issue has one, and `get` on a pull request's number returns it as
+an issue whose `html_url` holds `/pull/`, as GitHub's issue API does; `list_issues`, whose states
+are upper-case, as the server's GraphQL gives them; `search_issues`, which returns the issues
+sharing a word of three letters or more with the query; and `search_pull_requests`, which returns
+the pull requests whose title or body holds every quoted phrase of the query and every bare word
+that is not a qualifier such as `repo:`, `is:`, `in:` or `state:`, matched by whole words and
+numbers, punctuation dropped, as GitHub's search does, its links naming the repository the query's
+`repo:` gives when the call names none. Every
 repository is served the same fixture, whatever the owner. A number the fixture
 does not hold is an error result. Stdlib only.
 """
@@ -111,6 +114,17 @@ def item(args: dict, i: dict) -> dict:
     return out
 
 
+def tokens(text: str) -> list:
+    """Text as GitHub's search reads it: its words and numbers, lower-cased, punctuation dropped,
+    so `#9` matches `#9` and not `#90`."""
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def holds(text: list, phrase: list) -> bool:
+    """Whether the phrase's tokens appear in `text` one after another."""
+    return any(text[i:i + len(phrase)] == phrase for i in range(len(text) - len(phrase) + 1))
+
+
 def chosen(row: dict, fields) -> dict:
     return {k: v for k, v in row.items() if k in fields} if fields else row
 
@@ -181,6 +195,8 @@ def call(name: str, args: dict):
         if method == "get_labels":
             labels = [LABELS.get(name, {"name": name}) for name in (i["labels"] if i else [])]
             return {"labels": labels, "method": "get_labels", "totalCount": len(labels)}
+        if method == "get_parent":
+            return {"method": "get_parent", "parent": None}
         raise ValueError(f"method {method} is not served by this stub")
     if name == "list_issues":
         state = args.get("state")
@@ -204,13 +220,13 @@ def call(name: str, args: dict):
         named = re.search(r"\brepo:([^/\s]+)/(\S+)", query)
         if named and not args.get("owner"):
             args = {**args, "owner": named.group(1), "repo": named.group(2)}
-        phrases = [p.lower() for p in re.findall(r'"([^"]*)"', query)]
+        phrases = [tokens(p) for p in re.findall(r'"([^"]*)"', query)]
         rest = re.sub(r'"[^"]*"', " ", query)
-        words = [w.lower() for w in rest.split() if not re.match(r"^-?[a-z]+:", w, re.I)]
+        words = [t for w in rest.split() if not re.match(r"^-?[a-z]+:", w, re.I) for t in tokens(w)]
         hits = []
         for p in PULLS.values():
-            text = f"{p['title']}\n{p['body']}\n{p['head']}".lower()
-            if all(ph in text for ph in phrases) and all(w in text for w in words):
+            text = tokens(f"{p['title']}\n{p['body']}\n{p['head']}")
+            if all(holds(text, ph) for ph in phrases) and all(w in text for w in words):
                 hits.append({"number": p["number"], "title": p["title"], "body": p["body"], "state": p["state"], "draft": p["draft"],
                              "html_url": url(args, "pull", p["number"]), "user": p["user"], "created_at": p["created_at"],
                              "updated_at": p["updated_at"],

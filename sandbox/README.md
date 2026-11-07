@@ -71,17 +71,18 @@ to paste.
 The GitHub tracker pack, `tracker-github/scenarios.yaml`, runs in `widgets` given a standard whose
 tracker is GitHub's, its labels mapped to the workflow and no ticket pattern recorded, against
 issues `tracker-github/fixture/github-mcp-server-stub.py` serves from `github.json`:
-`work` routing an open issue with no label, an open one with a mapped label, a closed one, and a
-branch named `issue-<n>-words`; `ticket-draft` drafting a new issue and refining #12, each through
-a yes to its write plan, a draft whose plan is answered Paste it all, and one whose third turn,
-taking every recommended answer, must file nothing, after a slash command or a plain "file an issue for" alike. Its `mcp.json` names the
-stub as `${SBX_FIXTURES}/github-mcp-server-stub.py` with `--writes .git/github-writes.jsonl`, as
-the pack's header shows; the file name holds `github-mcp-server`, so `run.py` gives it the GitHub
-rules, except that a pack's stub run with `--writes` has `issue_write` and `add_issue_comment`
-neither allowed nor denied. Under `dontAsk` such a call then runs only when `hooks/issue-gate.sh`
-allows it, and the stub records it to that file, which each scenario's setup removes and its
-verify reads; nothing reaches GitHub. The stub's tools carry github-mcp-server's names, arguments
-and output shapes.
+`work` routing an open issue with no label, an open one with a mapped label, a closed one, a
+closed one still carrying a pull request status label, a branch named `issue-<n>-words`, and a
+pull request's number given as the argument; `ticket-draft` drafting a new issue and refining #12,
+each through a yes to its write plan, a draft whose plan is answered Paste it all, and one whose
+third turn, taking every recommended answer, must file nothing, after a slash command or a plain
+"file an issue for" alike. Its `mcp.json` names the stub as `${SBX_FIXTURES}/github-mcp-server-stub.py`
+with `--writes .git/github-writes.jsonl`, as the pack's header shows; the file name holds
+`github-mcp-server`, so `run.py` gives it the GitHub rules, except that a pack's stub run with
+`--writes` has `issue_write` and `add_issue_comment` neither allowed nor denied. Under `dontAsk`
+such a call then runs only when `hooks/issue-gate.sh` allows it, and the stub records it to that
+file, which each scenario's setup removes and its verify reads; nothing reaches GitHub. The stub's
+tools carry github-mcp-server's names, arguments and output shapes.
 
 A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a

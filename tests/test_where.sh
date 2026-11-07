@@ -378,12 +378,41 @@ printf "$github" >standards/profile.yaml
 for b in PROJ-42-csv PROJ-43-x PROJ-44-y; do git branch "$b"; done
 line=$(bash "$hook" --fields | head -1)
 check "a GitHub tracker reads no pattern detected from a Jira-keyed history" '[ "$line" = "ticket=59" ]'
+for b in release/1.2.0 2fa-support 123abc 2026-11-06-cleanup feature/2026-11-06 issue-2026-11-06-x 59.x; do
+  d=$(scratch "$b") && made+=("$d") && cd "$d" || exit 1
+  printf "$github" >standards/profile.yaml
+  line=$(bash "$hook" --fields | head -1)
+  check "on a GitHub tracker, the branch $b names no issue" '[ "$line" = "ticket=" ]'
+done
+for b in hotfix/3 3_typo 3; do
+  d=$(scratch "$b") && made+=("$d") && cd "$d" || exit 1
+  printf "$github" >standards/profile.yaml
+  line=$(bash "$hook" --fields | head -1)
+  check "on a GitHub tracker, the branch $b names issue 3: a number ends at -, _ or the name's end" '[ "$line" = "ticket=3" ]'
+done
+d=$(scratch GH-7-x) && made+=("$d") && cd "$d" || exit 1
+printf "ticket:\n  pattern: 'GH-\\\\d+'\n$github" >standards/profile.yaml
+line=$(bash "$hook" --fields --ticket 7 | head -1)
+check "under a recorded GH-\\d+ pattern, --ticket 7, the bare number work passes, is issue 7" '[ "$line" = "ticket=7" ]'
+line=$(bash "$hook" --fields --ticket GH-12 | head -1)
+check "and so is a key in the pattern" '[ "$line" = "ticket=12" ]'
+bash "$hook" --fields --ticket 7x >/dev/null 2>&1; rc=$?
+line="exit $rc"
+check "but 7x is neither" '[ "$rc" = 1 ]'
 d=$(scratch 59-words) && made+=("$d") && cd "$d" || exit 1
 line=$(bash "$hook" --fields | head -1)
-check "a Jira repository's branch 59-words names no ticket" '[ "$line" = "ticket=" ]'
+check "a repository recording no tracker reads its branch 59-words as no ticket" '[ "$line" = "ticket=" ]'
+jira="issue_tracker:\n  kind: jira\n  statuses:\n    - {name: New, next: ticket-draft, role: filed}\n    - {name: To Do, next: implement-change, role: approved}\n    - {name: In Progress, next: implement-change, role: implementation}\n    - {name: Done, next: nothing, role: finished}\n    - {name: Abandoned, next: nothing, role: abandoned}\n  pr_statuses: [In Progress]\n"
+printf "$standard$jira" >standards/profile.yaml
+line=$(bash "$hook" --fields | head -1)
+check "a Jira tracker's branch 59-words names no ticket" '[ "$line" = "ticket=" ]'
 bash "$hook" --fields --ticket 59 >/dev/null 2>&1; rc=$?
 line="exit $rc"
 check "and --ticket 59 is not one of its keys" '[ "$rc" = 1 ]'
+d=$(scratch PROJ-42-x) && made+=("$d") && cd "$d" || exit 1
+printf "$standard$jira" >standards/profile.yaml
+line=$(bash "$hook" --fields | head -1)
+check "and its branch PROJ-42-x names PROJ-42" '[ "$line" = "ticket=PROJ-42" ]'
 
 d=$(scratch proj-5-lower) && made+=("$d") && cd "$d" || exit 1
 printf "ticket:\n  pattern: 'proj-\\d+'\n" >standards/profile.yaml

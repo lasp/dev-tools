@@ -75,11 +75,13 @@ Markdown, so it is not the text verbatim.
 
 On a GitHub tracker, where `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
 issue_tracker.kind` prints `github`, the key is an issue's number: read it with `issue_read`,
-methods `get`, `get_comments` and `get_labels`, on the repository `--field issue_tracker.location`
-names, or the caller's repository when it prints `none`. The block's heading is `## #<n> — ticket`,
+methods `get`, whose `labels` are the label names, and `get_comments`, and `get_parent` when
+`get`'s `has_parent` is true, on the repository `--field issue_tracker.location` names, or the
+caller's repository when it prints `none`. The block's heading is `## #<n> — ticket`,
 its `Fields:` line reads `<title · state (its state_reason when closed) · labels, comma-separated,
 or none · assignees, or none · author · created>`, `Description:` holds the issue's body verbatim,
-`Comments:` its comments as below, `Sections:` its Markdown headings, `Links:` the parent issue `get` names, or `none`,
+`Comments:` its comments as below, `Sections:` its Markdown headings, `Links:` `parent: #<n>
+<title>` from `get_parent`, or `none`,
 `Markup:` reads `intact`, since an issue's body is stored as Markdown, and `Original request
 comment:` is read from its comments as for Jira. A pull request's number is not an issue: when `get`'s `html_url` holds
 `/pull/`, return `## #<n> — ticket`, then `Not an issue: #<n> is a pull request`, and `Questions:`.

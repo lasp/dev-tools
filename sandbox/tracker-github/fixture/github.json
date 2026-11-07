@@ -49,6 +49,23 @@
       "comments": [
         {"id": 14001, "body": "Approved for the next restock release.", "user": {"id": 1002, "login": "bob-example"}, "created_at": "2026-02-11T08:00:00Z", "updated_at": "2026-02-11T08:00:00Z", "author_association": "MEMBER"}
       ]
+    },
+    {
+      "number": 17,
+      "title": "Log each order the run places",
+      "body": "Each order goes to the order log, with its part and count.\n",
+      "state": "closed",
+      "state_reason": "not_planned",
+      "labels": ["in progress"],
+      "assignees": [{"id": 1003, "login": "alice-example"}],
+      "user": {"id": 1003, "login": "alice-example"},
+      "created_at": "2026-02-12T09:00:00Z",
+      "updated_at": "2026-02-20T11:00:00Z",
+      "closed_at": "2026-02-20T11:00:00Z",
+      "closed_by": "alice-example",
+      "comments": [
+        {"id": 17001, "body": "Dropped: the supplier logs orders now.", "user": {"id": 1003, "login": "alice-example"}, "created_at": "2026-02-20T11:00:00Z", "updated_at": "2026-02-20T11:00:00Z", "author_association": "MEMBER"}
+      ]
     }
   ],
   "pulls": [
@@ -64,6 +81,19 @@
       "created_at": "2026-01-10T10:00:00Z",
       "updated_at": "2026-01-12T16:00:00Z",
       "closed_at": "2026-01-12T16:00:00Z"
+    },
+    {
+      "number": 16,
+      "title": "Follow up an order from another tracker",
+      "body": "Ticket: o/r#90 · A follow-up filed elsewhere.\n",
+      "state": "closed",
+      "merged": true,
+      "draft": false,
+      "user": {"id": 1003, "login": "alice-example"},
+      "head": "o-r-90-follow-up",
+      "created_at": "2026-02-01T10:00:00Z",
+      "updated_at": "2026-02-02T16:00:00Z",
+      "closed_at": "2026-02-02T16:00:00Z"
     }
   ]
 }

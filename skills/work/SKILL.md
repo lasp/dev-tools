@@ -7,7 +7,7 @@ description: >
 argument-hint: "[ticket key or issue number | PR number | nothing]"
 metadata:
   author: lasp-dev
-  version: 1.9.1
+  version: 1.9.2
 ---
 
 # Work
@@ -61,9 +61,20 @@ a person reads it. The pattern is the one the standard records (`--defaults --fi
 ticket.pattern`), never one detected from the repository's history, and with none, `where.sh`
 reads a branch with `(issue-)?\d+`, so `59-retry`, `issue-59-retry` and `feature/59-retry` all
 name issue 59. A number given as the
-argument, `59` or `#59`, is an issue or a pull request: one `issue_read` `get` on it, at the
-tracker's location, decides, a pull request being one whose `html_url` holds `/pull/`. An issue is
-the ticket, given to `where.sh` as `--ticket 59`. Anywhere else a bare number is a pull request.
+argument, `59` or `#59`, is an issue or a pull request, a pull request being one whose `issue_read`
+`get` has `/pull/` in its `html_url`:
+- **The location is `none`:** one `issue_read` `get` on it in this repository decides. A 404 there
+  means this repository has neither: say so, as `${CLAUDE_PLUGIN_ROOT}/skills/work/servers.md`
+  sets out, and stop.
+- **The location is another repository:** an issue there and a pull request here can share the
+  number. Read it here first, then at the location, one `issue_read` `get` each. A pull request
+  here and an issue there: ask which is meant, naming both titles. A pull request here and a 404
+  or a pull request there: it is this pull request, and the 404 is one line saying the tracker
+  has no issue `<location>#<n>` the token can see. An issue there and no pull request here: it is
+  the issue. Neither: say so, as `servers.md` sets out, and stop.
+
+An issue is the ticket, given to `where.sh` as `--ticket 59`. Anywhere else a bare number is a
+pull request.
 
 A server is needed only at the step that reads it: GitHub for step 2's pull request reads and
 `get_me`, Atlassian for the ticket's status, or GitHub for it on a GitHub tracker. Either one missing or failing is said as
@@ -93,17 +104,24 @@ which the team's tickets have a pull request, one per line, from
 `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field issue_tracker.pr_statuses`,
 Jira statuses or GitHub labels, an error
 from which is a stop, as step 1 says; where it prints `not yet recorded`, no workflow is recorded,
-and no status is among those. A GitHub issue's status is among them when one of its labels is. Then,
-without a given pull request, the first row that matches says which pull request to read:
+and no status is among those. An open GitHub issue's status is among them when one of its labels
+is. Then, without a given pull request, the first row that matches says which pull request to
+read:
 
 | The fields | Read |
 |---|---|
 | an `outcome=` or a `part=` | this branch's |
 | a context page with a `Branch:` line and no plan file: a ticket drafted from its pull request | the `elsewhere=` branch's, or this branch's when that is empty |
-| no context page, and a status among those, ignoring case | this branch's when its name starts with the key; else one `search_pull_requests` for `repo:<owner/repo> is:pr <key>`, or on a GitHub tracker `repo:<owner/repo> is:pr in:body "Ticket: #<n>"` |
+| no context page, and a status among those, ignoring case; never a closed GitHub issue, whatever its labels | this branch's when its name starts with the key; else row 3's search |
 | anything else | none |
 
-Each read is one `pr-reader` in `state` mode, its block written to `.review/work-state.txt`.
+Row 3's search, run only when row 3 matches, is one `search_pull_requests` for
+`repo:<owner/repo> is:pr <key>`, or on a GitHub tracker `repo:<owner/repo> is:pr in:body
+"Ticket: <issue>"`, `<issue>` being `#<n>` when the location is `none` and `<location>#<n>`
+whenever it is not, as `pr-create` writes the line. A closed issue with no `outcome=` or `part=` reads no
+pull request, whatever its labels: no search and no `pr-reader`.
+
+Each read the table names is one `pr-reader` in `state` mode, its block written to `.review/work-state.txt`.
 When no pull request is found, write `pull request: none` there instead. When the search finds
 several, ask which, naming each, the open one recommended. Never read reviews and threads in this
 session.
@@ -122,7 +140,7 @@ adding:
   asked for by name, through **Something else**;
 - `--reviewed-this-loop` after `pr-review` posted in this invocation;
 - with a `part=` in the fields, the ticket ships as several pull requests: find them with one
-  search for its key, on a GitHub tracker the table's `in:body "Ticket: #<n>"`, write `#<n>
+  search for its key, on a GitHub tracker in row 3's search's form, write `#<n>
   <open|merged|closed> <head branch> <the Claims: line's criteria>` per line to
   `.review/work-stack.txt`, and add `--stack .review/work-stack.txt` and
   `--criteria` with the ticket's Acceptance Criteria.
