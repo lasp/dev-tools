@@ -66,7 +66,9 @@ carries `implements <id>`, is never wrapped either.
 
 The group may accept a proposal a gate fails only by a mark carrying `override: <reason>` in
 the report, `accept, override: <reason>` or, with new words, `accept, reworded: "<words>",
-override: <reason>`; a plain `accept` on it does not accept it. `apply` carries the reason onto the entry's
+override: <reason>`; a plain `accept` on it does not accept it. With new words, the override
+waives only the gate the proposal was held on: the new words pass every other gate, and a
+failure there stops `apply` as any lint failure does. `apply` carries the reason onto the entry's
 evidence line as `override <YYYY-MM-DD>: <reason>`, and the next revision's report lists every
 override. A held admission the group does not accept this way goes into the ledger's
 `## Candidates below the criteria` with the check it failed; a held rewording, promotion or

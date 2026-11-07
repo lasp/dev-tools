@@ -25,17 +25,21 @@ request was not read, or **Stop**. Read them all, then settle each proposal to o
 `accept, override: <reason>`, `accept, owner: <name>`, `answer: <the answer>`, or blank, deferred;
 a held proposal or a change to a live data convention given new words takes both parts,
 `accept, reworded: "<words>", override: <reason>` or `accept, reworded: "<words>", owner: <name>`,
-and agreed words that hold a double quote write it as a single one. `reworded` is for a proposal
+and agreed words that hold a double quote write it as a single one. A `reworded:` mark holds the
+whole new wording, the agreed change applied to the proposal's text, never only the phrase that
+changed. `reworded` is for a proposal
 with wording: a rule admitted, reworded, promoted or broadened, and an `A-`, `F-` or `D-` entry;
 new words for any other settle it to `unclear`. Or `unclear: <why>`, when what was said does not
-settle it. A `Mark:` line that already holds a mark in one of these forms with a `discussed:`
-line beneath it is one `apply` wrote on an earlier yes: it is settled, and read as the group's
-mark, not as discussion.
+settle it. A `Mark:` line with a `discussed:` line beneath it is one `apply` wrote on an earlier
+yes, blank ones included: it is settled, read as the group's mark or as deferred, not as
+discussion.
 
-Only people's words decide: a reply an agent drafted, whatever its attribution, and a bot's are
-read for what they say, never as the group's verdict; a person's reply in their own words is read
-for what it decides, as `pr-review`'s "Whose reply counts" judges a reply that opens with no
-word. A proposal settles to `unclear` when people disagree with no outcome, when its sources
+Only people's words decide. A bot's reply, and an answer `revise` itself posted, are read for
+what they say, never as the group's verdict. A reply a person posted is theirs, however an agent
+worded it, when its attribution shows they read it, any level below `5/5`; one at `5/5`, or with
+no sign it was read, stays the agent's (`docs/design.md`, "The revision weighs where a rule held").
+A person's reply is read for what it decides, as `pr-review`'s "Whose reply counts" judges a reply
+that opens with no word. A proposal settles to `unclear` when people disagree with no outcome, when its sources
 disagree (a `Mark:` line and a thread, or two notes), since neither carries a time to order them,
 when an accept on a held proposal gives no reason, and when an accept on a change to a live data
 convention names no owner. A question a comment asks is answered as
@@ -50,8 +54,10 @@ file named as a link, as `decision-points.md` says of longer text. Then ask:
 **Write these marks** (Recommended, when none is unclear), **Change some**, the person naming the
 proposal and the mark, or **Let's discuss**. An `unclear` mark is settled with the person before
 anything is written, or left blank, deferred, on their word. On the yes, write each mark on its
-proposal's `Mark:` line, moving any words the group had written there to a `discussed: <their
-words>` line beneath it so none is lost, and tick the box of each accepted one, the report being
+proposal's `Mark:` line, blank for a deferred one, with a `discussed:` line beneath it holding
+the words the group had written there, or `discussed: none on this line`, so none is lost and a
+rerun knows the mark is settled; tick the box of each accepted proposal and each answered
+`question/`, the report being
 the record of what the group decided; nothing below reads the discussion again. Every `Mark:` line empty after
 that, the meeting having deferred everything: stop, there is nothing to write, and name the
 report's path and, in a clone, its branch. Then, by mark:
@@ -69,9 +75,8 @@ report's path and, in a clone, its branch. Then, by mark:
 - A mark carrying `reworded: "<words>"` drafts those words in place of the rule's proposed
   wording, its `> ` lines, or the drafted entry's statement, the rest of its `entry:` lines kept
   as they are; it is named in the lint like any other change, so the bar judges the words the
-  group agreed. With an override too, it is still named: the override waives only the gate the
-  proposal was held on, its lint line going beside the reason, and a failure of any other gate
-  stops as step 2's lint does.
+  group agreed. With an override too, it is still named, and the override waives only the gate
+  the proposal was held on, as `rule-bar.md`'s "Overrides" says.
 
 1. **Archive every rule that leaves.** For each rule graduating, retiring, expiring, demoted to
    the prose tier or rewritten, write all of these:
@@ -148,8 +153,10 @@ report's path and, in a clone, its branch. Then, by mark:
    mark stays on its entry's evidence line. With nothing to name and no new decision, skip the lint. A failure stops,
    with its lines, and nothing is written. Once a repository is over its budget, any named
    change to a rule counted there fails the budget gate, a narrowing included, so the proposals
-   that bring it back under go in the same apply; an admission accepted with an override is not
-   named, so it passes with its budget line printed beside the reason.
+   that bring it back under go in the same apply; an admission accepted with an override and no
+   new words is not named, so it passes with its budget line printed beside the reason, while one
+   reworded with an override is named and stops on the budget gate unless that is the gate it was
+   held on.
 
    Write the diff to `.review/ratchet-proposal.diff`, in `git diff` form with `a/` and `b/` paths
    relative to this repository, and the side in the standard's repository, when that is another,

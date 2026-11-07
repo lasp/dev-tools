@@ -241,8 +241,8 @@ scenarios:
         /lasp-dev:revise apply. The group met on 3 November; settle the marks from what it said.
     must_not_run: ["mcp__*", "Agent", "Task", "Edit", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
     look_at: >-
-      .review/revision/marks.md and the message before the question: a table of R-004, F-001, F-002 and D-001: R-004 accept, reworded with "raises on input it
-      cannot use", resting on erin's Mark line, not declined from the chat note; F-002 accept,
+      .review/revision/marks.md and the message before the question: a table of R-004, F-001, F-002 and D-001: R-004 accept, reworded with the whole sentence "A reader
+      raises on input it cannot use", resting on erin's Mark line, not declined from the chat note; F-002 accept,
       resting on the meeting notes; F-001 unclear, no owner named; D-001 unclear, dana for and erin
       doubting with no outcome, never a plain accept. The report's Mark lines are unchanged and no
       diff is written.
@@ -251,11 +251,12 @@ scenarios:
       - "grep -q '^  Mark:$' standards/log/widgets/ratchet-2026-10.md"
       - "! test -e .review/ratchet-proposal.diff"
       - "grep -qiE 'R-004.*accept, reworded' .review/revision/marks.md"
-      - "grep -qi 'raises on input it cannot use' .review/revision/marks.md"
+      - "grep -qiE 'R-004.*reworded: .?A reader raises on input it cannot use' .review/revision/marks.md"
       - "grep -iE 'F-002' .review/revision/marks.md | grep -iv unclear | grep -qiE '\\baccept\\b'"
       - "grep -iE 'F-001' .review/revision/marks.md | grep -qi unclear"
       - "grep -iE 'D-001' .review/revision/marks.md | grep -qi unclear"
-      - "! grep -iE '^[^|]*\\|[^|]*R-004[^|]*\\|[^|]*decline' .review/revision/marks.md"
+      - "! grep -iE '\\| *\\**`?(D-001|F-001)`?\\** *\\| *\\**`?accept' .review/revision/marks.md"
+      - "! grep -iE '\\| *\\**`?R-004`?\\** *\\| *\\**`?decline' .review/revision/marks.md"
     expect:
       ends: success
       files: [".review/revision/marks.md"]

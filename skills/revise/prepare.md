@@ -1,7 +1,7 @@
 # Prepare
 
 `revise`'s `prepare` mode: from the window's merged pull requests to the report the group
-marks. Each step fills the section of `<plugin root>/skills/revise/outline.md` it names. Apply every Dial
+decides on. Each step fills the section of `<plugin root>/skills/revise/outline.md` it names. Apply every Dial
 by name from the shared `dials.md`; a threshold the Dials do not state is not applied. Steps 1,
 2, 5 and 7 run the sections of `<plugin root>/skills/revise/harvest.md` they name; read it at
 step 1.
