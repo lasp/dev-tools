@@ -29,8 +29,8 @@ Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/
 ## When to run
 
 Monthly, or sooner when the Revision Dial's count of merged pull requests since the last report
-is reached; nothing schedules it. `capture` runs between revisions, weekly or whenever pull requests
-have merged, by hand or from a scheduled agent, so `prepare` finds the month already read.
+is reached; nothing schedules it. The driver runs `capture` between revisions, weekly or whenever pull
+requests have merged, so `prepare` finds the month already read.
 
 ## Options
 

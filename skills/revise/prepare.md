@@ -43,8 +43,9 @@ read; and read the decisions and terminology the changed pages and epics touch, 
 record `sources`.
 
 1. **Load the window from the capture.** Each repository's merged pull requests are harvested,
-   analyzed and read for guidance as they merge, by `revise capture` (`capture.md`), into its
-   `<log>`; this step reads them from there and captures only what is missing. First remove every
+   analyzed and read for guidance between revisions, by `revise capture` (`capture.md`), into its
+   `<log>`; this step reads them from there, as fresh as the last capture, and captures only when
+   the log does not hold the window. First remove every
    `.review/harvest/guidance-*/`, so no earlier run's tally is read. Then, for each other covered
    repository, from the later of the window's first day and that repository's adoption date
    (`revise`'s "The standard's repository"), since a pull request before it was reviewed against no
@@ -56,12 +57,12 @@ record `sources`.
    prints, or the first day when it prints none, and `--merges` that printout, saved to a file;
    for another, `<out>` is `.review/harvest/captured-<repo>`, `<guidance>`
    `.review/harvest/guidance-<repo>`, and the last day today, in UTC, since its merges are not in
-   this clone's git. An exit 2 names the days and pull requests not yet captured: run
-   `capture.md` steps 2 to 5 for the days from the earliest it names through today, `pr-reader`
-   given that repository and step 3's analysts run for this repository alone, then load again; a
-   second exit 2 stops the step with its lines. The block `load` prints is the harvest's report
-   for everything below; the records are already in `<log>`, the threads and records in `<out>`,
-   and the guidance slices in `<guidance>`. For each other repository, run harvest.md's
+   this clone's git. An exit 2 names the days, the merges and the failed or missing records the log
+   does not hold: run `capture.md` steps 1 to 5 for that repository, then load again; a second exit
+   2 stops the step with its lines. The block `load` prints is the harvest's report for everything
+   below, its `not read · pr-NNNN` lines the pull requests whose comments were not read for
+   guidance, which go under "Not read"; the records are already in `<log>`, the threads and
+   records in `<out>`, and the guidance slices in `<guidance>`. For each other repository, run harvest.md's
    "Guidance" from `guidance_check.py` on, on its loaded slices and comment lists, with no
    extractor, into its `<guidance>`. When `capture.md` step 2 runs, `archive_records.py` refuses, copying nothing, when a harvested record
    would drop findings the log's record holds, which the threads cannot rebuild. Show its
