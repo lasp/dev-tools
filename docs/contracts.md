@@ -235,7 +235,7 @@ not parse in this shape, a subagent's call, a call with any other argument, such
 missing.
 
 Writers: the GitHub write plan (`skills/using-github/issues.md`, "Running it"), run by
-`ticket-draft`, at the person's yes, with `jq` from the items it writes to
+`ticket-draft` and `ticket-audit`, at the person's yes, with `jq` from the items it writes to
 `.review/github-approval-items.json`; both removed when the plan finishes or stops. Readers:
 `hooks/issue-gate.sh`.
 
@@ -290,7 +290,7 @@ Pinned by: tests/test_next_phase.py::test_an_agree_that_carries_its_response_is_
 
 ## The thread dump
 
-Version: 6
+Version: 7
 
 Fields: `.review/threads/pr-NNNN/` (and `.review/harvest/threads/pr-NNNN/`): `pages/`, each
 `pull_request_read` result as the server returned it, one file per call, from which
@@ -308,7 +308,9 @@ version 3 states the `html_url` requirement; version 4 added `pages/` and `threa
 checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`; version 6 lets a
 list be paged below 100, named by `--per-page`, and has `save_page.py` refuse a response that is
 not JSON, such as the harness's size-limit notice, and clear a pull request's
-`get_review_comments` pages at its first page. Beside them, `judged.json`, "The
+`get_review_comments` pages at its first page. Version 7 has `save_page.py` save the text of a
+response that is a list of one text block, as Claude Code passes some servers' results, a stdio server's among them, and
+refuse any other list. Beside them, `judged.json`, "The
 judgments", is `pr-reader`'s own.
 
 Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
@@ -793,7 +795,9 @@ page as a ticket and counts no gate, and `standard_file.sh` exits 1 (version 3).
 and the shadow read are gone, with `.review/profile-shadow.log` and exit 3 (version 15).
 
 Writers: `onboard`, on the person's yes at its step 5: the drop-in's settled keys and their derived gates, `public`
-and, for a new standard, `.review/onboard/project.yaml` with a `decisions.md` holding none yet, into the standard's `profile.yaml` or,
+and, for a new standard, `.review/onboard/project.yaml` (a Jira tracker as `jira:`, GitHub Issues as
+`issue_tracker:` with `kind: github`, a `location` only for another repository's issues, and a
+`ticket.pattern` only when one is recorded) with a `decisions.md` holding none yet, into the standard's `profile.yaml` or,
 for a standard covering several repositories, its `profiles/<repo>.yaml`, with the pointer here; people, by hand from `standards/profile.example.yaml`;
 the plugin, `standards/default-profile.yaml`; each repository's
 maintainers, its `standards/profile.yaml`; and `profile.py`, through `survey.py --drop-in`, the
@@ -806,7 +810,7 @@ Pinned by: tests/test_profile.py::test_a_value_of_the_wrong_shape
 
 ## The ticket shape
 
-Version: 2
+Version: 3
 
 Fields: a ticket, in whatever tracker files it, is an id (a Jira key, `<KEY>-NNNN`, or a GitHub
 issue's number), a title (Jira's summary), a description in `standards/ticket-format.md`'s format,
@@ -827,13 +831,14 @@ A Jira workflow maps each role to exactly one status. A GitHub tracker maps each
 label, and `--defaults --field issue_tracker.roles.<role>` prints `none` for a role with no label:
 an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. On a GitHub
 tracker `ticket-draft` reads `issue_tracker.roles.<role>` and skips a move into a role whose label
-is `none` (version 2); `ticket-audit` still reads `jira.roles`, which prints `not yet recorded` for
-a GitHub tracker, and stops.
+is `none` (version 2); `ticket-audit` reads `issue_tracker.roles` there in place of `jira.roles`,
+for the label a close removes or adds and, in `source-reader`'s `pulls` sweep, for the `approved`
+and `implementation` labels an open issue lacks when its pull request waits on approval (version 3).
 An open issue that carries no mapped label is in `filed`, and `work` sends it to `ticket-draft`.
 
 Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`
 and the tracker's skill, `using-jira`, for the description. Readers: `scripts/profile.py`, and
-through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, the skills that read `jira.roles`, and `ticket-draft` on a GitHub tracker.
+through it `scripts/next_phase.py`, for a Jira workflow or an issue's labels, the skills that read `jira.roles`, and `ticket-draft` and `ticket-audit` on a GitHub tracker.
 
 Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_to_each_role
 
@@ -1325,7 +1330,7 @@ Pinned by: tests/test_check_static.py::test_the_update_writes_the_baseline
 
 ## The survey
 
-Version: 10
+Version: 11
 
 Fields: `scripts/survey.py`'s printout, from the committed files of `--ref` (default `HEAD`)
 only; a candidate file the checkout holds but git does not track is named on the `not committed`
@@ -1416,7 +1421,15 @@ as `where.sh` reads it or at a commit subject's start, a number followed by `-<n
 date and no key (`onboard/WISER-2026-10-29`), and names the project when seen with two numbers or more,
 or in a branch name, and with at least twice as many numbers as any other key so seen, so a history
 where two projects are seen about as often names none; the commit habit counts the subjects that open with that
-key. `--json` prints the same rows, their values whole, as a list of objects with `family`,
+key. `GH-<n>` is GitHub's issue form and names no project. The `issue key` row, after `ticket
+project`, reads GitHub issue keys in the same places (version 11): a branch name's `issue-<n>`,
+`GH-<n>`, or `<n>` alone, each before `-<word>`, `_` or the name's end, so `2026-10-29-notes` is none,
+and a subject opening with `#<n>` or `GH-<n>`, with the same date guard. Its value is
+`branches: <form> <count>, … of <N>; subjects: <k> of <M>; pattern <p>`, `<p>` the ticket pattern the
+branch forms imply as `where.sh` reads a GitHub tracker's branch: `(issue-)?\d+`, its default, for
+`issue-<n>` and `<n>-words`; `GH-\d+` for `GH-<n>` alone; `mixed` for `GH-<n>` beside another
+form; `none` with no branch form. No key holds it (`-`), and the candidate takes nothing from it,
+since a GitHub tracker's pattern is only ever the one its standard records; `onboard` proposes it. `--json` prints the same rows, their values whole, as a list of objects with `family`,
 `found_in`, `value`, `key`, `plugin_today`, `plugin_source`, `match` and `conflict`.
 
 With `--profile <path>`, it also writes a candidate profile there, in the plugin's profile format

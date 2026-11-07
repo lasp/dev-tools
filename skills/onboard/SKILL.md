@@ -15,7 +15,7 @@ description: >
 argument-hint: "[rules [Confluence page or Jira epic to add]]"
 metadata:
   author: lasp-dev
-  version: 0.6.7
+  version: 0.7.0
 ---
 
 # Onboard
@@ -160,8 +160,9 @@ never a page's body. Find each server's tools with `ToolSearch`; a server that i
 or a call that fails, is a line in step 3's "could not detect" group, and the rest goes on. Say
 so once per server, at the first step that needs it, as
 `${CLAUDE_PLUGIN_ROOT}/skills/work/servers.md` sets out, naming what is lost: for GitHub, step 1's
-search for the project's standard, the repository's visibility and default branch and the search
-for the repositories that use it; for Jira, the statuses and fields; for Confluence, the space keys.
+search for the project's standard, the repository's visibility and default branch, the search
+for the repositories that use it and its issues' labels; for Jira, the statuses and fields; for
+Confluence, the space keys.
 
 - **GitHub**, as `${CLAUDE_PLUGIN_ROOT}/skills/using-github/SKILL.md` sets out: whether the
   repository is private and its default branch, from the `search_repositories` call step 1 made
@@ -194,8 +195,34 @@ for the repositories that use it; for Jira, the statuses and fields; for Conflue
   incomplete, which the table says. Write them to `.review/onboard/downstream.json` with
   the Write tool, as a JSON list of `{"repo": "<name>", "evidence": <count>}`, the name bare with no owner, most first, or skip
   the file when none is found.
-- **Jira**, for the project the survey's `ticket project` row names, or the profile's
-  `ticket.project` when the history names none:
+- **Which tracker**, for a new standard; a standard the repository joins already names it. The
+  survey's `ticket project` row is the Jira history, and its `issue key` row the GitHub issue keys
+  in branch names and subjects. With GitHub connected, read this repository's issues and pull
+  requests too: `list_issues`, with no `state`, so open and closed alike, `orderBy` `UPDATED_AT`,
+  `direction` `DESC` and `perPage` 50; and one `search_pull_requests` for `repo:<owner>/<repo>
+  is:pr is:merged`, `perPage` 30, reading of each body only its issue references, in the forms
+  `docs/contracts.md`'s "The record" reads on a `Ticket:` line, an issue's `github.com` URL among
+  them, there or after `Closes`, `Fixes` or `Resolves`. Then:
+  - a project on the `ticket project` row, and no issue listed: Jira, read as below;
+  - no project there, and an issue listed, an issue reference in a body, or an `issue key` row
+    found in `history`: GitHub Issues, read as below;
+  - a project there, and an issue listed: the evidence is mixed. Read both, and step 4 asks which
+    tracker the project uses before any question about its workflow;
+  - neither: no tracker is found, and step 4 says so and asks nothing about a workflow.
+- **GitHub Issues**, when the tracker is or may be GitHub's:
+  - where the issues live: this repository, unless it lists no issues or has them turned off,
+    and at least two of the bodies' references name the same other repository, as
+    `<owner>/<repo>#<n>` or its issue URL. That repository is then proposed as the issues' location, and its issues
+    are listed as above in place of this one's; otherwise another repository's references are
+    shown as evidence only;
+  - the labels the listed issues carry, each with how many open and how many closed issues carry
+    it. Only these labels, which the repository already uses, are proposed, and none is created.
+    GitHub's server lists no labels on their own, so a label the person names at step 4 that the
+    sample missed is checked with `get_label` (`owner`, `repo`, `name`); one it does not find is
+    said and not recorded;
+  - the ticket pattern the survey's `issue key` row implies.
+- **Jira**, when the tracker is or may be Jira's, for the project the survey's `ticket project`
+  row names, or the profile's `ticket.project` when the history names none:
   - the statuses, sampled: `jira_search` with `project = <key> ORDER BY updated DESC`, `fields`
     `status`, `limit` 50, each distinct status with its category (To Do, In Progress, Done);
   - the fields a skill uses by role, found by `jira_search_fields`: an epic link and an estimate
@@ -213,7 +240,8 @@ Group the families, in this order:
 1. **In the repository**: the survey's rows with a path, `git` or `history`, each with its
    `match`.
 2. **Elsewhere**: what only the plugin or a server holds, with where: the standard's file or the default profile the
-   survey names, or the server and the call.
+   survey names, or the server and the call; among them the tracker step 2 found, Jira, GitHub
+   Issues, mixed or none, with its evidence.
 3. **Missing**: a family neither holds.
 4. **Could not detect**: a server not connected, a call that failed, or a family no tool lists.
    A server's row names its case and the fix, as `servers.md` sets out.
@@ -303,9 +331,19 @@ file leaves out is asked as for a new repository.
   downstream check off. Either way, say the search covered only `<owner>`, so a user in another
   organization is one to add by name.
 - **For a new standard only, the project's settings**, which the default profile states for no
-  project, asked only when step 2 read the tracker's statuses (otherwise say the question was
+  project, asked only when step 2 read the tracker's statuses, or GitHub's issues (otherwise say the question was
   skipped, so no workflow is recorded and no skill moves a ticket's status or routes by it, and
-  the standard names no internal host of its own, until its `profile.yaml` records them): the tracker's workflow, each
+  the standard names no internal host of its own, until its `profile.yaml` records them). Where
+  step 2 found the evidence mixed, first ask alone **which tracker holds the project's tickets**,
+  since every other question here follows from it: what each has, the Jira project's key with the
+  branches and subjects that carry it, and the issues listed with the newest one's last update and
+  the merged pull requests whose bodies name an issue; recommend the one the most recent branches
+  and pull requests follow, and when neither leads, recommend neither and say so. **Jira**,
+  **GitHub Issues**, or **Let's discuss**. The rest of this bullet is then asked only when step 2
+  read the chosen tracker's statuses or issues; otherwise say the question was skipped, as above,
+  and write no `.review/onboard/project.yaml`. For GitHub Issues, read
+  `${CLAUDE_SKILL_DIR}/github-issues.md` for these settings and follow it in place of the rest of
+  this bullet. For Jira: the tracker's workflow, each
   status with the phase a ticket in it goes to, `ticket-draft`, `implement-change` or `nothing`,
   and, for five of them, the role a generic skill names it by, `filed`, `approved`,
   `implementation`, `finished` and `abandoned`, each on exactly one status, a status the sample
@@ -504,6 +542,7 @@ and a clone of the standard's repository under `.review/onboard/clone/` where st
 the step 5 writes the person says yes to, each by name, `git config lasp-dev.standard` among
 them, and on step
 6's yes what `first-rules.md`'s "Writes" names under `.review/harvest/` and `.review/backtest/`. No
-ticket is read beyond its status, and no page is fetched, but the pages and epics the person names
+ticket is read beyond its status, a GitHub issue beyond its state and labels, or a merged pull
+request's body beyond its issue references, no label is created, and no page is fetched, but the pages and epics the person names
 at step 6; a Confluence search's excerpts are read only for a warning, and nothing of them is
 kept.

@@ -366,6 +366,16 @@ class Detectors(unittest.TestCase):
         data, keys = values_of(make_repo(stubs, REMOTE), self.root)
         self.assertEqual((data["types"]["regex"], keys["types.regex"]["source"]), (NR, None))
 
+    def test_a_github_keyed_history_fills_no_ticket_key(self):
+        repo = make_repo({}, REMOTE, branches=("GH-12-guard", "14-low-stock", "issue-9-by-part"), subjects=("GH-12: guard", "GH-14: low"))
+        data, keys = values_of(repo, self.root)
+        self.assertEqual(data["ticket"], {"pattern": NR, "project": NR})
+        self.assertIsNone(keys["ticket.pattern"]["source"])
+        drop_in = scratch() / "onboard" / "profile.dropin.yaml"
+        out = survey_in(repo, self.root, "--profile", str(drop_in.with_name("profile.yaml")), "--drop-in", str(drop_in))
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertNotIn("ticket", profile.parse(drop_in.read_text(), "drop-in"))
+
     def test_no_signal_leaves_every_detected_key_unrecorded(self):
         quiet = {"README.txt": "x\n", "pyproject.toml": "[project]\nname = 'p'\n# no mypy here\n",
                  "tests/test_manifest.py": "x\n", "docs/calibration.txt": "x\n"}

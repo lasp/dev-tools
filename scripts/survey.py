@@ -74,7 +74,13 @@ does not cover, a developer git doc (`git.md`, `git-workflow.md`, `branching.md`
 `doc/` or `docs/`). A ticket key is taken only where convention puts one: in a branch name, where
 `where.sh` reads it, or opening a commit subject of `--ref`'s history, a number followed by
 `-<nn>-<nn>` being a date and no key; it names the project when seen with two numbers or more, or in a
-branch name, and with at least twice as many numbers as any other key so seen. With `--json`, the same rows as a JSON list of
+branch name, and with at least twice as many numbers as any other key so seen; `GH-<n>` is GitHub's
+form and names no project. The `issue key` row reads GitHub issue keys in the same places: a branch
+name's `issue-<n>`, `GH-<n>` or `<n>` before `-<word>`, `_` or the name's end, each form with its count,
+and a subject opening with `#<n>` or `GH-<n>`, then the ticket pattern the branch forms imply,
+`(issue-)?\d+` (`where.sh`'s default for a GitHub tracker) for `issue-<n>` and `<n>-words`,
+`GH-\d+` for `GH-<n>` alone, `mixed` for `GH-<n>` beside another form, or `none` with no branch
+form; no key holds it, since a GitHub tracker's pattern is only ever the standard's. With `--json`, the same rows as a JSON list of
 objects with the keys `family`, `found_in`, `value`, `key`, `plugin_today`, `plugin_source`,
 `match` and `conflict` (true on every row of a family whose sources disagree), each value whole,
 where the table cuts one past 60 characters.
@@ -156,6 +162,13 @@ SECRET_HOOKS = ("gitleaks", "detect-secrets", "trufflehog", "detect-private-key"
 # (`onboard/WISER-2026-10-29`).
 BRANCH_KEY = re.compile(r"^(?:[A-Za-z]+/)?([A-Z][A-Z0-9]+)-(\d+)(?!\d|-\d\d-\d\d)")
 SUBJECT_KEY = re.compile(r"^\[?([A-Z][A-Z0-9]+)-(\d+)\b(?!-\d\d-\d\d)")
+# A GitHub issue's number in the same places: a branch name's start, after the same optional
+# `<word>/`, as `issue-<n>`, `GH-<n>` or `<n>`, each before `-<word>`, `_` or the name's end, so a date
+# such as `2026-10-29-notes` is no key; a subject's start as `#<n>` or `GH-<n>`, with the date
+# guard above. `GH` is GitHub's form, never a Jira project.
+ISSUE_BRANCH = re.compile(r"^(?:[A-Za-z]+/)?(issue-|GH-)?(\d+)(?=-[A-Za-z]|_|$)", re.I)
+ISSUE_SUBJECT = re.compile(r"^\[?(#|GH-)(\d+)\b(?!-\d\d-\d\d)", re.I)
+ISSUE_FORMS = {"": "<n>-words", "issue-": "issue-<n>", "gh-": "GH-<n>"}
 HEADINGS = {"commit style": r"(?<![\w-])commit(s|ting)?\b(?!-)",
             "branch naming": r"\bbranch(es|ing)?\b",
             "merge strategy": r"\b(merg(e|es|ed|ing)|rebas(e|es|ed|ing)|squash(es|ed|ing)?)\b"}
@@ -822,12 +835,13 @@ def where_matches(pattern: str, names: list[str], flags: int = 0) -> int:
 def project_key(names: list[str], subjects: list[str]) -> str:
     """The ticket project the history names where convention puts a key, at a branch name's start
     or a subject's: seen with two numbers or more, or in a branch name, and with at least twice as
-    many numbers as any other key so seen; otherwise the history names none."""
+    many numbers as any other key so seen; otherwise the history names none. `GH` is GitHub's
+    issue form and names no project."""
     numbers: dict[str, set] = {}
     in_branch = set()
     for text, is_branch in [(n, True) for n in names] + [(s, False) for s in subjects]:
         m = (BRANCH_KEY if is_branch else SUBJECT_KEY).match(text)
-        if m:
+        if m and m.group(1) != "GH":
             numbers.setdefault(m.group(1), set()).add(m.group(2))
             if is_branch:
                 in_branch.add(m.group(1))
@@ -836,6 +850,27 @@ def project_key(names: list[str], subjects: list[str]) -> str:
     if not ranked or (len(ranked) > 1 and 2 * ranked[1][1] > ranked[0][1]):
         return ""
     return ranked[0][0]
+
+
+def issue_key(names: list[str], subjects: list[str]) -> str:
+    """The GitHub issue keys the history carries where convention puts one, as the `issue key` row
+    gives them: each branch form with how many branch names carry it, how many subjects open with
+    one, and the ticket pattern the branch forms imply as `where.sh` reads a GitHub tracker's
+    branch: `(issue-)?\\d+`, its default, for `issue-<n>` and `<n>-words`, `GH-\\d+` for `GH-<n>`
+    alone, `mixed` for `GH-<n>` beside another form, and `none` when no branch name carries one.
+    Empty when neither a branch name nor a subject does."""
+    forms = Counter(ISSUE_FORMS[(m.group(1) or "").lower()] for m in map(ISSUE_BRANCH.match, names) if m)
+    led = sum(1 for s in subjects if ISSUE_SUBJECT.match(s))
+    if not forms and not led:
+        return ""
+    if not forms:
+        pattern = "none"
+    elif "GH-<n>" not in forms:
+        pattern = r"(issue-)?\d+"
+    else:
+        pattern = r"GH-\d+" if len(forms) == 1 else "mixed"
+    held = ", ".join(f"{form} {n}" for form, n in sorted(forms.items(), key=lambda kv: (-kv[1], kv[0])))
+    return f"branches: {held or 'none'} of {len(names)}; subjects: {led} of {len(subjects)}; pattern {pattern}"
 
 
 def survey(top: Path, root: Path, ref: str = "HEAD", raws: list | None = None) -> tuple[str, list[dict]]:
@@ -956,6 +991,8 @@ def survey(top: Path, root: Path, ref: str = "HEAD", raws: list | None = None) -
         f"{key}-<n>; branches: {exact} of {len(names)} as where.sh, {loose} any case" if key else "",
         "ticket.pattern", {"pattern": pattern, "names": names} if key else None)
     add("ticket project", "history" if key else "none", key, "ticket.project", key or None)
+    issue_keys = issue_key(names, subjects)
+    add("issue key", "history" if issue_keys else "none", issue_keys)
     led = sum(1 for s in subjects if key and re.match(rf"\[?{re.escape(key)}-\d+\b", s))
     conventional = sum(1 for s in subjects if re.match(r"(feat|fix|docs|chore|refactor|test|build|ci)(\(.+\))?!?:", s))
     habit = (f"{led} of {len(subjects)} subjects open with a ticket key" if led else
