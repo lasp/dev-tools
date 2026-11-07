@@ -66,7 +66,8 @@ No item sets a label the repository does not already use, a Projects field, an e
 assignee, a parent or a sub-issue, and none adds a closing keyword to a pull request.
 
 The plan is written to `.review/github-plan.md` and gated as `issues.md`'s "Showing it" says, its
-texts under `.review/audit/<YYYY-MM-DD>-send/`, then run on the person's yes through
+texts under `.review/audit/<YYYY-MM-DD>-send/`; the turn ends at that gate, since **Apply them**
+is not a yes to the plan. It is run on the person's answer to the gate through
 `.review/github-approval.json` and `hooks/issue-gate.sh`, as its "Running it" says, and read back as
 its "Read it back" says. The record is `.review/audit/<YYYY-MM-DD>-writes.md`, as `SKILL.md` says.
 What the plan does not write, an item dropped, failed or marked `paste:`, or the whole plan on

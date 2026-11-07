@@ -121,6 +121,9 @@ The sweep gathers; this turns it into the writes. Say how many upheld actions ea
 and ask: **Apply them** (Recommended where the server's write tools are there), which builds the
 write plan; **Choose groups**, typed under Other; **Stop**, the report kept in `.review/audit/`;
 **Let's discuss**. Without the write tools, say so in one line and offer only the report.
+**Apply them** and **Choose groups** choose what the plan holds; neither is a yes to it. Build the
+plan, show it and ask its gate, then stop: nothing is written before the person answers that gate
+with **Write all** or **Drop some**.
 
 The plan, as `${CLAUDE_PLUGIN_ROOT}/skills/using-jira/write-plan.md` sets out, holds an item per
 upheld action, the evidence beside it in a clause:
