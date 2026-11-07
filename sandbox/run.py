@@ -348,9 +348,9 @@ def holding(sandbox: Path, who: str, wait: bool):
 
 def reset(sandbox: Path) -> None:
     """Both clones back to their pinned commits, out of any rebase or merge a run left paused, with untracked and ignored files gone but .venv kept,
-    origin fetching from the URL `sandbox.sh` gave it and kept as `sandbox.fetch`, and `main` and `origin/main` back at the `main`
-    of the bare repository under remotes/, the source's `main` when the sandbox was built, which a
-    scenario's setup may have moved."""
+    origin fetching from the URL `sandbox.sh` gave it and kept as `sandbox.fetch`, every `origin/*` back at the branches of the bare
+    repository under remotes/ and `main` at its `main`, the source's when the sandbox was built, and every other local branch
+    deleted, since a scenario's setup may have moved, made or deleted any of them."""
     for name, (sha, branch) in pins(sandbox).items():
         repo = sandbox / "repos" / name
         fetch = subprocess.run(["git", "-C", str(repo), "config", "--get", "sandbox.fetch"], capture_output=True, text=True).stdout.strip()
@@ -361,8 +361,12 @@ def reset(sandbox: Path) -> None:
         git(repo, "checkout", "-q", "-f", "-B", branch, sha)
         git(repo, "reset", "-q", "--hard", sha)
         git(repo, "clean", "-q", "-fdx", "-e", ".venv")
-        main = git(sandbox / "remotes" / f"{name}.git", "rev-parse", "--verify", "refs/heads/main")
-        git(repo, "update-ref", "refs/remotes/origin/main", main)
+        bare = sandbox / "remotes" / f"{name}.git"
+        git(repo, "fetch", "-q", "--prune", str(bare), "+refs/heads/*:refs/remotes/origin/*")
+        for other in git(repo, "for-each-ref", "refs/heads", "--format=%(refname:lstrip=2)").split():
+            if other not in (branch, "main"):
+                git(repo, "branch", "-q", "-D", other)
+        main = git(bare, "rev-parse", "--verify", "refs/heads/main")
         if branch != "main":
             git(repo, "update-ref", "refs/heads/main", main)
 

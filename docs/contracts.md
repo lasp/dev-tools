@@ -1340,7 +1340,7 @@ or in a branch name, and with at least twice as many numbers as any other key so
 where two projects are seen about as often names none; the commit habit counts the subjects that open with that
 key. `GH-<n>` is GitHub's issue form and names no project. The `issue key` row, after `ticket
 project`, reads GitHub issue keys in the same places (version 11): a branch name's `issue-<n>`,
-`GH-<n>`, or `<n>` alone, each before `-<word>` or the name's end, so `2026-10-29-notes` is none,
+`GH-<n>`, or `<n>` alone, each before `-<word>`, `_` or the name's end, so `2026-10-29-notes` is none,
 and a subject opening with `#<n>` or `GH-<n>`, with the same date guard. Its value is
 `branches: <form> <count>, … of <N>; subjects: <k> of <M>; pattern <p>`, `<p>` the ticket pattern the
 branch forms imply as `where.sh` reads a GitHub tracker's branch: `(issue-)?\d+`, its default, for

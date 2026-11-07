@@ -76,7 +76,7 @@ does not cover, a developer git doc (`git.md`, `git-workflow.md`, `branching.md`
 `-<nn>-<nn>` being a date and no key; it names the project when seen with two numbers or more, or in a
 branch name, and with at least twice as many numbers as any other key so seen; `GH-<n>` is GitHub's
 form and names no project. The `issue key` row reads GitHub issue keys in the same places: a branch
-name's `issue-<n>`, `GH-<n>` or `<n>` before `-<word>` or the name's end, each form with its count,
+name's `issue-<n>`, `GH-<n>` or `<n>` before `-<word>`, `_` or the name's end, each form with its count,
 and a subject opening with `#<n>` or `GH-<n>`, then the ticket pattern the branch forms imply,
 `(issue-)?\d+` (`where.sh`'s default for a GitHub tracker) for `issue-<n>` and `<n>-words`,
 `GH-\d+` for `GH-<n>` alone, `mixed` for `GH-<n>` beside another form, or `none` with no branch
@@ -163,10 +163,10 @@ SECRET_HOOKS = ("gitleaks", "detect-secrets", "trufflehog", "detect-private-key"
 BRANCH_KEY = re.compile(r"^(?:[A-Za-z]+/)?([A-Z][A-Z0-9]+)-(\d+)(?!\d|-\d\d-\d\d)")
 SUBJECT_KEY = re.compile(r"^\[?([A-Z][A-Z0-9]+)-(\d+)\b(?!-\d\d-\d\d)")
 # A GitHub issue's number in the same places: a branch name's start, after the same optional
-# `<word>/`, as `issue-<n>`, `GH-<n>` or `<n>`, each before `-<word>` or the name's end, so a date
+# `<word>/`, as `issue-<n>`, `GH-<n>` or `<n>`, each before `-<word>`, `_` or the name's end, so a date
 # such as `2026-10-29-notes` is no key; a subject's start as `#<n>` or `GH-<n>`, with the date
 # guard above. `GH` is GitHub's form, never a Jira project.
-ISSUE_BRANCH = re.compile(r"^(?:[A-Za-z]+/)?(issue-|GH-)?(\d+)(?=-[A-Za-z]|$)", re.I)
+ISSUE_BRANCH = re.compile(r"^(?:[A-Za-z]+/)?(issue-|GH-)?(\d+)(?=-[A-Za-z]|_|$)", re.I)
 ISSUE_SUBJECT = re.compile(r"^\[?(#|GH-)(\d+)\b(?!-\d\d-\d\d)", re.I)
 ISSUE_FORMS = {"": "<n>-words", "issue-": "issue-<n>", "gh-": "GH-<n>"}
 HEADINGS = {"commit style": r"(?<![\w-])commit(s|ting)?\b(?!-)",

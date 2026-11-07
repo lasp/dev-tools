@@ -15,13 +15,15 @@ beside its others, each with what bears on it and a recommendation, and none wri
   the issue's state stands for it. A label that sorts issues by kind is not mapped, so an open
   issue carrying only such labels goes to `ticket-draft`, as one with none does. Recommend from
   the label names and their open and closed counts, such as `ready` for approved and `in progress`
-  for implementation, both going to `implement-change`. A label the person names that the sample
-  missed is checked first, as step 2 says. Nothing creates or renames a label.
+  for implementation, both going to `implement-change`. Name each listed open issue that carries
+  two or more of the labels recommended, and say `work` refuses it until all but one are removed.
+  A label the person names that the sample missed is checked first, as step 2 says. Nothing
+  creates or renames a label.
 - **The labels at which a pull request may be open**, each one of the mapped labels: recommend
   the implementation label when one is mapped, and none otherwise.
-- **Where the issues live**, asked only when step 2 proposed another repository: recommend it,
-  with the references that name it as the evidence. Otherwise the issues are this repository's and
-  nothing is asked.
+- **Where the issues live**, asked only when step 2 proposed another repository, which it does
+  only when this one lists no issues or has them turned off: recommend it, with the references that name it as the
+  evidence. Otherwise the issues are this repository's and nothing is asked.
 - **How a branch names its issue**, which `work` and the session-start line read to tell which
   issue a branch is for, from the `issue key` row's pattern:
   - `(issue-)?\d+` or `none`: with no pattern recorded, the plugin reads `59-words`,

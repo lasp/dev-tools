@@ -200,18 +200,21 @@ Confluence, the space keys.
   in branch names and subjects. With GitHub connected, read this repository's issues and pull
   requests too: `list_issues`, with no `state`, so open and closed alike, `orderBy` `UPDATED_AT`,
   `direction` `DESC` and `perPage` 50; and one `search_pull_requests` for `repo:<owner>/<repo>
-  is:pr is:merged`, `perPage` 30, reading of each body only its issue references: a `Ticket:`
-  line's `#<n>` or `<owner>/<repo>#<n>`, or one after `Closes`, `Fixes` or `Resolves`. Then:
+  is:pr is:merged`, `perPage` 30, reading of each body only its issue references, in the forms
+  `docs/contracts.md`'s "The record" reads on a `Ticket:` line, an issue's `github.com` URL among
+  them, there or after `Closes`, `Fixes` or `Resolves`. Then:
   - a project on the `ticket project` row, and no issue listed: Jira, read as below;
   - no project there, and an issue listed, an issue reference in a body, or an `issue key` row
-    other than `none`: GitHub Issues, read as below;
+    found in `history`: GitHub Issues, read as below;
   - a project there, and an issue listed: the evidence is mixed. Read both, and step 4 asks which
     tracker the project uses before any question about its workflow;
   - neither: no tracker is found, and step 4 says so and asks nothing about a workflow.
 - **GitHub Issues**, when the tracker is or may be GitHub's:
-  - where the issues live: this repository, unless the bodies' references all name one other
-    repository, `<owner>/<repo>#<n>`, and none a bare `#<n>`. That repository is then proposed as
-    the issues' location, and its issues are listed as above in place of this one's;
+  - where the issues live: this repository, unless it lists no issues or has them turned off,
+    and at least two of the bodies' references name the same other repository, as
+    `<owner>/<repo>#<n>` or its issue URL. That repository is then proposed as the issues' location, and its issues
+    are listed as above in place of this one's; otherwise another repository's references are
+    shown as evidence only;
   - the labels the listed issues carry, each with how many open and how many closed issues carry
     it. Only these labels, which the repository already uses, are proposed, and none is created.
     GitHub's server lists no labels on their own, so a label the person names at step 4 that the
@@ -336,7 +339,9 @@ file leaves out is asked as for a new repository.
   branches and subjects that carry it, and the issues listed with the newest one's last update and
   the merged pull requests whose bodies name an issue; recommend the one the most recent branches
   and pull requests follow, and when neither leads, recommend neither and say so. **Jira**,
-  **GitHub Issues**, or **Let's discuss**. For GitHub Issues, read
+  **GitHub Issues**, or **Let's discuss**. The rest of this bullet is then asked only when step 2
+  read the chosen tracker's statuses or issues; otherwise say the question was skipped, as above,
+  and write no `.review/onboard/project.yaml`. For GitHub Issues, read
   `${CLAUDE_SKILL_DIR}/github-issues.md` for these settings and follow it in place of the rest of
   this bullet. For Jira: the tracker's workflow, each
   status with the phase a ticket in it goes to, `ticket-draft`, `implement-change` or `nothing`,

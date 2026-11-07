@@ -320,7 +320,7 @@ scenarios:
       - test ! -e .review/github-approval.json
   # onboard on a repository with no standard, reading its GitHub issues. The stub also answers
   # onboard's search_repositories (public, on main) and search_code (nothing), so no standard
-  # elsewhere covers widgets. Each setup makes its own history, since a run's reset keeps branches.
+  # elsewhere covers widgets. Each setup makes its own history, and a run's reset restores the branches.
   - id: tracker-gh-onboard
     repo: widgets
     setup:
@@ -358,6 +358,8 @@ scenarios:
       - grep -Eq "name:[[:space:]]*['\"]?ready" .review/onboard/project.yaml
       - "! grep -Eq '^jira:|^[[:space:]]+location:' .review/onboard/project.yaml"
       - "! grep -Eq \"name:[[:space:]]*['\\\"]?(enhancement|needs-refinement)\" .review/onboard/project.yaml"
+      - |-
+        python3 -c 'import re, sys; m = re.search(r"^\s+pr_statuses:(.*(?:\n\s+- .*)*)", open(".review/onboard/project.yaml").read(), re.M); sys.exit(not (m and re.search(r"\bin progress\b", m.group(1))))'
 
   - id: tracker-gh-onboard-mixed
     repo: widgets
@@ -380,5 +382,5 @@ scenarios:
     expect:
       ends: success
       mcp: [mcp__github__list_issues]
-      says: ["(?i)jira", "(?i)github issues"]
+      says: ["(?i)\\bjira\\b", "(?i)\\bgithub issues\\b", "(?is)\\bwhich tracker\\b|(?:\\bwhich one\\b|\\b(?:jira|github issues)\\b[^?]{0,120}\\bor\\b[^?]{0,120}\\b(?:jira|github issues)\\b)[^?]{0,200}\\?"]
       files_absent: ["standards/*", ".review/onboard/project.yaml"]

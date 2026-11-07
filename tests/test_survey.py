@@ -282,6 +282,9 @@ class IssueKeys(unittest.TestCase):
         self.assertEqual(found["issue key"]["value"], r"branches: GH-<n> 2 of 3; subjects: 2 of 2; pattern GH-\d+")
         self.assertEqual((found["ticket project"]["value"], found["ticket key"]["found_in"]), ("-", "none"))
 
+    def test_a_number_before_an_underscore_is_an_issue_key_as_in_where_sh(self):
+        self.assertEqual(self.issue_row(branches=("12_empty-inventory",))["found_in"], "history")
+
     def test_gh_beside_another_form_is_mixed(self):
         self.assertTrue(self.issue_row(branches=("GH-12-x", "14-y")).get("value").endswith("pattern mixed"))
 

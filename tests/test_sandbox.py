@@ -1686,6 +1686,26 @@ class Reuse(unittest.TestCase):
         run.reset(self.sandbox)
         self.assertEqual(git(repo, "remote", "get-url", "origin"), built)
 
+    def test_a_reset_restores_the_remotes_branches_and_drops_the_branches_a_setup_made(self):
+        remote, repo = self.sandbox / "remotes" / "gizmos.git", self.sandbox / "repos" / "gizmos"
+        tree = git(remote, "rev-parse", "main^{tree}")
+        pinned = subprocess.run(["git", "-C", str(remote), "-c", "user.name=t", "-c", "user.email=t@t", "commit-tree", tree,
+                                 "-p", "main", "-m", "csv"], check=True, capture_output=True, text=True).stdout.strip()
+        git(remote, "update-ref", "refs/heads/PROJ-42-csv-loader", pinned)
+        git(repo, "fetch", "-q", "origin")
+        pins = self.sandbox / "pins"
+        pins.write_text("".join(f"{n} {s} {'live/abc1234' if n == 'gizmos' else b}\n" for n, (s, b) in run.pins(self.sandbox).items()))
+        for line in ("git update-ref -d refs/remotes/origin/PROJ-42-csv-loader",
+                     "git branch -f 9-by-part main && git branch -f issue-12-empty-inventory main",
+                     "git branch -f PROJ-42-csv-loader main", "git config branch.9-by-part.remote origin",
+                     "git update-ref refs/remotes/origin/gone main"):
+            subprocess.run(["bash", "-c", line], cwd=repo, check=True, capture_output=True)
+        run.reset(self.sandbox)
+        self.assertEqual(git(repo, "rev-parse", "origin/PROJ-42-csv-loader"), pinned)
+        self.assertEqual(git(repo, "for-each-ref", "--format=%(refname:short)", "refs/heads").split(), ["live/abc1234", "main"])
+        self.assertEqual(subprocess.run(["git", "-C", str(repo), "config", "--get", "branch.9-by-part.remote"]).returncode, 1)
+        self.assertNotIn("origin/gone", git(repo, "for-each-ref", "--format=%(refname:short)", "refs/remotes").split())
+
     def conflicting_branches(self) -> Path:
         """The pinned clone with `main` and `side` each changing f.txt's one line, `side` checked out."""
         repo = self.sandbox / "repos" / "gizmos"
