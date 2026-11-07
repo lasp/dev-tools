@@ -71,7 +71,7 @@ to paste.
 The GitHub tracker pack, `tracker-github/scenarios.yaml`, runs in `widgets` given a standard whose
 tracker is GitHub's, its labels mapped to the workflow and no ticket pattern recorded, against
 issues `tracker-github/fixture/github-mcp-server-stub.py` serves read-only from `github.json`:
-`work` routing an open issue with no label, an open one with a mapped label, a closed one, a
+`work` routing an open issue with no label, an open one with a mapped label, a closed one, a closed one still carrying a pull request status label, a
 branch named `issue-<n>-words`, and a pull request's number given as the argument. Its `mcp.json` names the stub as
 `${SBX_FIXTURES}/github-mcp-server-stub.py`, as the pack's header shows; the file name holds
 `github-mcp-server`, so `run.py` gives it the GitHub rules. The stub's tools carry

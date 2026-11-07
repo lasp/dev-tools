@@ -255,7 +255,7 @@ class TrackerGithubPack(unittest.TestCase):
         return json.loads(result["content"][0]["text"])
 
     def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
-        self.assertEqual(set(self.known), {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch", "tracker-gh-work-pr"})
+        self.assertEqual(set(self.known), {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch", "tracker-gh-work-pr", "tracker-gh-work-closed-labeled"})
         well_formed(self, self.known, {"widgets"})
         for s in self.known.values():
             self.assertEqual(s["expect"]["mcp"], ["mcp__github__issue_read"], s["id"])
@@ -319,11 +319,11 @@ class TrackerGithubPack(unittest.TestCase):
         for query in ("widget", "ware"):
             with self.subTest(query=query):
                 self.assertEqual(self.read("search_pull_requests", query=f"repo:example/widgets is:pr {query}")["items"], [])
-        spec = importlib.util.spec_from_file_location("github_stub", self.STUB)
-        stub = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(stub)
-        self.assertFalse(stub.holds(stub.tokens("Ticket: #90 · x"), stub.tokens("Ticket: #9")))
-        self.assertTrue(stub.holds(stub.tokens("Ticket: o/r#9 · x"), stub.tokens("Ticket: o/r#9")))
+        # #16's body reads `Ticket: o/r#90`: found whole, and never for o/r#9.
+        for query, found in (('"Ticket: o/r#90"', [16]), ('"Ticket: o/r#9"', []), ('"Ticket: #9"', [15])):
+            with self.subTest(query=query):
+                got = self.read("search_pull_requests", query=f"repo:example/widgets is:pr in:body {query}")["items"]
+                self.assertEqual([p["number"] for p in got], found)
 
     def test_list_and_search_issues(self):
         listed = self.read("list_issues", state="OPEN")
