@@ -231,10 +231,10 @@ scenarios:
       plan's gate, Write all among its options; nothing is filed and no approval record is written.
     expect:
       ends: success
+      says: ["(?i)\\bWrite all\\b"]
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
-      - test -e .review/github-plan.md
 
   - id: tracker-gh-ticket-draft-standing-answer
     repo: widgets
@@ -255,11 +255,11 @@ scenarios:
     must_not_try: ["mcp__github__issue_write", "mcp__github__add_issue_comment"]
     look_at: >-
       ticket-draft runs, and the third turn ends at step 7's review with the write plan's gate,
-      .review/github-plan.md written and linked; nothing is filed.
+      Write all among its options; nothing is filed.
     expect:
       ends: success
       skills: [ticket-draft]
+      says: ["(?i)\\bWrite all\\b"]
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
-      - test -e .review/github-plan.md
