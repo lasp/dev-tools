@@ -7,9 +7,10 @@ description: >
   only on your yes. Use it, rather than `gh issue create` or an issue written by hand, for any
   request to put a bug or a change into this repository's tracker: "open a GitHub issue for",
   "write a ticket for", "file a ticket", "create a Jira ticket", "log a bug", "refine this ticket",
-  "is this ticket ready", "what is this ticket missing" or "groom this ticket". Not for another
-  project's tracker. Not for a bug or a complaint about a lasp-dev skill or agent, this one
-  included, however it is asked for, even as an issue on the plugin: that is skill-feedback's alone.
+  "is this ticket ready", "what is this ticket missing" or "groom this ticket". Not for an issue
+  on another project, such as a library this repository uses, which is filed on that project.
+  Not for a bug or a complaint about a lasp-dev skill or agent, this one included, however it is
+  asked for, even as an issue on the plugin: that is skill-feedback's alone.
 argument-hint: "[investigate | settle | reformat] <ticket key | issue #n | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
