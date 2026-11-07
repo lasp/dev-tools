@@ -910,6 +910,14 @@ CI (`.github/workflows/checks.yml`) runs, on every pull request:
 - codespell, with `en-GB_to_en-US`, for American spelling.
 - `claude plugin validate .`, on the plugin and marketplace manifests.
 
+Locally, `bash tests/checks.sh` runs the tests of what the branch changed against
+`origin/main`, with `check_static.py` and codespell, one step after another, printing a line per
+step and the output only of a step that fails; its header says how a changed file maps to tests.
+`bash tests/checks.sh next_phase where` runs only `tests/test_next_phase.py` and
+`tests/test_where.sh`, and `--all` runs every step CI runs except its gitleaks scan of the
+history, with the installed `claude` in place of CI's pinned one. How much checking each kind of
+change gets is in `.claude/CLAUDE.md`.
+
 To try a skill change before its pull request, run it in [`sandbox/`](sandbox/README.md): the
 skill's scenario on a worktree of your branch beside the current plugin, repeated, then
 compared, and `--check --repeat 2` on it before the merge. Nothing there runs in CI.
