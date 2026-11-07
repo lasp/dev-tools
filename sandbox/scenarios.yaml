@@ -150,7 +150,7 @@ scenarios:
       ends: success
       agents_absent: ["lasp-dev:pr-reader", "lasp-dev:thread-analyst", "lasp-dev:guidance-extractor"]
       files: [".review/harvest/threads/pr-0007/pr.json", ".review/harvest/guidance/slice-1.json"]
-      says: ['(?i)floor']
+      says: ['(?i)floor|Write the counts only']
 
   - id: revise-prepare-uncaptured
     repo: widgets
