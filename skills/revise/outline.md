@@ -2,7 +2,7 @@
 
 The shape of `ratchet-YYYY-MM.md`. The meeting gives it a thirty-minute slot: the driver reads
 the head, then the overview, then each proposal aloud in the overview's order, and the group
-marks it. Everything under "Reference" is
+decides on it, in its own words, which `apply` settles into the `Mark:` line. Everything under "Reference" is
 read before the meeting, or when a proposal points to it, never aloud. A section with nothing in
 it reads "none". The step that fills each section is `prepare.md`'s.
 
@@ -102,6 +102,8 @@ disagreements shared; rules held provisional for breadth and what would release 
 ### Not read                                step 2: unanalysed pull requests, Not read: ids, unread guidance slices
 ```
 
+A proposal's `<evidence pointers>` are its pull requests, `pr-NNNN`, and, for one from a
+cluster, the cluster, `C<n>`, as `ratchet-YYYY-MM.clusters.txt` beside the report prints it.
 Every quote in the report, a drafted entry's included, is a `said:` line of the form above, with
 the comment's URL or the pasted note's file, so `scripts/quote_check.py` can find it; a person's
 words given any other way are paraphrase. A held proposal is never recommended a plain `accept`. The meeting takes the proposals in the

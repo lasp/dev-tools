@@ -491,7 +491,10 @@ otherwise than its lines, and reads each tally line's fields by place, the quote
 a quote splits nothing.
 
 Writers: the driver, in harvest.md's "Clusters". Readers: `scripts/guidance_clusters.py`; `revise`
-`prepare` steps 5, 6 and 10, through its printout; `sandbox/harvest_recall.py` `--clusters`.
+`prepare` steps 5, 6 and 10, through its printout; `sandbox/harvest_recall.py` `--clusters`. The
+printout the report was written from is kept, as printed, in `<log>/ratchet-YYYY-MM.clusters.txt`
+beside the report, and `revise`'s `discuss.md` reads it to trace a proposal, which names its
+cluster `C<n>`, to its pull requests and quotes.
 
 Pinned by: tests/test_guidance_clusters.py::test_prints_each_cluster_with_its_people_prs_and_quotes
 

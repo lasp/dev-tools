@@ -1,0 +1,19 @@
+cluster · C1 · rule · admit 1 · hold 0 · support 0 · prs 1 · people 1 · A reader raises on input it cannot use rather than returning None.
+prs · C1 · pr-0007
+people · C1 · alice
+priority · C1 · low · 1 pull request(s)
+asked · C1 · pr-0007
+said · C1 · "In general, a reader should fail loudly on input it cannot use" — alice, https://github.com/example/widgets/pull/7#discussion_r101
+cluster · C2 · data-convention · admit 1 · hold 0 · support 0 · prs 1 · people 1 · A column holding a quantity names its unit.
+prs · C2 · pr-0007
+people · C2 · carol
+priority · C2 · low · 1 pull request(s)
+asked · C2 · pr-0007
+said · C2 · "Units go in the column name so nobody has to guess them." — carol, https://github.com/example/widgets/pull/7#discussion_r104
+cluster · C3 · process · admit 1 · hold 0 · support 0 · prs 2 · people 1 · A pull request description opens with its ticket key.
+prs · C3 · pr-0007, pr-0009
+people · C3 · dana
+priority · C3 · medium · 2 pull request(s)
+asked · C3 · pr-0007, pr-0009
+said · C3 · "put the ticket key on the first line of the description, the release notes are built from it." — dana, https://github.com/example/widgets/pull/7#pullrequestreview-105
+clusters: 3 · lines: 3

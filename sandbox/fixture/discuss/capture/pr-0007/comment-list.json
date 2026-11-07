@@ -1,0 +1,83 @@
+{
+ "pr": 7,
+ "comments": [
+  {
+   "pr": 7,
+   "id": 101,
+   "url": "https://github.com/example/widgets/pull/7#discussion_r101",
+   "author": "alice",
+   "authorship": "human",
+   "kind": "thread",
+   "thread": "PRRT_a",
+   "path": "widgets/rows.py",
+   "line": 12,
+   "created": "2026-10-02T10:00:00Z",
+   "body": "Please raise on an empty table here instead of returning None.\n\nIn general, a reader should fail loudly on input it cannot use: a silent None turns into a wrong number three steps later."
+  },
+  {
+   "pr": 7,
+   "id": 102,
+   "url": "https://github.com/example/widgets/pull/7#discussion_r102",
+   "author": "bob",
+   "authorship": "human",
+   "kind": "reply",
+   "thread": "PRRT_a",
+   "path": "widgets/rows.py",
+   "line": 12,
+   "created": "2026-10-03T10:00:00Z",
+   "body": "Agree, changed to raise ValueError."
+  },
+  {
+   "pr": 7,
+   "id": 103,
+   "url": "https://github.com/example/widgets/pull/7#discussion_r103",
+   "author": "alice",
+   "authorship": "human",
+   "kind": "thread",
+   "thread": "PRRT_103",
+   "path": "widgets/rows.py",
+   "line": 12,
+   "created": "2026-10-04T10:00:00Z",
+   "body": "Keep the timeout for this one fetch at 30 s; the upstream archive is slow on Mondays."
+  },
+  {
+   "pr": 7,
+   "id": 104,
+   "url": "https://github.com/example/widgets/pull/7#discussion_r104",
+   "author": "carol",
+   "authorship": "human",
+   "kind": "thread",
+   "thread": "PRRT_104",
+   "path": "widgets/rows.py",
+   "line": 12,
+   "created": "2026-10-05T10:00:00Z",
+   "body": "Name the column `flux_w_m2`, not `flux`. Units go in the column name so nobody has to guess them."
+  },
+  {
+   "pr": 7,
+   "id": 105,
+   "url": "https://github.com/example/widgets/pull/7#pullrequestreview-105",
+   "author": "dana",
+   "authorship": "human",
+   "kind": "review",
+   "thread": null,
+   "path": null,
+   "line": null,
+   "created": "2026-10-06T10:00:00Z",
+   "body": "Looks good overall. For future PRs: put the ticket key on the first line of the description, the release notes are built from it."
+  },
+  {
+   "pr": 7,
+   "id": 106,
+   "url": "https://github.com/example/widgets/pull/7#issuecomment-106",
+   "author": "bob",
+   "authorship": "human",
+   "kind": "comment",
+   "thread": null,
+   "path": null,
+   "line": null,
+   "created": "2026-10-07T10:00:00Z",
+   "body": "Thanks all, merging once CI is green."
+  }
+ ]
+}
