@@ -1096,7 +1096,7 @@ Pinned by: tests/test_block_tally.py::test_the_analysis_counts_asks_by_who_sourc
 
 ## The sweep blocks
 
-Version: 1
+Version: 2
 
 Fields: `.review/revision/sweep/pr-NNNN.md`, one `diff-probe` block, its blank lines ignored: the
 heading `## pr-NNNN · <sha, 7 characters>` naming the file's pull request; one line per claim,
@@ -1117,6 +1117,12 @@ no `doc` line in the merges file, a pull request named twice or not as `pr-NNNN`
 line of no form above, a claim judged twice, a block with no line for a `C-n` claim it owes, or a `Not
 read:` line missing or repeated.
 
+
+A claim whose heading ends ` · script: <check> [<arg> ...]` is judged by `scripts/drift_checks.py`,
+`template`, `changelog <file> <path>[,<path>]`, `todo` or `history`, which prints the `claim` and
+`break` lines above from git and the dumps, with no block, its `break` line ending ` · <what>`, what
+it found, into `.review/revision/drift.txt`; `block_tally.py` owes it in no probe's
+block (version 2).
 Writers: `diff-probe`, at the path `revise` `prepare` step 2 gives it. Readers:
 `scripts/block_tally.py`, run by `prepare` step 2 for "Practice".
 

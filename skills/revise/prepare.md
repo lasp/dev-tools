@@ -139,9 +139,10 @@ record `sources`.
    proposal rests on it; step 6 turns a break still on `main` into a `ticket/` proposal and a
    `drift` into a `doc/` one. It runs after step 1's harvest of this repository, never beside an
    earlier one: `diff-probe` reads each description from that harvest's
-   `.review/harvest/threads/pr-NNNN/pr.json`, which every harvest empties. First remove `.review/revision/sweep/`, `.review/revision/claims.md` and `.review/revision/merges.txt`, which a
+   `.review/harvest/threads/pr-NNNN/pr.json`, which every harvest empties. First remove `.review/revision/sweep/`, `.review/revision/claims.md`, `.review/revision/merges.txt` and `.review/revision/drift.txt`, which a
    last revision may have left. Run `python3 "<plugin root>/scripts/window_merges.py" --repo .
-   --ref origin/main --since <the window's first day> --ledger <standard files>/review-rules.md`, which
+   --ref origin/main --since <the window's first day> --ledger <standard files>/review-rules.md`,
+   writing its output to `.review/revision/merges.txt`, which the rerun below replaces; it
    reads git only; the sweep fetches nothing, so it reads `origin/main` as the last fetch left it,
    and an exit 2 skips it, its line under "Practice". Write `.review/revision/claims.md`: each rule
    on a script line that names a pull request, as `### R-NNN · <title>`, its wording, the
@@ -150,21 +151,32 @@ record `sources`.
    developer docs, each a statement a merged change, its commits or its description can follow or
    break, as `### C-n · <path>:<line> · every change` when it asks something of every pull request,
    or of every one that makes a kind of change, or `· code` when it governs how code is written,
-   and the claim in one line. Show the `C-` claims and ask once: **Sweep these** (Recommended),
+   and the claim in one line. A claim a script can judge carries ` · script: <check>` after that:
+   `template` for a line of the pull request template, its path the template's; `changelog <file>
+   <path>[,<path>]` for an entry a change to that code owes; `todo` for a TODO that names its
+   ticket; `history` for a comment that says how the code used to be (`<plugin
+   root>/scripts/drift_checks.py`). Show the `C-` claims, each with its check or none, and ask once: **Sweep these** (Recommended),
    **Drop some** (the person names the ids), **Rules only**, or **Let's discuss**, removing from
    the claims file every `C-` claim the answer drops. With `every change` claims kept, rerun the
    script adding `--dumps .review/harvest/threads/` and a `--doc <path>` for each document they
    cite, writing its output to `.review/revision/merges.txt`, so each is judged only on the pull
    requests opened after its document reached `main`; an exit 2 on that rerun drops the `every
-   change` claims from the claims file, with its line under "Practice". Then one `diff-probe` per
-   merged pull request the script listed, past thirty the thirty merged most recently, launched as
+   change` claims from the claims file, with its line under "Practice". Run `python3 "<plugin
+   root>/scripts/drift_checks.py" --repo . --claims .review/revision/claims.md --merges
+   .review/revision/merges.txt --dumps .review/harvest/threads/`, with `--ticket-pattern` the
+   profile's `ticket.pattern` for a `todo` claim, writing its output to
+   `.review/revision/drift.txt`; it judges every scripted claim on every pull request it is owed
+   by, with no agent, and prints the lines `block_tally.py` prints, which "Practice" takes the same
+   way. On an exit 2, its line goes under "Practice" and ` · script: …` comes off those claims'
+   headings, so the probes judge them. Then, when a rule or a claim with no check is owed, one `diff-probe` per
+   merged pull request the script listed, at most five, the five merged most recently, launched as
    harvest.md's "Analysts" launches agents, each given this repository's path, its number and sha, the claims file
    and the ids to judge: each rule whose line names it, never one where it is under `predates`,
    each `every change` claim whose document's `doc <path>: pr-…` line names it, never one under
-   its `predates` or `no opened day`, and every `code` claim, and the path
+   its `predates` or `no opened day`, and every `code` claim, none of them scripted, and the path
    `.review/revision/sweep/pr-NNNN.md`, where it writes its block and returns `wrote <path>`.
    Never repeat a block: a probe that returns `write failed: <error>` could not write it, and you
-   write the block that follows that line, without it, to its path. Then run `python3 "<plugin
+   write the block that follows that line, without it, to its path. When a probe ran, run `python3 "<plugin
    root>/scripts/block_tally.py" sweep --claims .review/revision/claims.md [--merges
    .review/revision/merges.txt] .review/revision/sweep/ <pr-NNNN ...>`, the `--merges` when the
    rerun wrote it, naming each pull request probed; an exit 2 names the block that
@@ -175,7 +187,7 @@ record `sources`.
    with a record in which no finding cites the claim's rule, any break on such a pull request for
    a `C-` claim. Then the rules the script printed as `not swept: no scope`, the `predates` lines,
    each `doc` line's `predates`, `no opened day` and `not on` pull requests or document,
-   the pull requests past thirty, and each pull request step 1's harvest listed in the window that
+   the pull requests past five not probed, and each pull request step 1's harvest listed in the window that
    the script did not, as `not swept: no merge subject`.
    Record `records` once every repository's harvest is archived, and at step 2 `analysts`,
    `sweep` and `guidance`, the last skipped, naming them, when any repository's guidance did not
@@ -254,8 +266,10 @@ record `sources`.
    **Tickets and documents.** Two kinds of proposal no Dial governs, marked like any other, and
    made below the Revision floor too, since they rest on no count of records:
    - `ticket/<slug>`, one per distinct problem still in the code: a thread step 2 lists as
-     `unanswered` with `diff: does not` whose analyst `by:` is `human`, a sweep `breaks` line of
-     a claim not marked `drift`, or a `tool/` proposal held for its violations on `origin/main`;
+     `unanswered` with `diff: does not` whose analyst `by:` is `human`; a probe's `break` line of a
+     claim not marked `drift`; a `break` line in `.review/revision/drift.txt` of a `todo` or
+     `history` claim not marked `drift`, never a `template` or `changelog` one, which names a merged
+     description or file list and no line still in the code; or a `tool/` proposal held for its violations on `origin/main`;
      each only while `git grep -nF -e '<the line>' origin/main --
      <path>` still finds the line it names. Its evidence is the pull request and the thread id or
      `path:line`.
