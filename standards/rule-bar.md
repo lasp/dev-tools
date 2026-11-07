@@ -1,13 +1,13 @@
 # The rule bar
 
-What a rule passes before the group marks it. Read by `onboard`'s first rules, `revise`
+What a rule passes before the group decides on it. Read by `onboard`'s first rules, `revise`
 (its `correct` mode included) and the `rule_lint.py` script under `scripts/`; not loaded into reviewers.
 
 ## What it is for
 
 Every reviewer run loads every rule, and every finding costs a person a reply. A rule written from
 a thread's words rather than from the code that merged flags the fix the team accepted. The bar is
-what a new, reworded, promoted or broadened rule passes before the group marks it; a rule already
+what a new, reworded, promoted or broadened rule passes before the group decides on it; a rule already
 in the ledger is measured against it at each revision and brought up to it when it is next
 touched.
 
@@ -64,8 +64,11 @@ carries `implements <id>`, is never wrapped either.
 
 ## Overrides
 
-The group may accept a proposal a gate fails only by marking it `accept, override: <reason>` in
-the report; a plain `accept` on it does not accept it. `apply` carries the reason onto the entry's
+The group may accept a proposal a gate fails only by a mark carrying `override: <reason>` in
+the report, `accept, override: <reason>` or, with new words, `accept, reworded: "<words>",
+override: <reason>`; a plain `accept` on it does not accept it. With new words, the override
+waives only the gate the proposal was held on: the new words pass every other gate, and a
+failure there stops `apply` as any lint failure does. `apply` carries the reason onto the entry's
 evidence line as `override <YYYY-MM-DD>: <reason>`, and the next revision's report lists every
 override. A held admission the group does not accept this way goes into the ledger's
 `## Candidates below the criteria` with the check it failed; a held rewording, promotion or

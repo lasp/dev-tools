@@ -4,23 +4,24 @@ description: >
   Prepares the monthly standards revision: from merged pull requests' review records and what
   reviewers said, proposes rules to retire, reword, graduate or add, agent guidance, data
   conventions, decisions, lint settings and questions for the group, tickets for problems still in
-  the code and fixes to documents practice has left behind, for the group to mark, and reports where merged diffs
+  the code and fixes to documents practice has left behind, for the group to decide on, and reports where merged diffs
   follow or break the rules and the documented practice; `capture` keeps each merged pull
-  request's harvest in the log as it merges, `apply` drafts what it
-  accepted, and `correct` fixes a misreading in the corpus between revisions. Not for
+  request's harvest in the log as it merges, `apply` settles each proposal's mark from the
+  group's discussion and drafts what it accepted, and `correct` fixes a misreading in the corpus
+  between revisions; a question about how a proposal came about is answered from its evidence. Not for
   disagreeing with a rule, which goes through Disagree and the revision.
-argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | capture [YYYY-MM-DD] | apply | correct <what is wrong, where, what it should say, the source>]"
+argument-hint: "[prepare [measures] [Confluence page or Jira epic to add] | capture [YYYY-MM-DD] | apply | correct <what is wrong, where, what it should say, the source> | <a question about the report>]"
 disable-model-invocation: true
 metadata:
   author: lasp-dev
-  version: 2.25.0
+  version: 2.26.0
 ---
 
 # Revise the standard
 
 A group session with one driver. The driver runs `prepare` before the meeting, which writes a
-report of proposals with blank checkboxes; the group marks each one in the meeting; the driver
-runs `apply` after it, which drafts the accepted changes as one pull request here and, when the
+report of proposals with blank checkboxes; the group discusses and decides each one, in the meeting or on the report's pull request; the driver
+runs `apply` after it, which settles each proposal's mark from what the group said and drafts the accepted changes as one pull request here and, when the
 standard lives elsewhere, one in the standard's repository. It runs in the code repository whose standard it revises. Between
 revisions, `correct` fixes a misreading one person reports, everywhere the corpus carries it.
 
@@ -36,7 +37,7 @@ requests have merged, so `prepare` finds the month already read.
 
 | Option | Default |
 |---|---|
-| Mode | `prepare`: read `${CLAUDE_SKILL_DIR}/prepare.md`. `capture`, between revisions: read `${CLAUDE_SKILL_DIR}/capture.md`. `apply`, after the group has marked the report: read `${CLAUDE_SKILL_DIR}/apply.md`. `correct`, when a person says the corpus has something wrong: read `${CLAUDE_SKILL_DIR}/correct.md` |
+| Mode | `prepare`: read `${CLAUDE_SKILL_DIR}/prepare.md`. `capture`, between revisions: read `${CLAUDE_SKILL_DIR}/capture.md`. `apply`, after the group has decided on the report: read `${CLAUDE_SKILL_DIR}/apply.md`. `correct`, when a person says the corpus has something wrong: read `${CLAUDE_SKILL_DIR}/correct.md`. A question about a report or a proposal, such as how it came about or which cases it rests on, in any mode or alone: read `${CLAUDE_SKILL_DIR}/discuss.md` and answer it, then go on with the mode, if one was named |
 | Window | From the day after the `window:` line's end in the newest `ratchet-*.md` in any `<log>` of the standard; before the first, from this repository's adoption date ("The standard's repository") |
 | Measures | Not read. `measures`, or the person asking for them, has `prepare` also read `${CLAUDE_SKILL_DIR}/measures.md`: tickets, escaped defects, build yield and what the build missed. No Dial acts on them except the Ticket candidates Dial, which applies only in a run that reads them |
 | Page or epic to add | None. A named Confluence page or Jira epic is read once and drafted as a context-entry candidate, marked like any other proposal, within `context/README.md`'s ten-entry cap |
@@ -82,9 +83,9 @@ outside the sandbox on the person's yes), on a branch `revision/<repo>-YYYY-MM` 
 commit, and push that branch and open its pull request as `using-github` sets out, only on the
 yes each mode's file asks for. After a push, remove the directory and say where it was; any other
 answer leaves it in place and names its path. With no clone, `prepare` writes the records and
-the report into `<log>` in this repository's working tree, uncommitted, where the group marks the
+the report into `<log>` in this repository's working tree, uncommitted, where the group decides on the
 report and `apply` reads it; every other change to `<standard files>` goes into this repository's diff,
-and the driver commits the records, the report and the diff together in the revision's pull
+and the driver commits the records, the report, its clusters file and the diff together in the revision's pull
 request here. Nothing is written into the installed plugin.
 
 "Shared" means the plugin's own `standards/`: `dials.md` and `rule-bar.md`, read from `<plugin
@@ -98,17 +99,18 @@ else or invent a term or a decision to fill the gap; `correct` stops there.
 
 Each proposal in the report is a checklist line, `- [ ] <R-0NN, A-0NN, F-0NN, D-0NN, tool/<rule>,
 exemplar/<path>, question/<slug>, context/<name>, ticket/<slug> or doc/<path>> · <proposal> · <the Dial that triggered it, for a rule> · <evidence>`, its detail beneath opening with a `Recommended:` line.
-The group writes its verdict on the proposal's `Mark:` line and ticks its box, one proposal at a
-time and never in bulk: `accept`,
-`decline: <reason>` or `escalate: <reason>`, and, on a proposal the bar held, `accept, override:
-<reason>`, the only mark that accepts it (`rule-bar.md` "Overrides"), except one held `no
-override`, which no mark accepts; on a change to a live data
-convention, `accept, owner: <name>`, the only mark that accepts it, naming its owner; and on a
-`question/`, `answer: <the group's answer>`, which settles it as a provisional decision.
-A `Recommended:` line is the
-report's, never a mark. A proposal whose `Mark:` line is empty is deferred. A draft pull request `prepare` opens on the
-report's branch is a place to discuss proposals; a verdict given there counts once it is on the
-`Mark:` line, which stays the record `apply` reads. A new or reworded rule is worded as `${CLAUDE_SKILL_DIR}/../writing/SKILL.md`
+The group discusses each proposal in its own words, on its `Mark:` line, in review comments and
+replies on the draft pull request `prepare` opens on the report's branch when the standard is in a
+clone, or in meeting notes the driver pastes into `.review/revision/meeting/`, and asks about any proposal there or in a session, as `discuss.md` answers. `apply` reads
+all of it and settles each proposal to one mark, which the driver confirms before it is written
+on the `Mark:` line, the box ticked for an accepted one: `accept`, `accept, reworded: "<the words
+agreed>"`, `decline: <reason>` or `escalate: <reason>`, and, on a proposal the bar held, `accept,
+override: <reason>`, the only mark that accepts it (`rule-bar.md` "Overrides"), except one held
+`no override`, which no mark accepts; on a change to a live data convention, `accept, owner:
+<name>`, the only mark that accepts it, naming its owner; and on a `question/`, `answer: <the
+group's answer>`, which settles it as a provisional decision. A `Recommended:` line is the
+report's, never a mark, and a proposal nobody spoke to is deferred. Each proposal is settled on
+its own, never in bulk. A new or reworded rule is worded as `${CLAUDE_SKILL_DIR}/../writing/SKILL.md`
 "Conventions" says under Rule wording: a principle with no case in it.
 
 ## Files
@@ -119,7 +121,10 @@ In `<log>`:
   guidance items and analysis, and `capture/covered.txt`, the days captured, from `capture`
   through `scripts/capture.py`; read by `prepare` step 1.
 - `ratchet-YYYY-MM.md`, the report, first line `window: <from>..<to>`, as
-  `${CLAUDE_SKILL_DIR}/outline.md` outlines it; marked by the group, read by `apply`.
+  `${CLAUDE_SKILL_DIR}/outline.md` outlines it; discussed by the group, its marks settled and
+  written by `apply`.
+- `ratchet-YYYY-MM.clusters.txt`, beside its report, the `guidance_clusters.py` printout the
+  report's clusters came from, from `prepare` step 10; read by `discuss.md`.
 - `correction-YYYY-MM-DD-<id>.yaml` and `note-YYYY-MM-DD-<id>.yaml`, from `correct`.
 
 In `<archive>` and `<context>`, from `apply`: `<id>.md` entries, `R-NNN`, `D-NNN`, `A-NNN` or
@@ -148,6 +153,10 @@ In this repository's `.review/`:
   Review Rules section where a ledger still keeps wording there, the pull request template and the documents an accepted `doc/` proposal names,
   for the driver to apply and open as a pull request.
 - `revision/notes/`, meeting or chat notes the driver pastes before `prepare`, read as asks.
+- `revision/marks.md`, from `apply`: the mark it settled for each proposal and what it rests on,
+  shown before the driver's yes.
+- `revision/meeting/`, the revision meeting's notes, or a pull request's threads, the driver pastes
+  before `apply`, read by `apply` alone when it settles the marks.
 - `revision/tickets/<n>-<slug>.md`, from `apply`: each accepted `ticket/` proposal as a prompt
   `ticket-draft` takes.
 - `archive-pages/`, from `apply`: a Confluence page body per archive entry, for a person to
@@ -192,8 +201,9 @@ Edit this repository's files, `standards/`, the instruction file and the templat
 `<log>`'s records and report aside when the standard is this repository's own: every other change
 to them goes into `.review/ratchet-proposal.diff` for the driver to apply. Edit the plugin's
 `skills/` and `agents/` text. Open this
-repository's pull request, or the standard's repository's without a yes. Propose a rule without the
+repository's pull request, or the standard's repository's without a yes. Post a reply on a pull
+request without a yes. Propose a rule without the
 evidence its Dial requires. Write to Confluence or Jira; an accepted ticket reaches Jira only
 through `ticket-draft`, on the person's yes. Delete a rule's reasoning without
 archiving it first. Write a rule, a rewording or a promotion a gate of `rule-bar.md` fails, unless
-the group marked it `accept, override: <reason>`.
+the group's mark carries `override: <reason>`.

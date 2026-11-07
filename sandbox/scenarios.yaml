@@ -215,6 +215,81 @@ scenarios:
       agents: ["source-reader"]
       says: ['(?m)^\W*Excerpt: "', '(?i)not in the file']
 
+  - id: revise-apply-settle-marks
+    repo: widgets
+    setup:
+      - mkdir -p standards/log/widgets/capture .review/revision
+      - cp "$SBX_FIXTURES/standard-review-rules.md" standards/review-rules.md
+      - cp "$SBX_FIXTURES/shim-data-conventions.md" standards/data-conventions.md
+      - cp "$SBX_FIXTURES/discuss/ratchet-2026-10.md" "$SBX_FIXTURES/discuss/ratchet-2026-10.clusters.txt" standards/log/widgets/
+      - mkdir -p standards/log/widgets/capture/pr-0007
+      - cp "$SBX_FIXTURES/discuss/capture/pr-0007/items.json" "$SBX_FIXTURES/discuss/capture/pr-0007/comment-list.json" standards/log/widgets/capture/pr-0007/
+      - mkdir -p .review/revision/meeting .review/revision/notes
+      - cp "$SBX_FIXTURES/discuss/notes/meeting-2026-11-03.md" .review/revision/meeting/
+      - cp "$SBX_FIXTURES/discuss/notes/chat-2026-10-20.md" .review/revision/notes/
+    origin: "#65"
+    why: >-
+      Runs revise apply's first step on a report the group discussed in its own words: a
+      rewording on R-004's Mark line, an accept for F-002 only in the pasted meeting notes, two
+      people on D-001 with no outcome, an agreement to a change to the live convention F-001 that
+      names no owner, and a chat note pasted for prepare that wanted R-004 gone. The run should
+      settle R-004 to accept with the agreed words, F-002 to accept from the meeting notes, D-001
+      and F-001 to unclear, ignore the chat note, show the table, and write nothing before the
+      person's yes.
+    turns:
+      - >-
+        /lasp-dev:revise apply. The group met on 3 November; settle the marks from what it said.
+    must_not_run: ["mcp__*", "Agent", "Task", "Edit", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
+    look_at: >-
+      .review/revision/marks.md and the message before the question: a table of R-004, F-001, F-002 and D-001: R-004 accept, reworded with the whole sentence "A reader
+      raises on input it cannot use", resting on erin's Mark line, not declined from the chat note; F-002 accept,
+      resting on the meeting notes; F-001 unclear, no owner named; D-001 unclear, dana for and erin
+      doubting with no outcome, never a plain accept. The report's Mark lines are unchanged and no
+      diff is written.
+    verify:
+      - "grep -q '^  Mark: yes, but word it' standards/log/widgets/ratchet-2026-10.md"
+      - "grep -q '^  Mark:$' standards/log/widgets/ratchet-2026-10.md"
+      - "! test -e .review/ratchet-proposal.diff"
+      - "grep -qiE 'R-004.*accept, reworded' .review/revision/marks.md"
+      - "grep -qiE 'R-004.*reworded: .?A reader raises on input it cannot use' .review/revision/marks.md"
+      - "grep -iE 'F-002' .review/revision/marks.md | grep -iv unclear | grep -qiE '\\baccept\\b'"
+      - "grep -iE 'F-001' .review/revision/marks.md | grep -qi unclear"
+      - "grep -iE 'D-001' .review/revision/marks.md | grep -qi unclear"
+      - "! grep -iE '\\| *\\**`?(D-001|F-001)`?\\** *\\| *\\**`?accept' .review/revision/marks.md"
+      - "! grep -iE '\\| *\\**`?R-004`?\\** *\\| *\\**`?decline' .review/revision/marks.md"
+    expect:
+      ends: success
+      files: [".review/revision/marks.md"]
+      not_says: ['(?i)^(?!.*unclear)[^\n]*D-001[^\n|]*\|[^\n|]*\baccept\b(?!ed)', '(?i)^(?!.*unclear)[^\n]*F-001[^\n|]*\|[^\n|]*\baccept\b(?!ed)', '(?i)^[^\n]*R-004[^\n|]*\|[^\n|]*\bdecline']
+
+  - id: revise-question-evidence
+    repo: widgets
+    setup:
+      - mkdir -p standards/log/widgets/capture
+      - cp "$SBX_FIXTURES/standard-review-rules.md" standards/review-rules.md
+      - cp "$SBX_FIXTURES/discuss/ratchet-2026-10.md" "$SBX_FIXTURES/discuss/ratchet-2026-10.clusters.txt" standards/log/widgets/
+      - mkdir -p standards/log/widgets/capture/pr-0007
+      - cp "$SBX_FIXTURES/discuss/capture/pr-0007/items.json" "$SBX_FIXTURES/discuss/capture/pr-0007/comment-list.json" standards/log/widgets/capture/pr-0007/
+    origin: "#65"
+    why: >-
+      Asks revise how two proposals came about. R-004 traces through its cluster, C1, to alice's
+      comment on pull request 7 and bob's reply that changed the code; D-001's cluster counts pull
+      request 9 too, which has no capture, so the answer should say that link is missing rather
+      than describe it.
+    turns:
+      - >-
+        /lasp-dev:revise How did R-004 come about, and which cases does it rest on? And what does
+        D-001 rest on?
+    must_not_run: ["mcp__*", "Edit", "Write", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
+    look_at: >-
+      R-004: cluster C1, one person (alice) on pull request 7, discussion_r101 quoted, the
+      principle that a silent None becomes a wrong number, bob's reply changing it to raise
+      ValueError. D-001: dana's review on pull request 7 and pull request 9 counted, with pull
+      request 9 named as having no capture, so its words cannot be shown.
+    expect:
+      ends: success
+      says: ['discussion_r101', 'discussion_r102|ValueError', '(?i)(pr-0009|pull request 9|#9)[^\n]*(no capture|not captured|missing|isn.t captured|no `?capture|can.t (answer|check|verify|read)|could(n.t| not) (answer|check|verify|read)|holds only|absent|does(n.t| not) exist|not (available|present))|(no capture|not captured|missing|no `?capture|absent)[^\n]*(pr-0009|pull request 9|#9)']
+
   - id: revise-prepare-uncaptured
     repo: widgets
     setup:

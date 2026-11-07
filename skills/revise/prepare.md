@@ -1,7 +1,7 @@
 # Prepare
 
 `revise`'s `prepare` mode: from the window's merged pull requests to the report the group
-marks. Each step fills the section of `<plugin root>/skills/revise/outline.md` it names. Apply every Dial
+decides on. Each step fills the section of `<plugin root>/skills/revise/outline.md` it names. Apply every Dial
 by name from the shared `dials.md`; a threshold the Dials do not state is not applied. Steps 1,
 2, 5 and 7 run the sections of `<plugin root>/skills/revise/harvest.md` they name; read it at
 step 1.
@@ -361,7 +361,11 @@ record `sources`.
     and where `apply` would change it: the standard's repository, this repository's diff, Jira
     through `ticket-draft` for a `ticket/`, or, for a `question/`, the standard's repository once
     answered. Write it as `outline.md` gives it, in the words `writing` sets out, every checkbox blank; no
-    diff and no archive entry. Then check its quotes: run `python3 "<plugin
+    diff and no archive entry. A proposal from a cluster names it, `C<n>`, among its evidence
+    pointers. When "Guidance" ran, run `guidance_clusters.py` again with step 5's arguments and
+    write its printout to `<log>/ratchet-YYYY-MM.clusters.txt` beside the report, as printed, its
+    `clusters: 0` line included when there was none, so a later question about how a proposal came
+    about traces it to its cases (`discuss.md`); without "Guidance", no such file is written. Then check its quotes: run `python3 "<plugin
     root>/scripts/quote_check.py" <the report> --comments <each comment-list.json file that exists
     under .review/harvest/threads/pr-*/, .review/harvest/captured-<repo>/threads/pr-*/ and each
     covered repository's <log>/capture/pr-*/, the last holding earlier windows' comments for the
@@ -374,10 +378,10 @@ record `sources`.
     offered for commit before. A quote no comment, note or held candidate holds is not the
     person's, and comes out. An `unchecked` line is a held candidate's quote from a pull request no
     capture holds: it stays, and the check's first line goes into "Head" as printed. Ask, so `apply` can check the branch out: **Commit and push the
-    branch** (Recommended: the group marks it on GitHub or in any checkout), **Commit only**,
+    branch** (Recommended: the group discusses it on GitHub or in any checkout), **Commit only**,
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,
-    or **Let's discuss**. Either commit answer commits the report in `<log>` with the records and
-    `<log>/capture/`, in
+    or **Let's discuss**. Either commit answer commits the report in `<log>` with the records,
+    `<log>/capture/` and the report's clusters file, in
     the clone; with no clone, nothing is committed and the question is not asked: the report and
     the records stay in `<log>` here, as `revise`'s "The standard's repository" says, and no draft
     pull request is offered. With a clone, in the same widget, a second question, which counts only with **Commit and push the branch**: open the
@@ -388,9 +392,9 @@ record `sources`.
     `Standards revision · <repo> · YYYY-MM`, and the body as they will be sent: the report's path
     and the records' count; that no rule, decision, term or context entry has changed, the diff
     being the month's records and the report; that a proposal is
-    discussed in a review comment on its line, and its verdict counts once it is on the proposal's
-    `Mark:` line in the report, written there on the branch or copied in by the driver, since
-    `apply` reads the report, not the threads; and the attribution line `pr-create` appends, at
+    discussed in review comments and replies on its line, in the group's own words, where anyone
+    can also ask how a proposal came about; that `apply` reads the discussion and settles each
+    proposal's mark with the driver; and the attribution line `pr-create` appends, at
     the level `<plugin root>/skills/pr-review/comment-style.md`, "AI assistance level", sets.
     Only an answer that names the pull request opens it.
 
@@ -410,10 +414,9 @@ record `sources`.
     - **What it did not change**: no rule, decision, term, context entry or document, here or in
       the standard; `apply` changes them from the marks, and commits, pushes or opens a pull
       request only on its own yes.
-    - **Next**: one line on how the group marks: in the meeting the driver writes each verdict on
-      its proposal's `Mark:` line and ticks the box, on that branch, on GitHub or in any checkout,
-      and commits the marks there, copying in any verdict given in the draft pull request's
-      review; when the branch
-      was not pushed, where it was committed; with no clone, in the report in this working tree,
-      left uncommitted for `apply`. When step 2 wrote drafts, a last line says how many, and that
+    - **Next**: one line on how the group decides: it discusses each proposal in its own words, in
+      the draft pull request's review or on the proposal's `Mark:` line, on that branch or, when
+      the branch was not pushed, where it was committed, or with no clone in the report in this
+      working tree, left uncommitted; `/lasp-dev:revise <a question>` answers how a proposal came
+      about; `apply` settles the marks from all of it with the driver. When step 2 wrote drafts, a last line says how many, and that
       `/lasp-dev:skill-feedback <path>` files each, shown whole before its yes.
