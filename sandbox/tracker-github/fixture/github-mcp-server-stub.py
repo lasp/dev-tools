@@ -25,7 +25,8 @@ sharing a word of three letters or more with the query; and `search_pull_request
 the pull requests whose title or body holds every quoted phrase of the query and every bare word
 that is not a qualifier such as `repo:`, `is:`, `in:` or `state:`, matched by whole words and
 numbers, punctuation dropped, as GitHub's search does, its links naming the repository the query's
-`repo:` gives when the call names none; `list_pull_requests`, whose states are lower-case; and
+`repo:` gives when the call names none; `list_pull_requests`, whose states are lower-case and whose `head`, `<owner>:<branch>`, is
+matched by its branch; and
 `pull_request_read` with the methods `get`, `get_reviews`, `get_review_comments` and
 `get_comments`, for an open pull request only, with no review, thread or comment on any, so
 `pr-reader` dumps one. A closed pull request's number is an error result to `pull_request_read`,
@@ -244,7 +245,8 @@ def call(name: str, args: dict):
         return {"incomplete_results": False, "items": [chosen(item(args, i), args.get("fields")) for i in hits], "total_count": len(hits)}
     if name == "list_pull_requests":
         state = args.get("state") or "open"
-        return [pull(args, p) for p in PULLS.values() if state == "all" or p["state"] == state]
+        head = str(args.get("head") or "").split(":")[-1]
+        return [pull(args, p) for p in PULLS.values() if (state == "all" or p["state"] == state) and (not head or p["head"] == head)]
     if name == "pull_request_read":
         n = int(args.get("pullNumber") or 0)
         if n not in PULLS:

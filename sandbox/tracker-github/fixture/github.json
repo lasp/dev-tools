@@ -93,8 +93,8 @@
     },
     {
       "number": 20,
-      "title": "Give each part number's count",
-      "body": "The warehouse team needs the count for each part number, not only one figure for the whole inventory.\n",
+      "title": "Break the inventory down by item",
+      "body": "The warehouse team needs a figure for every item code, not only one figure for the whole inventory.\n",
       "state": "open",
       "labels": [],
       "assignees": [],
@@ -154,6 +154,18 @@
       "head": "tidy-readme",
       "created_at": "2026-09-01T10:00:00Z",
       "updated_at": "2026-09-01T10:00:00Z"
+    },
+    {
+      "number": 23,
+      "title": "Print a stock report from the command line",
+      "body": "Ticket: #18 · The warehouse team reads the stock without a Python shell.\n\n## Summary\n\nAdds `python -m widgets report`.\n",
+      "state": "open",
+      "merged": false,
+      "draft": false,
+      "user": {"id": 1003, "login": "alice-example"},
+      "head": "18-stock-report",
+      "created_at": "2026-11-02T10:00:00Z",
+      "updated_at": "2026-11-03T12:00:00Z"
     }
   ]
 }

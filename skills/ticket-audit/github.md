@@ -19,7 +19,8 @@ for it, gets one line and no reader:
 - `links: does not apply on a GitHub tracker: an issue has no typed links`
 - `estimates: does not apply on a GitHub tracker: an issue carries no estimate`
 
-When the person names no sweep, ask between `duplicates` and `pulls`. Both need the GitHub server,
+When the person names no sweep, ask between `duplicates` and `pulls`, recommending the one their
+words point to, or `duplicates` when nothing does. Both need the GitHub server,
 and neither needs Atlassian or reads the year plan; a GitHub server that cannot be resolved or
 reached stops them, as `<plugin root>/skills/work/servers.md` sets out.
 
@@ -39,12 +40,16 @@ status", one finding of these per pull request:
 
 - it names no issue: no `Ticket:` line, or one that starts with `none`; the action is to file the
   ticket;
-- its `Ticket:` line names something other than the tracker's issue, a Jira-shaped key leading it
-  or another repository's issue; the action is to correct the line;
+- its `Ticket:` line names something other than the tracker's issue; the action is to correct the
+  line. "The record" sets which: a line leading with a Jira-shaped key is another tracker's; a bare
+  `#<n>` is the tracker's only when `issue_tracker.location` prints `none` or names the pull
+  request's own repository, and an `<owner/repo>#<n>` or issue URL only when it names the
+  location, or with `none` the pull request's repository;
 - its issue is closed, with the `state_reason`; the action is to close the pull request or reopen
   the issue, for the person to choose;
-- its issue is open and carries no label the roles map past `filed`, where `--defaults --field
-  issue_tracker.roles.approved` prints a label; the action is a ticket writer's approval.
+- its issue is open and carries neither the `approved` nor the `implementation` role's label,
+  where `--defaults --field issue_tracker.roles.approved` prints a label; the action is a ticket
+  writer's approval.
 
 ## Apply
 

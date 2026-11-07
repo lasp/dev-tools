@@ -15,7 +15,8 @@
 # `ready` and `enhancement`, #17 closed as not planned and still labeled `in progress`, #18 and
 # #19 open and asking for the same stock report, #19 with less in it, and #20 open, untouched
 # since 2025 and asking for what by_part does; #15 is a merged pull request, its body naming #9,
-# #16 one naming `o/r#90`, #21 an open one naming #17, and #22 an open draft naming no issue.
+# #16 one naming `o/r#90`, #21 an open one naming #17, #22 an open draft naming no issue, and #23
+# an open one naming #18.
 # The fields are those of ../scenarios.yaml.
 
 scenarios:
@@ -145,15 +146,17 @@ scenarios:
     origin: "#59 (review of #113): a pull request's number on a GitHub tracker is not an issue"
     why: >-
       Works 15, the merged pull request for issue 9, so work's one issue_read finds a pull
-      request's /pull/ link and reads it as that pull request, never as a ticket. The stub serves
-      no pull_request_read, so the pull request read itself fails and work stops there.
+      request's /pull/ link and reads it as that pull request, never as a ticket. The stub refuses
+      pull_request_read on a closed pull request, so the pull request read itself fails and work
+      stops there.
     turns:
       - /lasp-dev:work 15
     must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)", "Bash(*where.sh*--ticket 15*)"]
     look_at: >-
       work reads 15 with issue_read, sees /pull/ in its html_url, and takes it as pull request
       #15: it never gives where.sh --ticket 15, never routes 15 to ticket-draft or
-      implement-change, and stops at the pull request read the stub cannot serve, saying so.
+      implement-change, and stops at the pull request read the stub refuses for a closed pull
+      request, saying so.
     expect:
       ends: success
       mcp: [mcp__github__issue_read]
@@ -330,7 +333,8 @@ scenarios:
     origin: "#59: ticket-audit sweeps a GitHub tracker's open issues and closes a duplicate on a yes"
     why: >-
       Sweeps the open issues for duplicates on a GitHub tracker, where #19 restates #18 with less
-      in it and #20, untouched for 180 days, asks for what by_part already does, then says yes to
+      in it and has no pull request where #18 has #23, and #20, untouched for 180 days, asks for
+      what by_part already does, then says yes to
       the write plan, so the duplicate's close reaches the stub only through the approval record
       and the issue gate.
     turns:
@@ -361,7 +365,7 @@ scenarios:
         assert all((x["arguments"]["owner"], x["arguments"]["repo"]) == ("example", "widgets") for x in w), w;
         assert all(a["method"] == "update" for a in u), u;
         dup = [(a["issue_number"], a.get("duplicate_of")) for a in u if a.get("state") == "closed" and a.get("state_reason") == "duplicate"];
-        assert dup in ([(19, 18)], [(18, 19)]), dup;
+        assert dup == [(19, 18)], dup;
         assert all(set(a.get("labels") or []) <= {l["name"] for l in d["labels"]} for a in u), u'
 
   - id: tracker-gh-audit-pulls
@@ -373,19 +377,21 @@ scenarios:
     origin: "#59: ticket-audit checks open pull requests against their GitHub issues"
     why: >-
       Sweeps the open pull requests on a GitHub tracker: #21's Ticket: line names #17, closed as
-      not planned, and #22, a draft open since September, names no issue. No action the sweep
-      proposes is a write, so nothing is written.
+      not planned; #22, a draft open since September, names no issue; and #23 names #18, open with
+      no label though the standard maps `ready` to approved. No action the sweep proposes is a
+      write, so nothing is written.
     turns:
       - /lasp-dev:ticket-audit pulls
     must_not_run: ["Bash(git push*)", "Bash(git commit*)"]
     must_not_try: ["mcp__github__issue_write", "mcp__github__add_issue_comment"]
     look_at: >-
-      The session lists two open pull requests, says one reader runs per pull request, and runs a
+      The session lists three open pull requests, says one reader runs per pull request, and runs a
       pr-reader in state mode for each, writing their blocks to .review/audit/<date>-pulls/state.md.
       The sweep's source-reader reads #17 from #21's Ticket: line and finds it closed, not planned,
       proposing the pull request be closed or the issue reopened; #22 names no issue, so the ticket
-      is to be filed, and it has been a draft for over a month. No action is a write, so Apply
-      offers the report alone.
+      is to be filed, and it has been a draft for over a month; #18, #23's issue, waits for a
+      ticket writer's approval, the `ready` label. No action is a write, so Apply offers the report
+      alone.
     expect:
       ends: success
       agents: [pr-reader, source-reader]
@@ -396,6 +402,7 @@ scenarios:
       - test ! -e .review/github-approval.json
       - grep -q '#17' .review/audit/*-pulls.md
       - grep -q '#22' .review/audit/*-pulls.md
+      - grep -q '#18' .review/audit/*-pulls.md
 
   - id: tracker-gh-audit-declined
     repo: widgets

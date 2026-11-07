@@ -388,8 +388,8 @@ class TrackerGithubPack(unittest.TestCase):
         self.assertEqual(self.read("issue_read", method="get", issue_number=15)["issue"]["html_url"], "https://github.com/example/widgets/pull/15")
 
     def test_the_open_pull_requests_list_and_read_as_pr_reader_dumps_them(self):
-        self.assertEqual([p["number"] for p in self.read("list_pull_requests", state="open")], [21, 22])
-        self.assertEqual([p["number"] for p in self.read("list_pull_requests", state="all")], [15, 16, 21, 22])
+        self.assertEqual([p["number"] for p in self.read("list_pull_requests", state="open")], [21, 22, 23])
+        self.assertEqual([p["number"] for p in self.read("list_pull_requests", state="all")], [15, 16, 21, 22, 23])
         got = self.read("pull_request_read", method="get", pullNumber=21)
         self.assertEqual((got["number"], got["state"], got["draft"], got["merged"], got["user"]["login"]), (21, "open", False, False, "alice-example"))
         self.assertTrue(got["body"].startswith("Ticket: #17 "))
@@ -399,6 +399,12 @@ class TrackerGithubPack(unittest.TestCase):
         self.assertEqual(self.read("pull_request_read", method="get_comments", pullNumber=22, page=1, perPage=100), [])
         threads = self.read("pull_request_read", method="get_review_comments", pullNumber=22)
         self.assertEqual((threads["review_threads"], threads["totalCount"], threads["pageInfo"]["hasNextPage"]), ([], 0, False))
+
+    def test_list_pull_requests_matches_a_head_by_its_branch(self):
+        for head, found in (("example:9-by-part", [15]), ("9-by-part", [15]), ("example:no-such-branch", []), ("example:9-by", [])):
+            with self.subTest(head=head):
+                self.assertEqual([p["number"] for p in self.read("list_pull_requests", state="all", head=head)], found)
+        self.assertEqual(self.read("list_pull_requests", state="open", head="example:9-by-part"), [])
 
     def test_a_closed_or_unknown_pull_request_is_an_error_to_pull_request_read(self):
         for n, said in ((15, "serves open pull requests only"), (99, "404 Not Found")):

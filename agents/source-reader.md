@@ -51,7 +51,9 @@ abandoned) is the one `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defa
 jira.roles` gives that role. An error from it, a non-zero exit, makes each line
 that needs a role `not read: <error verbatim>`, and `not yet recorded` makes it `not read: no Jira
 workflow is recorded for this repository`; a status is never taken from a skill's prose in its
-place.
+place. On a GitHub tracker the role's label is `--defaults --field issue_tracker.roles.<role>`, in
+place of `jira.roles`, `none` meaning the role has no label, and an error from it makes the line
+`not read: <error verbatim>` as above.
 
 ## Tasks
 
@@ -161,7 +163,9 @@ or `pulls`, as `${CLAUDE_PLUGIN_ROOT}/skills/ticket-audit/github.md` sets out, o
 the caller names, `Tracker: github <owner/repo>`, each issue written `#<n>`; a GitHub sweep
 without that line returns `sweep: no issues repository named` and nothing else. `duplicates` reads the open issues with `list_issues`, state `OPEN`, paged
 until `hasNextPage` is false, and the comments of each issue a finding names with `issue_read`
-`get_comments`. `pulls` takes each pull request's issue from its state block's `ticket:` line, as
+`get_comments`; for each issue of a pair, the pull requests naming it, with
+`search_pull_requests`, query `repo:<owner/repo> "#<n>"`, the search that also finds what
+satisfied an issue. `pulls` takes each pull request's issue from its state block's `ticket:` line, as
 `${CLAUDE_PLUGIN_ROOT}/docs/contracts.md`'s "The record" reads a `Ticket:` line on a GitHub
 tracker, and reads that issue with `issue_read` `get` for its state, `state_reason` and labels,
 in the named repository, or in the pull request's own when `--field issue_tracker.location`
