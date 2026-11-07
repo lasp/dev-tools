@@ -25,12 +25,12 @@ block `pr-reader` would have, `## harvest — <log> since <day>`, its count line
 requests' lines. It refuses, exit 2, writing nothing, with one line each: `uncovered · <from> ·
 <to>` for days from --since through --through no `covered.txt` line covers, `uncaptured · pr-NNNN`
 for a pull request --merges (`window_merges.py`'s printout) lists as merged in those days with no
-capture, and `missing · pr-NNNN · record` for a capture whose line says `record` and whose log has
+capture, a log not yet made, before a repository's first capture, holding none, and `missing · pr-NNNN · record` for a capture whose line says `record` and whose log has
 none.
 
 Both exit 1 with the reason for an input that cannot be read: a day not YYYY-MM-DD, --from after
---through, a report line naming a pull request twice, a log directory that does not exist, or a
-capture whose `harvest.txt` is not a report line. Stdlib only.
+--through, a report line naming a pull request twice, for `store` a log directory that does not
+exist, or a capture whose `harvest.txt` is not a report line. Stdlib only.
 """
 
 from __future__ import annotations
@@ -163,8 +163,6 @@ def load(args) -> int:
     if start > end:
         raise Refused(f"--since {start} is after --through {end}")
     root = args.log / "capture"
-    if not args.log.is_dir():
-        raise Refused(f"{args.log} is not a directory")
     captured: dict[int, tuple[str, Path]] = {}
     for dest in sorted(root.glob("pr-*")) if root.is_dir() else []:
         line = (dest / "harvest.txt").read_text().strip() if (dest / "harvest.txt").is_file() else ""

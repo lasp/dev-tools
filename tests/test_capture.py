@@ -155,6 +155,10 @@ class Capture(unittest.TestCase):
         (self.log / "pr-0007.yaml").unlink()
         self.store()
         self.assertEqual(self.load()[1].splitlines(), ["missing · pr-0007 · record"])
+        shutil.rmtree(self.log)
+        code, out, _ = self.load("2026-10-01", "2026-10-09", "--merges", str(merges))
+        self.assertEqual((code, out.splitlines()), (2, ["uncovered · 2026-10-01 · 2026-10-09", "uncaptured · pr-0011",
+                                                        "uncaptured · pr-0008"]))
 
     def test_load_refuses_a_capture_it_cannot_read(self):
         self.store()
