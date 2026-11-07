@@ -74,7 +74,7 @@ issues `tracker-github/fixture/github-mcp-server-stub.py` serves from `github.js
 `work` routing an open issue with no label, an open one with a mapped label, a closed one, and a
 branch named `issue-<n>-words`; `ticket-draft` drafting a new issue and refining #12, each through
 a yes to its write plan, a draft whose plan is answered Paste it all, and one whose third turn,
-taking every recommended answer, must file nothing. Its `mcp.json` names the
+taking every recommended answer, must file nothing, after a slash command or a plain "file an issue for" alike. Its `mcp.json` names the
 stub as `${SBX_FIXTURES}/github-mcp-server-stub.py` with `--writes .git/github-writes.jsonl`, as
 the pack's header shows; the file name holds `github-mcp-server`, so `run.py` gives it the GitHub
 rules, except that a pack's stub run with `--writes` has `issue_write` and `add_issue_comment`

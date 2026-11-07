@@ -5,11 +5,11 @@ description: >
   placed among existing work, from a description, a ticket or a pull request with none; can brief
   you on the code first, fold in later answers, or reformat a ticket to the current format; files
   only on your yes. Use it, rather than `gh issue create` or an issue written by hand, for any
-  request to put a bug or a change into the tracker, whatever the verb: "open a GitHub issue for",
+  request to put a bug or a change into this repository's tracker: "open a GitHub issue for",
   "write a ticket for", "file a ticket", "create a Jira ticket", "log a bug", "refine this ticket",
-  "is this ticket ready", "what is this ticket missing" or "groom this ticket". Not for a bug or a
-  complaint about a lasp-dev skill or agent, this one included, however it is asked for, even as
-  an issue on the plugin: that is skill-feedback's alone.
+  "is this ticket ready", "what is this ticket missing" or "groom this ticket". Not for another
+  project's tracker. Not for a bug or a complaint about a lasp-dev skill or agent, this one
+  included, however it is asked for, even as an issue on the plugin: that is skill-feedback's alone.
 argument-hint: "[investigate | settle | reformat] <ticket key | issue #n | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
@@ -118,9 +118,9 @@ On a GitHub tracker, where `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" -
 issue_tracker.kind` prints `github`, read `${CLAUDE_SKILL_DIR}/github.md` first, which says what
 changes in every step below and in the files. Where it prints anything else and the request asks
 for a GitHub issue, say before step 1, in one line, that this repository's tracker is not GitHub
-Issues and what it is (`jira`, or none recorded), and ask: **Draft it as a Jira ticket**
-(Recommended where the tracker is Jira), which goes on with the steps below, or **Stop**, which
-writes nothing. Nothing is read before the answer.
+Issues and what it is (`jira`, or none recorded, where `/lasp-dev:onboard` records one), and
+ask: **Draft it as a Jira ticket** (Recommended where the tracker is Jira), which goes on with the
+steps below, or **Stop**, which writes nothing. Nothing is read before the answer.
 
 A pull request as the source, or a slug whose page exists under `.review/context/`, which `work`
 names for a page with no key yet: read `${CLAUDE_SKILL_DIR}/sources.md` first, which says what

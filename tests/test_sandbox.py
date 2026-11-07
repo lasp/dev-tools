@@ -235,7 +235,8 @@ class TrackerGithubPack(unittest.TestCase):
     STUB = ROOT / "sandbox" / "tracker-github" / "fixture" / "github-mcp-server-stub.py"
     SERVER = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py", "--writes", ".git/github-writes.jsonl"]}
     WORK = {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch"}
-    DRAFT = {"tracker-gh-ticket-draft-new", "tracker-gh-ticket-draft-refine", "tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket"}
+    DRAFT = {"tracker-gh-ticket-draft-new", "tracker-gh-ticket-draft-refine", "tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket",
+             "tracker-gh-ticket-draft-standing-answer"}
 
     def setUp(self):
         patch = mock.patch.object(run, "SCENARIOS", self.PACK)
@@ -269,7 +270,7 @@ class TrackerGithubPack(unittest.TestCase):
                 self.assertTrue((run.fixture_dir() / name).is_file(), (s["id"], name))
         for name in self.DRAFT:
             self.assertTrue(any("github-writes.jsonl" in v for v in self.known[name]["verify"]), name)
-        for name in ("tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket"):
+        for name in ("tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket", "tracker-gh-ticket-draft-standing-answer"):
             self.assertEqual(self.known[name]["must_not_try"], ["mcp__github__issue_write", "mcp__github__add_issue_comment"], name)
 
     def perms(self, servers: dict) -> dict:
@@ -314,17 +315,19 @@ class TrackerGithubPack(unittest.TestCase):
         self.assertLessEqual({"issue_write", "add_issue_comment"}, set(tools))
         self.assertEqual(tools["issue_write"]["required"], ["method", "owner", "repo"])
         repo = {"owner": "example", "repo": "widgets"}
+        data = json.loads((self.STUB.parent / "github.json").read_text())
+        new = max(i["number"] for i in data["issues"] + data["pulls"]) + 1
         calls = [{"id": 1, "method": "tools/call", "params": {"name": "issue_write", "arguments": {"method": "create", **repo, "title": "T", "body": "B"}}},
-                 {"id": 2, "method": "tools/call", "params": {"name": "add_issue_comment", "arguments": {**repo, "issue_number": 16, "body": "C"}}},
+                 {"id": 2, "method": "tools/call", "params": {"name": "add_issue_comment", "arguments": {**repo, "issue_number": new, "body": "C"}}},
                  {"id": 3, "method": "tools/call", "params": {"name": "issue_write", "arguments": {"method": "update", **repo, "issue_number": 12, "labels": ["ready"]}}}]
         made, commented, updated = (json.loads(r["result"]["content"][0]["text"]) for r in self.serve(*calls, writes=writes))
-        self.assertEqual(made["url"], "https://github.com/example/widgets/issues/16")
+        self.assertEqual(made["url"], f"https://github.com/example/widgets/issues/{new}")
         self.assertEqual(commented["url"].split("#")[0], made["url"])
         self.assertEqual(updated["url"], "https://github.com/example/widgets/issues/12")
         self.assertEqual([json.loads(line)["tool"] for line in writes.read_text().splitlines()], ["issue_write", "add_issue_comment", "issue_write"])
         # A later server replays the file, so the next turn reads what this one wrote.
-        replies = self.serve({"id": 1, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get", **repo, "issue_number": 16}}},
-                             {"id": 2, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get_comments", **repo, "issue_number": 16}}},
+        replies = self.serve({"id": 1, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get", **repo, "issue_number": new}}},
+                             {"id": 2, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get_comments", **repo, "issue_number": new}}},
                              {"id": 3, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get", **repo, "issue_number": 12}}},
                              writes=writes)
         issue, comments, twelve = (json.loads(r["result"]["content"][0]["text"]) for r in replies)

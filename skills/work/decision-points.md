@@ -46,7 +46,9 @@ one, remove it first with `rm -f <path>`, a plain command, then write it.
 Bash runs scripts and git, and these stay commands: a script's output redirected to a file, such
 as `bash standard_file.sh > .review/standard.md.tmp`; `commit`'s message handed to git with `git
 commit -F - <<'MSG'`; and `write-plan.md`'s `jq` approval record, which holds only fixed-form
-items, tool names and keys.
+items, tool names and keys. An approval record whose items hold free text, as a GitHub create's
+title does, has its items written with the Write tool and read by `jq` from that file
+(`using-github`'s `issues.md`).
 
 ## What does not change
 

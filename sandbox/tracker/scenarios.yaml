@@ -151,5 +151,5 @@ scenarios:
       it as a Jira ticket (Recommended) or Stop. No reader runs and nothing is written.
     expect:
       ends: success
-      says: ["(?i)jira"]
+      says: ["(?i)not GitHub Issues", "(?i)\\bStop\\b"]
       not_says: ["(?m)^## total"]

@@ -73,6 +73,18 @@ check "a create's record allows that title only: another create, skill-feedback'
   '[ "$(decision issue_write "$other_title")" = none ] && [ "$(decision issue_write "$feedback")" = none ] && [ "$(decision issue_write "$no_title")" = none ]'
 approve '[{"tool":"issue_write","target":"example/widgets"}]'
 check "a create's target without its title allows no create" '[ "$(decision issue_write "$create")" = none ]'
+# The record as issues.md builds it: the items written to a file, read by jq with --slurpfile.
+quoted=$(printf '%s' "$create" | jq -c '.title = "Don'"'"'t count a \"negative\" part"')
+jq -n --argjson c "$quoted" '[{tool: "issue_write", target: "example/widgets \($c.title)"}]' > .review/github-approval-items.json
+jq -n --arg s s1 --argjson t "$(date +%s)" --slurpfile items .review/github-approval-items.json \
+  '{session: $s, t: $t, items: $items[0]}' > .review/github-approval.json
+check "a title holding an apostrophe and double quotes, recorded from the items file, allows that create" \
+  '[ "$(decision issue_write "$quoted")" = allow ] && [ "$(decision issue_write "$create")" = none ]'
+newline=$(printf '%s' "$create" | jq -c '.title = "Refuse a negative count\n"')
+approve '[{"tool":"issue_write","target":"example/widgets Refuse a negative count"}]'
+check "a target is compared byte for byte: a title with a trailing newline does not match one without" \
+  '[ "$(decision issue_write "$newline")" = none ] && [ "$(decision issue_write "$create")" = allow ]'
+rm -f .review/github-approval-items.json
 approve '[{"tool":"add_issue_comment","target":"example/widgets#12"}]'
 check "a record allows only the tool it names on that target" \
   '[ "$(decision add_issue_comment "$comment")" = allow ] && [ "$(decision issue_write "$update")" = none ]'

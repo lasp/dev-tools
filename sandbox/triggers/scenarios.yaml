@@ -336,6 +336,17 @@ scenarios:
       ends: success
       skills: [ticket-draft]
 
+  - id: notrigger-ticket-draft-other-project
+    repo: widgets
+    origin: "#59: ticket-draft files only into this repository's tracker"
+    why: Asks for an issue on another project, so a run shows the request does not reach ticket-draft, which files into this repository's tracker only.
+    turns:
+      - Open an issue on requests for this timeout bug.
+    must_not_run: ["Skill(*ticket-draft)", "mcp__*", "Bash(gh *)", "Bash(git push*)"]
+    look_at: The request does not reach ticket-draft; the session says it cannot file on another project from here, or drafts the text for the person, and files nothing.
+    expect:
+      ends: success
+
   - id: notrigger-ticket-draft-plugin-issue
     repo: widgets
     origin: "#59: a complaint about a skill, asked as an issue on the plugin, stays skill-feedback's once ticket-draft drafts GitHub issues"

@@ -67,19 +67,23 @@ deleted on GitHub, but its first text reaches whoever watches the repository, so
   target as the table gives it, its owner, repository and title copied exactly as the call will
   send them, since the hook compares them case and all (`docs/contracts.md`, "The GitHub approval
   record"). A call sends only the arguments the table names; the hook gives a call with any other,
-  such as `assignees`, no decision:
+  such as `assignees`, no decision. A create's target holds its title, free text that may carry
+  quotes, so the items never go through a command: write them as a JSON array with the Write tool
+  to `.review/github-approval-items.json` (`<plugin root>/skills/work/decision-points.md`,
+  "Writing a file"), then build the record from that file:
 
   ```bash
-  jq -n --arg s "${CLAUDE_CODE_SESSION_ID:?}" --argjson t "$(date +%s)" --argjson items '<items>' \
-    '{session: $s, t: $t, items: $items}' > "$(git rev-parse --show-toplevel)/.review/github-approval.json"
+  top=$(git rev-parse --show-toplevel)
+  jq -n --arg s "${CLAUDE_CODE_SESSION_ID:?}" --argjson t "$(date +%s)" --slurpfile items "$top/.review/github-approval-items.json" \
+    '{session: $s, t: $t, items: $items[0]}' > "$top/.review/github-approval.json"
   ```
 
   An item that names `new:<slug>` goes in once its create has landed, with the number the
-  create's `url` ends in: write the record again with the same command. The hook allows only a
-  call the record lists, from this session, for 30 minutes, and gives no decision on any other, so
-  the person's own permissions decide it. Remove the record,
-  `rm -f "$(git rev-parse --show-toplevel)/.review/github-approval.json"`, when the plan has been
-  read back, and as soon as it stops, as `write-plan.md` says of the Jira record.
+  create's `url` ends in: write the items file again and run the same command. The hook allows
+  only a call the record lists, from this session, for 30 minutes, and gives no decision on any
+  other, so the person's own permissions decide it. Remove both files,
+  `rm -f "$(git rev-parse --show-toplevel)"/.review/github-approval{,-items}.json`, when the plan
+  has been read back, and as soon as it stops, as `write-plan.md` says of the Jira record.
 - **A failure** is handled as `write-plan.md` says; a no at a permission prompt is one.
 
 ## Read it back

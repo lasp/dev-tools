@@ -222,7 +222,8 @@ item `{"tool": <tool>, "target": <target>}`, the tool named without its server p
 is `<owner>/<repo> <title>` for an `issue_write` whose `method` is `create`, so an item matches one
 create, and `<owner>/<repo>#<n>` for one whose `method` is `update` and for `add_issue_comment`, as
 github-mcp-server names the parameters `owner`, `repo`, `title` and `issue_number`, compared
-exactly, case included. `hooks/issue-gate.sh` allows a call from the main session only when the
+byte for byte, case and any trailing newline included. A create's item matches that one call; an
+update's or a comment's matches every such call on that issue in the window, as a Jira item does. `hooks/issue-gate.sh` allows a call from the main session only when the
 record's session is the call's, `t` is under 30 minutes old and not in the future, an item matches
 the tool and target exactly, and the call carries only the arguments a plan sends: a create
 `method`, `owner`, `repo`, `title`, `body` and `labels`; an update those and `issue_number`,
@@ -233,7 +234,8 @@ not parse in this shape, a subagent's call, a call with any other argument, such
 missing.
 
 Writers: the GitHub write plan (`skills/using-github/issues.md`, "Running it"), run by
-`ticket-draft`, at the person's yes; removed when the plan finishes or stops. Readers:
+`ticket-draft`, at the person's yes, with `jq` from the items it writes to
+`.review/github-approval-items.json`; both removed when the plan finishes or stops. Readers:
 `hooks/issue-gate.sh`.
 
 Pinned by: tests/test_issue_gate.sh::with this session's record, a listed create, update and comment are allowed

@@ -34,28 +34,28 @@ cwd=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)
 cwd=${cwd:-$PWD}
 top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || top=$cwd
 record="$top/.review/github-approval.json"
-target=$(printf '%s' "$input" | jq -r --arg op "$op" '.tool_input as $i
+# The call's target is built and compared inside jq, so a title's bytes reach the comparison as
+# they are, trailing newlines included.
+[ -f "$record" ] && printf '%s' "$input" | jq -e --arg op "$op" --slurpfile r "$record" \
+  --argjson now "$(date +%s)" --argjson ttl "$APPROVAL_TTL" '.tool_input as $i | (.session_id | strings) as $s
   | def repo: if ($i.owner | type) == "string" and ($i.repo | type) == "string" and ($i.owner | length) > 0 and ($i.repo | length) > 0
       then "\($i.owner)/\($i.repo)" else empty end;
     def number: if ($i.issue_number | type) == "number" and $i.issue_number >= 1 and ($i.issue_number | floor) == $i.issue_number
       then $i.issue_number | tostring else empty end;
     def only($allowed): ($i | keys) - $allowed == [];
     def create: ["method", "owner", "repo", "title", "body", "labels"];
-  if ($i | type) != "object" then empty
-  elif $op == "add_issue_comment" then (if only(["owner", "repo", "issue_number", "body"]) then "\(repo)#\(number)" else empty end)
-  elif $i.method == "create" then
-    (if only(create) and ($i.title | type) == "string" and ($i.title | length) > 0 then "\(repo) \($i.title)" else empty end)
-  elif $i.method == "update" then
-    (if only(create + ["issue_number", "state", "state_reason", "duplicate_of"]) then "\(repo)#\(number)" else empty end)
-  else empty end' 2>/dev/null)
-session=$(printf '%s' "$input" | jq -r '.session_id | strings' 2>/dev/null)
-if [ -n "$target" ] && [ -n "$session" ] && [ -f "$record" ] \
-  && jq -e -s --arg s "$session" --arg op "$op" --arg target "$target" \
-    --argjson now "$(date +%s)" --argjson ttl "$APPROVAL_TTL" \
-    'length == 1 and (.[0] | .session == $s and (.t | type) == "number"
-     and $now - .t >= 0 and $now - .t < $ttl and (.items | type) == "array"
-     and all(.items[]; type == "object" and (.tool | type) == "string" and (.target | type) == "string")
-     and any(.items[]; .tool == $op and .target == $target))' "$record" >/dev/null 2>&1; then
-  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"%s is an item of the write plan you approved."}}\n' "$op"
-fi
+    def target:
+      if ($i | type) != "object" then empty
+      elif $op == "add_issue_comment" then (if only(["owner", "repo", "issue_number", "body"]) then "\(repo)#\(number)" else empty end)
+      elif $i.method == "create" then
+        (if only(create) and ($i.title | type) == "string" and ($i.title | length) > 0 then "\(repo) \($i.title)" else empty end)
+      elif $i.method == "update" then
+        (if only(create + ["issue_number", "state", "state_reason", "duplicate_of"]) then "\(repo)#\(number)" else empty end)
+      else empty end;
+  [target] as $t | ($s | length) > 0 and ($t | length) == 1 and ($r | length) == 1
+  and ($r[0] | .session == $s and (.t | type) == "number"
+    and $now - .t >= 0 and $now - .t < $ttl and (.items | type) == "array"
+    and all(.items[]; type == "object" and (.tool | type) == "string" and (.target | type) == "string")
+    and any(.items[]; .tool == $op and .target == $t[0]))' >/dev/null 2>&1 \
+  && printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"%s is an item of the write plan you approved."}}\n' "$op"
 exit 0
