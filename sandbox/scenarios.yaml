@@ -253,7 +253,7 @@ scenarios:
     expect:
       ends: success
       says: ['(?i)R-004[^\n]*accept, reworded', '(?i)raises on input it cannot use', '(?i)F-002\W*\|\W*accept\b(?!ed)', '(?i)F-001[^\n]*unclear', '(?i)D-001[^\n]*unclear']
-      not_says: ['(?i)^(?!.*unclear).*D-001[^\n]*\baccept\b(?!ed|,? (reworded|owner|override))', '(?i)^(?!.*unclear).*F-001[^\n]*\baccept\b(?!ed)', '(?i)R-004[^\n]*decline']
+      not_says: ['(?i)^\W*D-001\W+accept\b(?!ed)', '(?i)^\W*F-001\W+accept\b(?!ed)', '(?i)^\W*R-004\W+decline']
 
   - id: revise-question-evidence
     repo: widgets

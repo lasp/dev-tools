@@ -11,7 +11,8 @@ candidates.
 **Settle the marks.** The group decides in its own words, wherever it discussed: on a proposal's
 `Mark:` line; with a clone, in the draft pull request `prepare` may have opened on the report's
 branch, found as step 2 finds it and read through `using-github` (each review comment and its
-replies, by the line it is on, the reviews' bodies and the conversation comments); and in
+replies, by the line it is on, the reviews' bodies and the conversation comments), with no clone
+there being none to look for; and in
 meeting notes the driver pastes into `.review/revision/meeting/`, which `prepare` never reads, so
 an ask pasted for `prepare` into `revision/notes/` is not taken for a decision. When that pull
 request exists, or the check for it fails, and its threads cannot be read, stop here as
