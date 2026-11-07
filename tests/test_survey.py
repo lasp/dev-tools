@@ -266,6 +266,39 @@ class TicketKeys(unittest.TestCase):
         self.assertEqual(rows(repo, "ticket:\n  pattern: 'PROJ-\\d+'\n  project: PROJ\n")["ticket key"]["match"], "same")
 
 
+class IssueKeys(unittest.TestCase):
+    """The `issue key` row: GitHub issue keys where convention puts one, and the pattern they imply."""
+
+    def issue_row(self, **history) -> dict:
+        return rows(make_repo({}, "git@github.com:example-org/k.git", **history))["issue key"]
+
+    def test_numbered_branches_imply_where_shs_default(self):
+        row = self.issue_row(branches=("12-empty-inventory", "feature/14-low-stock", "issue-9-by-part", "issue-15"))
+        self.assertEqual((row["found_in"], row["key"], row["match"]), ("history", None, "-"))
+        self.assertEqual(row["value"], r"branches: <n>-words 2, issue-<n> 2 of 5; subjects: 0 of 1; pattern (issue-)?\d+")
+
+    def test_gh_branches_alone_imply_their_own_pattern_and_name_no_jira_project(self):
+        found = rows(make_repo({}, "git@github.com:example-org/k.git", branches=("GH-12-x", "gh-14-y"), subjects=("GH-12: a", "GH-14: b")))
+        self.assertEqual(found["issue key"]["value"], r"branches: GH-<n> 2 of 3; subjects: 2 of 2; pattern GH-\d+")
+        self.assertEqual((found["ticket project"]["value"], found["ticket key"]["found_in"]), ("-", "none"))
+
+    def test_gh_beside_another_form_is_mixed(self):
+        self.assertTrue(self.issue_row(branches=("GH-12-x", "14-y")).get("value").endswith("pattern mixed"))
+
+    def test_subjects_alone_imply_no_pattern(self):
+        row = self.issue_row(subjects=("#12: guard an empty inventory", "[#14] low stock", "Count widgets by part (#15)"))
+        self.assertEqual(row["value"], "branches: none of 1; subjects: 2 of 3; pattern none")
+
+    def test_dates_and_versions_are_no_issue_keys(self):
+        row = self.issue_row(branches=("2026-10-29-notes", "onboard/widgets-2026-11-01", "release/1.2", "v3-fix", "release/1-2"),
+                             subjects=("#2026-10-29 notes", "Bump to 1.2"))
+        self.assertEqual((row["found_in"], row["value"]), ("none", "-"))
+
+    def test_jira_keys_are_no_issue_keys(self):
+        found = rows(make_repo({}, "git@github.com:example-org/k.git", branches=("PROJ-42-csv",), subjects=("PROJ-42: csv",)))
+        self.assertEqual((found["issue key"]["found_in"], found["ticket project"]["value"]), ("none", "PROJ"))
+
+
 class Guides(unittest.TestCase):
     def test_headings_are_read_by_word_and_never_from_code(self):
         guide = ("# Guide\n\n## Pre-commit hooks\n\n## Emerging practices\n\n```bash\n# create a branch for your work\n```\n\n"

@@ -680,7 +680,9 @@ page as a ticket and counts no gate, and `standard_file.sh` exits 1 (version 3).
 and the shadow read are gone, with `.review/profile-shadow.log` and exit 3 (version 15).
 
 Writers: `onboard`, on the person's yes at its step 5: the drop-in's settled keys and their derived gates, `public`
-and, for a new standard, `.review/onboard/project.yaml` with a `decisions.md` holding none yet, into the standard's `profile.yaml` or,
+and, for a new standard, `.review/onboard/project.yaml` (a Jira tracker as `jira:`, GitHub Issues as
+`issue_tracker:` with `kind: github`, a `location` only for another repository's issues, and a
+`ticket.pattern` only when one is recorded) with a `decisions.md` holding none yet, into the standard's `profile.yaml` or,
 for a standard covering several repositories, its `profiles/<repo>.yaml`, with the pointer here; people, by hand from `standards/profile.example.yaml`;
 the plugin, `standards/default-profile.yaml`; each repository's
 maintainers, its `standards/profile.yaml`; and `profile.py`, through `survey.py --drop-in`, the
@@ -1164,7 +1166,7 @@ Pinned by: tests/test_check_static.py::test_the_update_writes_the_baseline
 
 ## The survey
 
-Version: 10
+Version: 11
 
 Fields: `scripts/survey.py`'s printout, from the committed files of `--ref` (default `HEAD`)
 only; a candidate file the checkout holds but git does not track is named on the `not committed`
@@ -1255,7 +1257,15 @@ as `where.sh` reads it or at a commit subject's start, a number followed by `-<n
 date and no key (`onboard/WISER-2026-10-29`), and names the project when seen with two numbers or more,
 or in a branch name, and with at least twice as many numbers as any other key so seen, so a history
 where two projects are seen about as often names none; the commit habit counts the subjects that open with that
-key. `--json` prints the same rows, their values whole, as a list of objects with `family`,
+key. `GH-<n>` is GitHub's issue form and names no project. The `issue key` row, after `ticket
+project`, reads GitHub issue keys in the same places (version 11): a branch name's `issue-<n>`,
+`GH-<n>`, or `<n>` alone, each before `-<word>` or the name's end, so `2026-10-29-notes` is none,
+and a subject opening with `#<n>` or `GH-<n>`, with the same date guard. Its value is
+`branches: <form> <count>, … of <N>; subjects: <k> of <M>; pattern <p>`, `<p>` the ticket pattern the
+branch forms imply as `where.sh` reads a GitHub tracker's branch: `(issue-)?\d+`, its default, for
+`issue-<n>` and `<n>-words`; `GH-\d+` for `GH-<n>` alone; `mixed` for `GH-<n>` beside another
+form; `none` with no branch form. No key holds it (`-`), and the candidate takes nothing from it,
+since a GitHub tracker's pattern is only ever the one its standard records; `onboard` proposes it. `--json` prints the same rows, their values whole, as a list of objects with `family`,
 `found_in`, `value`, `key`, `plugin_today`, `plugin_source`, `match` and `conflict`.
 
 With `--profile <path>`, it also writes a candidate profile there, in the plugin's profile format

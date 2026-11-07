@@ -77,6 +77,12 @@ branch named `issue-<n>-words`, and a pull request's number given as the argumen
 `github-mcp-server`, so `run.py` gives it the GitHub rules. The stub's tools carry
 github-mcp-server's names, arguments and output shapes, and none writes.
 
+The same pack's `tracker-gh-onboard` and `tracker-gh-onboard-mixed` run `onboard` with no
+standard, each setup making its own history: one with no Jira key, where onboard reads the
+issues and writes their labels as `issue_tracker:` under `.review/onboard/`, and one whose branch
+names a Jira project beside the issues, where onboard asks which tracker holds the tickets. The
+stub also answers onboard's `search_repositories` and `search_code`.
+
 A project's own pack, which replays its
 pull requests and tickets against its GitHub and Jira, read-only, is a file of the same form in a
 directory beside this file, given with `--scenarios`, with a README that lists its scenarios and
