@@ -83,7 +83,10 @@ class SavePage(unittest.TestCase):
     def test_what_cannot_be_saved_says_so_and_writes_nothing(self):
         note = self.call("get_review_comments", self.page("B", False), after="unknown")
         self.assertEqual(note, "not saved: get_review_comments: no saved page ends at the cursor unknown")
-        self.assertEqual(self.call("get", [{"type": "text", "text": "{}"}]), "not saved: get: the response is a list, not text")
+        for response in ([{"type": "text", "text": "{}"}, {"type": "text", "text": "{}"}], [{"type": "image", "data": "{}"}], [],
+                         [{"type": "text", "text": 1}], {"type": "text", "text": "{}"}):
+            with self.subTest(response=response):
+                self.assertRegex(self.call("get", response), r"^not saved: get: the response is a (list|dict), not text$")
         self.assertTrue(self.call("get_reviews", "[]", page="two").startswith("not saved: get_reviews: ValueError"))
         self.assertEqual([p.name for p in self.folder.iterdir()], [])
         self.assertTrue(self.call("get", "{}", pullNumber=None).startswith("not saved: get: TypeError"))
@@ -91,6 +94,13 @@ class SavePage(unittest.TestCase):
         self.addCleanup(subprocess.run, ["rm", "-rf", str(outside)])
         self.assertEqual(self.call("get", "{}", cwd=outside), f"not saved: get: {outside} is not in a git repository")
         self.assertFalse((outside / ".review").exists())
+
+    def test_a_result_of_one_text_block_is_saved_as_its_text(self):
+        text = '[{"id": 1, "body": "a\\nb"}]\n'
+        self.assertEqual(self.call("get_reviews", [{"type": "text", "text": text}], page=1), f"saved get_reviews as {self.folder}/get_reviews-1.json")
+        self.assertEqual((self.folder / "get_reviews-1.json").read_text(), text)
+        notice = "Error: result exceeds maximum allowed tokens."
+        self.assertTrue(self.call("get", [{"type": "text", "text": notice}]).startswith("not saved: get: the response is not JSON"))
 
     def test_a_size_limit_notice_is_not_saved_as_a_page(self):
         self.call("get_reviews", "[]", perPage=100, page=1)

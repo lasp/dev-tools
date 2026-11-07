@@ -290,7 +290,7 @@ Pinned by: tests/test_next_phase.py::test_an_agree_that_carries_its_response_is_
 
 ## The thread dump
 
-Version: 6
+Version: 7
 
 Fields: `.review/threads/pr-NNNN/` (and `.review/harvest/threads/pr-NNNN/`): `pages/`, each
 `pull_request_read` result as the server returned it, one file per call, from which
@@ -308,7 +308,9 @@ version 3 states the `html_url` requirement; version 4 added `pages/` and `threa
 checks; version 5 has `thread_dump.py` refuse a directory not named `pr-NNNN`; version 6 lets a
 list be paged below 100, named by `--per-page`, and has `save_page.py` refuse a response that is
 not JSON, such as the harness's size-limit notice, and clear a pull request's
-`get_review_comments` pages at its first page. Beside them, `judged.json`, "The
+`get_review_comments` pages at its first page. Version 7 has `save_page.py` save the text of a
+response that is a list of one text block, as Claude Code passes some servers' results, a stdio server's among them, and
+refuse any other list. Beside them, `judged.json`, "The
 judgments", is `pr-reader`'s own.
 
 Writers: `pr-reader`, copying each page `hooks/save-page.sh` saved under
