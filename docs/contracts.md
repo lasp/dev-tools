@@ -392,14 +392,16 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
   general item the pull request's author changed as asked.
 
 A person's words are an item whose `authorship` is `human`, or `ai-drafted` in a comment whose
-list entry's `kind` is `reply`, its poster's (version 4; earlier versions read a drafted reply as
-an agent's). An agent's words are an `ai-drafted` thread opening, review summary or conversation
+list entry's `kind` is `reply`, its poster's, except that one whose reply's AI assistance level
+is `5/5` is held at most, the criterion `drafted, not read by a person` (version 4; earlier
+versions read a drafted reply as an agent's). An agent's words are an `ai-drafted` thread opening, review summary or conversation
 comment. An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
 is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
 before it. After the items, one `ask · <key> · pr-NNNN · <author> · <url>` line per `admit` or
 `covered` line whose item's signal is `asks for guidance` (version 3); then one `drafted · <key> ·
 pr-NNNN · <author> · <level> · <url>` line per `admit`, `covered` or `hold` line from an
-`ai-drafted` reply, `<level>` the reply's AI assistance level, `<n>/5`, or `unstated` (version 4).
+`ai-drafted` reply, `<level>` the reply's AI assistance level, `<n>/5`, from the last of its lines
+outside a `>` quote that states one, or `unstated` (version 4).
 A last line reads `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> · not listed:
 <n> · asks: <n> · drafted: <n>`.
 
@@ -448,7 +450,8 @@ names (version 4), a `drafted · <id> · <author> · <level> · <url>` line per 
 `drafted` line names (version 6), a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
 from a pull request and a person not yet quoted while one is left; then one `ask · <covered_by> ·
-<author> · <url>` per tally `ask` on a `covered` line (version 4); then `clusters: <n> · lines:
+<author> · <url>` per tally `ask` on a `covered` line (version 4) and one `drafted · <covered_by> ·
+<author> · <level> · <url>` per tally `drafted` on one (version 6); then `clusters: <n> · lines:
 <n>` and exit 0. A cluster's pull requests are those a person asked on, of its `admit` and `hold`
 lines and its `human` notes, which the Recurring ask Dial counts; its people the authors of those
 and of its pasted notes; either `none` when there are none; an agent's or a bot's words count for neither. It also refuses a tally whose closing `items:` line is missing or counts its words

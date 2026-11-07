@@ -294,7 +294,8 @@ def score(comments: dict[int, dict], labels: dict, items: list[dict], mode: str,
         put("kind agreement", sum(any(it.get("kind") == lab["kind"] for it in hits[lab["id"]]) for lab in labs
                                   if found[lab["id"]]), sum(found.values()))
     if mode != "openers":
-        mine = [it for it in items if it["generality"] == "general" and comments[it["comment_id"]]["authorship"] == "human"]
+        mine = [it for it in items if it["generality"] == "general" and (comments[it["comment_id"]]["authorship"] == "human" or (
+            comments[it["comment_id"]]["authorship"] == "ai-drafted" and comments[it["comment_id"]]["kind"] == "reply"))]
         unmatched = [it for it in mine if not any(finds(it, lab, comments[it["comment_id"]]["body"]) for lab in labs)]
         put("precision", len(mine) - len(unmatched), len(mine))
         out += [f"unmatched · pr-{it['pr']:04d} · {it['comment_id']} · {it['principle']}" for it in unmatched]

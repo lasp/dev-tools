@@ -234,10 +234,9 @@ record `sources`.
    printout, and the cluster is a proposal or, failing its cluster's kind's bar in harvest.md's
    "Destinations", held with that bar's reason; an ask on a `covered` line, an `ask ·
    <covered_by>` line there, is listed under the live entry it names. A line a tally `drafted`
-   line names is a reply its poster sent through a skill: the guidance is theirs, since they chose
-   to answer the thread and how, and counts as any of their lines does, while the report marks it
-   drafted with its AI assistance level from the `drafted · <cluster>` line, so the meeting knows
-   an agent worded it and, at `5/5`, that nobody read the wording. Each admitted cluster is a proposal of its kind,
+   line names is a reply its poster sent through a skill, theirs as the tally reads it, and the
+   report marks it drafted with its AI assistance level from the `drafted · <cluster>` or `drafted ·
+   <covered_by>` line, so the meeting knows an agent worded it. Each admitted cluster is a proposal of its kind,
    with the id and destination harvest.md's "Destinations" gives it. A cluster with no `admit` line and a `hold`
    line is held with the tally's criterion. A `covered` line supports the live rule, decision,
    agent guidance entry, data convention or instruction it names, listed under it in "Rules", and

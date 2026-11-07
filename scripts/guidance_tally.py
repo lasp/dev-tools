@@ -24,9 +24,9 @@ Admission Dial in `standards/dials.md` read it:
   general item the pull request's author changed as asked, which never admits.
 
 A person's words are an item whose `authorship` is `human`, or `ai-drafted` in a comment its list
-gives `kind` `reply`: a reply in a thread is posted by the person who chose to answer that thread
-and how, through `pr-fix` or by hand, so its guidance is the poster's however an agent worded it.
-An agent's words are an `ai-drafted` thread opening, review summary or conversation comment.
+gives `kind` `reply`, its poster's (`docs/design.md` says why), except that one whose reply's AI
+assistance level is `5/5`, not read by a person, holds at most, `drafted, not read by a person`. An
+agent's words are an `ai-drafted` thread opening, review summary or conversation comment.
 
 `<key>` is `s<n>-<i>`, the item's place: the n-th slice given, from 1, and its index in that
 slice's items, from 0, so a later step names one item however many share a comment.
@@ -36,8 +36,8 @@ in the slices' order; then one `ask · <key> · pr-NNNN · <author> · <url>` pe
 line whose item's signal is `asks for guidance`, a person asking for the point to be kept, so the
 report names who asked; then one `drafted · <key> · pr-NNNN · <author> · <level> · <url>` per
 `admit`, `covered` or `hold` line from an `ai-drafted` reply, `<level>` its AI assistance level,
-`<n>/5`, or `unstated`, so the report says whose words an agent drafted and whether anyone read
-them; then a last line, `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> · not
+`<n>/5` from the last of its lines outside a `>` quote that states one, or `unstated`, so the report
+says whose words an agent drafted and whether anyone read them; then a last line, `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> · not
 listed: <n> · asks: <n> · drafted: <n>`. A quote is printed on one line, its whitespace runs as one space. Exits 0;
 exits 1 with the check's lines when it refuses. Stdlib only.
 """
@@ -57,6 +57,13 @@ SIGNALS = ("asks for guidance", "states a principle", "addresses agents", "names
 ANY_SIGNAL = ("tool-config", "exemplar", "review-calibration", "open-question")
 SOURCED = ("data-convention", "decision")
 LEVEL = re.compile(r"(?i)\bai assistance level: *([1-5])/5")
+
+
+def level_of(body: str) -> str:
+    """A reply's AI assistance level, `<n>/5`, from the last line outside a `>` quote that states
+    one, so a quoted finding's level is not the reply's; `unstated` when none does."""
+    found = [m[1] for m in map(LEVEL.search, body.splitlines()) if m and not m.string.lstrip().startswith(">")]
+    return f"{found[-1]}/5" if found else "unstated"
 
 
 def load_check():
@@ -108,6 +115,9 @@ def main(argv: list[str] | None = None) -> int:
         if v is None:
             continue
         word, why = v
+        level = level_of(comment["body"]) if reply else None
+        if word == "admit" and level == "5/5":
+            word, why = "hold", "drafted, not read by a person"
         counts[word] += 1
         cells = [word, key, f"pr-{it['pr']:04d}", str(it["comment_id"]), it["author"], it["kind"], *([why] if why else []),
                  it["url"], check.flat(it["quote"])]
@@ -115,9 +125,7 @@ def main(argv: list[str] | None = None) -> int:
         if word in ("admit", "covered") and it["signal"] == "asks for guidance":
             asks.append(f"ask · {key} · pr-{it['pr']:04d} · {it['author']} · {it['url']}")
         if reply:
-            level = LEVEL.search(comment["body"])
-            drafted.append(f"drafted · {key} · pr-{it['pr']:04d} · {it['author']} · "
-                           f"{level[1] + '/5' if level else 'unstated'} · {it['url']}")
+            drafted.append(f"drafted · {key} · pr-{it['pr']:04d} · {it['author']} · {level} · {it['url']}")
     for extra in (asks, drafted):
         print("\n".join(extra), end="\n" if extra else "")
     print(f"items: {len(items)} · " + " · ".join(f"{k}: {n}" for k, n in counts.items())

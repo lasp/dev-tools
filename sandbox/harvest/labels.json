@@ -79,6 +79,16 @@
         105,
         110
       ]
+    },
+    {
+      "id": "T9",
+      "name": "Mock a missing system library to keep CI fast",
+      "principle": "A system library that is slow or awkward to install may be mocked or faked, at least outside CI.",
+      "prs": [
+        101,
+        106,
+        110
+      ]
     }
   ],
   "items": [
@@ -635,6 +645,42 @@
       "signal": "states a principle",
       "theme": null,
       "principle": "A lint suppression carries its reason on the same line."
+    },
+    {
+      "id": "L47",
+      "comment_id": 5000002,
+      "pr": 101,
+      "author": "alice",
+      "quote": "installing system packages in CI slows every job and the reader logic is covered by the mock",
+      "kind": "rule",
+      "generality": "general",
+      "signal": "none",
+      "theme": "T9",
+      "principle": "Mocking an unavailable system library is acceptable to keep CI jobs fast."
+    },
+    {
+      "id": "L48",
+      "comment_id": 5000092,
+      "pr": 106,
+      "author": "alice",
+      "quote": "Alternatively the `netCDF4` import could be mocked on macOS only.",
+      "kind": "rule",
+      "generality": "general",
+      "signal": "none",
+      "theme": "T9",
+      "principle": "A library missing on one platform may be mocked there."
+    },
+    {
+      "id": "L49",
+      "comment_id": 5000166,
+      "pr": 110,
+      "author": "erin",
+      "quote": "Could we keep the fake for local runs and use the real library only in CI?",
+      "kind": "rule",
+      "generality": "general",
+      "signal": "none",
+      "theme": "T9",
+      "principle": "A fake for a hard-to-install library may be used in local runs, with the real one in CI."
     }
   ],
   "negatives": [

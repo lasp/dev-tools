@@ -128,6 +128,13 @@ class Tally(unittest.TestCase):
             "drafted · s1-2 · pr-0007 · bob · 3/5 · u12",
             "items: 3 · admit: 1 · covered: 1 · hold: 1 · support: 0 · not listed: 0 · asks: 1 · drafted: 3",
         ])
+        unread = {**drafted, "body": drafted["body"].replace("3/5 (lightly edited by a person)", "5/5 (not read by a person)")}
+        self.assertEqual(self.tally([unread], item)[1][:2], [
+            "hold · s1-0 · pr-0007 · 12 · bob · rule · drafted, not read by a person · u12 · "
+            "In general, import dependencies directly; no guards.",
+            "drafted · s1-0 · pr-0007 · bob · 5/5 · u12"])
+        quoting = {**drafted, "body": "> Should fix. AI assistance level: 5/5 (not read by a person).\n\n" + drafted["body"]}
+        self.assertEqual(self.tally([quoting], item)[1][1], "drafted · s1-0 · pr-0007 · bob · 3/5 · u12")
         unstated = {**drafted, "body": "🤖 _beep boop: AI-assisted reply._\n\n" + BODY}
         self.assertEqual(self.tally([unstated], item)[1][1], "drafted · s1-0 · pr-0007 · bob · unstated · u12")
         for kind in ("thread", "review", "comment"):

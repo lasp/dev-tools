@@ -28,10 +28,10 @@ record = load("record", ROOT / "scripts" / "record.py")
 LISTS = sorted((FIXTURE / "comments").glob("pr-*.json"))
 RUNS = sorted((FIXTURE / "runs").glob("*.json"))
 RECORDED = {
-    "recall": "46/46 = 1.00",
-    "recall · in replies to agents": "27/27 = 1.00",
-    "themes on two prs": "8/8 = 1.00",
-    "precision": "45/47 = 0.96",
+    "recall": "49/49 = 1.00",
+    "recall · in replies to agents": "30/30 = 1.00",
+    "themes on two prs": "9/9 = 1.00",
+    "precision": "48/50 = 0.96",
     "negatives read general": "1/20 = 0.05",
     "quotes exact": "109/109 = 1.00",
 }
@@ -72,7 +72,8 @@ class Fixture(unittest.TestCase):
         for item in self.labels["items"]:
             c = self.comments[item["comment_id"]]
             with self.subTest(label=item["id"]):
-                self.assertEqual((c["pr"], c["authorship"]), (item["pr"], "human"))
+                self.assertEqual(c["pr"], item["pr"])
+                self.assertTrue(c["authorship"] == "human" or (c["authorship"], c["kind"]) == ("ai-drafted", "reply"))
                 self.assertTrue(guidance_check.holds(c["body"], item["quote"]))
                 self.assertLessEqual(len(item["quote"].split()), guidance_check.MAX_WORDS)
                 self.assertIn(item["kind"], guidance_check.KINDS)
@@ -108,17 +109,17 @@ class Scores(unittest.TestCase):
 
     def test_the_analysts_reading_finds_no_reply(self):
         got = score("--openers")
-        self.assertEqual(got["recall"], "14/46 = 0.30")
-        self.assertEqual(got["recall · in replies"], "0/32 = 0.00")
+        self.assertEqual(got["recall"], "14/49 = 0.29")
+        self.assertEqual(got["recall · in replies"], "0/35 = 0.00")
         self.assertEqual(got["recall · kind · agent-guidance"], "1/14 = 0.07")
-        self.assertEqual(got["themes on two prs"], "1/8 = 0.12")
+        self.assertEqual(got["themes on two prs"], "1/9 = 0.11")
         self.assertNotIn("precision", got)
 
     def test_the_recorded_clusters_join_every_theme(self):
         got = score("--items", str(FIXTURE / "runs" / "guidance-extractor-2026-11-05.json"),
                     "--clusters", str(FIXTURE / "clusters" / "clusters-2026-11-05.json"))
-        self.assertEqual(got["themes joined"], "8/8 = 1.00")
-        self.assertEqual(got["themes kept apart"], "8/8 = 1.00")
+        self.assertEqual(got["themes joined"], "9/9 = 1.00")
+        self.assertEqual(got["themes kept apart"], "9/9 = 1.00")
 
     def test_one_cluster_of_everything_joins_every_theme_and_keeps_none_apart(self):
         run = FIXTURE / "runs" / "guidance-extractor-2026-11-05.json"
@@ -127,7 +128,7 @@ class Scores(unittest.TestCase):
             one = Path(d) / "one.json"
             one.write_text(json.dumps({"clusters": [{"id": "C1", "principle": "x", "items": keys, "notes": [], "held": None}]}))
             got = score("--items", str(run), "--clusters", str(one))
-            self.assertEqual((got["themes joined"], got["themes kept apart"]), ("8/8 = 1.00", "0/8 = 0.00"))
+            self.assertEqual((got["themes joined"], got["themes kept apart"]), ("9/9 = 1.00", "0/9 = 0.00"))
             twice = Path(d) / "twice.json"
             twice.write_text(json.dumps({"clusters": [{"id": "C1", "principle": "x", "items": keys[:2], "notes": [], "held": None},
                                                       {"id": "C2", "principle": "y", "items": keys[1:3], "notes": [], "held": None}]}))
@@ -177,11 +178,11 @@ class Analyst(unittest.TestCase):
         pairs = self.dir / "pairs.json"
         code, out, _ = self.run_scorer("--pairs", str(pairs))
         self.assertEqual(code, 0)
-        self.assertIn("recall: 1/46", out)
+        self.assertIn("recall: 1/49", out)
         self.assertEqual(out.count("no block · pr-"), 9)
         self.assertEqual([p["lines"] for p in json.loads(pairs.read_text())], [["keep the open loud"]])
         carried = self.dir / "carried.json"
-        for answer, want in (("carried", "1/46"), ("local", "0/46")):
+        for answer, want in (("carried", "1/49"), ("local", "0/49")):
             carried.write_text(json.dumps({self.label["id"]: answer}))
             code, out, _ = self.run_scorer("--carried", str(carried))
             self.assertIn(f"recall (principle carried): {want}", out)
@@ -193,7 +194,7 @@ class Analyst(unittest.TestCase):
 
     def test_reads_a_line_block_tally_reads_with_trailing_spaces(self):
         self.block(self.ask() + "  ")
-        self.assertIn("recall: 1/46", self.run_scorer()[1])
+        self.assertIn("recall: 1/49", self.run_scorer()[1])
 
     def test_refuses_what_it_cannot_place(self):
         carried = self.dir / "carried.json"

@@ -6,13 +6,10 @@
    "principle": "A test that needs a system library gets it installed in CI and the dev environment, never mocked or skipped away.",
    "items": [
     "s1-0",
-    "s1-1",
     "s1-2",
     "s1-54",
-    "s1-55",
     "s1-56",
     "s1-95",
-    "s1-96",
     "s1-97"
    ],
    "notes": [],
@@ -324,6 +321,18 @@
    "principle": "Station files are small enough that the proposed change is not needed.",
    "items": [
     "s1-71"
+   ],
+   "notes": [],
+   "held": null
+  },
+  {
+   "id": "C30",
+   "kind": "rule",
+   "principle": "A missing system library may be mocked where installing it costs more than the test reads.",
+   "items": [
+    "s1-1",
+    "s1-55",
+    "s1-96"
    ],
    "notes": [],
    "held": null

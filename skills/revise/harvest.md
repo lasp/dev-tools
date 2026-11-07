@@ -82,7 +82,8 @@ Group what people asked for by the principle it states, whatever its words and w
 request it came from: two statements join when the same change to the standard would answer both,
 and a cluster whose statements would need two different changes, such as one rule for docstrings
 and another for user documents, is two clusters. A statement joins one cluster only, and one that
-joins nothing is a cluster of one.
+joins nothing is a cluster of one. A statement that argues against a principle, such as a reply
+declining a finding with its reason, never joins that principle's cluster: it states its own.
 
 With "Guidance" run, the statements are the guidance tally's `admit`, `hold` and `support` lines;
 its `covered` lines support the entry they name and join nothing. Write

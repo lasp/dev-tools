@@ -47,15 +47,16 @@ those of its `support` lines, an agent's finding the author changed as asked, th
 pr-NNNN, ...` or `none`, the pull requests it counted, each `<repo>/pr-NNNN` with --repo,
 which `apply` carries into the candidate's `prs:` line, `held · <id> · <title>` when it joins one,
 `ask · <id> · <author> · <url>` for each of its lines the tally's `ask` lines name, `drafted · <id>
-· <author> · <level> · <url>` for each its `drafted` lines name, a person's words an agent worded
-in a reply, `note · <id> ·
+· <author> · <level> · <url>` for each of its lines the tally's `drafted` lines name, a person's words an
+agent worded in a reply, `note · <id> ·
 <note>` for each note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
 order. `prs · <id> · none` and `people · <id> · none` when it has none. A note's pull request is
 `pr-` and at least four digits, as the tally prints it.
 After the clusters, one `ask · <covered_by> · <author> · <url>` per `ask` on a `covered` line, an
-ask the live entry already answers. A last line reads `clusters: <n> · lines: <n>`. Exits 0. Stdlib only.
+ask the live entry already answers, and one `drafted · <covered_by> · <author> · <level> · <url>`
+per `drafted` on a `covered` line. A last line reads `clusters: <n> · lines: <n>`. Exits 0. Stdlib only.
 """
 
 from __future__ import annotations
@@ -102,7 +103,7 @@ def tally_lines(text: str, repo: str = "") -> tuple[dict[str, dict], list[str]]:
                 raise Refused(f"a tally line with too few cells: {line[:80]}")
             counts[cells[0]] += 1
             if cells[0] == "covered":
-                covered[cells[1]] = f"{cells[6]} · {cells[4]} · {cells[7]}"
+                covered[cells[1]] = (cells[6], cells[4], cells[7])
             else:
                 out[cells[1]] = {"word": cells[0], "pr": f"{repo}/{cells[2]}" if repo else cells[2], "author": cells[4],
                                  "kind": cells[5], "url": cells[url_at], "quote": " · ".join(cells[url_at + 1:])}
@@ -124,7 +125,9 @@ def tally_lines(text: str, repo: str = "") -> tuple[dict[str, dict], list[str]]:
     for key in drafted.keys() & set(out):
         out[key]["drafted"] = drafted[key]
     return ({f"{repo}:{k}" if repo else k: v for k, v in out.items()},
-            [f"ask · {covered[k]}" for k in sorted(asks & set(covered))])
+            [f"ask · {covered[k][0]} · {covered[k][1]} · {covered[k][2]}" for k in sorted(asks & set(covered))]
+            + [f"drafted · {covered[k][0]} · {covered[k][1]} · {drafted[k]} · {covered[k][2]}"
+               for k in sorted(drafted.keys() & set(covered))])
 
 
 PR = r"(?:[\w.-]+/)?pr-\d{4,}"
