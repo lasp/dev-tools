@@ -130,7 +130,8 @@ scenarios:
       - git add -f standards && git -c user.name=Sandbox -c user.email=sandbox@example.com commit -qm "Adopt the standard"
       - git -c user.name=Sandbox -c user.email=sandbox@example.com commit -q --allow-empty -m "Add a rows reader (#7)"
       - git update-ref refs/remotes/origin/main HEAD
-      - mkdir -p standards/log/widgets/capture && cp -R "$SBX_FIXTURES/capture/pr-0007" standards/log/widgets/capture/
+      - mkdir -p standards/log/widgets/capture/pr-0007
+      - cp "$SBX_FIXTURES/capture/pr-0007/harvest.txt" "$SBX_FIXTURES/capture/pr-0007/pr.json" "$SBX_FIXTURES/capture/pr-0007/comment-list.json" "$SBX_FIXTURES/capture/pr-0007/items.json" standards/log/widgets/capture/pr-0007/
       - "d=$(date -u +%F); for f in standards/log/widgets/capture/pr-0007/*; do sed -i.bak \"s/DAY/$d/g\" \"$f\" && rm \"$f.bak\"; done; printf '%s %s\\n' \"$(git log -1 --format=%cs -- standards/review-rules.md)\" \"$d\" > standards/log/widgets/capture/covered.txt"
     origin: "#87"
     why: >-

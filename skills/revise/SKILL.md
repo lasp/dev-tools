@@ -175,7 +175,8 @@ One report and one diff: one pull request here, from the driver's diff, and, wit
 the standard's repository, merged first. Every proposal carries its evidence pointers.
 One `guidance-extractor` per slice of about 300 comments, as `harvest.md`'s "Guidance" cuts them,
 and one `thread-analyst` per merged pull request with a record, within `harvest.md`'s cap, run by
-`capture` as pull requests merge; `prepare` runs them only for the days no capture covers. One
+`capture` as pull requests merge; `prepare` runs them for what its own capture reads, and an
+analyst for a loaded record with no block. One
 `diff-probe` per pull request of the five merged most recently, only when a rule or a claim no
 script judges is owed; `scripts/drift_checks.py` judges the rest with no agent. If
 the corpus is over its line budget, the proposal names a retirement. Every proposal reaches the

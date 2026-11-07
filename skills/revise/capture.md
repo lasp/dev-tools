@@ -39,8 +39,12 @@ repository's `<log>`.
 6. **Keep it.** Show the files changed under `<log>` and ask **Commit and open a pull request**
    (Recommended: on a branch `capture/<repo>-YYYY-MM-DD` in the standard's repository, this one when
    the standard is its own, pushed as `using-github` sets out; `prepare` reads a capture once it is
-   on `main`, or in this working tree), **Leave it uncommitted**, the files named, or **Let's
-   discuss**. A capture `prepare` runs is kept with its records, at its step 10.
+   on `main`, or in this working tree), **Leave it uncommitted**, the files named, which with a
+   clone discards the capture when the clone is removed, its path named, or **Let's discuss**. A
+   capture's pull request merges before the next capture: one branched from `main` without it reads
+   its pull requests again and conflicts with it, so with one still open, say so first and ask
+   **Wait for it to merge** (Recommended) or **Capture anyway**. A capture `prepare` runs is
+   committed with its records, at its step 10.
 
 End with one line per pull request from step 5's printout, the days covered, and what step 6 did.
 

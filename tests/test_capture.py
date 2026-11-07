@@ -121,6 +121,20 @@ class Capture(unittest.TestCase):
         self.assertEqual(self.load()[1].splitlines()[-1], "not read · pr-0008")
         self.assertEqual(self.pending(), "pr-0008\n")
 
+    def test_a_pull_request_read_before_and_not_read_now_drops_its_items_and_takes_its_new_block(self):
+        self.store()
+        self.comments(7, [comment(7, 70), comment(7, 71, "Agreed.")])
+        (self.analysis / "pr-0007.md").write_text("## pr-0007, with the reply\n")
+        code, out, _ = self.store("--not-read", "7", slices=())
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out.splitlines()[0], "captured pr-0007 · not read · analysis")
+        seven = self.log / "capture" / "pr-0007"
+        self.assertFalse((seven / "items.json").exists())
+        self.assertEqual((seven / "analysis.md").read_text(), "## pr-0007, with the reply\n")
+        (self.analysis / "pr-0007.md").unlink()
+        self.store("--not-read", "7", slices=())
+        self.assertFalse((seven / "analysis.md").exists())
+
     def test_store_refuses_items_the_guidance_check_refuses_and_writes_nothing(self):
         code, out, _ = self.store(slices=(self.slice_of("seven.json", item(7, 70)),))
         self.assertEqual(code, 1)
@@ -198,6 +212,8 @@ class Capture(unittest.TestCase):
         self.assertEqual(out.splitlines(), ["uncovered · 2026-10-01 · 2026-10-02", "uncovered · 2026-10-08 · 2026-10-09",
                                             "uncaptured · pr-0011 · 2026-10-07"])
         self.assertFalse((self.dir / "harvest").exists())
+        merges.write_text(f"pr-0007 {'d' * 40} 2026-10-04 x.py\n")
+        self.assertEqual(self.load("2026-10-03", "2026-10-07", "--merges", str(merges))[0], 0)
 
     def test_load_refuses_a_capture_with_no_record_or_a_failed_fetch(self):
         self.report.write_text(REPORT.replace("merged 2026-10-06 · not built · no review", "merged 2026-10-06 · get failed: 502"))

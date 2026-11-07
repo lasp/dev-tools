@@ -17,11 +17,11 @@ harvest block, saved to a file: its `merged: <n>` line must count its `pr-NNNN �
 merged <day> · ...` lines, each of which is one pull request, and each gets `<log>/capture/pr-
 NNNN/`, replaced: `harvest.txt`, its report line; from its dump under --threads, each of DUMP that
 is there; `items.json`, its guidance items as a slice of one pull request; and `analysis.md`, its
-`thread-analyst` block. A pull request `pending` names takes its items from the run's --slices,
-held first to `guidance_check.py` with those pull requests' comment lists, every refusal printed
-and nothing written, and its block from `<analysis>/pr-NNNN.md` when there; one --not-read names,
-from a slice the check still refused, gets no `items.json`. Any other keeps the `items.json` and
-`analysis.md` its capture had. Then `<from> <through>` is appended to `<log>/capture/covered.txt`,
+`thread-analyst` block. A pull request `pending` names takes its block from `<analysis>/pr-NNNN.md`,
+none when that is not there, and its items from the run's --slices, held first to
+`guidance_check.py` with those pull requests' comment lists, every refusal printed and nothing
+written; one --not-read names, from a slice the check still refused, gets no `items.json`. Any other
+keeps the `items.json` and `analysis.md` its capture had. Then `<from> <through>` is appended to `<log>/capture/covered.txt`,
 the days the harvest searched. Prints `captured pr-NNNN · items <n> | items kept <n> | not read[ ·
 analysis[ kept]]` per pull request and `covered <from>..<through>`.
 
@@ -127,7 +127,8 @@ def store(args) -> int:
         raise Refused(f"{args.log} is not a directory: archive the records first, which makes it")
     prs = report_lines(args.report.read_text())
     unread = set(args.not_read)
-    fresh = [n for n in pending(args.log, args.threads) if n in prs and n not in unread]
+    named = [n for n in pending(args.log, args.threads) if n in prs]
+    fresh = [n for n in named if n not in unread]
     lists = [args.threads / f"pr-{n:04d}" / "comment-list.json" for n in fresh]
     items: dict[int, list] = {n: [] for n in fresh}
     if lists or args.slices:
@@ -162,11 +163,11 @@ def store(args) -> int:
         elif "items.json" in kept and (dest / "comment-list.json").is_file():
             (dest / "items.json").write_text(kept["items.json"])
             said = f" · items kept {len(json.loads(kept['items.json'])['items'])}"
-        block = args.analysis / f"pr-{n:04d}.md" if args.analysis and n in fresh else None
+        block = args.analysis / f"pr-{n:04d}.md" if args.analysis and n in named else None
         if block and block.is_file():
             shutil.copyfile(block, dest / "analysis.md")
             said += " · analysis"
-        elif n not in fresh and "analysis.md" in kept:
+        elif n not in named and "analysis.md" in kept:
             (dest / "analysis.md").write_text(kept["analysis.md"])
             said += " · analysis kept"
         print(f"captured pr-{n:04d}{said}")
