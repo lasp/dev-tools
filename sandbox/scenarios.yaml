@@ -288,7 +288,7 @@ scenarios:
       request 9 named as having no capture, so its words cannot be shown.
     expect:
       ends: success
-      says: ['discussion_r101', 'discussion_r102|ValueError', '(?i)(pr-0009|pull request 9|#9)[^\n]*(no capture|not captured|missing|isn.t captured|no `?capture|can.t (answer|check|verify|read)|couldn.t (answer|check|verify|read)|holds only|absent|does(n.t| not) exist|not (available|present))|(no capture|not captured|missing|no `?capture|absent)[^\n]*(pr-0009|pull request 9|#9)']
+      says: ['discussion_r101', 'discussion_r102|ValueError', '(?i)(pr-0009|pull request 9|#9)[^\n]*(no capture|not captured|missing|isn.t captured|no `?capture|can.t (answer|check|verify|read)|could(n.t| not) (answer|check|verify|read)|holds only|absent|does(n.t| not) exist|not (available|present))|(no capture|not captured|missing|no `?capture|absent)[^\n]*(pr-0009|pull request 9|#9)']
 
   - id: revise-prepare-uncaptured
     repo: widgets
