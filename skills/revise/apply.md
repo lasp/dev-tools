@@ -43,7 +43,8 @@ convention names no owner. A question a comment asks is answered as
 
 Show a table of every proposal in the report's order: its id, the mark settled, and what it
 rests on, the comment's link, the `Mark:` line or the note's file, quoted where short; above it,
-one line naming each file read from `revision/meeting/`, so a stale one is seen. Then ask:
+one line naming each file read from `revision/meeting/`, so a stale one is seen. The table is
+written as text before the question, never only inside it. Then ask:
 **Write these marks** (Recommended, when none is unclear), **Change some**, the person naming the
 proposal and the mark, or **Let's discuss**. An `unclear` mark is settled with the person before
 anything is written, or left blank, deferred, on their word. On the yes, write each mark on its
