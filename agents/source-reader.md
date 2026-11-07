@@ -44,6 +44,7 @@ could not be read, and nothing else; never ask:
   sizes or commits, with the error verbatim.
 - The `pulls` sweep without Atlassian: write its file with each ticket's status as `not read:
   <error verbatim>`; without GitHub, return the failure.
+- On a GitHub tracker, a sweep needs GitHub, not Atlassian: without GitHub, return the failure.
 
 A status a task or a skill names by its role (filed, approved, implementation, finished,
 abandoned) is the one `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
@@ -154,6 +155,15 @@ last update, reading `not in the file`.
 written to `.review/audit/<YYYY-MM-DD>-<slug>.md`. For `pulls`, the caller also gives the
 directory holding the state blocks and each pull request's `pr.json`, which you read in place
 of fetching the pull requests again.
+
+On a GitHub tracker, where `--field issue_tracker.kind` prints `github`, the sweep is `duplicates`
+or `pulls`, as `${CLAUDE_PLUGIN_ROOT}/skills/ticket-audit/github.md` sets out, on the repository
+`--field issue_tracker.location` names, or the caller's repository when it prints `none`, each
+issue written `#<n>`. `duplicates` reads the open issues with `list_issues`, state `OPEN`, paged
+until `hasNextPage` is false, and the comments of each issue a finding names with `issue_read`
+`get_comments`. `pulls` takes each pull request's issue from its state block's `ticket:` line, as
+`${CLAUDE_PLUGIN_ROOT}/docs/contracts.md`'s "The record" reads a `Ticket:` line on a GitHub
+tracker, and reads that issue with `issue_read` `get` for its state, `state_reason` and labels.
 
 ```
 ## sweep — <slug>

@@ -76,7 +76,10 @@ closed one still carrying a pull request status label, a branch named `issue-<n>
 pull request's number given as the argument; `ticket-draft` drafting a new issue and refining #12,
 each through a yes to its write plan, a draft whose plan is answered Paste it all, and one whose
 third turn, taking every recommended answer, must file nothing, after a slash command or a plain
-"file an issue for" alike. Its `mcp.json` names the stub as `${SBX_FIXTURES}/github-mcp-server-stub.py`
+"file an issue for" alike; `ticket-audit` sweeping the open issues, finding a duplicate and an issue
+the code already satisfies and closing the duplicate on a yes, the same sweep answered Paste it
+all, and sweeping the open pull requests, through `pr-reader` dumps of the stub's
+`pull_request_read`, for one whose issue is closed and one that names none. Its `mcp.json` names the stub as `${SBX_FIXTURES}/github-mcp-server-stub.py`
 with `--writes .git/github-writes.jsonl`, as the pack's header shows; the file name holds
 `github-mcp-server`, so `run.py` gives it the GitHub rules, except that a pack's stub run with
 `--writes` has `issue_write` and `add_issue_comment` neither allowed nor denied. Under `dontAsk`

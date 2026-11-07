@@ -2,13 +2,14 @@
 name: ticket-audit
 description: >
   Sweeps the team's Jira project for gaps in planned work, duplicate, outdated and badly linked
-  tickets, estimate accuracy and what open pull requests wait on, then applies the actions in
-  Jira on one yes.
+  tickets, estimate accuracy and what open pull requests wait on, or a repository's GitHub issues
+  for duplicate and outdated issues and what open pull requests wait on, then applies the actions
+  in the tracker on one yes.
 argument-hint: "[planned | duplicates | links | estimates | pulls]"
 disable-model-invocation: true
 metadata:
   author: lasp-dev
-  version: 1.3.9
+  version: 1.4.0
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
@@ -19,11 +20,15 @@ When a person asks for one of the sweeps below, typically before monthly plannin
 lineup. A plain Jira query needs no skill; this one is for questions that depend on the year
 plan, the repositories or the team's conventions.
 
+Where the tracker is GitHub Issues, `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults
+--field issue_tracker.kind` printing `github`, read `${CLAUDE_SKILL_DIR}/github.md` before the
+sweeps: which sweeps run, what they read and how Apply writes differ there.
+
 ## Options
 
 | Option | Default |
 |---|---|
-| Sweeps | Asked for when not named: `planned`, `duplicates`, `links`, `estimates`, `pulls` |
+| Sweeps | Asked for when not named: `planned`, `duplicates`, `links`, `estimates`, `pulls`; on a GitHub tracker, `duplicates` and `pulls` |
 
 ## Reads
 
@@ -153,6 +158,6 @@ ten finished, estimated tickets before any conclusion; below that, report the co
 
 ## Never
 
-Write to Jira outside Apply's approved write plan. Estimate a ticket; the fourth
+Write to Jira or GitHub outside Apply's approved write plan. Estimate a ticket; the fourth
 sweep says which tickets need one, and the team estimates them. Name a finding as someone's
 fault.

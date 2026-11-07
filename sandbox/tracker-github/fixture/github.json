@@ -66,6 +66,42 @@
       "comments": [
         {"id": 17001, "body": "Dropped: the supplier logs orders now.", "user": {"id": 1003, "login": "alice-example"}, "created_at": "2026-02-20T11:00:00Z", "updated_at": "2026-02-20T11:00:00Z", "author_association": "MEMBER"}
       ]
+    },
+    {
+      "number": 18,
+      "title": "Print a stock report from the command line",
+      "body": "## Motivation\n\nThe warehouse team reads the stock by opening a Python shell and calling `by_part` by hand.\n\n## Acceptance Criteria\n\n1. `python -m widgets report <file>` prints each part and its count, one part a line, in part order.\n2. A file that cannot be read exits non-zero, naming the file.\n",
+      "state": "open",
+      "labels": [],
+      "assignees": [],
+      "user": {"id": 1003, "login": "alice-example"},
+      "created_at": "2026-10-20T09:00:00Z",
+      "updated_at": "2026-10-20T09:00:00Z",
+      "comments": []
+    },
+    {
+      "number": 19,
+      "title": "Add a command-line stock report",
+      "body": "We need a stock report we can run from the command line, so nobody has to open a Python shell to read the stock.\n",
+      "state": "open",
+      "labels": [],
+      "assignees": [],
+      "user": {"id": 1002, "login": "bob-example"},
+      "created_at": "2026-10-27T15:00:00Z",
+      "updated_at": "2026-10-27T15:00:00Z",
+      "comments": []
+    },
+    {
+      "number": 20,
+      "title": "Give each part number's count",
+      "body": "The warehouse team needs the count for each part number, not only one figure for the whole inventory.\n",
+      "state": "open",
+      "labels": [],
+      "assignees": [],
+      "user": {"id": 1002, "login": "bob-example"},
+      "created_at": "2025-12-18T11:00:00Z",
+      "updated_at": "2025-12-18T11:00:00Z",
+      "comments": []
     }
   ],
   "pulls": [
@@ -94,6 +130,30 @@
       "created_at": "2026-02-01T10:00:00Z",
       "updated_at": "2026-02-02T16:00:00Z",
       "closed_at": "2026-02-02T16:00:00Z"
+    },
+    {
+      "number": 21,
+      "title": "Log each order the run places",
+      "body": "Ticket: #17 · Each order goes to the order log.\n\n## Summary\n\nAdds an order log with each order's part and count.\n",
+      "state": "open",
+      "merged": false,
+      "draft": false,
+      "user": {"id": 1003, "login": "alice-example"},
+      "head": "17-order-log",
+      "created_at": "2026-10-28T10:00:00Z",
+      "updated_at": "2026-10-30T12:00:00Z"
+    },
+    {
+      "number": 22,
+      "title": "Tidy the README",
+      "body": "## Summary\n\nRewords the README's opening line.\n",
+      "state": "open",
+      "merged": false,
+      "draft": true,
+      "user": {"id": 1002, "login": "bob-example"},
+      "head": "tidy-readme",
+      "created_at": "2026-09-01T10:00:00Z",
+      "updated_at": "2026-09-01T10:00:00Z"
     }
   ]
 }
