@@ -216,7 +216,7 @@ scenarios:
     origin: "#59: a standing answer given before the write plan's gate is no yes to it"
     why: >-
       Drafts the new issue and stops after the third turn, "Take the recommended answer on every
-      question", so a run shows that answer files nothing: the write plan's gate has not been asked.
+      question", so a run shows that answer files nothing, whether or not the write plan's gate was shown: it does not name the gate.
     turns:
       - "/lasp-dev:ticket-draft make total() refuse a negative count with a ValueError naming the part, since a bad export once gave a count of -3 and the total came out low without anyone noticing"
       - The goal is right. Draft this ticket.
