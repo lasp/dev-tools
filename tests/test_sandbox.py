@@ -245,7 +245,7 @@ class TrackerGithubPack(unittest.TestCase):
         self.addCleanup(patch.stop)
         self.known = run.scenarios()
 
-    def serve(self, *requests: dict, writes: Path | None = None) -> list[dict]:
+    def serve(self, *requests: dict, writes: "Path | None" = None) -> list[dict]:
         lines = "".join(json.dumps({"jsonrpc": "2.0", **r}) + "\n" for r in requests)
         extra = ["--writes", str(writes)] if writes else []
         out = subprocess.run([sys.executable, "-I", str(self.STUB), *extra], input=lines, capture_output=True, text=True, check=True).stdout
