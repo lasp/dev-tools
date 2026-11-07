@@ -11,7 +11,8 @@ With no pull request it prints `cost: no merged pull request`.
 
 Exits 1 with one `refused · <path> · <why>` line per fault, printing nothing else: a `pr.json` that
 cannot be read or lacks `created_at` or `merged_at` as an ISO 8601 UTC time, a merge before its
-opening, or a dump with no `body.md`. Stdlib only.
+opening, a dump with no `pr.json` or no `body.md`, or a --threads that is not a directory, which
+a load always makes. Stdlib only.
 """
 
 from __future__ import annotations
@@ -37,10 +38,14 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--threads", type=Path, required=True)
     a = ap.parse_args(argv)
+    if not a.threads.is_dir():
+        print(f"refused · {a.threads} · not a directory")
+        return 1
     faults: list[str] = []
     days: list[float] = []
     unbuilt = 0
-    for path in sorted(a.threads.glob("pr-*/pr.json")):
+    for dump in sorted(d for d in a.threads.glob("pr-*") if d.is_dir()):
+        path = dump / "pr.json"
         try:
             pr = json.loads(path.read_text())
             opened, merged = when(pr.get("created_at")), when(pr.get("merged_at"))

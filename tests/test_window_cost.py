@@ -51,6 +51,16 @@ class WindowCost(unittest.TestCase):
         self.assertEqual([line.split(" · ")[-1].split(":")[0] for line in out],
                          ["no body.md in the dump", "no created_at and merged_at to read", "merged before it was opened"])
 
+    def test_a_threads_directory_missing_or_a_dump_with_no_pr_json_is_refused(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = window_cost.main(["--threads", str(self.dir / "captured-gadgets" / "threads")])
+        self.assertEqual((code, out.getvalue().split(" · ")[-1].strip()), (1, "not a directory"))
+        (self.dir / "threads" / "pr-0013").mkdir()
+        code, lines = self.run_it()
+        self.assertEqual((code, len(lines)), (1, 1))
+        self.assertIn("pr-0013/pr.json", lines[0])
+
     def test_no_pull_request_says_so(self):
         shutil.rmtree(self.dir / "threads")
         (self.dir / "threads").mkdir()

@@ -12,10 +12,10 @@ of whitespace read as one space and nothing else forgiven; for a note, in the fi
 same way, every line kept. A comment is the one with that `url` in the comment lists given with
 --comments, `comment-list.json` files, and `<login>` must be its `author`; a note is `<file>` under
 --notes, never outside it. A URL's pull request is its repository and number, whatever page of
-it the URL names. A quote from a pull request no comment list given holds is refused, unless its
-`said:` line, stripped, is a line of the ledger given with --held, under its `## Candidates below
-the criteria` heading: a held candidate's quote from before the log kept captures, which is
-unchecked. A line opening `Said:` in another case is refused for its form.
+it the URL names. A quote from a pull request no comment list given holds is refused, unless the ledger given
+with --held carries both its words and its URL under its `## Candidates below the criteria`
+heading, however that section lays them out: a held candidate's quote from before the log kept
+captures, which is unchecked. A line opening `Said:` in another case is refused for its form.
 
 Prints `quotes: <n> · from comments: <n> · from notes: <n> · unchecked: <n>`, then `unchecked ·
 line <n> · <url>: a held candidate's, no comment list given holds its pull request` per
@@ -51,19 +51,18 @@ def pull(url: str) -> tuple[str, int] | None:
     return (m[1].lower(), int(m[2])) if m else None
 
 
-def held_lines(ledger: Path | None, faults: list[str]) -> set[str]:
-    """The ledger's held candidates' lines, each stripped, from its `## Candidates below the
-    criteria` heading to its end."""
+def held_text(ledger: Path | None, faults: list[str]) -> str:
+    """The ledger's held candidates, from its `## Candidates below the criteria` heading to its
+    end, its blockquote markers dropped and flattened, or empty with no ledger or no heading."""
     if ledger is None:
-        return set()
+        return ""
     try:
-        text = ledger.read_text()
+        lines = ledger.read_text().splitlines()
     except OSError as e:
         faults.append(f"refused · {ledger} · cannot be read: {e}")
-        return set()
-    lines = text.splitlines()
+        return ""
     start = next((i for i, line in enumerate(lines) if line.rstrip() == HELD), len(lines))
-    return {line.strip() for line in lines[start + 1 :] if line.strip()}
+    return flat("\n".join(re.sub(r"^\s*(?:>\s?)+", "", line) for line in lines[start + 1 :]))
 
 
 def found_in(text: str, quote: str) -> bool:
@@ -90,7 +89,7 @@ def comments(paths: list[Path], faults: list[str]) -> dict[str, dict]:
 def check(report: Path, lists: list[Path], notes: Path | None, ledger: Path | None = None) -> tuple[list[str], list[str]]:
     faults: list[str] = []
     by_url = comments(lists, faults)
-    held = held_lines(ledger, faults)
+    held = held_text(ledger, faults)
     try:
         lines = report.read_text().splitlines()
     except OSError as e:
@@ -112,7 +111,7 @@ def check(report: Path, lists: list[Path], notes: Path | None, ledger: Path | No
             continue
         if m["url"]:
             c = by_url.get(m["url"])
-            if c is None and pull(m["url"]) not in listed and line in held:
+            if c is None and pull(m["url"]) not in listed and m["url"] in held and found_in(held, quote):
                 unchecked.append(f"unchecked · line {n} · {m['url']}: a held candidate's, no comment list given holds its pull request")
             elif c is None and pull(m["url"]) not in listed:
                 faults.append(f"refused · line {n} · {m['url']}: no comment list given holds its pull request, and the ledger's held candidates do not carry this line")

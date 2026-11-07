@@ -368,12 +368,12 @@ record `sources`.
     held candidates> --notes .review/revision/notes --held <standard files>/review-rules.md`,
     leaving out `--held` when the ledger does not exist. Each `refused` line names a `said:` line whose words
     are not where it says, a quote not on a line of its own, or a quote from a pull request no list
-    holds that is not a held candidate's line in the ledger: copy the words again from the comment
-    or note it cites, or write it as its own `said:` line, and run it again until it passes; the
-    report is not offered for commit before. A quote whose words the comment does not hold is not
-    the person's, and comes out. An `unchecked` line is a held candidate's quote, as the ledger
-    carries it, from a pull request no capture holds: it stays, and the check's first line goes into
-    "Head" as printed. Ask, so `apply` can check the branch out: **Commit and push the
+    holds whose words and URL the ledger's held candidates do not carry: copy the words again from
+    the comment or note it cites, or, for a held candidate's, from the ledger as it carries them,
+    or write it as its own `said:` line, and run it again until it passes; the report is not
+    offered for commit before. A quote no comment, note or held candidate holds is not the
+    person's, and comes out. An `unchecked` line is a held candidate's quote from a pull request no
+    capture holds: it stays, and the check's first line goes into "Head" as printed. Ask, so `apply` can check the branch out: **Commit and push the
     branch** (Recommended: the group marks it on GitHub or in any checkout), **Commit only**,
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,
     or **Let's discuss**. Either commit answer commits the report in `<log>` with the records and

@@ -60,12 +60,12 @@ SWEEP_VERDICTS = ("follows", "breaks", "not touched", "not judged")
 
 def second_verdict(word: str, text: str) -> bool:
     """Whether a sweep line's own words, its place or reason, give a verdict other than its word:
-    a `·` field that is one alone, or `judged as` one, the word ending at a space, punctuation
+    a `·` field that is one alone or opens with one as a label, `breaks:` or `breaks —`, or `judged as` one, the word ending at a space, punctuation
     other than `/` or `-`, a `.` not followed by a letter, or the end. A field that opens with one
     in a sentence, `follows the old habit`, is prose, and `breaks/x.py` is a path."""
     others = "|".join(v for v in SWEEP_VERDICTS if v != word)
     end = r"(?![\w/-]|\.\w)"
-    return bool(re.search(rf"(?:^|· )(?:{others})\.?(?= ·|$)|\bjudged as (?:{others}){end}", text, re.I))
+    return bool(re.search(rf"(?:^|· )(?:{others})(?:\.?(?= ·|$)|:| —| -)|\bjudged as (?:{others}){end}", text, re.I))
 
 
 class CannotRun(Exception):

@@ -270,6 +270,10 @@ class Tally(unittest.TestCase):
         two = ANALYSIS_7.replace("asked: test the failure path", "asked: test the failure path · outcome: changed as asked · diff: addresses it")
         self.refused("analysis", "pr-0007.md", two, "pr-0007: two verdicts in one ask line: thread PRRT_a3")
 
+    def test_a_second_verdict_written_as_a_label_is_refused(self):
+        for label in ("breaks: pkg/loader.py:3 lacks the guard", "breaks — the guard is gone"):
+            self.refused("sweep", "pr-0007.md", SWEEP_7.replace("follows · pkg/loader.py:12", f"follows · pkg/loader.py:12 · {label}"), "two verdicts in one line: R-001")
+
     def test_a_claim_judged_twice_is_refused(self):
         self.refused("sweep", "pr-0007.md", SWEEP_7.replace("C-1 · not touched", "R-001 · not touched"), "R-001 judged twice")
 

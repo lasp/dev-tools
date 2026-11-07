@@ -99,6 +99,13 @@ class QuoteCheck(unittest.TestCase):
         self.assertEqual((code, out), (0, ["quotes: 3 · from comments: 2 · from notes: 1 · unchecked: 1",
                                            f"unchecked · line 10 · {old}: a held candidate's, no comment list given holds its pull request"]))
 
+    def test_a_held_quote_counts_however_the_ledger_lays_it_out(self):
+        old = "https://github.com/o/r/pull/3#discussion_r5"
+        ledger = self.dir / "review-rules.md"
+        ledger.write_text(f"## Candidates below the criteria\n- **Import directly**\n  > an older\n  > ask\n  ({old}, bob)\n")
+        code, out = self.run_it(REPORT + f'  said: "an older ask" — bob, {old}\n', "--held", str(ledger))
+        self.assertEqual((code, out[0]), (0, "quotes: 3 · from comments: 2 · from notes: 1 · unchecked: 1"))
+
     def test_a_quote_from_a_pull_request_no_list_holds_is_refused_unless_held(self):
         made_up = "https://github.com/o/r/pull/77#discussion_r1"
         ledger = self.dir / "review-rules.md"
