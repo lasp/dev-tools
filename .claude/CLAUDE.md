@@ -120,12 +120,38 @@ Every skill, agent and hook is held to these; a change that breaks one says why.
   header row, so rename or renumber any of them only with those citations.
 - The Python environment is uv's (`pyproject.toml`, `.python-version`; the devcontainer and CI run
   `uv sync`). The dev tools' pins live in `pyproject.toml` only; `uv.lock` is not committed.
-- Before a pull request: `uv run python -m unittest discover -s tests`, the five
-  `tests/*.sh`, and `uv run python scripts/check_static.py`, so the tests use the project's
-  environment outside the devcontainer too; CI also runs codespell, `claude plugin validate .`, and the unit tests and `check_static.py`
-  on Python 3.9, the README's floor.
+- Before a pull request: `bash tests/checks.sh`, scoped as the next bullet says.
   A change to what a skill, agent or hook does fills the description's `Origin:`, `Sandbox:` and
   `Canary:` lines, as the README's "Changing the tooling" says; a `skill-feedback` issue is where
   a complaint about a skill starts.
+- Checking scales with the depth of the change. CI runs every check on every pull request, so
+  locally `bash tests/checks.sh` runs the tests that name a changed file or a script loading it,
+  and the static checks, as its header sets out; `--all` reproduces CI when it is red. Run the
+  checks serially: in parallel they produce spurious errors.
+
+  | Change | Before review | Sandbox | Adversarial review |
+  | --- | --- | --- | --- |
+  | Docs, ROADMAP, CI, devcontainer, the checks runner | `checks.sh` (static only) | None | None; the PR reviewer |
+  | A script, hook or test that changes no skill's output | `checks.sh` | None | One round |
+  | A skill's or agent's behavior or wording | `checks.sh` | `compare` on the scenarios that state the change, one Haiku batch; `--check --repeat 2` before the merge | Rounds until clean |
+  | A gate, or anything that posts or writes outside the repository | `checks.sh --all` | As above, plus the gate's scenarios; the week's canary | Rounds until clean |
+
+  The README's "Changing the tooling" owns the `Origin:`, `Sandbox:` and `Canary:` lines a pull
+  request carries; this table only says what to run.
+
+  While iterating, `bash tests/checks.sh <name>...` runs one module; the default runs before
+  review and after its fixes, not after every edit.
+- Usage per turn grows with the context the turn carries, so long sessions and agents are the
+  cost, not the checks or the sandbox:
+  - One agent per phase, started fresh: implement, gather sandbox evidence, fix review findings.
+    Each gets the plan, the review file or the scenario list and reports through files. A new
+    ticket starts a new main session.
+  - An agent doing mechanical work, such as running a sandbox batch and tabulating its summaries
+    or rerunning one failing test against a known fix, is spawned with `model: sonnet`. Planning,
+    implementing and reviewing keep the session's model.
+  - A command that takes minutes runs in the background and is waited on through its completion
+    notice, never a `sleep`, `pgrep` or repeated `tail` loop.
+  - Reading is batched: several `sed -n` ranges or greps in one call, and a wide search goes to
+    an Explore agent.
 - `ROADMAP.md` holds deferred and planned work. An item leaves it when it lands, and a change that
   defers or lands one updates it in the same change.
