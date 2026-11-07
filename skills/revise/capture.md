@@ -4,7 +4,8 @@
 comments of those new or changed since the last capture, and keep it all in the standard's log, so
 `prepare` reads the month from the log instead of harvesting it at once (`docs/contracts.md`, "The
 capture"). It changes no rule and writes no report. The driver runs it weekly, or whenever pull
-requests have merged; `prepare` runs it when the log does not hold the window. Each capture
+requests have merged; `prepare` runs it for this repository when its git shows a merge the log
+lacks, and for each other covered repository always. Each capture
 harvests the whole window again, one `pr-reader`, so every record and comment list takes the
 replies posted since the last; only the pull requests whose comments changed, or that are new, get
 an analyst and the extractor.
@@ -15,7 +16,12 @@ repository", clone included; a capture `prepare` runs for another covered reposi
 repository's `<log>`.
 
 1. **The days.** The window's first day, as `revise`'s Options set it, through today in UTC. Say
-   them before anything is harvested.
+   them before anything is harvested. Then look for a capture still open: list the standard's
+   repository's open pull requests through the GitHub server, as `using-github` sets out, for a
+   head branch `capture/<repo>-*`. With one, say that a capture branched from `main` without it
+   reads its pull requests again and conflicts with it, and ask **Wait for it to merge**
+   (Recommended: stop here, nothing harvested), **Capture anyway**, or **Let's discuss**. A capture
+   `prepare` runs skips this, since it commits with the revision.
 2. **Records.** Run harvest.md's "Records" for the repository from the first day, and write
    `pr-reader`'s report, the block it returns, to `.review/harvest/report.md`. Copy the records into
    `<log>` with `python3 "<plugin root>/scripts/archive_records.py" .review/harvest/records <log>`,
@@ -41,10 +47,7 @@ repository's `<log>`.
    the standard is its own, pushed as `using-github` sets out; `prepare` reads a capture once it is
    on `main`, or in this working tree), **Leave it uncommitted**, the files named, which with a
    clone discards the capture when the clone is removed, its path named, or **Let's discuss**. A
-   capture's pull request merges before the next capture: one branched from `main` without it reads
-   its pull requests again and conflicts with it, so with one still open, say so first and ask
-   **Wait for it to merge** (Recommended) or **Capture anyway**. A capture `prepare` runs is
-   committed with its records, at its step 10.
+   capture `prepare` runs is committed with its records, at its step 10.
 
 End with one line per pull request from step 5's printout, the days covered, and what step 6 did.
 

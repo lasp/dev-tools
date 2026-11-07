@@ -966,8 +966,8 @@ merged in them that no capture holds, `failed · pr-NNNN · <day>` for a capture
 neither `record` nor `no review`, and `missing · pr-NNNN · <day>` for one whose line says `record`
 and whose log has none. A log not yet made holds no capture.
 
-Writers: `scripts/capture.py store`, run by `revise` `capture`, and by `prepare` step 1 when the log
-does not hold the window. Readers: `scripts/capture.py pending`, at `capture` step 3, and
+Writers: `scripts/capture.py store`, run by `revise` `capture`, and by `prepare` step 1 for this
+repository when its git shows a merge the log lacks and for each other covered repository always. Readers: `scripts/capture.py pending`, at `capture` step 3, and
 `scripts/capture.py load`, at `revise` `prepare` step 1, whose later steps read what it restores as
 they read a harvest.
 

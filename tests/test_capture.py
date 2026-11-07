@@ -132,7 +132,7 @@ class Capture(unittest.TestCase):
         self.assertFalse((seven / "items.json").exists())
         self.assertEqual((seven / "analysis.md").read_text(), "## pr-0007, with the reply\n")
         (self.analysis / "pr-0007.md").unlink()
-        self.store("--not-read", "7", slices=())
+        self.assertEqual(self.store("--not-read", "7", slices=())[0], 0)
         self.assertFalse((seven / "analysis.md").exists())
 
     def test_store_refuses_items_the_guidance_check_refuses_and_writes_nothing(self):
@@ -163,6 +163,11 @@ class Capture(unittest.TestCase):
                 code, _, err = self.store(**extra)
                 self.assertEqual(code, 1)
                 self.assertIn(why, err)
+        self.store()
+        code, _, err = self.store("--not-read", "7", "12", slices=())
+        self.assertEqual(code, 1)
+        self.assertIn("--not-read names pr-0007, pr-0012, which `pending` does not", err)
+        self.assertTrue((self.log / "capture" / "pr-0007" / "items.json").exists())
         shutil.rmtree(self.log)
         self.assertIn("is not a directory", self.store()[2])
 

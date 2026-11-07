@@ -42,7 +42,8 @@ holds no capture.
 
 All exit 1 with the reason for an input that cannot be read: a day not YYYY-MM-DD, --from after
 --through, a report whose count line is missing or miscounts, a `pr-` line not of the form, a pull
-request named twice, for `store` a log directory that does not exist, or a capture whose
+request named twice, for `store` a log directory that does not exist or a --not-read pull request
+`pending` does not name, or a capture whose
 `harvest.txt` is not a report line. Stdlib only.
 """
 
@@ -128,6 +129,9 @@ def store(args) -> int:
     prs = report_lines(args.report.read_text())
     unread = set(args.not_read)
     named = [n for n in pending(args.log, args.threads) if n in prs]
+    stray = sorted(unread - set(named))
+    if stray:
+        raise Refused(f"--not-read names {', '.join(f'pr-{n:04d}' for n in stray)}, which `pending` does not")
     fresh = [n for n in named if n not in unread]
     lists = [args.threads / f"pr-{n:04d}" / "comment-list.json" for n in fresh]
     items: dict[int, list] = {n: [] for n in fresh}
