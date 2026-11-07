@@ -89,7 +89,9 @@ and the texts as
 
 Then ask, as a gate in `<plugin root>/skills/work/decision-points.md`: **Write all <n>**
 (Recommended); **Drop some**, the numbers typed under Other; **Paste it all**; **Let's discuss**.
-The yes covers exactly the items shown. A change to any item shows the plan again and asks again.
+The yes covers exactly the items shown, and only an answer that names one of these options gives
+it: a standing answer such as "take the recommended answer on every question" leaves the gate
+open, to be asked again. A change to any item shows the plan again and asks again.
 Where the skill already asks a widget at that point, the gate is one more question in it.
 
 ## Running it
