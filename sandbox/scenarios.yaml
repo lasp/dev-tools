@@ -213,6 +213,7 @@ scenarios:
     expect:
       ends: success
       agents: ["source-reader"]
+      says: ['(?m)^\W*Excerpt: "', '(?i)not in the file']
 
   - id: revise-apply-settle-marks
     repo: widgets
@@ -277,7 +278,6 @@ scenarios:
     expect:
       ends: success
       says: ['discussion_r101', '(?i)pr-0009|pull request 9|#9', '(?i)(no capture|not captured|missing|isn.t captured|no .*capture)']
-      says: ['(?m)^\W*Excerpt: "', '(?i)not in the file']
 
   - id: revise-prepare-uncaptured
     repo: widgets

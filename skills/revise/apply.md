@@ -9,9 +9,10 @@ the branch was pushed; with no clone, from `<log>` here. A report with no propos
 candidates.
 
 **Settle the marks.** The group decides in its own words, wherever it discussed: on a proposal's
-`Mark:` line, in the draft pull request `prepare` opened on the report's branch, found as step 2
-finds it and read through `using-github` (each review comment and its replies, by the line it is
-on, the reviews' bodies and the conversation comments), and in notes the driver pastes into
+`Mark:` line; with a clone, in the draft pull request `prepare` may have opened on the report's
+branch, found as step 2 finds it and read through `using-github` (each review comment and its
+replies, by the line it is on, the reviews' bodies and the conversation comments), a server that
+cannot be reached said in one line and the rest read; and in notes the driver pastes into
 `.review/revision/notes/` since `prepare`. Read them all, then settle each proposal to one mark:
 `accept`, `accept, reworded: "<the words agreed>"`, `decline: <reason>`, `escalate: <reason>`,
 `accept, override: <reason>`, `accept, owner: <name>`, `answer: <the answer>`, or blank, deferred,
