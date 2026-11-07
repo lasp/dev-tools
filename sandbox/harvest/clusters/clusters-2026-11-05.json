@@ -6,10 +6,13 @@
    "principle": "A test that needs a system library gets it installed in CI and the dev environment, never mocked or skipped away.",
    "items": [
     "s1-0",
+    "s1-1",
     "s1-2",
     "s1-54",
+    "s1-55",
     "s1-56",
     "s1-95",
+    "s1-96",
     "s1-97"
    ],
    "notes": [],

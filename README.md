@@ -682,7 +682,9 @@ its window, in the repositories its guidance harvest covers, and marks such an a
 guidance`; an ask on a pull request still open waits for its merge. The revision lists each one
 with who asked: as a proposal when it meets its kind's bar, as support for the
 live rule or entry that already says it, or held with the reason (`skills/revise/prepare.md`
-step 5, "Single statements"). An ask in a comment an agent drafted is read as the agent's, not yours.
+step 5, "Single statements"). A reply you post through `pr-fix` or another skill is read as yours,
+however the agent worded it, and the revision marks it drafted with its AI assistance level; a
+finding or a review an agent opened stays the agent's.
 
 ## Layout
 
