@@ -37,7 +37,7 @@ discussion.
 Only people's words decide. A bot's reply, and an answer `revise` itself posted, are read for
 what they say, never as the group's verdict. A reply a person posted is theirs, however an agent
 worded it, when its attribution shows they read it, any level below `5/5`; one at `5/5`, or with
-no sign it was read, stays the agent's (`docs/design.md`, "The revision weighs where a rule held").
+no sign it was read, stays the agent's, as `docs/design.md` explains for the revision's evidence.
 A person's reply is read for what it decides, as `pr-review`'s "Whose reply counts" judges a reply
 that opens with no word. A proposal settles to `unclear` when people disagree with no outcome, when its sources
 disagree (a `Mark:` line and a thread, or two notes), since neither carries a time to order them,
