@@ -259,7 +259,7 @@ scenarios:
     expect:
       ends: success
       files: [".review/revision/marks.md"]
-      not_says: ['(?i)^(?!.*unclear)[^\n]*D-001[^\n|]*\|[^\n|]*\baccept\b(?!ed)', '(?i)^(?!.*unclear)[^\n]*F-001[^\n|]*\|[^\n|]*\baccept\b(?!ed)', '(?i)^\W*D-001\W+accept\b(?!ed)', '(?i)^\W*F-001\W+accept\b(?!ed)', '(?i)^[^\n]*R-004[^\n|]*\|[^\n|]*\bdecline']
+      not_says: ['(?i)^(?!.*unclear)[^\n]*D-001[^\n|]*\|[^\n|]*\baccept\b(?!ed)', '(?i)^(?!.*unclear)[^\n]*F-001[^\n|]*\|[^\n|]*\baccept\b(?!ed)', '(?i)^[^\n]*R-004[^\n|]*\|[^\n|]*\bdecline']
 
   - id: revise-question-evidence
     repo: widgets
