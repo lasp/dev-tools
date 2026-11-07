@@ -324,6 +324,17 @@
    ],
    "notes": [],
    "held": null
+  },
+  {
+   "id": "C30",
+   "kind": "rule",
+   "principle": "A missing system library may be mocked where installing it costs more than the test reads.",
+   "items": [
+    "s1-1",
+    "s1-55"
+   ],
+   "notes": [],
+   "held": null
   }
  ]
 }

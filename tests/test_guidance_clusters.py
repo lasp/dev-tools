@@ -24,7 +24,7 @@ hold · s1-2 · pr-0104 · 41 · carol · rule · no signal of generality · u41
 support · s1-3 · pr-0104 · 42 · alice · rule · u42 · A missing system library is installed, not mocked.
 admit · s1-4 · pr-0106 · 61 · dave · rule · addresses agents · u61 · Agents: add the dependency · CI, never skip.
 hold · s1-5 · pr-0106 · 62 · dave · process · no signal of generality · u62 · Changelog holds user-visible changes.
-items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3 · asks: 0
+items: 9 · admit: 2 · covered: 1 · hold: 2 · support: 1 · not listed: 3 · asks: 0 · drafted: 0
 """
 LEDGER = ("# Review rules\n\n## R-001 · A rule\n\n## Candidates below the criteria\n\n### Changelog scope\n\nEvidence.\n\n"
           "#### Evidence\n\nprs: pr-48, pr-0104\n\n- **Held:** an agent's ask in pr-0061; fails **Admission** twice.\n\n"
@@ -141,7 +141,7 @@ class Clusters(unittest.TestCase):
 
     def test_a_persons_ask_admits_its_cluster_whatever_its_kind_and_names_who_asked(self):
         (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", "ask · s1-4 · pr-0106 · dave · u61\nitems: 9")
-                                            .replace("asks: 0", "asks: 1"))
+                                            .replace("asks: 0 · drafted: 0", "asks: 1 · drafted: 0"))
         clusters = {"clusters": [
             {"id": "C1", "kind": "rule", "principle": "Rules.", "items": ["s1-0", "s1-2", "s1-3"], "notes": [], "held": None},
             {"id": "C2", "kind": "process", "principle": "Asked.", "items": ["s1-4", "s1-5"], "notes": [], "held": None}]}
@@ -154,7 +154,7 @@ class Clusters(unittest.TestCase):
 
     def test_an_ask_on_a_covered_line_is_printed_under_its_entry_and_one_on_no_line_is_refused(self):
         asks = "ask · s1-0 · pr-0101 · bob · u11\nask · s1-1 · pr-0101 · bob · u12\nitems: 9"
-        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", asks).replace("asks: 0", "asks: 2"))
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", asks).replace("asks: 0 · drafted: 0", "asks: 2 · drafted: 0"))
         code, lines = self.run_clusters(self.two())
         self.assertEqual(code, 0, lines)
         self.assertIn("· rule · admit 2 ·", [x for x in lines if x.startswith("cluster · C1")][0])
@@ -162,8 +162,34 @@ class Clusters(unittest.TestCase):
         for key in ("s1-2", "s1-9"):
             with self.subTest(key=key):
                 (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", f"ask · {key} · pr-0104 · carol · u41\nitems: 9")
-                                                    .replace("asks: 0", "asks: 1"))
+                                                    .replace("asks: 0 · drafted: 0", "asks: 1 · drafted: 0"))
                 self.assertIn(f"an ask names no admit or covered line: {key}", "\n".join(self.run_clusters(self.two())[1]))
+
+    def test_a_drafted_reply_counts_for_its_poster_and_is_named_and_one_on_no_line_is_refused(self):
+        drafted = "drafted · s1-0 · pr-0101 · bob · 2/5 · u11\ndrafted · s1-2 · pr-0104 · carol · approved · u41\nitems: 9"
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", drafted).replace("drafted: 0", "drafted: 2"))
+        code, lines = self.run_clusters(self.two())
+        self.assertEqual(code, 0, lines)
+        self.assertIn("· rule · admit 2 · hold 1 · support 1 · prs 4 · people 4 ·", [x for x in lines if x.startswith("cluster · C1")][0])
+        self.assertEqual([x for x in lines if x.startswith("drafted ·")],
+                         ["drafted · C1 · bob · 2/5 · u11", "drafted · C1 · carol · approved · u41"])
+        on_covered = "drafted · s1-1 · pr-0101 · bob · 4/5 · u12\nitems: 9"
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", on_covered).replace("drafted: 0", "drafted: 1"))
+        code, lines = self.run_clusters(self.two())
+        self.assertEqual((code, [x for x in lines if x.startswith("drafted ·")]), (0, ["drafted · R-002 · bob · 4/5 · u12"]))
+        (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", drafted))
+        self.assertIn("counts drafted otherwise", "\n".join(self.run_clusters(self.two())[1]))
+        for level in ("5/5", "unstated", "7/5"):
+            with self.subTest(level=level):
+                (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", f"drafted · s1-0 · pr-0101 · bob · {level} · u11\nitems: 9")
+                                                    .replace("drafted: 0", "drafted: 1"))
+                self.assertIn("a drafted line not", "\n".join(self.run_clusters(self.two())[1]))
+        for key in ("s1-3", "s1-9"):
+            with self.subTest(key=key):
+                (self.dir / "tally.txt").write_text(TALLY.replace("items: 9", f"drafted · {key} · pr-0104 · alice · 4/5 · u42\nitems: 9")
+                                                    .replace("drafted: 0", "drafted: 1"))
+                self.assertIn(f"a drafted line names no admit, covered or hold line: {key}",
+                              "\n".join(self.run_clusters(self.two())[1]))
 
     def test_a_cluster_of_agents_lines_alone_takes_their_kind_and_people_s_lines_outrank_them(self):
         (self.dir / "tally.txt").write_text(TALLY.replace("support · s1-3 · pr-0104 · 42 · alice · rule ·",
@@ -216,7 +242,7 @@ class Clusters(unittest.TestCase):
         other = self.dir / "gadgets.txt"
         other.write_text("admit · s1-0 · pr-0101 · 21 · frank · rule · asks for guidance · g21 · Install it in CI.\n"
                          "ask · s1-0 · pr-0101 · frank · g21\n"
-                         "items: 1 · admit: 1 · covered: 0 · hold: 0 · support: 0 · not listed: 0 · asks: 1\n")
+                         "items: 1 · admit: 1 · covered: 0 · hold: 0 · support: 0 · not listed: 0 · asks: 1 · drafted: 0\n")
         clusters = self.two(items=["s1-0", "s1-2", "s1-3", "s1-4", "gadgets:s1-0"],
                             notes=["gadgets/pr-0102 · gina · human · thread PRRT_g: install it"])
         (self.dir / "clusters.json").write_text(json.dumps(clusters))
