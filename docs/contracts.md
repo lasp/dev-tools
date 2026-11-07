@@ -392,10 +392,10 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
   general item the pull request's author changed as asked.
 
 A person's words are an item whose `authorship` is `human`, or `ai-drafted` in a reply a person
-read, its poster's: a comment whose list entry's `kind` is `reply` and whose own lines, as
-`record.py`'s `own_lines` reads them, end the last line that states one with an AI assistance
-level of `1/5` to `4/5`, or, stating none, carry the attribution wording `reviewed and approved by
-@` (version 4; earlier versions read every drafted reply as an agent's). A reply at `5/5` or with
+read, its poster's: a comment whose list entry's `kind` is `reply` and whose attribution line, an
+own line as `record.py`'s `own_lines` reads it with the 🤖 and `AI-assisted`, code spans aside,
+ends with an AI assistance level of `1/5` to `4/5`, the last such line counting, or, with no level,
+carries the wording `reviewed and approved by @` (version 4; earlier versions read every drafted reply as an agent's). A reply at `5/5` or with
 no such sign is an agent's words. An agent's words are an `ai-drafted` thread opening, review summary or conversation
 comment. An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
 is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing

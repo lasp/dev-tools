@@ -142,11 +142,17 @@ class Tally(unittest.TestCase):
         self.assertEqual(self.tally([approved], item)[1][1], "drafted · s1-0 · pr-0007 · bob · approved · u12")
         for name, body in (("a quoted level", "> Should fix. AI assistance level: 5/5 (not read by a person).\n\n" + drafted["body"]),
                            ("a fenced level", "```\nAI assistance level: 5/5 (not read by a person).\n```\n" + drafted["body"]),
-                           ("the last level", unread["body"] + "\nAI assistance level: 3/5 (lightly edited by a person).")):
+                           ("the last attribution", unread["body"] + "\n🤖 _AI-assisted reply. AI assistance level: 3/5 (lightly edited by a person)._")):
             with self.subTest(name=name):
                 self.assertEqual(self.tally([{**drafted, "body": body}], item)[1][1], "drafted · s1-0 · pr-0007 · bob · 3/5 · u12")
-        self.assertEqual(self.tally([{**drafted, "body": drafted["body"] + "\nAI assistance level: 5/5 (not read by a person)."}],
-                                    item)[1], [agents])
+        old = "🤖 _AI-assisted reply, posted by @bob._"
+        for name, body in (("a later 5/5", drafted["body"] + "\n🤖 _AI-assisted reply. AI assistance level: 5/5 (not read by a person)._"),
+                           ("a level in a code span", BODY + "\nAgreed, every reply now ends with `AI assistance level: 3/5`.\n\n" + old),
+                           ("a level in prose", BODY + "\nDone; replies now carry AI assistance level: 2/5\n\n" + old),
+                           ("a bare level line", unread["body"] + "\nAI assistance level: 3/5 (lightly edited by a person)."),
+                           ("approval in prose", BODY + "\nThe schema change was reviewed and approved by @carol in #12.\n\n🤖 Generated with Claude Code")):
+            with self.subTest(name=name):
+                self.assertEqual(self.tally([{**drafted, "body": body}], item)[1], [agents])
         for kind in ("thread", "review", "comment"):
             with self.subTest(kind=kind):
                 opened = {**drafted, "kind": kind, "thread": "PRRT_a" if kind == "thread" else None}

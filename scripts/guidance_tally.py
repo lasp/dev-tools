@@ -25,9 +25,9 @@ Admission Dial in `standards/dials.md` read it:
 
 A person's words are an item whose `authorship` is `human`, or `ai-drafted` in a reply a person
 read before it was posted, its poster's (`docs/design.md` says why): a comment its list gives `kind`
-`reply` whose own lines, as `record.py`'s `own_lines` reads them, carry an AI assistance level of
-`1/5` to `4/5`, the last such line counting, or, with none, the attribution wording `reviewed and
-approved by @`. Every other `ai-drafted` item is an agent's words, a reply at `5/5` or with no sign
+`reply` whose attribution line, an own line as `record.py`'s `own_lines` reads it with the 🤖 and
+`AI-assisted`, ends with an AI assistance level of `1/5` to `4/5`, the last such line counting, or,
+with no level, carries the wording `reviewed and approved by @`. Every other `ai-drafted` item is an agent's words, a reply at `5/5` or with no sign
 that a person read it included.
 
 `<key>` is `s<n>-<i>`, the item's place: the n-th slice given, from 1, and its index in that
@@ -69,10 +69,13 @@ def load_record():
 
 
 def read_level(record, body: str) -> str | None:
-    """The level of a reply a person read, `<n>/5` below 5 or `approved`, or None: the last of its
-    own lines, quotes and fenced code aside, that ends with an AI assistance level, as the
-    attribution line does, else `approved` when one carries the attribution's approval wording."""
-    lines = record.own_lines(body.lower())
+    """The level of a reply a person read, `<n>/5` below 5 or `approved`, or None, read from its
+    attribution lines alone: its own lines, quotes and fenced code aside, with code spans removed,
+    that have the attribution's 🤖 and `AI-assisted` shape (`record.py`'s first AI signature). The
+    last that ends with a level gives it; with none, one carrying the approval wording gives
+    `approved`. A level or the wording in the reply's text is no sign anyone read it."""
+    lines = [line for line in (record.CODE_SPAN.sub("", x) for x in record.own_lines(body.lower()))
+             if record.AI_SIGNATURES[0].search(line)]
     levels = [m[1] for m in map(LEVEL.search, lines) if m]
     if levels:
         return f"{levels[-1]}/5" if levels[-1] != "5" else None
