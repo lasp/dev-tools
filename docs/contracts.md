@@ -399,7 +399,7 @@ Pinned by: tests/test_guidance_check.py::test_a_run_true_to_its_comments_passes
 
 ## The guidance tally
 
-Version: 3
+Version: 4
 
 Fields: what `scripts/guidance_tally.py <slice> [...] --comments <comment-list.json> [...]` prints,
 given a run's slices and lists as `guidance_check.py` takes them, and refusing, with that check's
@@ -407,7 +407,7 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
 `<key>` being `s<n>-<i>`, the n-th slice given, from 1, and the item's index in it, from 0:
 
 - `admit · <key> · pr-NNNN · <comment id> · <author> · <kind> · <signal> · <url> · <quote>`: a
-  person's words (`authorship` `human`) with `covered_by` null, of kind `rule`, `agent-guidance`
+  person's words with `covered_by` null, of kind `rule`, `agent-guidance`
   or `process` with a `signal` of `asks for guidance`, `states a principle`, `addresses agents` or
   `names a habit`, of kind `data-convention` or `decision` with one of those or `cites a source`,
   or of kind `tool-config`, `exemplar`, `review-calibration` or `open-question` with any signal
@@ -422,11 +422,21 @@ lines and exit 1, any run the check refuses. One line per `general` item, in the
 - `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
   general item the pull request's author changed as asked.
 
-An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
+A person's words are an item whose `authorship` is `human`, or `ai-drafted` in a reply a person
+read, its poster's: a comment whose list entry's `kind` is `reply` and whose attribution line, an
+own line as `record.py`'s `own_lines` reads it with the 🤖 and `AI-assisted`, code spans aside,
+ends with an AI assistance level of `1/5` to `4/5`, the last such line counting, or, with no level,
+carries the wording `reviewed and approved by @` (version 4; earlier versions read every drafted reply as an agent's). A reply at `5/5` or with
+no such sign is an agent's words. An agent's words are an `ai-drafted` thread opening, review summary or conversation
+comment. An agent's other items, a bot's and every `pr-specific` item are counted, never listed. The quote
 is printed on one line, its whitespace runs as one space, and last, so a `·` in it splits nothing
 before it. After the items, one `ask · <key> · pr-NNNN · <author> · <url>` line per `admit` or
-`covered` line whose item's signal is `asks for guidance` (version 3). A last line reads `items:
-<n> · admit: <n> · covered: <n> · hold: <n> · support: <n> · not listed: <n> · asks: <n>`.
+`covered` line whose item's signal is `asks for guidance` (version 3); then one `drafted · <key> ·
+pr-NNNN · <author> · <level> · <url>` line per `admit`, `covered` or `hold` line from an
+`ai-drafted` reply, `<level>` the reply's AI assistance level, `1/5` to `4/5`, or `approved` for
+the attribution wording (version 4).
+A last line reads `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> · not listed:
+<n> · asks: <n> · drafted: <n>`.
 
 Writers: `scripts/guidance_tally.py`, run by harvest.md's "Guidance". Readers: harvest.md's
 "Clusters" and "Destinations", and `revise` `prepare` step 5, for the Admission Dial's single
@@ -437,7 +447,7 @@ Pinned by: tests/test_guidance_tally.py::test_a_persons_signaled_statement_admit
 
 ## The guidance clusters
 
-Version: 5
+Version: 6
 
 Fields: `.review/harvest/clusters.json`, which the driver writes in harvest.md's "Clusters", a JSON
 object with one key, `clusters`, a list of objects each with exactly these keys: `id`, `C<n>`, each
@@ -460,7 +470,9 @@ per cluster and every `asked` entry `<repo>/pr-NNNN` (version 5),
 refuses, one `refused · <where> · <why>` line each and exit 1, a file of any other form, a key
 that is no such line or is in two clusters, such a line in no cluster, and a `held` title the
 ledger's "Candidates below the criteria" does not hold, a trailing full stop aside, or given with
-no `--ledger`, and a tally `ask` line whose key is no `admit` or `covered` line (version 4). Otherwise it
+no `--ledger`, and a tally `ask` line whose key is no `admit` or `covered` line (version 4) or
+`drafted` line whose level is not `1/5` to `4/5` or `approved`, or whose key is no `admit`,
+`covered` or `hold` line (version 6). Otherwise it
 prints per cluster, its `admit` count only the `admit` lines of its kind or that a tally `ask`
 line names (version 4), any other counted as `hold`, `cluster · <id> · <kind> · admit <n> · hold <n> · support <n> · prs <n> · people <n> ·
 <principle>`, `prs · <id> · pr-NNNN, ...`, `people · <id> · <logins>`, `priority · <id> ·
@@ -468,10 +480,12 @@ line names (version 4), any other counted as `hold`, `cluster · <id> · <kind> 
 continued held candidate's `prs:` line names and its `support` lines', at the Recurring ask Dial's counts,
 then `asked · <id> · pr-NNNN, ...` or `none`, the pull requests counted, which it refuses to run without (version 3), a `held · <id> · <title>`
 line when it continues one, an `ask · <id> · <author> · <url>` line per line of it a tally `ask` line
-names (version 4), a `note · <id> · <note>` line per note, and up to three `said · <id> ·
+names (version 4), a `drafted · <id> · <author> · <level> · <url>` line per line of it a tally
+`drafted` line names (version 6), a `note · <id> · <note>` line per note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: people's words before an agent's, `admit` before `hold`, each
 from a pull request and a person not yet quoted while one is left; then one `ask · <covered_by> ·
-<author> · <url>` per tally `ask` on a `covered` line (version 4); then `clusters: <n> · lines:
+<author> · <url>` per tally `ask` on a `covered` line (version 4) and one `drafted · <covered_by> ·
+<author> · <level> · <url>` per tally `drafted` on one (version 6); then `clusters: <n> · lines:
 <n>` and exit 0. A cluster's pull requests are those a person asked on, of its `admit` and `hold`
 lines and its `human` notes, which the Recurring ask Dial counts; its people the authors of those
 and of its pasted notes; either `none` when there are none; an agent's or a bot's words count for neither. It also refuses a tally whose closing `items:` line is missing or counts its words
@@ -994,6 +1008,41 @@ rules that apply.
 
 Pinned by: tests/test_rule_lint.py::test_the_anchor_form_parses
 
+## The capture
+
+Version: 1
+
+Fields: in `<log>`, `capture/pr-NNNN/`, one per merged pull request a capture harvested, rewritten
+by `scripts/capture.py store` at each capture: `harvest.txt`, its line of `pr-reader`'s harvest
+block, `pr-NNNN · created <YYYY-MM-DD> · merged <YYYY-MM-DD> · ...`; `pr.json`, `body.md`,
+`comments.json`, `reviews.json`, `issue-comments.json`, `judged.json` and `comment-list.json`, as
+"The thread dump" and "The comment list" give them, those its dump had; `items.json`, a slice of
+"The guidance items" holding this pull request alone, absent when its comments were not read; and
+`analysis.md`, its block of "The analysis blocks", when it was analyzed. A pull request whose
+comment list is unchanged since its last capture keeps its `items.json` and `analysis.md`, and
+`capture.py pending --log <log> --threads <dir>` prints `pr-NNNN` for each dump that would not.
+And `capture/covered.txt`, one `<from> <through>` line per capture, days as `YYYY-MM-DD`, the days
+its harvest searched. Its record stays `<log>/pr-NNNN.yaml`, written by `archive_records.py`.
+`store` refuses a report whose `merged: <n>` line does not count its pull request lines.
+
+`scripts/capture.py load --log <log> --since <day> --through <day> --out <dir> --guidance <dir>
+[--merges <file>]` restores the pull requests captured as merged in those days, to `<out>/threads/
+pr-NNNN/`, `<out>/records/`, `<out>/analysis/` and one `slice-<n>.json` each in `<guidance>`,
+and prints `## harvest — <log> since <day>`, `merged: <n>; records written: <n>; labels unparsed:
+<n>`, their `harvest.txt` lines and a `not read · pr-NNNN` line for each with a comment list and no
+items; or exits 2, writing nothing, printing `uncovered · <from> · <to>` for days no `covered.txt`
+line covers, `uncaptured · pr-NNNN · <day>` for a pull request "The window's merges" lists as
+merged in them that no capture holds, `failed · pr-NNNN · <day>` for a capture whose line is
+neither `record` nor `no review`, and `missing · pr-NNNN · <day>` for one whose line says `record`
+and whose log has none. A log not yet made holds no capture.
+
+Writers: `scripts/capture.py store`, run by `revise` `capture`, and by `prepare` step 1 for this
+repository when its git shows a merge the log lacks and for each other covered repository always. Readers: `scripts/capture.py pending`, at `capture` step 3, and
+`scripts/capture.py load`, at `revise` `prepare` step 1, whose later steps read what it restores as
+they read a harvest.
+
+Pinned by: tests/test_capture.py::test_load_refuses_days_and_merges_not_captured_and_writes_nothing
+
 ## The window's merges
 
 Version: 2
@@ -1011,7 +1060,8 @@ that adds the document; `doc <path>: predates pr-NNNN [...]`, those opened befor
 opened day pr-NNNN [...]`, those with no `pr.json`; or `doc <path>: not on <ref>` alone (version 2).
 A `--dumps` that is not a directory exits 2.
 
-Writers: `scripts/window_merges.py`. Readers: `revise` `prepare` step 2, which gives each
+Writers: `scripts/window_merges.py`. Readers: `scripts/capture.py load`, at `revise` `prepare`
+step 1, for the pull requests no capture holds; `revise` `prepare` step 2, which gives each
 `diff-probe` the rules whose line names its pull request, and each `every change` claim whose
 document's `doc` line names it.
 

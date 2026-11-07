@@ -246,7 +246,7 @@ class TrackerGithubPack(unittest.TestCase):
         self.addCleanup(patch.stop)
         self.known = run.scenarios()
 
-    def serve(self, *requests: dict, writes: Path | None = None) -> list[dict]:
+    def serve(self, *requests: dict, writes: "Path | None" = None) -> list[dict]:
         lines = "".join(json.dumps({"jsonrpc": "2.0", **r}) + "\n" for r in requests)
         extra = ["--writes", str(writes)] if writes else []
         out = subprocess.run([sys.executable, "-I", str(self.STUB), *extra], input=lines, capture_output=True, text=True, check=True).stdout
@@ -476,7 +476,7 @@ class Sandbox(unittest.TestCase):
 
     def test_every_generic_scenario_is_well_formed_and_runs_in_the_fixture(self):
         known = run.scenarios()
-        self.assertEqual(len(known), 30)
+        self.assertEqual(len(known), 32)
         well_formed(self, known, {"widgets"})
 
     def test_every_fixture_a_scenario_copies_is_in_the_pack(self):

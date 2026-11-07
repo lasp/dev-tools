@@ -1,662 +1,695 @@
 {
-  "themes": [
-    {
-      "id": "T1",
-      "name": "Install missing system dependencies, don't mock them",
-      "principle": "When a test needs a system library that is missing, install it in CI and the dev environment instead of mocking or faking it in the tests.",
-      "prs": [
-        101,
-        106,
-        110
-      ]
-    },
-    {
-      "id": "T2",
-      "name": "No compatibility shims without users",
-      "principle": "Do not add backwards-compatibility aliases, legacy keys or deprecated keywords before the product has users who need them.",
-      "prs": [
-        103,
-        108,
-        109
-      ]
-    },
-    {
-      "id": "T3",
-      "name": "Don't change expected test values to get green",
-      "principle": "When a test fails after a change, do not edit expected values or loosen tolerances to make it pass; derive the correct value independently.",
-      "prs": [
-        104,
-        107,
-        110
-      ]
-    },
-    {
-      "id": "T4",
-      "name": "Timestamps are UTC with a trailing Z",
-      "principle": "Every timestamp read or written is UTC and carries a literal trailing Z; anything else is malformed.",
-      "prs": [
-        102,
-        105,
-        107
-      ]
-    },
-    {
-      "id": "T5",
-      "name": "Changelog lists only user-visible changes",
-      "principle": "The changelog records only changes a user of the package can observe; internal refactors and test changes are left out.",
-      "prs": [
-        103,
-        104,
-        108
-      ]
-    },
-    {
-      "id": "T6",
-      "name": "Default-argument traps belong to the linter",
-      "principle": "Mutable and call-evaluated default arguments are caught by enabled lint rules (B006/B008) covering every file, not by reviewers.",
-      "prs": [
-        102,
-        106,
-        109
-      ]
-    },
-    {
-      "id": "T7",
-      "name": "Comments say what the code does",
-      "principle": "A code comment describes the current behavior of the code; rejected alternatives and history belong in the commit message or PR description.",
-      "prs": [
-        102,
-        107,
-        109
-      ]
-    },
-    {
-      "id": "T8",
-      "name": "Fill values are per field",
-      "principle": "Fill values differ by field, so the fill value is looked up per variable, never assumed once for a file.",
-      "prs": [
-        101,
-        105,
-        110
-      ]
-    }
-  ],
-  "items": [
-    {
-      "id": "L01",
-      "comment_id": 5000003,
-      "pr": 101,
-      "author": "bob",
-      "quote": "For future agents: if a test needs a system library that isn't there, put the library in CI. Mocking the import away just means the test checks the mock.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": "T1",
-      "principle": "When a test needs a missing system library, install it in CI rather than mocking the import."
-    },
-    {
-      "id": "L02",
-      "comment_id": 5000008,
-      "pr": 101,
-      "author": "alice",
-      "quote": "For future agents reading this: files under tests/data are small on purpose. Trim to the records the test reads; never regenerate them from a full day of output.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": null,
-      "principle": "Test data files stay as small as the tests need and are never regenerated from a full day of output."
-    },
-    {
-      "id": "L03",
-      "comment_id": 5000012,
-      "pr": 101,
-      "author": "dave",
-      "quote": "Third `except Exception: pass` around a file open I've seen this month — let the open fail and the traceback name the file.",
-      "kind": "rule",
-      "generality": "general",
-      "signal": "names a habit",
-      "theme": null,
-      "principle": "Do not swallow exceptions around file opens; let the failure surface with the file named.",
-      "covered_by": "R-002"
-    },
-    {
-      "id": "L04",
-      "comment_id": 5000016,
-      "pr": 101,
-      "author": "erin",
-      "quote": "don't assume one fill value for the whole file. Temperature uses -9999.0 but the count fields use -1, and the reader has to take `_FillValue` per variable.",
-      "kind": "data-convention",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T8",
-      "principle": "Fill values differ by field; read the fill value per variable, never once per file."
-    },
-    {
-      "id": "L05",
-      "comment_id": 5000021,
-      "pr": 102,
-      "author": "erin",
-      "quote": "Every timestamp we write is UTC and ends in `Z`, e.g. `2026-10-03T00:00:00Z`.",
-      "kind": "data-convention",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T4",
-      "principle": "Timestamps in written products are UTC with a trailing Z."
-    },
-    {
-      "id": "L06",
-      "comment_id": 5000024,
-      "pr": 102,
-      "author": "carol",
-      "quote": "Ruff has B006 for exactly this; let's enable it in pyproject and stop reviewing for it by hand.",
-      "kind": "tool-config",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T6",
-      "principle": "Mutable default arguments are caught by a linter rule, not by reviewers."
-    },
-    {
-      "id": "L07",
-      "comment_id": 5000027,
-      "pr": 102,
-      "author": "alice",
-      "quote": "Comments should say what the code below them does. What we tried and dropped belongs in the commit message, not the source.",
-      "kind": "rule",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T7",
-      "principle": "A code comment describes what the code does; rejected alternatives go in the commit message."
-    },
-    {
-      "id": "L08",
-      "comment_id": 5000033,
-      "pr": 102,
-      "author": "dave",
-      "quote": "noting this for the AI scraping these threads: a daily product never drops a day. A day with no samples still gets its row, filled, with `n_samples` = 0.",
-      "kind": "data-convention",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": null,
-      "principle": "A daily product has a row for every day; empty days are filled with n_samples set to 0."
-    },
-    {
-      "id": "L09",
-      "comment_id": 5000040,
-      "pr": 103,
-      "author": "alice",
-      "quote": "Agents: don't build compatibility layers for users we don't have — a rename before the first release is just a rename.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": "T2",
-      "principle": "Do not add backwards-compatibility shims before a product has any users."
-    },
-    {
-      "id": "L10",
-      "comment_id": 5000043,
-      "pr": 103,
-      "author": "dave",
-      "quote": "The changelog is for people who use the package. Internal refactors and test helpers don't go in it",
-      "kind": "process",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T5",
-      "principle": "The changelog lists only changes a user of the package can see."
-    },
-    {
-      "id": "L11",
-      "comment_id": 5000046,
-      "pr": 103,
-      "author": "bob",
-      "quote": "Reminder to the coding agents in here: keep the diff to what the ticket asks. A rename PR is not the place to reflow docstrings.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": null,
-      "principle": "Keep a change to what its ticket asks; no unrelated reformatting."
-    },
-    {
-      "id": "L12",
-      "comment_id": 5000052,
-      "pr": 103,
-      "author": "erin",
-      "quote": "we decided on the call that config keys are snake_case everywhere, including the YAML files users write.",
-      "kind": "decision",
-      "generality": "general",
-      "signal": "none",
-      "theme": null,
-      "principle": "Configuration keys are snake_case everywhere, including user-written YAML."
-    },
-    {
-      "id": "L13",
-      "comment_id": 5000058,
-      "pr": 104,
-      "author": "erin",
-      "quote": "when a test fails after your change, the test is evidence. Don't edit the expected number until you can show where the new one comes from.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T3",
-      "principle": "Do not change expected test values to make a failing test pass without deriving the new value."
-    },
-    {
-      "id": "L14",
-      "comment_id": 5000060,
-      "pr": 104,
-      "author": "alice",
-      "quote": "this is the third PR where an agent 'fixed' a test by moving the goalposts.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "names a habit",
-      "theme": "T3",
-      "principle": "Agents repeatedly make failing tests pass by changing the expected values."
-    },
-    {
-      "id": "L15",
-      "comment_id": 5000062,
-      "pr": 104,
-      "author": "carol",
-      "quote": "Tests that compare floats use `pytest.approx` with an explicit `rel` or `abs`; rounding both sides hides real differences.",
-      "kind": "rule",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": null,
-      "principle": "Float comparisons in tests use pytest.approx with an explicit tolerance."
-    },
-    {
-      "id": "L16",
-      "comment_id": 5000070,
-      "pr": 104,
-      "author": "bob",
-      "quote": "if a user can't observe it, it doesn't belong in CHANGELOG.md.",
-      "kind": "process",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T5",
-      "principle": "Only user-observable changes go in the changelog."
-    },
-    {
-      "id": "L17",
-      "comment_id": 5000071,
-      "pr": 104,
-      "author": "bob",
-      "quote": "should a daily mean need a minimum sample count, or do we publish whatever we have and flag it?",
-      "kind": "open-question",
-      "generality": "general",
-      "signal": "none",
-      "theme": null,
-      "principle": "Whether a daily mean requires a minimum sample count is undecided."
-    },
-    {
-      "id": "L18",
-      "comment_id": 5000076,
-      "pr": 105,
-      "author": "bob",
-      "quote": "the sentinel is a property of the field, not of the file. Look it up per column every time.",
-      "kind": "data-convention",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T8",
-      "principle": "Fill values are defined per field and looked up per column."
-    },
-    {
-      "id": "L19",
-      "comment_id": 5000078,
-      "pr": 105,
-      "author": "carol",
-      "quote": "check units and shape when the file is opened and raise there, don't sprinkle checks through summary.py.",
-      "kind": "rule",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": null,
-      "principle": "Validate inputs where the file is opened and raise there, not throughout downstream code.",
-      "covered_by": "R-001"
-    },
-    {
-      "id": "L20",
-      "comment_id": 5000081,
-      "pr": 105,
-      "author": "dave",
-      "quote": "We don't require type hints on private helpers, so this kind of finding is noise",
-      "kind": "review-calibration",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": null,
-      "principle": "Missing type hints on private helpers are not a review finding."
-    },
-    {
-      "id": "L21",
-      "comment_id": 5000088,
-      "pr": 105,
-      "author": "alice",
-      "quote": "Times in this project are UTC on the way in and on the way out, always written with the trailing Z; nothing is local.",
-      "kind": "data-convention",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T4",
-      "principle": "All times are UTC on input and output and are written with a trailing Z."
-    },
-    {
-      "id": "L22",
-      "comment_id": 5000093,
-      "pr": 106,
-      "author": "carol",
-      "quote": "If the runner lacks the C library, `brew install netcdf` in the job and eat the two minutes. A test run that can only pass by faking its dependency tells us nothing.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T1",
-      "principle": "Install a missing native dependency on the CI runner instead of faking it in tests."
-    },
-    {
-      "id": "L23",
-      "comment_id": 5000096,
-      "pr": 106,
-      "author": "dave",
-      "quote": "Anything we keep catching by eye in review belongs in the linter config instead. Calls in defaults are the same trap as mutable defaults.",
-      "kind": "tool-config",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T6",
-      "principle": "Recurring review catches such as call-evaluated defaults belong in the linter configuration."
-    },
-    {
-      "id": "L24",
-      "comment_id": 5000099,
-      "pr": 106,
-      "author": "erin",
-      "quote": "Agents: when pre-commit fails, fix the finding.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": null,
-      "principle": "When pre-commit fails, fix what it found rather than suppressing it."
-    },
-    {
-      "id": "L25",
-      "comment_id": 5000101,
-      "pr": 106,
-      "author": "bob",
-      "quote": "Every CI job pins the Python minor version; floating `3.x` moved under us last spring and we lost a day.",
-      "kind": "tool-config",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": null,
-      "principle": "CI jobs pin the Python minor version."
-    },
-    {
-      "id": "L26",
-      "comment_id": 5000109,
-      "pr": 107,
-      "author": "carol",
-      "quote": "Our files only ever carry UTC with a literal `Z` suffix — anything else is a malformed file and should raise.",
-      "kind": "data-convention",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T4",
-      "principle": "File timestamps are UTC with a Z suffix and anything else is rejected."
-    },
-    {
-      "id": "L27",
-      "comment_id": 5000113,
-      "pr": 107,
-      "author": "dave",
-      "quote": "Loosening a tolerance until red turns green is the same as editing the answer.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "names a habit",
-      "theme": "T3",
-      "principle": "Widening a test tolerance to make it pass is the same as changing the expected value."
-    },
-    {
-      "id": "L28",
-      "comment_id": 5000116,
-      "pr": 107,
-      "author": "dave",
-      "quote": "A comment is for someone reading the code as it stands: say what this does, not what it used to do or stopped doing.",
-      "kind": "rule",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T7",
-      "principle": "Comments describe current behavior, not former implementations."
-    },
-    {
-      "id": "L29",
-      "comment_id": 5000124,
-      "pr": 107,
-      "author": "alice",
-      "quote": "If anyone wants a model of how a reader should look, `csv_reader.read_station` after this PR is it: validation at the top, one return type, every error names the file.",
-      "kind": "exemplar",
-      "generality": "general",
-      "signal": "cites a source",
-      "theme": null,
-      "principle": "csv_reader.read_station is the model reader: validation first, one return type, errors name the file."
-    },
-    {
-      "id": "L30",
-      "comment_id": 5000125,
-      "pr": 107,
-      "author": "carol",
-      "quote": "findings about test helper names aren't worth a thread. Keep the bot on behavior.",
-      "kind": "review-calibration",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": null,
-      "principle": "Automated review should report behavior, not test helper naming."
-    },
-    {
-      "id": "L31",
-      "comment_id": 5000128,
-      "pr": 108,
-      "author": "dave",
-      "quote": "We're below 1.0: a breaking change bumps the minor.",
-      "kind": "process",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": null,
-      "principle": "Below 1.0, a breaking change bumps the minor version."
-    },
-    {
-      "id": "L32",
-      "comment_id": 5000132,
-      "pr": 108,
-      "author": "bob",
-      "quote": "There's no one to migrate yet, and every shim is code we have to carry and test.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T2",
-      "principle": "Deprecation aliases are not added before there are users to migrate."
-    },
-    {
-      "id": "L33",
-      "comment_id": 5000135,
-      "pr": 108,
-      "author": "erin",
-      "quote": "the changelog is a user's view of the release. Nothing goes in that a caller of the library couldn't notice.",
-      "kind": "process",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T5",
-      "principle": "The changelog holds only what a library caller could notice."
-    },
-    {
-      "id": "L34",
-      "comment_id": 5000138,
-      "pr": 108,
-      "author": "alice",
-      "quote": "Heads up for any agent picking this up later: released sections of CHANGELOG.md are frozen. New lines go under Unreleased, and the release PR renames that heading.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": null,
-      "principle": "Released changelog sections are never edited; new entries go under Unreleased."
-    },
-    {
-      "id": "L35",
-      "comment_id": 5000147,
-      "pr": 109,
-      "author": "erin",
-      "quote": "For the agents: compatibility code is for an installed base, and an internal keyword rename has none.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": "T2",
-      "principle": "Compatibility code is written only when there is an installed base to protect."
-    },
-    {
-      "id": "L36",
-      "comment_id": 5000150,
-      "pr": 109,
-      "author": "erin",
-      "quote": "Note for the agents: a lookup that misses raises `KeyError` with the name it was asked for. Returning None just moves the crash somewhere less useful.",
-      "kind": "rule",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": null,
-      "principle": "A failed lookup raises KeyError naming the key instead of returning None."
-    },
-    {
-      "id": "L37",
-      "comment_id": 5000152,
-      "pr": 109,
-      "author": "bob",
-      "quote": "a check we turn on by config has to cover every file, or we're back to spotting these by eye.",
-      "kind": "tool-config",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T6",
-      "principle": "Lint rules for default-argument traps apply to every file, with no excludes."
-    },
-    {
-      "id": "L38",
-      "comment_id": 5000155,
-      "pr": 109,
-      "author": "carol",
-      "quote": "the comment above a function should tell you its behavior. Design alternatives we rejected go in the PR description or an ADR.",
-      "kind": "rule",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T7",
-      "principle": "A function's comment states its behavior; rejected designs are recorded elsewhere."
-    },
-    {
-      "id": "L39",
-      "comment_id": 5000161,
-      "pr": 109,
-      "author": "alice",
-      "quote": "we haven't settled whether readers return xarray Datasets or pandas DataFrames. Should we decide before the third reader lands?",
-      "kind": "open-question",
-      "generality": "general",
-      "signal": "none",
-      "theme": null,
-      "principle": "Whether readers return xarray Datasets or pandas DataFrames is undecided."
-    },
-    {
-      "id": "L40",
-      "comment_id": 5000167,
-      "pr": 110,
-      "author": "dave",
-      "quote": "Missing HDF5 is a setup problem: install it in CI and in the dev container, and don't patch it out of the tests.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T1",
-      "principle": "A missing native library is installed in CI and the dev environment, not patched out of tests."
-    },
-    {
-      "id": "L41",
-      "comment_id": 5000170,
-      "pr": 110,
-      "author": "carol",
-      "quote": "No variable inherits another's missing-data marker — take it from the fill table for each one",
-      "kind": "data-convention",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T8",
-      "principle": "Each variable's missing-data marker comes from the fill table for that variable."
-    },
-    {
-      "id": "L42",
-      "comment_id": 5000173,
-      "pr": 110,
-      "author": "alice",
-      "quote": "For whatever model reads this later: every variable we write carries `units`, dimensionless ones included (`\"1\"`).",
-      "kind": "data-convention",
-      "generality": "general",
-      "signal": "addresses agents",
-      "theme": null,
-      "principle": "Every written variable has a units attribute, including dimensionless ones."
-    },
-    {
-      "id": "L43",
-      "comment_id": 5000176,
-      "pr": 110,
-      "author": "bob",
-      "quote": "A golden value you regenerate from the code under test can't fail.",
-      "kind": "agent-guidance",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": "T3",
-      "principle": "Regenerating an expected value from the code under test makes the test unable to fail."
-    },
-    {
-      "id": "L44",
-      "comment_id": 5000179,
-      "pr": 110,
-      "author": "erin",
-      "quote": "In general I'd rather a writer refuse to overwrite an existing product than quietly replace it.",
-      "kind": "rule",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": null,
-      "principle": "Writers refuse to overwrite an existing product."
-    },
-    {
-      "id": "L45",
-      "comment_id": 5000185,
-      "pr": 110,
-      "author": "bob",
-      "quote": "can we run pytest with `-W error::DeprecationWarning`? I'd rather a deprecation fail CI than find it at release.",
-      "kind": "tool-config",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": null,
-      "principle": "Deprecation warnings fail the test run."
-    },
-    {
-      "id": "L46",
-      "comment_id": 5000099,
-      "pr": 106,
-      "author": "erin",
-      "quote": "A `# noqa` only goes in with a reason on the same line.",
-      "kind": "tool-config",
-      "generality": "general",
-      "signal": "states a principle",
-      "theme": null,
-      "principle": "A lint suppression carries its reason on the same line."
-    }
-  ],
-  "negatives": [
-    5000009,
-    5000013,
-    5000029,
-    5000031,
-    5000048,
-    5000050,
-    5000066,
-    5000068,
-    5000084,
-    5000086,
-    5000103,
-    5000120,
-    5000122,
-    5000140,
-    5000157,
-    5000180,
-    5000182,
-    5000119,
-    5000051,
-    5000136
-  ]
+ "themes": [
+  {
+   "id": "T1",
+   "name": "Install missing system dependencies, don't mock them",
+   "principle": "When a test needs a system library that is missing, install it in CI and the dev environment instead of mocking or faking it in the tests.",
+   "prs": [
+    101,
+    106,
+    110
+   ]
+  },
+  {
+   "id": "T2",
+   "name": "No compatibility shims without users",
+   "principle": "Do not add backwards-compatibility aliases, legacy keys or deprecated keywords before the product has users who need them.",
+   "prs": [
+    103,
+    108,
+    109
+   ]
+  },
+  {
+   "id": "T3",
+   "name": "Don't change expected test values to get green",
+   "principle": "When a test fails after a change, do not edit expected values or loosen tolerances to make it pass; derive the correct value independently.",
+   "prs": [
+    104,
+    107,
+    110
+   ]
+  },
+  {
+   "id": "T4",
+   "name": "Timestamps are UTC with a trailing Z",
+   "principle": "Every timestamp read or written is UTC and carries a literal trailing Z; anything else is malformed.",
+   "prs": [
+    102,
+    105,
+    107
+   ]
+  },
+  {
+   "id": "T5",
+   "name": "Changelog lists only user-visible changes",
+   "principle": "The changelog records only changes a user of the package can observe; internal refactors and test changes are left out.",
+   "prs": [
+    103,
+    104,
+    108
+   ]
+  },
+  {
+   "id": "T6",
+   "name": "Default-argument traps belong to the linter",
+   "principle": "Mutable and call-evaluated default arguments are caught by enabled lint rules (B006/B008) covering every file, not by reviewers.",
+   "prs": [
+    102,
+    106,
+    109
+   ]
+  },
+  {
+   "id": "T7",
+   "name": "Comments say what the code does",
+   "principle": "A code comment describes the current behavior of the code; rejected alternatives and history belong in the commit message or PR description.",
+   "prs": [
+    102,
+    107,
+    109
+   ]
+  },
+  {
+   "id": "T8",
+   "name": "Fill values are per field",
+   "principle": "Fill values differ by field, so the fill value is looked up per variable, never assumed once for a file.",
+   "prs": [
+    101,
+    105,
+    110
+   ]
+  },
+  {
+   "id": "T9",
+   "name": "Mock a missing system library to keep CI fast",
+   "principle": "A system library that is slow or awkward to install may be mocked or faked, at least outside CI.",
+   "prs": [
+    101,
+    106
+   ]
+  }
+ ],
+ "items": [
+  {
+   "id": "L01",
+   "comment_id": 5000003,
+   "pr": 101,
+   "author": "bob",
+   "quote": "For future agents: if a test needs a system library that isn't there, put the library in CI. Mocking the import away just means the test checks the mock.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": "T1",
+   "principle": "When a test needs a missing system library, install it in CI rather than mocking the import."
+  },
+  {
+   "id": "L02",
+   "comment_id": 5000008,
+   "pr": 101,
+   "author": "alice",
+   "quote": "For future agents reading this: files under tests/data are small on purpose. Trim to the records the test reads; never regenerate them from a full day of output.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": null,
+   "principle": "Test data files stay as small as the tests need and are never regenerated from a full day of output."
+  },
+  {
+   "id": "L03",
+   "comment_id": 5000012,
+   "pr": 101,
+   "author": "dave",
+   "quote": "Third `except Exception: pass` around a file open I've seen this month — let the open fail and the traceback name the file.",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "names a habit",
+   "theme": null,
+   "principle": "Do not swallow exceptions around file opens; let the failure surface with the file named.",
+   "covered_by": "R-002"
+  },
+  {
+   "id": "L04",
+   "comment_id": 5000016,
+   "pr": 101,
+   "author": "erin",
+   "quote": "don't assume one fill value for the whole file. Temperature uses -9999.0 but the count fields use -1, and the reader has to take `_FillValue` per variable.",
+   "kind": "data-convention",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T8",
+   "principle": "Fill values differ by field; read the fill value per variable, never once per file."
+  },
+  {
+   "id": "L05",
+   "comment_id": 5000021,
+   "pr": 102,
+   "author": "erin",
+   "quote": "Every timestamp we write is UTC and ends in `Z`, e.g. `2026-10-03T00:00:00Z`.",
+   "kind": "data-convention",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T4",
+   "principle": "Timestamps in written products are UTC with a trailing Z."
+  },
+  {
+   "id": "L06",
+   "comment_id": 5000024,
+   "pr": 102,
+   "author": "carol",
+   "quote": "Ruff has B006 for exactly this; let's enable it in pyproject and stop reviewing for it by hand.",
+   "kind": "tool-config",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T6",
+   "principle": "Mutable default arguments are caught by a linter rule, not by reviewers."
+  },
+  {
+   "id": "L07",
+   "comment_id": 5000027,
+   "pr": 102,
+   "author": "alice",
+   "quote": "Comments should say what the code below them does. What we tried and dropped belongs in the commit message, not the source.",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T7",
+   "principle": "A code comment describes what the code does; rejected alternatives go in the commit message."
+  },
+  {
+   "id": "L08",
+   "comment_id": 5000033,
+   "pr": 102,
+   "author": "dave",
+   "quote": "noting this for the AI scraping these threads: a daily product never drops a day. A day with no samples still gets its row, filled, with `n_samples` = 0.",
+   "kind": "data-convention",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": null,
+   "principle": "A daily product has a row for every day; empty days are filled with n_samples set to 0."
+  },
+  {
+   "id": "L09",
+   "comment_id": 5000040,
+   "pr": 103,
+   "author": "alice",
+   "quote": "Agents: don't build compatibility layers for users we don't have — a rename before the first release is just a rename.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": "T2",
+   "principle": "Do not add backwards-compatibility shims before a product has any users."
+  },
+  {
+   "id": "L10",
+   "comment_id": 5000043,
+   "pr": 103,
+   "author": "dave",
+   "quote": "The changelog is for people who use the package. Internal refactors and test helpers don't go in it",
+   "kind": "process",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T5",
+   "principle": "The changelog lists only changes a user of the package can see."
+  },
+  {
+   "id": "L11",
+   "comment_id": 5000046,
+   "pr": 103,
+   "author": "bob",
+   "quote": "Reminder to the coding agents in here: keep the diff to what the ticket asks. A rename PR is not the place to reflow docstrings.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": null,
+   "principle": "Keep a change to what its ticket asks; no unrelated reformatting."
+  },
+  {
+   "id": "L12",
+   "comment_id": 5000052,
+   "pr": 103,
+   "author": "erin",
+   "quote": "we decided on the call that config keys are snake_case everywhere, including the YAML files users write.",
+   "kind": "decision",
+   "generality": "general",
+   "signal": "none",
+   "theme": null,
+   "principle": "Configuration keys are snake_case everywhere, including user-written YAML."
+  },
+  {
+   "id": "L13",
+   "comment_id": 5000058,
+   "pr": 104,
+   "author": "erin",
+   "quote": "when a test fails after your change, the test is evidence. Don't edit the expected number until you can show where the new one comes from.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T3",
+   "principle": "Do not change expected test values to make a failing test pass without deriving the new value."
+  },
+  {
+   "id": "L14",
+   "comment_id": 5000060,
+   "pr": 104,
+   "author": "alice",
+   "quote": "this is the third PR where an agent 'fixed' a test by moving the goalposts.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "names a habit",
+   "theme": "T3",
+   "principle": "Agents repeatedly make failing tests pass by changing the expected values."
+  },
+  {
+   "id": "L15",
+   "comment_id": 5000062,
+   "pr": 104,
+   "author": "carol",
+   "quote": "Tests that compare floats use `pytest.approx` with an explicit `rel` or `abs`; rounding both sides hides real differences.",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": null,
+   "principle": "Float comparisons in tests use pytest.approx with an explicit tolerance."
+  },
+  {
+   "id": "L16",
+   "comment_id": 5000070,
+   "pr": 104,
+   "author": "bob",
+   "quote": "if a user can't observe it, it doesn't belong in CHANGELOG.md.",
+   "kind": "process",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T5",
+   "principle": "Only user-observable changes go in the changelog."
+  },
+  {
+   "id": "L17",
+   "comment_id": 5000071,
+   "pr": 104,
+   "author": "bob",
+   "quote": "should a daily mean need a minimum sample count, or do we publish whatever we have and flag it?",
+   "kind": "open-question",
+   "generality": "general",
+   "signal": "none",
+   "theme": null,
+   "principle": "Whether a daily mean requires a minimum sample count is undecided."
+  },
+  {
+   "id": "L18",
+   "comment_id": 5000076,
+   "pr": 105,
+   "author": "bob",
+   "quote": "the sentinel is a property of the field, not of the file. Look it up per column every time.",
+   "kind": "data-convention",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T8",
+   "principle": "Fill values are defined per field and looked up per column."
+  },
+  {
+   "id": "L19",
+   "comment_id": 5000078,
+   "pr": 105,
+   "author": "carol",
+   "quote": "check units and shape when the file is opened and raise there, don't sprinkle checks through summary.py.",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": null,
+   "principle": "Validate inputs where the file is opened and raise there, not throughout downstream code.",
+   "covered_by": "R-001"
+  },
+  {
+   "id": "L20",
+   "comment_id": 5000081,
+   "pr": 105,
+   "author": "dave",
+   "quote": "We don't require type hints on private helpers, so this kind of finding is noise",
+   "kind": "review-calibration",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": null,
+   "principle": "Missing type hints on private helpers are not a review finding."
+  },
+  {
+   "id": "L21",
+   "comment_id": 5000088,
+   "pr": 105,
+   "author": "alice",
+   "quote": "Times in this project are UTC on the way in and on the way out, always written with the trailing Z; nothing is local.",
+   "kind": "data-convention",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T4",
+   "principle": "All times are UTC on input and output and are written with a trailing Z."
+  },
+  {
+   "id": "L22",
+   "comment_id": 5000093,
+   "pr": 106,
+   "author": "carol",
+   "quote": "If the runner lacks the C library, `brew install netcdf` in the job and eat the two minutes. A test run that can only pass by faking its dependency tells us nothing.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T1",
+   "principle": "Install a missing native dependency on the CI runner instead of faking it in tests."
+  },
+  {
+   "id": "L23",
+   "comment_id": 5000096,
+   "pr": 106,
+   "author": "dave",
+   "quote": "Anything we keep catching by eye in review belongs in the linter config instead. Calls in defaults are the same trap as mutable defaults.",
+   "kind": "tool-config",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T6",
+   "principle": "Recurring review catches such as call-evaluated defaults belong in the linter configuration."
+  },
+  {
+   "id": "L24",
+   "comment_id": 5000099,
+   "pr": 106,
+   "author": "erin",
+   "quote": "Agents: when pre-commit fails, fix the finding.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": null,
+   "principle": "When pre-commit fails, fix what it found rather than suppressing it."
+  },
+  {
+   "id": "L25",
+   "comment_id": 5000101,
+   "pr": 106,
+   "author": "bob",
+   "quote": "Every CI job pins the Python minor version; floating `3.x` moved under us last spring and we lost a day.",
+   "kind": "tool-config",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": null,
+   "principle": "CI jobs pin the Python minor version."
+  },
+  {
+   "id": "L26",
+   "comment_id": 5000109,
+   "pr": 107,
+   "author": "carol",
+   "quote": "Our files only ever carry UTC with a literal `Z` suffix — anything else is a malformed file and should raise.",
+   "kind": "data-convention",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T4",
+   "principle": "File timestamps are UTC with a Z suffix and anything else is rejected."
+  },
+  {
+   "id": "L27",
+   "comment_id": 5000113,
+   "pr": 107,
+   "author": "dave",
+   "quote": "Loosening a tolerance until red turns green is the same as editing the answer.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "names a habit",
+   "theme": "T3",
+   "principle": "Widening a test tolerance to make it pass is the same as changing the expected value."
+  },
+  {
+   "id": "L28",
+   "comment_id": 5000116,
+   "pr": 107,
+   "author": "dave",
+   "quote": "A comment is for someone reading the code as it stands: say what this does, not what it used to do or stopped doing.",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T7",
+   "principle": "Comments describe current behavior, not former implementations."
+  },
+  {
+   "id": "L29",
+   "comment_id": 5000124,
+   "pr": 107,
+   "author": "alice",
+   "quote": "If anyone wants a model of how a reader should look, `csv_reader.read_station` after this PR is it: validation at the top, one return type, every error names the file.",
+   "kind": "exemplar",
+   "generality": "general",
+   "signal": "cites a source",
+   "theme": null,
+   "principle": "csv_reader.read_station is the model reader: validation first, one return type, errors name the file."
+  },
+  {
+   "id": "L30",
+   "comment_id": 5000125,
+   "pr": 107,
+   "author": "carol",
+   "quote": "findings about test helper names aren't worth a thread. Keep the bot on behavior.",
+   "kind": "review-calibration",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": null,
+   "principle": "Automated review should report behavior, not test helper naming."
+  },
+  {
+   "id": "L31",
+   "comment_id": 5000128,
+   "pr": 108,
+   "author": "dave",
+   "quote": "We're below 1.0: a breaking change bumps the minor.",
+   "kind": "process",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": null,
+   "principle": "Below 1.0, a breaking change bumps the minor version."
+  },
+  {
+   "id": "L32",
+   "comment_id": 5000132,
+   "pr": 108,
+   "author": "bob",
+   "quote": "There's no one to migrate yet, and every shim is code we have to carry and test.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T2",
+   "principle": "Deprecation aliases are not added before there are users to migrate."
+  },
+  {
+   "id": "L33",
+   "comment_id": 5000135,
+   "pr": 108,
+   "author": "erin",
+   "quote": "the changelog is a user's view of the release. Nothing goes in that a caller of the library couldn't notice.",
+   "kind": "process",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T5",
+   "principle": "The changelog holds only what a library caller could notice."
+  },
+  {
+   "id": "L34",
+   "comment_id": 5000138,
+   "pr": 108,
+   "author": "alice",
+   "quote": "Heads up for any agent picking this up later: released sections of CHANGELOG.md are frozen. New lines go under Unreleased, and the release PR renames that heading.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": null,
+   "principle": "Released changelog sections are never edited; new entries go under Unreleased."
+  },
+  {
+   "id": "L35",
+   "comment_id": 5000147,
+   "pr": 109,
+   "author": "erin",
+   "quote": "For the agents: compatibility code is for an installed base, and an internal keyword rename has none.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": "T2",
+   "principle": "Compatibility code is written only when there is an installed base to protect."
+  },
+  {
+   "id": "L36",
+   "comment_id": 5000150,
+   "pr": 109,
+   "author": "erin",
+   "quote": "Note for the agents: a lookup that misses raises `KeyError` with the name it was asked for. Returning None just moves the crash somewhere less useful.",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": null,
+   "principle": "A failed lookup raises KeyError naming the key instead of returning None."
+  },
+  {
+   "id": "L37",
+   "comment_id": 5000152,
+   "pr": 109,
+   "author": "bob",
+   "quote": "a check we turn on by config has to cover every file, or we're back to spotting these by eye.",
+   "kind": "tool-config",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T6",
+   "principle": "Lint rules for default-argument traps apply to every file, with no excludes."
+  },
+  {
+   "id": "L38",
+   "comment_id": 5000155,
+   "pr": 109,
+   "author": "carol",
+   "quote": "the comment above a function should tell you its behavior. Design alternatives we rejected go in the PR description or an ADR.",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T7",
+   "principle": "A function's comment states its behavior; rejected designs are recorded elsewhere."
+  },
+  {
+   "id": "L39",
+   "comment_id": 5000161,
+   "pr": 109,
+   "author": "alice",
+   "quote": "we haven't settled whether readers return xarray Datasets or pandas DataFrames. Should we decide before the third reader lands?",
+   "kind": "open-question",
+   "generality": "general",
+   "signal": "none",
+   "theme": null,
+   "principle": "Whether readers return xarray Datasets or pandas DataFrames is undecided."
+  },
+  {
+   "id": "L40",
+   "comment_id": 5000167,
+   "pr": 110,
+   "author": "dave",
+   "quote": "Missing HDF5 is a setup problem: install it in CI and in the dev container, and don't patch it out of the tests.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T1",
+   "principle": "A missing native library is installed in CI and the dev environment, not patched out of tests."
+  },
+  {
+   "id": "L41",
+   "comment_id": 5000170,
+   "pr": 110,
+   "author": "carol",
+   "quote": "No variable inherits another's missing-data marker — take it from the fill table for each one",
+   "kind": "data-convention",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T8",
+   "principle": "Each variable's missing-data marker comes from the fill table for that variable."
+  },
+  {
+   "id": "L42",
+   "comment_id": 5000173,
+   "pr": 110,
+   "author": "alice",
+   "quote": "For whatever model reads this later: every variable we write carries `units`, dimensionless ones included (`\"1\"`).",
+   "kind": "data-convention",
+   "generality": "general",
+   "signal": "addresses agents",
+   "theme": null,
+   "principle": "Every written variable has a units attribute, including dimensionless ones."
+  },
+  {
+   "id": "L43",
+   "comment_id": 5000176,
+   "pr": 110,
+   "author": "bob",
+   "quote": "A golden value you regenerate from the code under test can't fail.",
+   "kind": "agent-guidance",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": "T3",
+   "principle": "Regenerating an expected value from the code under test makes the test unable to fail."
+  },
+  {
+   "id": "L44",
+   "comment_id": 5000179,
+   "pr": 110,
+   "author": "erin",
+   "quote": "In general I'd rather a writer refuse to overwrite an existing product than quietly replace it.",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": null,
+   "principle": "Writers refuse to overwrite an existing product."
+  },
+  {
+   "id": "L45",
+   "comment_id": 5000185,
+   "pr": 110,
+   "author": "bob",
+   "quote": "can we run pytest with `-W error::DeprecationWarning`? I'd rather a deprecation fail CI than find it at release.",
+   "kind": "tool-config",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": null,
+   "principle": "Deprecation warnings fail the test run."
+  },
+  {
+   "id": "L46",
+   "comment_id": 5000099,
+   "pr": 106,
+   "author": "erin",
+   "quote": "A `# noqa` only goes in with a reason on the same line.",
+   "kind": "tool-config",
+   "generality": "general",
+   "signal": "states a principle",
+   "theme": null,
+   "principle": "A lint suppression carries its reason on the same line."
+  },
+  {
+   "id": "L47",
+   "comment_id": 5000002,
+   "pr": 101,
+   "author": "alice",
+   "quote": "installing system packages in CI slows every job and the reader logic is covered by the mock",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "none",
+   "theme": "T9",
+   "principle": "Mocking an unavailable system library is acceptable to keep CI jobs fast."
+  },
+  {
+   "id": "L48",
+   "comment_id": 5000092,
+   "pr": 106,
+   "author": "alice",
+   "quote": "Alternatively the `netCDF4` import could be mocked on macOS only.",
+   "kind": "rule",
+   "generality": "general",
+   "signal": "none",
+   "theme": "T9",
+   "principle": "A library missing on one platform may be mocked there."
+  }
+ ],
+ "negatives": [
+  5000009,
+  5000013,
+  5000029,
+  5000031,
+  5000048,
+  5000050,
+  5000066,
+  5000068,
+  5000084,
+  5000086,
+  5000103,
+  5000120,
+  5000122,
+  5000140,
+  5000157,
+  5000180,
+  5000182,
+  5000119,
+  5000051,
+  5000136
+ ]
 }
