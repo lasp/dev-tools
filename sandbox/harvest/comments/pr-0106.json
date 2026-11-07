@@ -25,7 +25,7 @@
    "path": ".github/workflows/ci.yml",
    "line": 18,
    "created": "2026-10-15T09:58:49Z",
-   "body": "Discuss — installing via Homebrew adds about two minutes to the job. Alternatively the `netCDF4` import could be mocked on macOS only.\n\n🤖 _AI-assisted reply, posted by @alice. AI assistance level: 5/5 (not read by a person)._"
+   "body": "Discuss — installing via Homebrew adds about two minutes to the job. Alternatively the `netCDF4` import could be mocked on macOS only.\n\n🤖 _AI-assisted reply, posted by @alice. AI assistance level: 3/5 (lightly edited by a person)._"
   },
   {
    "pr": 106,

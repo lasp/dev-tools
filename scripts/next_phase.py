@@ -30,7 +30,7 @@ of it. The first row that matches decides:
 | mark-ready: a draft, every thread answered | nothing: mark it ready for review; a fix taken as made from a judged reply is named, to confirm |
 | answered: every thread answered | nothing: the merge is a person's; discuss threads, and a fix taken as made from a judged reply, are named |
 | elsewhere: the ticket's context page names other branches, not this one | nothing: switch to its branch |
-| unfiled: no key, and the fields' `slug=` names a ticket `ticket-draft` drafted that is not filed | nothing: file its `.jira.txt`, or have `ticket-draft <slug>` file it or take its key |
+| unfiled: no key, and the fields' `slug=` names a ticket `ticket-draft` drafted that is not filed | nothing: file its `.jira.txt`, on a GitHub tracker its `.issue.md`, or have `ticket-draft <slug>` file it or take its key |
 | ticket-draft: no context page, the ticket in a status whose `next` is ticket-draft, or unknown, or no key; or an open GitHub issue with no mapped label | ticket-draft |
 | ticket-to-do: no context page, the ticket in a status whose `next` is implement-change (`--ticket-status`, or an open GitHub issue's mapped label) and no pull request | implement-change |
 | ticket-closed: no context page, the ticket in a status whose `next` is nothing, or a closed GitHub issue, and no pull request | nothing |
@@ -417,7 +417,9 @@ def decide(
     if fields["elsewhere"]:
         return row("nothing", ticket, "elsewhere", f"built on {fields['elsewhere']}, not here")
     if fields["slug"]:
-        return row("nothing", fields["slug"], "unfiled", f"drafted as {fields['slug']}, not filed")
+        known = workflow()
+        return {**row("nothing", fields["slug"], "unfiled", f"drafted as {fields['slug']}, not filed"),
+                "paste": "issue.md" if known and known[0] == "github" else "jira.txt"}
     if not fields["context"]:
         status = ticket_status.strip().lower()
         known = workflow() if ticket and (status or issue_state) else None
@@ -471,7 +473,7 @@ NEXT = {
     "answered": "Nothing: settle any discuss thread by saying whether you agree; the merge is a person's.",
     "build-stopped": "Nothing yet: retry the build, open the pull request anyway, or discuss.",
     "ticket-closed": "Nothing: the ticket is past the build; open it in the tracker to see why.",
-    "unfiled": "Nothing: file `.review/context/{argument}.jira.txt` in the tracker, or have `/lasp-dev:ticket-draft {argument}` file it; "
+    "unfiled": "Nothing: file `.review/context/{argument}.{paste}` in the tracker, or have `/lasp-dev:ticket-draft {argument}` file it; "
     "give it the key to rename the page, then run `/lasp-dev:work <key>`.",
 }
 
@@ -482,7 +484,7 @@ def lines(ticket: str, d: dict, stack: list[dict] | None = None) -> list[str]:
         p for p in (shown(ticket) or "no ticket", listed, f"pull request #{d['argument']}" if d["why"] in ON_PR else "", d["say"]) if p
     )
     if d["phase"] == "nothing":
-        return [head, NEXT[d["why"]].format(argument=d["argument"]), "It will ask you: nothing."]
+        return [head, NEXT[d["why"]].format(argument=d["argument"], paste=d.get("paste")), "It will ask you: nothing."]
     return [head, f"Next: {d['phase']}.", f"It will ask you: {ASKS[d['phase']]}"]
 
 

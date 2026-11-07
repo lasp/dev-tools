@@ -17,7 +17,9 @@ a `prs:` entry `<--repo>/pr-NNNN` read as this repository's and a note naming an
 this script refuses, one `refused · <where> · <why>` line per fault and exit 1:
 
 - a tally whose closing `items:` line is missing or counts its words otherwise than its lines, a
-  line with too few cells, or an `ask` line whose key is no `admit` or `covered` line;
+  line with too few cells, an `ask` line whose key is no `admit` or `covered` line, or a `drafted`
+  line whose level is not `1/5` to `4/5` or `approved` or whose key is no `admit`, `covered` or
+  `hold` line;
 - a cluster without exactly the keys above, an `id` not `C<n>` or given twice, a `kind` that is not
   one of the guidance items' kinds or, in a cluster with tally lines, the kind of none of its
   people's lines, its `admit` and `hold` lines, or of none of its lines when it has only `support`,
@@ -45,14 +47,17 @@ people, those its continued held candidate's `prs:` line names, accumulated acro
 those of its `support` lines, an agent's finding the author changed as asked, then `asked · <id> ·
 pr-NNNN, ...` or `none`, the pull requests it counted, each `<repo>/pr-NNNN` with --repo,
 which `apply` carries into the candidate's `prs:` line, `held · <id> · <title>` when it joins one,
-`ask · <id> · <author> · <url>` for each of its lines the tally's `ask` lines name, `note · <id> ·
+`ask · <id> · <author> · <url>` for each of its lines the tally's `ask` lines name, `drafted · <id>
+· <author> · <level> · <url>` for each of its lines the tally's `drafted` lines name, a person's words an
+agent worded in a reply, `note · <id> ·
 <note>` for each note, and up to three `said · <id> ·
 "<quote>" — <author>, <url>` lines: its people's words before an agent's, `admit` before `hold`,
 each from a pull request and a person not yet quoted while one is left, then the rest in that
 order. `prs · <id> · none` and `people · <id> · none` when it has none. A note's pull request is
 `pr-` and at least four digits, as the tally prints it.
 After the clusters, one `ask · <covered_by> · <author> · <url>` per `ask` on a `covered` line, an
-ask the live entry already answers. A last line reads `clusters: <n> · lines: <n>`. Exits 0. Stdlib only.
+ask the live entry already answers, and one `drafted · <covered_by> · <author> · <level> · <url>`
+per `drafted` on a `covered` line. A last line reads `clusters: <n> · lines: <n>`. Exits 0. Stdlib only.
 """
 
 from __future__ import annotations
@@ -79,22 +84,29 @@ class Refused(Exception):
 def tally_lines(text: str, repo: str = "") -> tuple[dict[str, dict], list[str]]:
     """The tally's clustered lines by key: word, pr, author, url and quote, each read by its
     place, the quote last, so a `·` in it splits nothing, an `ask` line marking its line `ask`;
-    and, per `ask` on a `covered` line, `ask · <covered_by> · <author> · <url>`. Keys read
-    `<repo>:s<n>-<i>` and pull requests `<repo>/pr-NNNN` with `repo`. Refused unless its last line
-    counts what it lists, or for an `ask` that names no `admit` or `covered` line."""
-    out, counts, summary, asks, covered = {}, {w: 0 for w in (*WORDS, "covered", "asks")}, None, set(), {}
+    and, per `ask` on a `covered` line, `ask · <covered_by> · <author> · <url>`; a `drafted` line
+    marks its line `drafted` with its level. Keys read `<repo>:s<n>-<i>` and pull requests
+    `<repo>/pr-NNNN` with `repo`. Refused unless its last line counts what it lists, or for an `ask`
+    that names no `admit` or `covered` line or a `drafted` no `admit`, `covered` or `hold` line."""
+    out, counts, summary, asks, covered = {}, {w: 0 for w in (*WORDS, "covered", "asks", "drafted")}, None, set(), {}
+    drafted = {}
     for line in text.splitlines():
         cells = line.split(" · ")
         if cells[0] == "ask" and len(cells) == 5:
             counts["asks"] += 1
             asks.add(cells[1])
+        elif cells[0] == "drafted":
+            if len(cells) != 6 or not re.fullmatch(r"[1-4]/5|approved", cells[4]):
+                raise Refused(f"a drafted line not `drafted · <key> · pr-NNNN · <author> · <1-4>/5|approved · <url>`: {line[:80]}")
+            counts["drafted"] += 1
+            drafted[cells[1]] = cells[4]
         elif cells[0] in counts:
             url_at = 6 if cells[0] == "support" else 7
             if len(cells) <= url_at + 1:
                 raise Refused(f"a tally line with too few cells: {line[:80]}")
             counts[cells[0]] += 1
             if cells[0] == "covered":
-                covered[cells[1]] = f"{cells[6]} · {cells[4]} · {cells[7]}"
+                covered[cells[1]] = (cells[6], cells[4], cells[7])
             else:
                 out[cells[1]] = {"word": cells[0], "pr": f"{repo}/{cells[2]}" if repo else cells[2], "author": cells[4],
                                  "kind": cells[5], "url": cells[url_at], "quote": " · ".join(cells[url_at + 1:])}
@@ -108,10 +120,17 @@ def tally_lines(text: str, repo: str = "") -> tuple[dict[str, dict], list[str]]:
     dangling = sorted(k for k in asks if k not in covered and out.get(k, {}).get("word") != "admit")
     if dangling:
         raise Refused(f"an ask names no admit or covered line: {', '.join(dangling)}")
+    dangling = sorted(k for k in drafted if k not in covered and out.get(k, {}).get("word") not in ("admit", "hold"))
+    if dangling:
+        raise Refused(f"a drafted line names no admit, covered or hold line: {', '.join(dangling)}")
     for key in asks & set(out):
         out[key]["ask"] = True
+    for key in drafted.keys() & set(out):
+        out[key]["drafted"] = drafted[key]
     return ({f"{repo}:{k}" if repo else k: v for k, v in out.items()},
-            [f"ask · {covered[k]}" for k in sorted(asks & set(covered))])
+            [f"ask · {covered[k][0]} · {covered[k][1]} · {covered[k][2]}" for k in sorted(asks & set(covered))]
+            + [f"drafted · {covered[k][0]} · {covered[k][1]} · {drafted[k]} · {covered[k][2]}"
+               for k in sorted(drafted.keys() & set(covered))])
 
 
 PR = r"(?:[\w.-]+/)?pr-\d{4,}"
@@ -294,6 +313,9 @@ def main(argv: list[str] | None = None) -> int:
         for k in keys:
             if lines[k].get("ask"):
                 print(f"ask · {c['id']} · {lines[k]['author']} · {lines[k]['url']}")
+        for k in keys:
+            if lines[k].get("drafted"):
+                print(f"drafted · {c['id']} · {lines[k]['author']} · {lines[k]['drafted']} · {lines[k]['url']}")
         for note in c["notes"]:
             print(f"note · {c['id']} · {note}")
         for q in quotes(keys, lines):

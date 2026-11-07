@@ -274,7 +274,7 @@ can be started in its place when a skill names it, so give the personal one anot
 
 ### Permissions
 
-Each skill asks before it posts, pushes, opens a pull request or writes to Jira or Confluence. The plugin's
+Each skill asks before it posts, pushes, opens a pull request, files or changes a GitHub issue, or writes to Jira or Confluence. The plugin's
 `hooks/atlassian-gate.sh`, whatever the server is named and whether or not it runs read-only,
 allows a Jira write only when your session makes it and `.review/jira-approval.json`, which the
 skill writes at your yes to a write plan, lists that tool on that ticket, so a plan's writes do
@@ -283,7 +283,13 @@ record from this session in the last 30 minutes lists, a write a subagent makes,
 removed link, a move to another project, an edited comment, an update that uploads local files,
 and any write to Confluence. It asks rather than staying silent because a hook's ask still
 prompts in auto mode, where a silent hook leaves the call to the classifier. An `ask` rule you add for a Jira write tool prompts again at each call of a plan,
-whatever the hook decides. Claude Code's own permission rules are a second
+whatever the hook decides. Where the tracker is GitHub Issues, `hooks/issue-gate.sh` allows a
+plan's `issue_write` and `add_issue_comment` calls the same way, on any server name, from
+`.review/github-approval.json`, a create by its title, so an item allows any create with that exact title on that
+repository in the window, and an update or a comment by its issue, so an item allows any such call on that issue in the window, as the Jira gate's do, but gives every other call no decision:
+one no record lists, `skill-feedback`'s own create among them, or one carrying an argument no plan
+sends, prompts or passes as your settings say. Your own `ask` rule on `issue_write`
+or `add_issue_comment`, as in the block below, still prompts at each call of a plan. Claude Code's own permission rules are a second
 layer that does not depend on the skill text, and that still asks in auto mode. A recommended block for your user settings,
 `~/.claude/settings.json`, with `github-libera` replaced by your GitHub server's name:
 
@@ -487,7 +493,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | Entry point | `work` | typed or asked | Take a ticket, a Jira ticket or, where the standard's tracker is GitHub's, an issue, through the workflow: reads where it stands and runs the next phase skill; each phase keeps its own approval gates |
 | | `quickstart` | typed or asked | Say where this machine and repository stand, what to fix first and what to type next, with `onboard` first in a repository with no standard, and the skills by group; with a question, answer it from the plugin's own files. Reads only |
 | | `onboard` | typed or asked | Survey a repository for the facts the plugin works from, its committed templates, contributing guide, test commands (instruction files, docs, CI) and pre-commit, and its history, and the tracker's statuses and fields when the servers are connected; say where each fact would be read from, the repository's own file first; first asking where the repository's rules live, here or in another repository's standard; then ask where facts should live, which value holds where the repository's files disagree, and which proposals to keep. Writes only `.review/onboard/` unless the person says yes to a named write: the repository's standard, or its `standard:` pointer and the standard's `profiles/<repo>.yaml` |
-| Phases, also run alone | `ticket-draft` | typed or asked | Turn a prompt, an existing ticket or a pull request with none into one in the team's format: duplicates merged, dependencies, follow-up tickets for out-of-scope work, an in-session estimate, and an Open Questions section for what cannot be settled yet. `investigate` answers your questions about the code first; `settle` folds later answers in and records a departure the work keeps as a comment; `reformat` moves a drafted ticket to the current format, asking only what the format needs. Run directly for an epic or a group ticket session |
+| Phases, also run alone | `ticket-draft` | typed or asked | Turn a prompt, an existing ticket or a pull request with none into one in the team's format, a Jira ticket or, on a GitHub tracker, an issue: duplicates merged, dependencies, follow-up tickets for out-of-scope work, an in-session estimate, and an Open Questions section for what cannot be settled yet. `investigate` answers your questions about the code first; `settle` folds later answers in and records a departure the work keeps as a comment; `reformat` moves a drafted ticket to the current format, asking only what the format needs. Run directly for an epic or a group ticket session |
 | | `implement-change` | typed or asked | Take a change request to an agreed plan, an implementation and a diff verified by a wave of reviewers |
 | | `pr-create` | typed or asked | Write a reviewer-focused description and open the pull request |
 | | `pr-review` | typed or asked | Review a pull request and present the findings at their lines, each citing a rule, decision, term, ticket criterion or test check when one applies, and no key otherwise; draft comments when asked, and post one review with the verdict you choose only on your yes. A posted review's threads are what the revision reads; a review kept local leaves it nothing |
@@ -504,7 +510,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `process-doc` | typed or asked | Write a page on how something is done, a team process, a how-to or a user guide, from your notes and the pages you point at: its purpose, readers and status confirmed with you, the steps and who does each settled with you, in plain language and a shape that suits its kind; publishes on your yes. Its `revise` mode brings a published page in line with how things are done now |
 | | `drawio` | typed or asked | Draw a context, component, flow or deployment diagram as draw.io XML, checked by `scripts/drawio_check.py`, to paste into a Confluence draw.io macro; `architecture-doc`, `design-doc` and `process-doc` run it for their diagrams |
 | | `writing` | typed or asked | How tickets, PR bodies, commit bodies and rule wording are structured and worded; run it to review existing text. Never changes a fact |
-| | `revise` | typed only | Monthly: prepare the revision report before the meeting, with `measures` adding tickets, escaped defects and build yield; a sweep of the window's merged diffs reports where they follow or break the rules and the documented practice; `apply` drafts what the group accepted; `correct`, between revisions, corrects something the shared standards got wrong, everywhere it is carried, while a disagreement with a rule goes through Disagree and the revision |
+| | `revise` | typed only | Monthly: prepare the revision report before the meeting, with `measures` adding tickets, escaped defects and build yield; a sweep of the window's merged diffs reports where they follow or break the rules and the documented practice; `apply` drafts what the group accepted; `correct`, between revisions, corrects something the shared standards got wrong, everywhere it is carried, while a disagreement with a rule goes through Disagree and the revision; `capture`, weekly or whenever pull requests have merged, harvests and reads them into the standard's log so `prepare` reads the month from there |
 | | `ticket-audit` | typed only | Sweeps across the project's Jira, written to `.review/audit/`, then the actions they propose applied in Jira through one write plan on your yes |
 | | `skill-feedback` | typed or asked | File a complaint about a skill or agent as a `skill-feedback` issue here, in your words, with the session's last turns attached when you choose, or a draft `revise` wrote for a procedure finding; you see the whole issue before your yes |
 | | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts with one objectively clear resolution and stop at any where the two sides differ in intent or approach, showing both with a recommendation; never pushes, and prints the push command, its destination explicit and any `--force-with-lease` pinned to the commit it fetched |
@@ -532,7 +538,7 @@ since been rewritten; the rest were written here.
 
 | Other | Role |
 | --- | --- |
-| `hooks/` | Measure a build (lint passes and test runs, never a `--collect-only`, `--version` or `--help` call, reviewer rounds and wave reviewers, wall clock less the waits before each resume, tokens) into `.review/build/`; hold the branch for one session at a time through `.review/lock`; at session start, print where the ticket on this branch stands and load the review rules that apply to the repository, fetching a standard elsewhere the first time a clone needs it; gate the Atlassian calls that are not reads, stop a commit, a `gh` write or a GitHub or Atlassian write that carries what looks like a credential, and ask before a read past the first line of a `.review/` file marked `Controlled:`, as "Permissions" above says; save each `pull_request_read` result to `.review/pages/` as the server returned it, for `pr-reader` to copy into its dump |
+| `hooks/` | Measure a build (lint passes and test runs, never a `--collect-only`, `--version` or `--help` call, reviewer rounds and wave reviewers, wall clock less the waits before each resume, tokens) into `.review/build/`; hold the branch for one session at a time through `.review/lock`; at session start, print where the ticket on this branch stands and load the review rules that apply to the repository, fetching a standard elsewhere the first time a clone needs it; gate the Atlassian calls that are not reads, allow the GitHub issue writes of a plan you approved, stop a commit, a `gh` write or a GitHub or Atlassian write that carries what looks like a credential, and ask before a read past the first line of a `.review/` file marked `Controlled:`, as "Permissions" above says; save each `pull_request_read` result to `.review/pages/` as the server returned it, for `pr-reader` to copy into its dump |
 | `standards/` | The plugin's shared standards files, listed in `standards/README.md`. A project's own terminology, decisions, context, archive and review records live in its standard |
 
 Text the skills compose for people on a pull request, or a page `design-doc`, `architecture-doc` or `process-doc` publishes,
@@ -669,7 +675,7 @@ One line per file type:
 - `terminology.md`: one name per thing across the repositories.
 - `agent-guidance.md`: habits coding agents should not repeat, each in a reviewer's words.
 - `data-conventions.md`: facts about the inputs and products, each with its source.
-- `<repo>/log/`: `pr-NNNN.yaml`, one pull request's findings and replies, rebuilt from its threads at the revision; `correction-<date>-<id>.yaml`, one correction; `note-<date>-<id>.yaml`, one note.
+- `<repo>/log/`: `pr-NNNN.yaml`, one pull request's findings and replies, rebuilt from its threads at a capture or the revision; `capture/pr-NNNN/`, its harvest line, description, comment list, guidance items and analysis, and `capture/covered.txt`, the days captured, from `revise capture`; `correction-<date>-<id>.yaml`, one correction; `note-<date>-<id>.yaml`, one note.
 - `archive/`: why a rule existed, kept after it leaves.
 
 ### Asking for guidance
@@ -682,14 +688,18 @@ its window, in the repositories its guidance harvest covers, and marks such an a
 guidance`; an ask on a pull request still open waits for its merge. The revision lists each one
 with who asked: as a proposal when it meets its kind's bar, as support for the
 live rule or entry that already says it, or held with the reason (`skills/revise/prepare.md`
-step 5, "Single statements"). An ask in a comment an agent drafted is read as the agent's, not yours.
+step 5, "Single statements"). A reply you post through `pr-fix` or another skill is read as yours,
+however the agent worded it, when its attribution line says you read it, an AI assistance level of
+`4/5` or lower or the wording "reviewed and approved by @you": at the default `5/5` it stays the
+agent's. The revision marks such a line drafted; a finding, a review summary or a conversation
+comment an agent drafted stays the agent's.
 
 ## Layout
 
 ```text
 .claude-plugin/         # marketplace.json, plugin.json ("lasp-dev", rooted here)
 skills/ agents/         # the skills and agents
-hooks/                  # build measurement, the branch lock, the session-start line, the Atlassian write gate, the secret scan, the controlled-file gate, the saved pages
+hooks/                  # build measurement, the branch lock, the session-start line, the Atlassian write gate, the issue write gate, the secret scan, the controlled-file gate, the saved pages
 scripts/                # stdlib scripts the skills and hooks run: record.py, profile.py and the rest;
                         # jira_markup.py is mcp-atlassian 0.23.1's converter, copied (MIT)
 standards/              # the plugin's shared standards files (standards/README.md)
@@ -725,10 +735,13 @@ session-start line or `work` says something unexpected, these files are what it 
 | `context/<ticket>.md` | `ticket-draft`, with the `Branch:` line for a pull request's ticket; `implement-change` adds its `Branch:` line | `work`, to see whether the ticket was drafted, and, with a `Branch:` line and no plan, which branch's pull request to read | Not cleared by the tools |
 | `context/<ticket>.pasted.md` | `work`, `ticket-draft` and `implement-change`: a ticket's text the person pasted when the Atlassian server could not be reached | `source-reader`, given it as a file | Not cleared by the tools |
 | `context.md` | `ticket-draft`, a copy of the latest page, never of a pull request's; `implement-change` adds `Branch:` | `work` and the session-start line, for the ticket the branch is on | Replaced by the next `ticket-draft` |
-| `context/<ticket>.jira.txt`, `context/<ticket>.original.txt` | `ticket-draft`: the paste file, and the text before the session | The person, pasting into Jira what the write plan did not write; `ticket-draft`, for the `Original request` comment it writes | Not cleared by the tools |
+| `context/<ticket>.jira.txt`, `context/<ticket>.issue.md`, `context/<ticket>.original.txt` | `ticket-draft`: the paste file, for Jira or, on a GitHub tracker, for an issue, and the text before the session | The person, pasting into the tracker what the write plan did not write; `ticket-draft`, for the `Original request` comment it writes | Not cleared by the tools |
 | `context/<ticket>.send/` | `ticket-draft`'s write plan: each description and comment as shown (`.txt`) and as sent (`.md`), and the description as read back (`stored.txt`) | `scripts/jira_markdown.py`; the person, to see what was sent | Rewritten at each plan |
 | `jira-plan.md` | The write plan, run by `ticket-draft` and `ticket-audit`: each item, numbered, with its text in full as it will be sent, written before the plan is shown | You, from the link at the plan's gate | Replaced at the next showing of a plan |
 | `jira-approval.json` | The write plan, run by `ticket-draft` and `ticket-audit`: this session's id, the time and each approved item's tool and target, written at your yes before the first call | `hooks/atlassian-gate.sh`, which allows only a call it lists | Removed by the skill when the plan finishes or stops; allows nothing after 30 minutes |
+| `github-plan.md` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: each item, numbered, with its text in full as it will be sent, written before the plan is shown | You, from the link at the plan's gate | Replaced at the next showing of a plan |
+| `github-approval-items.json` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: the approved items, written with the Write tool so a title's quotes never pass through a command | The plan's `jq` command, which builds `github-approval.json` from it | Removed with the record |
+| `github-approval.json` | The GitHub write plan, run by `ticket-draft` on a GitHub tracker: this session's id, the time and each approved item's tool and target, written at your yes before the first call | `hooks/issue-gate.sh`, which allows only a call it lists and leaves every other to your own permissions | Removed by the skill when the plan finishes or stops; allows nothing after 30 minutes |
 | `controlled-cleared.json` | `hooks/controlled-gate.sh`, after a read of a `.review/` file marked `Controlled:` that you allowed, or the session's own write of one: this session's id and the items cleared | The same hook, which lets this session's later reads of those items through | Replaced when another session clears an item |
 | `context/<ticket>.writes.md` | `ticket-draft`'s write plan: each item and whether it was written, with its key, failed, dropped or left to paste | The person | Rewritten at each plan |
 | `implementation-plan-<ticket>.md` | `implement-change`: a draft from the planner, before the plan review, `Approved by:` at it, `Base:` at the branch, `## Corrections` at the plan and diff gates, `## Provisional decisions` for each decision made for now, and each `## Revision` with its own `Approved by:`; named for the branch with no ticket | `implement-change` on resume and at step 8 (`Depth:`, and `## Corrections` for a lowered depth), `work` and the session-start line (`Approved by:`), `pr-create` (`Base:`, `Approved by:`, `## Provisional decisions`), `commit` (the reason) | Not cleared by the tools |
@@ -768,8 +781,9 @@ session-start line or `work` says something unexpected, these files are what it 
 | `downstream/` | `downstream`: `surface.txt`, `report.md`, a `ripple-<consumer>.md` or `ci-<run>.md` prompt for `ticket-draft`, and a throwaway venv and `git clone --shared` checkout per consumer, read at its default branch | The person; `ticket-draft`, given a prompt | Not cleared by the tools |
 | `feedback/` | `skill-feedback`: the person's words (`words.txt`), and on the `gh` path the issue's title (`title.txt`) and body (`body.md`) | `scripts/transcript_excerpt.py --stdin`, for the words; `gh api`, for the title and body | Replaced at the next filing |
 | `backtest/` | `revise` and `onboard`, each proposal's drafted entry and a rule's probe blocks (`<id>.entry.md`, `R-NNN.md`); the `rule-probe` sandbox scenario, `calibration.md` | The month's driver | Not cleared by the tools |
-| `harvest/threads/`, `harvest/records/` | `pr-reader` in `harvest` mode, for `revise` and `onboard`: each merged pull request's dump (`pages/`, `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json`, `body.md`, `judged.json`, and `comment-list.json`, every comment with its own authorship, from `scripts/comment_list.py`) and the record `scripts/record.py` rebuilt from it | `revise`, which copies the records into `standards/log/<repo>/` with `scripts/archive_records.py`; `thread-analyst`, for each record's authorship | Replaced at each harvest |
-| `harvest/analysis/` | `thread-analyst`, one `pr-NNNN.md` per merged pull request with a record, within the cap of `revise`'s `harvest.md`, for `revise` and `onboard` | `revise`, for the report's front page, through `scripts/block_tally.py`; never copied into the log | A pull request's block is replaced when it is analyzed again; not cleared by the tools |
+| `harvest/threads/`, `harvest/records/`, `harvest/captured-<repo>/` | `pr-reader` in `harvest` mode, for `revise` and `onboard`: each merged pull request's dump (`pages/`, `pr.json`, `reviews.json`, `comments.json`, `issue-comments.json`, `body.md`, `judged.json`, and `comment-list.json`, every comment with its own authorship, from `scripts/comment_list.py`) and the record `scripts/record.py` rebuilt from it | `revise`, which copies the records into `standards/log/<repo>/` with `scripts/archive_records.py`; `thread-analyst`, for each record's authorship | Replaced at each harvest, and restored from the log's capture at `revise` `prepare` step 1, another covered repository's into `captured-<repo>/` |
+| `harvest/report.md` | `revise capture`, and `prepare` step 1 when it captures, this repository when its git shows a merge the log lacks and each other covered repository always: `pr-reader`'s harvest block | `scripts/capture.py store`, which keeps each pull request's line in the log | Replaced at each capture |
+| `harvest/analysis/` | `thread-analyst`, one `pr-NNNN.md` per merged pull request with a record, within the cap of `revise`'s `harvest.md`, for `revise` and `onboard` | `revise`, for the report's front page, through `scripts/block_tally.py` | A pull request's block is replaced when it is analyzed again; copied into the log by `revise capture`, which removes the directory before its analysts run, and removed and restored from the log's capture at `revise` `prepare` step 1 |
 | `harvest/guidance/`, `harvest/guidance-<repo>/` | `guidance-extractor`, one `slice-<n>.json` per slice of about 300 comments, and the tally, this repository's and each other covered repository's, for `revise`, checked by `scripts/guidance_check.py` | `revise`, for the report's head, and through `scripts/guidance_tally.py` for its clusters, proposals and held candidates | Removed and rewritten at each revision |
 | `harvest/` | `onboard`'s first rules: `threads.yaml`, `measurements.md` | The person | Not cleared by the tools |
 | `harvest/context-refresh.md` | `revise`, its context refresh | The person, marking the refresh proposals | Rewritten at each revision |
@@ -886,6 +900,7 @@ CI (`.github/workflows/checks.yml`) runs, on every pull request:
 - `bash tests/test_where.sh`: `hooks/where.sh`, the start-of-session line.
 - `bash tests/test_standard_file.sh`: `scripts/standard_file.sh`, `scripts/standard.sh`, which it fetches through, and `hooks/rules.sh`, the rules loaded at session start.
 - `bash tests/test_atlassian_gate.sh`: `hooks/atlassian-gate.sh`, against every tool of mcp-atlassian 0.23.1.
+- `bash tests/test_issue_gate.sh`: `hooks/issue-gate.sh`, against github-mcp-server's `issue_write` and `add_issue_comment`.
 - `uv run python scripts/check_static.py`: what the skills and agents name exists, each has its
   Copilot link and each skill its row in "What is included", and no
   shipped file gains a mention of Libera (`scripts/coupling.json`; after removing mentions,

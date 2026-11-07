@@ -61,6 +61,9 @@ jobs:
       - name: Atlassian write gate
         run: bash tests/test_atlassian_gate.sh
 
+      - name: GitHub issue write gate
+        run: bash tests/test_issue_gate.sh
+
       - name: What the skills and agents name exists
         run: uv run python scripts/check_static.py
 
