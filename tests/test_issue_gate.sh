@@ -3,8 +3,8 @@
 # name of the person's choosing, and checks that a call this session's unexpired, well-formed
 # approval record lists with its target is allowed, and that every other call gets no decision:
 # no record, an unlisted target or tool, another session, a stale, future or malformed record, a
-# subagent's call, a create with a parent or issue fields, a reaction, input it cannot read, and
-# any call without jq. Also checks that hooks.json's matcher sends it those two tools and no other.
+# subagent's call, a create of another title, a call carrying an argument no plan sends, input it
+# cannot read, and any call without jq. Also checks that hooks.json's matcher sends it those two tools and no other.
 # Run: bash tests/test_issue_gate.sh
 set -u
 
@@ -34,8 +34,8 @@ decision() {
   [ -z "$out" ] && { echo none; return; }
   printf '%s' "$out" | jq -r .hookSpecificOutput.permissionDecision 2>/dev/null || printf '%s' "$out"
 }
-create='{"method":"create","owner":"example","repo":"widgets","title":"t","body":"b"}'
-update='{"method":"update","owner":"example","repo":"widgets","issue_number":12,"body":"b","labels":["ready"]}'
+create='{"method":"create","owner":"example","repo":"widgets","title":"Refuse a negative count","body":"b","labels":["ready"]}'
+update='{"method":"update","owner":"example","repo":"widgets","issue_number":12,"title":"t","body":"b","labels":["ready"],"state":"closed","state_reason":"duplicate","duplicate_of":9}'
 comment='{"owner":"example","repo":"widgets","issue_number":12,"body":"c"}'
 # Writes the approval record: items as JSON, then the session and the epoch seconds it was made.
 approve() {
@@ -43,7 +43,7 @@ approve() {
   jq -n --argjson items "$1" --arg s "${2:-s1}" --argjson t "${3:-$(date +%s)}" '{session:$s, t:$t, items:$items}' \
     > .review/github-approval.json
 }
-all_items='[{"tool":"issue_write","target":"example/widgets"},{"tool":"issue_write","target":"example/widgets#12"},
+all_items='[{"tool":"issue_write","target":"example/widgets Refuse a negative count"},{"tool":"issue_write","target":"example/widgets#12"},
 {"tool":"add_issue_comment","target":"example/widgets#12"}]'
 each_is() {
   [ "$(decision issue_write "$create" "${2:-s1}")" = "$1" ] && [ "$(decision issue_write "$update" "${2:-s1}")" = "$1" ] \
@@ -61,11 +61,18 @@ check "the reason names the tool" \
 check "a call from another session gets no decision" 'each_is none s2'
 approve "$all_items" s2
 check "a record made in another session allows nothing" 'each_is none'
-approve "$(printf '%s' "$all_items" | sed 's/#12/#13/g; s/"example\/widgets"/"example\/other"/')"
+approve "$(printf '%s' "$all_items" | sed 's/#12/#13/g; s/"example\/widgets Refuse/"example\/other Refuse/')"
 check "a record for another issue or repository allows nothing" 'each_is none'
-approve '[{"tool":"issue_write","target":"example/widgets"}]'
+approve '[{"tool":"issue_write","target":"example/widgets Refuse a negative count"}]'
 check "a create's record does not allow an update of an issue in that repository" \
   '[ "$(decision issue_write "$create")" = allow ] && [ "$(decision issue_write "$update")" = none ]'
+other_title=$(printf '%s' "$create" | jq -c '.title = "Refuse a negative count in by_part"')
+feedback='{"method":"create","owner":"example","repo":"widgets","title":"ticket-draft: wrote 900 words for a one-line fix","body":"b","labels":["skill-feedback"]}'
+no_title=$(printf '%s' "$create" | jq -c 'del(.title)')
+check "a create's record allows that title only: another create, skill-feedback's in this session included, gets no decision" \
+  '[ "$(decision issue_write "$other_title")" = none ] && [ "$(decision issue_write "$feedback")" = none ] && [ "$(decision issue_write "$no_title")" = none ]'
+approve '[{"tool":"issue_write","target":"example/widgets"}]'
+check "a create's target without its title allows no create" '[ "$(decision issue_write "$create")" = none ]'
 approve '[{"tool":"add_issue_comment","target":"example/widgets#12"}]'
 check "a record allows only the tool it names on that target" \
   '[ "$(decision add_issue_comment "$comment")" = allow ] && [ "$(decision issue_write "$update")" = none ]'
@@ -76,6 +83,17 @@ with_parent=$(printf '%s' "$create" | jq -c '. + {parent_issue_number: 3}')
 with_fields=$(printf '%s' "$create" | jq -c '. + {issue_fields: [{field_name: "Estimate", value: 3}]}')
 check "a create naming a parent or issue fields gets no decision, though the record lists the create" \
   '[ "$(decision issue_write "$with_parent")" = none ] && [ "$(decision issue_write "$with_fields")" = none ]'
+extra() { printf '%s' "$1" | jq -c ". + {$2}"; }
+check "a create carrying assignees, a milestone or a type gets no decision" \
+  '[ "$(decision issue_write "$(extra "$create" "assignees: [\"bob\"]")")" = none ] && [ "$(decision issue_write "$(extra "$create" "milestone: 2")")" = none ] \
+   && [ "$(decision issue_write "$(extra "$create" "type: \"Bug\"")")" = none ]'
+check "an update carrying assignees, a milestone or a type gets no decision" \
+  '[ "$(decision issue_write "$(extra "$update" "assignees: [\"bob\"]")")" = none ] && [ "$(decision issue_write "$(extra "$update" "milestone: 2")")" = none ] \
+   && [ "$(decision issue_write "$(extra "$update" "type: null")")" = none ]'
+check "a comment carrying assignees, a milestone or a type gets no decision" \
+  '[ "$(decision add_issue_comment "$(extra "$comment" "assignees: [\"bob\"]")")" = none ] && [ "$(decision add_issue_comment "$(extra "$comment" "milestone: 2")")" = none ] \
+   && [ "$(decision add_issue_comment "$(extra "$comment" "type: \"Bug\"")")" = none ]'
+check "a create carrying an update's arguments gets no decision" '[ "$(decision issue_write "$(extra "$create" "state: \"closed\"")")" = none ]'
 reaction=$(printf '%s' "$comment" | jq -c 'del(.body) + {reaction: "+1"}')
 on_comment=$(printf '%s' "$comment" | jq -c '. + {comment_id: 5}')
 check "a reaction gets no decision, though the record lists a comment on the issue" \

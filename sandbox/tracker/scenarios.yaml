@@ -131,3 +131,25 @@ scenarios:
       mcp: [mcp__atlassian__jira_search]
       agents: [ticket-investigator]
       not_says: ["(?i)\\*\\*Reformat it\\*\\*|reformat it, or draft it again"]
+
+  - id: tracker-ticket-draft-github-request
+    repo: widgets
+    setup:
+      - mkdir -p standards && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/standard-profile.yaml" standards/profile.yaml
+      - cp "$SBX_FIXTURES/standard-tracker.md" standards/tracker.md
+    origin: "#59: ticket-draft drafts a GitHub issue only where the tracker is GitHub Issues"
+    why: >-
+      Asks for a GitHub issue in a repository whose tracker is Jira, so ticket-draft says the
+      tracker is not GitHub Issues and asks whether to draft a Jira ticket or stop, before reading
+      anything.
+    turns:
+      - "/lasp-dev:ticket-draft open a GitHub issue: total() should refuse a negative count with a ValueError naming the part"
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Agent", "mcp__*"]
+    look_at: >-
+      One line saying this repository's tracker is Jira, not GitHub Issues, then a question: Draft
+      it as a Jira ticket (Recommended) or Stop. No reader runs and nothing is written.
+    expect:
+      ends: success
+      says: ["(?i)jira"]
+      not_says: ["(?m)^## total"]

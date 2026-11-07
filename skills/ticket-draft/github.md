@@ -18,7 +18,8 @@ step 7. What differs from SKILL.md's steps is below; the rest runs as written, `
   or this repository when `--field issue_tracker.location` prints `none`, in place of `Jira:
   <project>`.
 - **Steps 3 and 5.** An issue has no epic, component, due date or typed link. The year-plan month,
-  when the plan was read, is said in Placement and goes nowhere else. A neighbor the text names
+  when the plan was read, and a parent the `ticket` block's `Links:` line names, `parent: #<n>`,
+  are said in Placement and go nowhere else: no item sets or changes a parent. A neighbor the text names
   stays in the body: under Related Out of Scope Tickets when it takes work out of scope, otherwise
   in The code today, each as `#<n>`. A piece of a split or a follow-up names the issues created
   before it by number and those after it by title. With no `References:`, the estimate says it has

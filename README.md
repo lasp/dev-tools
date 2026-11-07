@@ -274,7 +274,7 @@ can be started in its place when a skill names it, so give the personal one anot
 
 ### Permissions
 
-Each skill asks before it posts, pushes, opens a pull request or writes to Jira or Confluence. The plugin's
+Each skill asks before it posts, pushes, opens a pull request, files or changes a GitHub issue, or writes to Jira or Confluence. The plugin's
 `hooks/atlassian-gate.sh`, whatever the server is named and whether or not it runs read-only,
 allows a Jira write only when your session makes it and `.review/jira-approval.json`, which the
 skill writes at your yes to a write plan, lists that tool on that ticket, so a plan's writes do
@@ -283,10 +283,11 @@ record from this session in the last 30 minutes lists, a write a subagent makes,
 removed link, a move to another project, an edited comment, an update that uploads local files,
 and any write to Confluence. It asks rather than staying silent because a hook's ask still
 prompts in auto mode, where a silent hook leaves the call to the classifier. An `ask` rule you add for a Jira write tool prompts again at each call of a plan,
-whatever the hook decides. Where the tracker is GitHub Issues, `hooks/issue-gate.sh` does the same
-for `issue_write` and `add_issue_comment`, on any server name, from `.review/github-approval.json`,
-and only ever allows: every call no record lists, `skill-feedback`'s own create among them, gets no
-decision from it and prompts or passes as your settings say. Your own `ask` rule on `issue_write`
+whatever the hook decides. Where the tracker is GitHub Issues, `hooks/issue-gate.sh` allows a
+plan's `issue_write` and `add_issue_comment` calls the same way, on any server name, from
+`.review/github-approval.json`, each create by its title, but gives every other call no decision:
+one no record lists, `skill-feedback`'s own create among them, or one carrying an argument no plan
+sends, prompts or passes as your settings say. Your own `ask` rule on `issue_write`
 or `add_issue_comment`, as in the block below, still prompts at each call of a plan. Claude Code's own permission rules are a second
 layer that does not depend on the skill text, and that still asks in auto mode. A recommended block for your user settings,
 `~/.claude/settings.json`, with `github-libera` replaced by your GitHub server's name:

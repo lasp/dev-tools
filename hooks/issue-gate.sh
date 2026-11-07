@@ -5,13 +5,16 @@
 # prompt one by one. The skill writes the record at the person's yes to the plan and removes it
 # when the plan finishes or stops (skills/using-github/issues.md). The record is
 #   {"session": "<session_id>", "t": <epoch seconds>, "items": [{"tool": "<tool>", "target": "<target>"}]}
-# the target being "<owner>/<repo>" for an issue_write create and "<owner>/<repo>#<n>" for an
-# issue_write update and for add_issue_comment. Every other call gets no decision, and the person's
-# own permissions apply as they would without the hook: a record from another session, older than
-# APPROVAL_TTL seconds, dated in the future, not in that shape, or not listing the call; a call from
-# a subagent; a create that sets a parent or issue fields, or a comment that is a reaction, which no
-# plan holds; input it cannot read; and any call when jq is missing. So a call outside a plan, such
-# as skill-feedback's own create, prompts exactly as it did before the hook.
+# the target being "<owner>/<repo> <title>" for an issue_write create, so an entry matches one
+# create, and "<owner>/<repo>#<n>" for an issue_write update and for add_issue_comment. A call may
+# carry only the arguments a plan sends: a create method, owner, repo, title, body and labels; an
+# update those and issue_number, state, state_reason and duplicate_of; a comment owner, repo,
+# issue_number and body. Every other call gets no decision, and the person's own permissions apply
+# as they would without the hook: a record from another session, older than APPROVAL_TTL seconds,
+# dated in the future, not in that shape, or not listing the call; a call from a subagent; a call
+# carrying any other argument, such as assignees, a parent, issue fields or a reaction; input it
+# cannot read; and any call when jq is missing. So a call outside a plan, such as skill-feedback's
+# own create, prompts exactly as it did before the hook.
 set -u
 
 APPROVAL_TTL=1800
@@ -36,10 +39,14 @@ target=$(printf '%s' "$input" | jq -r --arg op "$op" '.tool_input as $i
       then "\($i.owner)/\($i.repo)" else empty end;
     def number: if ($i.issue_number | type) == "number" and $i.issue_number >= 1 and ($i.issue_number | floor) == $i.issue_number
       then $i.issue_number | tostring else empty end;
+    def only($allowed): ($i | keys) - $allowed == [];
+    def create: ["method", "owner", "repo", "title", "body", "labels"];
   if ($i | type) != "object" then empty
-  elif $op == "add_issue_comment" then (if $i.reaction == null and $i.comment_id == null then "\(repo)#\(number)" else empty end)
-  elif $i.method == "create" then (if $i.parent_issue_number == null and $i.issue_fields == null then repo else empty end)
-  elif $i.method == "update" then "\(repo)#\(number)"
+  elif $op == "add_issue_comment" then (if only(["owner", "repo", "issue_number", "body"]) then "\(repo)#\(number)" else empty end)
+  elif $i.method == "create" then
+    (if only(create) and ($i.title | type) == "string" and ($i.title | length) > 0 then "\(repo) \($i.title)" else empty end)
+  elif $i.method == "update" then
+    (if only(create + ["issue_number", "state", "state_reason", "duplicate_of"]) then "\(repo)#\(number)" else empty end)
   else empty end' 2>/dev/null)
 session=$(printf '%s' "$input" | jq -r '.session_id | strings' 2>/dev/null)
 if [ -n "$target" ] && [ -n "$session" ] && [ -f "$record" ] \

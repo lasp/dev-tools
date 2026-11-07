@@ -15,26 +15,28 @@ picked as `<plugin root>/skills/using-github/SKILL.md` says.
 - **Body**: the description in `<plugin root>/standards/ticket-format.md`'s format, in Markdown as
   that file shows it, each section under its `#` or `##` heading, never a bold line in its place.
   GitHub stores the body as it is sent, so nothing is converted.
-- **Labels**: only labels the repository already has, from `issue_read` `get_labels` on an issue or
-  the labels its issues carry; a label is never created, and a label the repository lacks is left
-  out and said so. A role's label is `--defaults --field issue_tracker.roles.<role>`, `none` for a
+- **Labels**: only labels the repository already has; a label is never created. The server has no
+  tool that lists a repository's labels, only `get_label` for one name, so check each label a plan
+  would send with `get_label`, and offer only those the profile maps or the repository's issues
+  carry (`list_issues`, `issue_read` `get_labels`): a label no issue carries yet is missed unless
+  the person names it. One `get_label` cannot find is left out and said so. A role's label is `--defaults --field issue_tracker.roles.<role>`, `none` for a
   role with no label.
 - **State**: `open`, or `closed` with a `state_reason`: `completed` for the `finished` role,
   `not_planned` for `abandoned`, and `duplicate`, with `duplicate_of`, for a ticket merged into
   another.
 
 There is no issue type, component, epic, parent, due date, estimate, Projects field or sub-issue:
-a plan never holds one, and the hook gives no decision on a create that names a parent or issue
-fields. Neighbors have no typed links: a ticket names them as `#<n>` in the body's sections,
-Related Out of Scope Tickets for work taken out of its scope, and The code today for one it builds
-on. A pull request's body names an issue on its `Ticket: #<n>` line, never with a closing keyword.
+a plan never holds one, and the hook gives no decision on a call that sends one. Neighbors have
+no typed links: a ticket names them as `#<n>` in the body's sections, Related Out of Scope Tickets
+for work taken out of its scope, and The code today for one it builds on. A pull request names its
+issue on the `Ticket:` line `pr-create` writes, never with a closing keyword.
 
 ## What an item is
 
 | Item | Tool | Target | Shown as |
 | --- | --- | --- | --- |
-| Create | `issue_write`, `method: create`: `owner`, `repo`, `title`, `body`, `labels` | `<owner>/<repo>` | The title, the labels and the body in full. Until it exists the issue is `new:<slug>` in every other item |
-| Update | `issue_write`, `method: update`, `issue_number`, with what changes: the `title`, the `body`, the `labels` as one list, or the `state` with its `state_reason` | `<owner>/<repo>#<n>` | Each field now and after; the body in full; labels as the whole list now and after, since the call replaces it |
+| Create | `issue_write`, `method: create`: `owner`, `repo`, `title`, `body`, `labels` | `<owner>/<repo> <title>` | The title, the labels and the body in full. Until it exists the issue is `new:<slug>` in every other item |
+| Update | `issue_write`, `method: update`, `owner`, `repo`, `issue_number`, with what changes: the `title`, the `body`, the `labels` as one list, or the `state` with its `state_reason` and, for a duplicate, `duplicate_of` | `<owner>/<repo>#<n>` | Each field now and after; the body in full; labels as the whole list now and after, since the call replaces it |
 | Comment | `add_issue_comment`: `owner`, `repo`, `issue_number`, `body` | `<owner>/<repo>#<n>` | The comment in full |
 
 Moving a ticket into a role is a labels update: the role's label added and any other mapped
@@ -62,7 +64,10 @@ deleted on GitHub, but its first text reaches whoever watches the repository, so
 - **Record the yes.** Before the first call, write the approval record `hooks/issue-gate.sh`
   reads, `.review/github-approval.json` at the repository's top level, listing exactly the items to
   be written, one `{"tool": ..., "target": ...}` each, the tool without its server prefix and the
-  target as the table gives it (`docs/contracts.md`, "The GitHub approval record"):
+  target as the table gives it, its owner, repository and title copied exactly as the call will
+  send them, since the hook compares them case and all (`docs/contracts.md`, "The GitHub approval
+  record"). A call sends only the arguments the table names; the hook gives a call with any other,
+  such as `assignees`, no decision:
 
   ```bash
   jq -n --arg s "${CLAUDE_CODE_SESSION_ID:?}" --argjson t "$(date +%s)" --argjson items '<items>' \

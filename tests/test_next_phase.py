@@ -512,6 +512,15 @@ class Rows(unittest.TestCase):
         self.assertEqual(rc, 0, out)
         self.assertIn("\nNothing: file `.review/context/retry-policy.issue.md` in the tracker, or have `/lasp-dev:ticket-draft retry-policy` file it; ", out)
 
+    def test_a_drafted_ticket_not_filed_under_a_standard_that_does_not_parse_exits_1(self):
+        self.github(self.LABELS)
+        Path("standards/profile.yaml").write_text("issue_tracker:\n  kind: gitlab\n")
+        err = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            rc = next_phase.main(["--fields", str(self.fields(context="", ticket="", slug="retry-policy"))])
+        self.assertEqual(rc, 1)
+        self.assertIn("the tracker's statuses could not be read", err.getvalue())
+
     def test_a_slug_beside_a_ticket_or_a_context_page_is_refused(self):
         self.assertEqual(self.run_it(self.fields(context="", slug="retry-policy"))[0], 1)
         self.assertEqual(self.run_it(self.fields(ticket="", slug="retry-policy"))[0], 1)

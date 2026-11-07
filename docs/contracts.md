@@ -219,14 +219,18 @@ Version: 1
 Fields: `.review/github-approval.json`, at the repository's top level, which the hook finds from
 the payload's `cwd`; one JSON object in the Jira record's shape: `session`, `t` and `items`, each
 item `{"tool": <tool>, "target": <target>}`, the tool named without its server prefix. The target
-is `<owner>/<repo>` for an `issue_write` whose `method` is `create`, and `<owner>/<repo>#<n>` for
-one whose `method` is `update` and for `add_issue_comment`, as github-mcp-server names the
-parameters `owner`, `repo` and `issue_number`. `hooks/issue-gate.sh` allows a call from the main
-session only when the record's session is the call's, `t` is under 30 minutes old and not in the
-future, and an item matches the tool and target exactly; it gives every other call no decision,
-so the person's own permissions apply: a record that does not parse in this shape, a subagent's
-call, a create naming `parent_issue_number` or `issue_fields`, a comment with a `reaction` or a
-`comment_id`, and any call when jq is missing.
+is `<owner>/<repo> <title>` for an `issue_write` whose `method` is `create`, so an item matches one
+create, and `<owner>/<repo>#<n>` for one whose `method` is `update` and for `add_issue_comment`, as
+github-mcp-server names the parameters `owner`, `repo`, `title` and `issue_number`, compared
+exactly, case included. `hooks/issue-gate.sh` allows a call from the main session only when the
+record's session is the call's, `t` is under 30 minutes old and not in the future, an item matches
+the tool and target exactly, and the call carries only the arguments a plan sends: a create
+`method`, `owner`, `repo`, `title`, `body` and `labels`; an update those and `issue_number`,
+`state`, `state_reason` and `duplicate_of`; a comment `owner`, `repo`, `issue_number` and `body`.
+It gives every other call no decision, so the person's own permissions apply: a record that does
+not parse in this shape, a subagent's call, a call with any other argument, such as `assignees`,
+`milestone`, `type`, `parent_issue_number`, `issue_fields` or a `reaction`, and any call when jq is
+missing.
 
 Writers: the GitHub write plan (`skills/using-github/issues.md`, "Running it"), run by
 `ticket-draft`, at the person's yes; removed when the plan finishes or stops. Readers:

@@ -74,7 +74,8 @@ Atlassian's when its command or an argument names `mcp-atlassian`, the test `san
 before it forces the server read-only. An Atlassian server without `--read-only` and
 `READ_ONLY_MODE=true`, which `sandbox.sh` sets, stops run.py, since its rules allow every tool. A
 server of neither kind gets no rule, so under `dontAsk` every call to it is refused. A GitHub
-server that is a pack's own stub, named as `${SBX_FIXTURES}/<file>` and run with `--writes`, has
+server that is a pack's own stub, `python3` running `${SBX_FIXTURES}/github-mcp-server-stub.py`
+with `--writes` and no `url`, has
 `issue_write` and `add_issue_comment` neither allowed nor denied, so only `hooks/issue-gate.sh`'s
 allow lets one through, and the stub records it instead of reaching GitHub. `{sandbox}` and `{plugin}` are repeated once per spelling of the sandbox's path and the
 plugin directory's, so file and shell rules stay inside them. Its `sandbox` block is copied as it
@@ -259,12 +260,15 @@ def server_kind(server: dict) -> str | None:
 
 
 def recording_stubs(servers: dict) -> list[str]:
-    """The GitHub servers that are a pack's own stub, named as `${SBX_FIXTURES}/<file>`, run with
-    `--writes`, so they record the issue writes they are sent and reach no GitHub."""
+    """The GitHub servers that are a pack's own stub: no `url`, a `python3` command whose script
+    argument is `${SBX_FIXTURES}/github-mcp-server-stub.py`, and `--writes`, so they record the issue
+    writes they are sent and reach no GitHub."""
     out = []
     for name, server in servers.items():
         args = [str(a) for a in server.get("args") or []]
-        if server_kind(server) == "github" and "--writes" in args and any(a.startswith("${SBX_FIXTURES}/") for a in args):
+        script = next((a for a in args if not a.startswith("-")), "")
+        if (not server.get("url") and server.get("command") in ("python3", "python") and "--writes" in args
+                and script == "${SBX_FIXTURES}/github-mcp-server-stub.py"):
             out.append(name)
     return out
 

@@ -147,7 +147,7 @@ class TrackerPack(unittest.TestCase):
         return [json.loads(line) for line in out.splitlines()]
 
     def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
-        self.assertEqual(len(self.known), 5)
+        self.assertEqual(len(self.known), 6)
         well_formed(self, self.known, {"widgets"})
         for s in self.known.values():
             self.assertTrue(s["id"].startswith("tracker-"), s["id"])
@@ -235,7 +235,7 @@ class TrackerGithubPack(unittest.TestCase):
     STUB = ROOT / "sandbox" / "tracker-github" / "fixture" / "github-mcp-server-stub.py"
     SERVER = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py", "--writes", ".git/github-writes.jsonl"]}
     WORK = {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch"}
-    DRAFT = {"tracker-gh-ticket-draft-new", "tracker-gh-ticket-draft-refine", "tracker-gh-ticket-draft-declined"}
+    DRAFT = {"tracker-gh-ticket-draft-new", "tracker-gh-ticket-draft-refine", "tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket"}
 
     def setUp(self):
         patch = mock.patch.object(run, "SCENARIOS", self.PACK)
@@ -269,7 +269,8 @@ class TrackerGithubPack(unittest.TestCase):
                 self.assertTrue((run.fixture_dir() / name).is_file(), (s["id"], name))
         for name in self.DRAFT:
             self.assertTrue(any("github-writes.jsonl" in v for v in self.known[name]["verify"]), name)
-        self.assertEqual(self.known["tracker-gh-ticket-draft-declined"]["must_not_try"], ["mcp__github__issue_write", "mcp__github__add_issue_comment"])
+        for name in ("tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket"):
+            self.assertEqual(self.known[name]["must_not_try"], ["mcp__github__issue_write", "mcp__github__add_issue_comment"], name)
 
     def perms(self, servers: dict) -> dict:
         sandbox = Path(tempfile.mkdtemp())
@@ -290,15 +291,18 @@ class TrackerGithubPack(unittest.TestCase):
     def test_a_server_that_is_not_a_packs_writing_stub_keeps_every_write_denied(self):
         read_only = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/github-mcp-server-stub.py"]}
         elsewhere = {"command": "docker", "args": ["run", "ghcr.io/github/github-mcp-server", "--writes", "x"]}
-        perms = self.perms({"stub": read_only, "real": elsewhere, "github": self.SERVER})
-        for name in ("stub", "real"):
+        mounted = {"command": "docker", "args": ["run", "-v", "${SBX_FIXTURES}/github-mcp-server-stub.py:/stub.py", "ghcr.io/github/github-mcp-server", "--writes", "x"]}
+        other_file = {"command": "python3", "args": ["-I", "${SBX_FIXTURES}/other-github-mcp-server.py", "--writes", "x"]}
+        with_url = {**self.SERVER, "url": "https://api.githubcopilot.com/mcp/"}
+        perms = self.perms({"stub": read_only, "real": elsewhere, "mounted": mounted, "other": other_file, "url": with_url, "github": self.SERVER})
+        for name in ("stub", "real", "mounted", "other", "url"):
             self.assertLessEqual({f"mcp__{name}__issue_write", f"mcp__{name}__add_issue_comment"}, set(perms["deny"]), name)
         self.assertNotIn("mcp__github__issue_write", perms["deny"])
 
     def test_the_stub_lists_github_mcp_servers_read_tools_and_no_write(self):
         (listed,) = self.serve({"id": 1, "method": "tools/list"})
         tools = {t["name"]: t["inputSchema"] for t in listed["result"]["tools"]}
-        self.assertEqual(set(tools), {"get_me", "issue_read", "list_issues", "search_issues", "search_pull_requests"})
+        self.assertEqual(set(tools), {"get_me", "get_label", "issue_read", "list_issues", "search_issues", "search_pull_requests"})
         self.assertEqual(tools["issue_read"]["required"], ["method", "owner", "repo", "issue_number"])
         self.assertEqual(tools["search_pull_requests"]["required"], ["query"])
 
@@ -327,6 +331,20 @@ class TrackerGithubPack(unittest.TestCase):
         self.assertEqual((issue["issue"]["title"], issue["issue"]["body"], issue["issue"]["state"]), ("T", "B", "open"))
         self.assertEqual([c["body"] for c in comments["comments"]], ["C"])
         self.assertEqual(twelve["issue"]["labels"], ["ready"])
+
+    def test_a_label_a_write_sent_reads_back_by_name_and_get_label_knows_only_the_fixtures(self):
+        writes = Path(tempfile.mkdtemp()) / "writes.jsonl"
+        self.addCleanup(shutil.rmtree, writes.parent)
+        repo = {"owner": "example", "repo": "widgets"}
+        self.serve({"id": 1, "method": "tools/call", "params": {"name": "issue_write", "arguments": {"method": "update", **repo, "issue_number": 12, "labels": ["new-one"]}}},
+                   writes=writes)
+        (labels,) = self.serve({"id": 1, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"method": "get_labels", **repo, "issue_number": 12}}},
+                               writes=writes)
+        self.assertEqual(json.loads(labels["result"]["content"][0]["text"])["labels"], [{"name": "new-one"}])
+        known, unknown = (r["result"] for r in self.serve(
+            *({"id": n, "method": "tools/call", "params": {"name": "get_label", "arguments": {**repo, "name": label}}} for n, label in ((1, "ready"), (2, "new-one")))))
+        self.assertEqual(json.loads(known["content"][0]["text"])["name"], "ready")
+        self.assertTrue(unknown["isError"])
 
     def test_a_write_the_stub_cannot_apply_is_an_error_and_not_recorded(self):
         writes = Path(tempfile.mkdtemp()) / "writes.jsonl"

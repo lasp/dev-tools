@@ -60,7 +60,7 @@ sandbox/smoke.py --scenarios sandbox/triggers/scenarios.yaml --base ../dev-tools
 The tracker pack, `tracker/scenarios.yaml`, runs in `widgets` given its own standard with a Jira
 workflow, against a Jira project that `tracker/fixture/mcp-atlassian-stub.py` serves read-only from
 `jira.json`: `ticket-draft` drafting a new ticket and reformatting an older one through to the paste
-file, its format triage on a ticket in the older layout and one in the current format, and `work`
+file, its format triage on a ticket in the older layout and one in the current format, a request for a GitHub issue it answers by naming the Jira tracker and asking, and `work`
 routing a To Do ticket with no context page. Its `mcp.json` names the stub as
 `${SBX_FIXTURES}/mcp-atlassian-stub.py`, which `run.py` sets for the session, as the pack's header
 shows, and each scenario's `mcp:` expectation fails a run the stub did not answer. A search that
@@ -73,7 +73,8 @@ tracker is GitHub's, its labels mapped to the workflow and no ticket pattern rec
 issues `tracker-github/fixture/github-mcp-server-stub.py` serves from `github.json`:
 `work` routing an open issue with no label, an open one with a mapped label, a closed one, and a
 branch named `issue-<n>-words`; `ticket-draft` drafting a new issue and refining #12, each through
-a yes to its write plan, and a draft whose plan is answered Paste it all. Its `mcp.json` names the
+a yes to its write plan, a draft whose plan is answered Paste it all, and one whose third turn,
+taking every recommended answer, must file nothing. Its `mcp.json` names the
 stub as `${SBX_FIXTURES}/github-mcp-server-stub.py` with `--writes .git/github-writes.jsonl`, as
 the pack's header shows; the file name holds `github-mcp-server`, so `run.py` gives it the GitHub
 rules, except that a pack's stub run with `--writes` has `issue_write` and `add_issue_comment`

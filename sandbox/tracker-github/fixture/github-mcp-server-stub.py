@@ -16,7 +16,7 @@ know, so a scenario's verify checks the labels it may use. `run.py` neither allo
 writing stub's two write tools, so only a hook's allow lets a call through under `dontAsk`.
 
 Its tools are github-mcp-server's by name, arguments and output shape, as read from the real
-server: `get_me`; `issue_read` with the methods `get`, `get_comments` and `get_labels`, where `get`
+server: `get_me`; `get_label`, an error for a label the fixture does not hold; `issue_read` with the methods `get`, `get_comments` and `get_labels`, where `get`
 on a pull request's number returns it as an issue whose `html_url` holds `/pull/`, as GitHub's issue
 API does; `list_issues`, whose states are upper-case, as the server's GraphQL gives them;
 `search_issues`, which returns the issues sharing a word of three letters or more with the query;
@@ -46,6 +46,7 @@ SEARCH = {"query": TEXT, "owner": TEXT, "repo": TEXT, "sort": TEXT, "order": TEX
 
 TOOLS = {
     "get_me": ("Get details of the authenticated GitHub user.", {}, []),
+    "get_label": ("Get a specific label from a repository.", {**REPO, "name": TEXT}, ["owner", "repo", "name"]),
     "issue_read": ("Get information about a specific issue in a GitHub repository.",
                    {"method": {"type": "string", "enum": ["get", "get_comments", "get_sub_issues", "get_parent", "get_labels"]},
                     **REPO, "issue_number": NUMBER, "page": NUMBER, "perPage": NUMBER},
@@ -159,6 +160,10 @@ def call(name: str, args: dict):
         return done
     if name == "get_me":
         return {**DATA["me"], "profile_url": f"https://github.com/{DATA['me']['login']}"}
+    if name == "get_label":
+        if args.get("name") not in LABELS:
+            raise ValueError(f"failed to get label: Could not resolve to a Label with the name '{args.get('name')}'.")
+        return {k: LABELS[args["name"]][k] for k in ("color", "description", "name")}
     if name == "issue_read":
         n = int(args.get("issue_number") or 0)
         method = args.get("method")
@@ -174,7 +179,7 @@ def call(name: str, args: dict):
             return {"comments": [{**c, "html_url": f"{url(args, 'issues', n)}#issuecomment-{c['id']}", "reactions": REACTIONS} for c in comments],
                     "method": "get_comments"}
         if method == "get_labels":
-            labels = [LABELS[name] for name in (i["labels"] if i else [])]
+            labels = [LABELS.get(name, {"name": name}) for name in (i["labels"] if i else [])]
             return {"labels": labels, "method": "get_labels", "totalCount": len(labels)}
         raise ValueError(f"method {method} is not served by this stub")
     if name == "list_issues":

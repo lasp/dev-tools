@@ -115,7 +115,11 @@ never in a preamble. Nothing comes before step 1's opening block.
 
 On a GitHub tracker, where `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
 issue_tracker.kind` prints `github`, read `${CLAUDE_SKILL_DIR}/github.md` first, which says what
-changes in every step below and in the files.
+changes in every step below and in the files. Where it prints anything else and the request asks
+for a GitHub issue, say before step 1, in one line, that this repository's tracker is not GitHub
+Issues and what it is (`jira`, or none recorded), and ask: **Draft it as a Jira ticket**
+(Recommended where the tracker is Jira), which goes on with the steps below, or **Stop**, which
+writes nothing. Nothing is read before the answer.
 
 A pull request as the source, or a slug whose page exists under `.review/context/`, which `work`
 names for a page with no key yet: read `${CLAUDE_SKILL_DIR}/sources.md` first, which says what
