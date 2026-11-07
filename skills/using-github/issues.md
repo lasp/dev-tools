@@ -37,7 +37,7 @@ issue on the `Ticket:` line `pr-create` writes, never with a closing keyword.
 | --- | --- | --- | --- |
 | Create | `issue_write`, `method: create`: `owner`, `repo`, `title`, `body`, `labels` | `<owner>/<repo> <title>` | The title, the labels and the body in full. Until it exists the issue is `new:<slug>` in every other item |
 | Update | `issue_write`, `method: update`, `owner`, `repo`, `issue_number`, with what changes: the `title`, the `body`, the `labels` as one list, or the `state` with its `state_reason` and, for a duplicate, `duplicate_of` | `<owner>/<repo>#<n>` | Each field now and after; the body in full; labels as the whole list now and after, since the call replaces it |
-| Comment | `add_issue_comment`: `owner`, `repo`, `issue_number`, `body` | `<owner>/<repo>#<n>` | The comment in full |
+| Comment | `add_issue_comment`: `owner`, `repo`, `issue_number`, `body` | `<owner>/<repo>#<n>` | The comment in full. An `Original request` or a session comment opens with the plain first line `using-jira`'s "Copy-paste output" gives, no Markdown before its first word, since the revision finds the baseline by it |
 
 Moving a ticket into a role is a labels update: the role's label added and any other mapped
 label removed, since an issue carries at most one. A move into a role whose label is `none` is
