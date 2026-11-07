@@ -153,6 +153,8 @@ In this repository's `.review/`:
   Review Rules section where a ledger still keeps wording there, the pull request template and the documents an accepted `doc/` proposal names,
   for the driver to apply and open as a pull request.
 - `revision/notes/`, meeting or chat notes the driver pastes before `prepare`, read as asks.
+- `revision/marks.md`, from `apply`: the mark it settled for each proposal and what it rests on,
+  shown before the driver's yes.
 - `revision/meeting/`, the revision meeting's notes, or a pull request's threads, the driver pastes
   before `apply`, read by `apply` alone when it settles the marks.
 - `revision/tickets/<n>-<slug>.md`, from `apply`: each accepted `ticket/` proposal as a prompt

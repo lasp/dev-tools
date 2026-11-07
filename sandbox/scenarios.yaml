@@ -239,9 +239,9 @@ scenarios:
     turns:
       - >-
         /lasp-dev:revise apply. The group met on 3 November; settle the marks from what it said.
-    must_not_run: ["mcp__*", "Agent", "Task", "Edit", "Write", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
+    must_not_run: ["mcp__*", "Agent", "Task", "Edit", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
     look_at: >-
-      A table of R-004, F-001, F-002 and D-001: R-004 accept, reworded with "raises on input it
+      .review/revision/marks.md and the message before the question: a table of R-004, F-001, F-002 and D-001: R-004 accept, reworded with "raises on input it
       cannot use", resting on erin's Mark line, not declined from the chat note; F-002 accept,
       resting on the meeting notes; F-001 unclear, no owner named; D-001 unclear, dana for and erin
       doubting with no outcome, never a plain accept. The report's Mark lines are unchanged and no
@@ -250,9 +250,15 @@ scenarios:
       - "grep -q '^  Mark: yes, but word it' standards/log/widgets/ratchet-2026-10.md"
       - "grep -q '^  Mark:$' standards/log/widgets/ratchet-2026-10.md"
       - "! test -e .review/ratchet-proposal.diff"
+      - "grep -qiE 'R-004.*accept, reworded' .review/revision/marks.md"
+      - "grep -qi 'raises on input it cannot use' .review/revision/marks.md"
+      - "grep -iE 'F-002' .review/revision/marks.md | grep -iv unclear | grep -qiE '\\baccept\\b'"
+      - "grep -iE 'F-001' .review/revision/marks.md | grep -qi unclear"
+      - "grep -iE 'D-001' .review/revision/marks.md | grep -qi unclear"
+      - "! grep -iE '^[^|]*\\|[^|]*R-004[^|]*\\|[^|]*decline' .review/revision/marks.md"
     expect:
       ends: success
-      says: ['(?i)R-004[^\n]*accept, reworded', '(?i)raises on input it cannot use', '(?i)^(?!.*unclear)[^\n]*F-002[^\n|]*\|[^\n|]*\baccept\b(?!ed)', '(?i)F-001[^\n]*unclear', '(?i)D-001[^\n]*unclear']
+      files: [".review/revision/marks.md"]
       not_says: ['(?i)^(?!.*unclear)[^\n]*D-001[^\n|]*\|[^\n|]*\baccept\b(?!ed)', '(?i)^(?!.*unclear)[^\n]*F-001[^\n|]*\|[^\n|]*\baccept\b(?!ed)', '(?i)^\W*D-001\W+accept\b(?!ed)', '(?i)^\W*F-001\W+accept\b(?!ed)', '(?i)^[^\n]*R-004[^\n|]*\|[^\n|]*\bdecline']
 
   - id: revise-question-evidence

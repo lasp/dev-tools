@@ -41,12 +41,12 @@ when an accept on a held proposal gives no reason, and when an accept on a chang
 convention names no owner. A question a comment asks is answered as
 `<plugin root>/skills/revise/discuss.md` says, and settles nothing on its own.
 
-Show a table of every proposal in the report's order: its id, the mark settled, and what it
-rests on, the comment's link, the `Mark:` line or the note's file, quoted where short; above it,
-one line naming each file read from `revision/meeting/`, so a stale one is seen. The table,
-every proposal a row, is what the yes approves, so it is written in the message before the
-question, whole, however short `decision-points.md` keeps where things stand, and never only
-inside the question. Then ask:
+Write the settled marks to `.review/revision/marks.md`, a table of every proposal in the
+report's order: its id, the mark settled, and what it rests on, the comment's link, the `Mark:`
+line or the note's file, quoted where short; above it, one line naming each file read from
+`revision/meeting/`, so a stale one is seen. It is what the yes approves, so the message before
+the question shows the table too, or, when it is long, the unclear and reworded rows with the
+file named as a link, as `decision-points.md` says of longer text. Then ask:
 **Write these marks** (Recommended, when none is unclear), **Change some**, the person naming the
 proposal and the mark, or **Let's discuss**. An `unclear` mark is settled with the person before
 anything is written, or left blank, deferred, on their word. On the yes, write each mark on its
