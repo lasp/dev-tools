@@ -1,0 +1,83 @@
+{
+ "prs": [
+  7
+ ],
+ "comments_read": 6,
+ "items": [
+  {
+   "pr": 7,
+   "comment_id": 101,
+   "url": "https://github.com/example/widgets/pull/7#discussion_r101",
+   "author": "alice",
+   "authorship": "human",
+   "quote": "In general, a reader should fail loudly on input it cannot use",
+   "generality": "general",
+   "signal": "states a principle",
+   "kind": "rule",
+   "principle": "A reader raises on input it cannot use rather than returning None.",
+   "rationale": "a silent None turns into a wrong number three steps later.",
+   "covered_by": null,
+   "outcome": "changed as asked"
+  },
+  {
+   "pr": 7,
+   "comment_id": 101,
+   "url": "https://github.com/example/widgets/pull/7#discussion_r101",
+   "author": "alice",
+   "authorship": "human",
+   "quote": "Please raise on an empty table here instead of returning None.",
+   "generality": "pr-specific",
+   "signal": "none",
+   "kind": "rule",
+   "principle": "Raise on an empty table in this reader.",
+   "rationale": null,
+   "covered_by": null,
+   "outcome": "changed as asked"
+  },
+  {
+   "pr": 7,
+   "comment_id": 103,
+   "url": "https://github.com/example/widgets/pull/7#discussion_r103",
+   "author": "alice",
+   "authorship": "human",
+   "quote": "Keep the timeout for this one fetch at 30 s",
+   "generality": "general",
+   "signal": "states a principle",
+   "kind": "rule",
+   "principle": "Every network call in the project times out at 30 seconds.",
+   "rationale": "the upstream archive is slow on Mondays.",
+   "covered_by": null,
+   "outcome": "unanswered"
+  },
+  {
+   "pr": 7,
+   "comment_id": 104,
+   "url": "https://github.com/example/widgets/pull/7#discussion_r104",
+   "author": "carol",
+   "authorship": "human",
+   "quote": "Units go in the column name so nobody has to guess them.",
+   "generality": "general",
+   "signal": "states a principle",
+   "kind": "data-convention",
+   "principle": "A column's name carries its units.",
+   "rationale": "so nobody has to guess them.",
+   "covered_by": null,
+   "outcome": "changed as asked"
+  },
+  {
+   "pr": 7,
+   "comment_id": 105,
+   "url": "https://github.com/example/widgets/pull/7#pullrequestreview-105",
+   "author": "dana",
+   "authorship": "human",
+   "quote": "For future PRs: put the ticket key on the first line of the description",
+   "generality": "general",
+   "signal": "names a habit",
+   "kind": "process",
+   "principle": "A pull request description opens with its ticket key.",
+   "rationale": "the release notes are built from it.",
+   "covered_by": null,
+   "outcome": "unanswered"
+  }
+ ]
+}

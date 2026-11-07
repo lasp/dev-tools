@@ -1,4 +1,4 @@
-contract: 14
+contract: 15
 pr: 42
 ticket: none
 stack: none
@@ -30,12 +30,14 @@ findings:
     severity: should-fix
     at: "widgets/loader.py:576"
     thread: PRRT_synthetic001
+    reviewer: alice
     verdict: agree
     by: alice
   - key: "R-012/pyproject.toml::version"
     severity: should-fix
     at: "pyproject.toml:3"
     thread: PRRT_synthetic002
+    reviewer: alice
     verdict: disagree
     reason: "Nothing callers rely on changes here: `ROW_LIMIT` is informational and the warning fires only on files that were already malformed, so a patch release is right. 2.4.1 is reserved for the fix queued ahead of this one."
     by: alice
@@ -43,29 +45,34 @@ findings:
     severity: suggestion
     at: "widgets/loader.py:592"
     thread: PRRT_synthetic003
+    reviewer: alice
     verdict: agree
     by: alice
   - key: "ticket/AC-2/tests/test_loader.py::test_report_short_rows_classifies_rows"
     severity: suggestion
     at: "tests/test_loader.py:328"
     thread: PRRT_synthetic004
+    reviewer: alice
     verdict: discuss
   - key: "ticket/AC-5/widgets/loader.py::load_rows"
     severity: suggestion
     at: "widgets/loader.py:237"
     thread: PRRT_synthetic005
+    reviewer: alice
     verdict: agree
     by: alice
   - key: "R-004/widgets/loader.py::load_rows"
     severity: suggestion
     at: "widgets/loader.py:203"
     thread: PRRT_synthetic006
+    reviewer: alice
     verdict: agree
     by: alice
 questions: []
 threads:
   - thread: PRRT_synthetic007
     by: review
+    reviewer: alice
     authorship: ai-drafted
     severity: question
     at: "widgets/loader.py:568"

@@ -69,7 +69,9 @@ One line per claim id you were given, in the order given:
 
 Settle each verdict before you write its line: weigh the evidence, then write the one word it
 supports. A line's reason never argues another verdict than its word; when the evidence leaves
-you between two, write the one it leans to and say in the reason what made it close.
+you between two, write the one it leans to and say in the reason what made it close. A line
+whose place or reason names a second verdict, such as `judged as follows` after `breaks`, fails
+the block, and you are run again.
 
 ## The answer
 

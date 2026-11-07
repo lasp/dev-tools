@@ -153,6 +153,43 @@ scenarios:
       files: [".review/harvest/threads/pr-0007/pr.json", ".review/harvest/guidance/slice-1.json"]
       says: ['(?i)floor|Write the counts only']
 
+  - id: revise-prepare-evidence
+    repo: widgets
+    setup:
+      - mkdir -p standards/log/widgets .review/harvest/threads/pr-0007 .review/harvest/guidance
+      - cp "$SBX_FIXTURES/standard-review-rules.md" standards/review-rules.md
+      - cp "$SBX_FIXTURES/evidence/comment-list.json" .review/harvest/threads/pr-0007/
+      - cp "$SBX_FIXTURES/evidence/slice-1.json" .review/harvest/guidance/
+      - cp "$SBX_FIXTURES/evidence/ratchet-2026-10.md" standards/log/widgets/
+    origin: "#88"
+    why: >-
+      Runs revise prepare's two evidence checks on a window already loaded and a report already
+      drafted: the spot check of the extraction, where one of five items calls a one-fetch timeout
+      a project-wide rule, and the quote check, where one `said:` line adds a word the comment does
+      not say. The run should mark that item wrong, put the tally's `spot check:` line in the Head,
+      and copy the quote again from the comment until the check passes.
+    turns:
+      - >-
+        /lasp-dev:revise prepare. The window 2026-10-01..2026-10-31 is already loaded into
+        .review/harvest/ and its report drafted at standards/log/widgets/ratchet-2026-10.md. Run
+        only step 2's spot check of the extraction and step 10's quote check on that report, then
+        stop before the commit question.
+    must_not_run: ["mcp__*", "Agent", "Task", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
+    look_at: >-
+      spot_check.py sample prints all five items; the run reads each against its comment and
+      writes .review/revision/spot-check.md with guidance/slice-1#3 wrong (the comment is about one
+      fetch, the item says every network call); tally prints `spot check: 5 items · 1 wrong · error
+      rate 20%` or near it, which goes into the Head. quote_check.py refuses line 13; the run copies
+      alice's words again ("on input", not "on any input") and reruns it to `quotes: 3`.
+    verify:
+      - "grep -qE '^guidance/slice-1#3 · wrong' .review/revision/spot-check.md"
+      - "grep -qE '^spot check: 5 items · [0-9]+ wrong · error rate [0-9]+%' standards/log/widgets/ratchet-2026-10.md"
+      - "! grep -q 'on any input' standards/log/widgets/ratchet-2026-10.md"
+      - "grep -q 'Units go in the column name so nobody has to guess them' standards/log/widgets/ratchet-2026-10.md"
+    expect:
+      ends: success
+      files: [".review/revision/spot-check.md"]
+
   - id: revise-prepare-uncaptured
     repo: widgets
     setup:

@@ -14,7 +14,10 @@ Exits 2 with one `CANNOT RUN` line on stderr, printing nothing, when the directo
 or the sweep's claims or merges file is missing, a pull request is named twice or not as `pr-NNNN`, or a
 block does not hold its form: a heading missing or naming another pull request than its file,
 a line of no form the block takes, a `Procedure:`, `Not read:` or `Read:` line missing or
-repeated, a claim judged twice in one sweep block, or a sweep block missing a `C-n` claim it owes.
+repeated, a line holding two verdicts, a claim judged twice in one sweep block, or a sweep block
+missing a `C-n` claim it owes. A line holds two verdicts when an ask line carries a second `·
+outcome:` or `· diff:`, or a sweep line's place or reason opens a field with a verdict word or
+reads `judged as` one; the quoted line, which is code, is not read for it.
 Stdlib only.
 """
 
@@ -51,6 +54,8 @@ VERDICT = re.compile(
     r"|(?P<untouched>not touched)|(?P<unjudged>not judged · no description))$"
 )
 TAILS = ("Procedure:", "Not read:", "Read:")
+# A second verdict in a sweep line's own words: a field that opens with one, or "judged as" one.
+SECOND_VERDICT = re.compile(r"(?:^|· )(?:follows|breaks|not touched|not judged)\b|\bjudged as (?:follows|breaks|not touched|not judged)\b", re.I)
 
 
 class CannotRun(Exception):
@@ -120,6 +125,8 @@ def analysis(folder: Path, prs: list[str]) -> list[str]:
             a = ASK.match(line)
             if not a:
                 raise CannotRun(f"{pr}: not an ask line: {line}")
+            if line.count(" · outcome: ") > 1 or line.count(" · diff: ") > 1:
+                raise CannotRun(f"{pr}: two verdicts in one ask line: {line}")
             if a["asked"] == "none":
                 none += 1
                 continue
@@ -185,6 +192,9 @@ def sweep(folder: Path, prs: list[str], claims: Path | None, merges: Path | None
             v = VERDICT.match(line)
             if not v:
                 raise CannotRun(f"{pr}: not a verdict line: {line}")
+            own = (v["follows"], v["place"], v["why"])
+            if any(f and SECOND_VERDICT.search(f) for f in own):
+                raise CannotRun(f"{pr}: two verdicts in one line: {line}")
             if v["id"] in seen:
                 raise CannotRun(f"{pr}: {v['id']} judged twice")
             seen.add(v["id"])

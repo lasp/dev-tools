@@ -22,6 +22,7 @@ cost: open-to-merge median <d>, longest <d> · <n> merged without a build · cor
 agree rate by severity · share unanswered · share of agreed findings changed as asked
 counted: <verdicts, firings, contested, missing, from record.py and ratchet_counts.py>; read by the analyst: <categories, outcomes, procedure ids>
 guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general by kind: <kind> <n>, … | none read
+spot check: <n> items · <n> wrong · error rate <n>% | none: no slice passed
 
 ## Overview                                 step 10: every proposal below, the held ones included, one line each
 | Priority | Proposal | Applies to | Impact | Rests on | Apply changes |
@@ -87,9 +88,9 @@ guidance: <n> comments · <n> items · <n> general, <n> pr-specific · general b
 
 ### Rules                                   steps 1, 3
 the window's and all records' count tables and the expiry table, every row the script prints, each ledger rule included at 0 when it has no firing; contested rules and what the
-disagreements shared; rules held provisional for breadth and what would release them; each guidance tally `covered` statement under the rule, decision, entry or instruction file it names, with its quote; each agent guidance entry seen again, with its new `seen` month
+disagreements shared; rules held provisional for breadth and what would release them; each guidance tally `covered` statement under the rule, decision, entry or instruction file it names, with its `said:` line; each agent guidance entry seen again, with its new `seen` month
 
-### Held candidates                         step 6: each with its quotes and the criterion it fails
+### Held candidates                         step 6: each with its `said:` lines and the criterion it fails
 ### What review asked for                   step 2
 ### Practice                                step 2's sweep, report only: per claim, judged on, follows, breaks, untouched; drift; missed by review; rules not swept
 ### About the procedure                     step 2: each skill-feedback draft's path and ask; each settled finding and what settled it
@@ -99,6 +100,8 @@ disagreements shared; rules held provisional for breadth and what would release 
 ### Not read                                step 2: unanalysed pull requests, Not read: ids, unread guidance slices
 ```
 
-A held proposal is never recommended a plain `accept`. The meeting takes the proposals in the
+Every quote in the report, a drafted entry's included, is a `said:` line of the form above, with
+the comment's URL or the pasted note's file, so `scripts/quote_check.py` can find it; a person's
+words given any other way are paraphrase. A held proposal is never recommended a plain `accept`. The meeting takes the proposals in the
 overview's order and stops when its time is up; a proposal it leaves blank is deferred, and
 `apply` returns a blank admission to the held candidates with its evidence.

@@ -239,6 +239,21 @@ class Tally(unittest.TestCase):
     def test_a_line_of_no_verdict_form_is_refused(self):
         self.refused("sweep", "pr-0007.md", SWEEP_7.replace("C-1 · not touched", "C-1 · breaks, judged as follows on the evidence"), "not a verdict line: C-1")
 
+    def test_a_sweep_line_with_a_second_verdict_is_refused_never_counted(self):
+        two = SWEEP_7.replace('the pull request changed the public loader', 'judged as follows on a second read')
+        self.refused("sweep", "pr-0007.md", two, "pr-0007: two verdicts in one line: C-2 · breaks")
+        self.refused("sweep", "pr-0007.md", SWEEP_7.replace("follows · pkg/loader.py:12", "follows · pkg/loader.py:12 · breaks at 40"), "two verdicts in one line: R-001")
+
+    def test_a_verdict_word_inside_a_reason_or_the_quoted_line_is_one_verdict(self):
+        self.write("pr-0007.md", SWEEP_7.replace("the pull request changed the public loader", "the change breaks callers that follows the old API").replace('"no CHANGELOG.md change"', '"# breaks · follows"'))
+        code, out, _ = self.run_it("sweep", "pr-0007")
+        self.assertEqual(code, 0)
+        self.assertIn("break · C-2 · pr-0007 · none", out)
+
+    def test_an_ask_line_with_a_second_outcome_is_refused(self):
+        two = ANALYSIS_7.replace("asked: test the failure path", "asked: test the failure path · outcome: changed as asked · diff: addresses it")
+        self.refused("analysis", "pr-0007.md", two, "pr-0007: two verdicts in one ask line: thread PRRT_a3")
+
     def test_a_claim_judged_twice_is_refused(self):
         self.refused("sweep", "pr-0007.md", SWEEP_7.replace("C-1 · not touched", "R-001 · not touched"), "R-001 judged twice")
 
