@@ -164,8 +164,11 @@ the caller names, `Tracker: github <owner/repo>`, each issue written `#<n>`; a G
 without that line returns `sweep: no issues repository named` and nothing else. `duplicates` reads the open issues with `list_issues`, state `OPEN`, paged
 until `hasNextPage` is false, and the comments of each issue a finding names with `issue_read`
 `get_comments`; for each issue of a pair, the pull requests naming it, with
-`search_pull_requests`, query `repo:<owner/repo> "#<n>"`, the search that also finds what
-satisfied an issue. `pulls` takes each pull request's issue from its state block's `ticket:` line, as
+`search_pull_requests` on this repository, the owner/repo `git remote get-url origin` names, since
+pull requests live there and not in the tracker's: query `repo:<origin> "#<n>"` when
+`--field issue_tracker.location` prints `none` or names that repository, and otherwise
+`repo:<origin> "<location>#<n>"` and again `repo:<origin> "<location>/issues/<n>"` for a body
+linking the issue, the search that also finds what satisfied an issue. `pulls` takes each pull request's issue from its state block's `ticket:` line, as
 `${CLAUDE_PLUGIN_ROOT}/docs/contracts.md`'s "The record" reads a `Ticket:` line on a GitHub
 tracker, and reads that issue with `issue_read` `get` for its state, `state_reason` and labels,
 in the named repository, or in the pull request's own when `--field issue_tracker.location`

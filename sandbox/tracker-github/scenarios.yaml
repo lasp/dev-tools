@@ -352,7 +352,7 @@ scenarios:
     expect:
       ends: success
       agents: [source-reader]
-      mcp: [mcp__github__list_issues, mcp__github__issue_write]
+      mcp: [mcp__github__list_issues, mcp__github__search_pull_requests, mcp__github__issue_write]
       files: [".review/audit/*-duplicates.md"]
     verify:
       - test ! -e .review/github-approval.json
@@ -402,7 +402,7 @@ scenarios:
       - test ! -e .review/github-approval.json
       - grep -q '#17' .review/audit/*-pulls.md
       - grep -q '#22' .review/audit/*-pulls.md
-      - grep -q '#18' .review/audit/*-pulls.md
+      - grep -iE -B8 -A3 '#18' .review/audit/*-pulls.md | grep -qiE 'ready|approv'
 
   - id: tracker-gh-audit-declined
     repo: widgets

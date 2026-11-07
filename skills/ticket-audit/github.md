@@ -38,10 +38,12 @@ its state block's `ticket:` line names, read as `<plugin root>/docs/contracts.md
 reads a body's `Ticket:` line on a GitHub tracker. In place of "a ticket still in the filed
 status", one finding of these per pull request:
 
-- it names no issue: no `Ticket:` line, or one that starts with `none`; the action is to file the
-  ticket;
+- it names no issue: no `Ticket:` line, one that starts with `none`, or one from which `profile.py`'s
+  `ticket_named` reads no issue without refusing and that links no other tracker, such as
+  `Ticket: TBD`; the rest are the next finding's; the action is to file the ticket;
 - its `Ticket:` line names something other than the tracker's issue; the action is to correct the
-  line. "The record" sets which: a line leading with a Jira-shaped key is another tracker's; a bare
+  line. "The record" sets which: a line leading with a Jira-shaped key, or linking another tracker
+  such as a Jira URL, is another tracker's; a bare
   `#<n>` is the tracker's only when `issue_tracker.location` prints `none` or names the pull
   request's own repository, and an `<owner/repo>#<n>` or issue URL only when it names the
   location, or with `none` the pull request's repository;

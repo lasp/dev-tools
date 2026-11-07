@@ -762,7 +762,8 @@ label, and `--defaults --field issue_tracker.roles.<role>` prints `none` for a r
 an issue's own open and closed states stand for `filed`, `finished` and `abandoned`. On a GitHub
 tracker `ticket-draft` reads `issue_tracker.roles.<role>` and skips a move into a role whose label
 is `none` (version 2); `ticket-audit` reads `issue_tracker.roles` there in place of `jira.roles`,
-for the label a close removes or adds (version 3).
+for the label a close removes or adds and, in `source-reader`'s `pulls` sweep, for the `approved`
+and `implementation` labels an open issue lacks when its pull request waits on approval (version 3).
 An open issue that carries no mapped label is in `filed`, and `work` sends it to `ticket-draft`.
 
 Writers: a project's standard, through `issue_tracker:` ("The profile"); `standards/ticket-format.md`
