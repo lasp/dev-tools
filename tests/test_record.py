@@ -138,7 +138,7 @@ class RecordFromFixture(unittest.TestCase):
 
     def test_date_is_the_first_review_in_local_time_and_merged_the_utc_merge_day(self):
         lines, _ = record.build(PR, [REVIEW, {**REVIEW, "id": 2, "submitted_at": "2026-09-27T00:10:00Z"}], [], BODY, "o/r", "abc1234", issue_comments=[])
-        self.assertEqual(lines[0], "contract: 13")
+        self.assertEqual(lines[0], "contract: 14")
         self.assertIn("date: 2026-09-25\nmerged: 2026-09-27\n", "\n".join(lines) + "\n")
         # 03:00 UTC is the evening before in Denver; the harvest's merged:>= qualifier reads UTC.
         lines, _ = record.build({**PR, "merged_at": "2026-10-01T03:00:00Z"}, [REVIEW], [], BODY, "o/r", "abc1234", issue_comments=[])
@@ -304,14 +304,15 @@ class Adjudication(unittest.TestCase):
         self.assertIn("    sent_back_by: [R-001/x.py::f]\n    applied: 1\n", rounds)
         self.assertIn("    sent_back_by: [R-002/x.py::f]\n    applied: 1\n", rounds)
 
-    def test_the_ticket_is_the_key_on_the_ticket_line_only(self):
+    def test_the_ticket_is_the_first_key_on_the_ticket_line(self):
         text, _ = self.run_build(thread("Should fix"))
         self.assertIn("ticket: none\n", text)
-        lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: PROJ-9 · y\n", "o/r", "abc1234", issue_comments=[])
-        self.assertIn("ticket: PROJ-9", lines)
-        lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: none, tooling work\n", "o/r", "abc1234", issue_comments=[])
-        self.assertIn("ticket: none", lines)
-        for line in ("none — split from PROJ-68", "none — split from #68", "see PROJ-9"):
+        for line in ("PROJ-9 · y", "https://x.atlassian.net/browse/PROJ-9", "**PROJ-9** · x", "`PROJ-9`", "see PROJ-9",
+                     "[ PROJ-9](u)", "PROJ-9 · fixes #59"):
+            with self.subTest(line=line):
+                lines, _ = record.build(PR, [REVIEW], [], BODY + f"Ticket: {line}\n", "o/r", "abc1234", issue_comments=[])
+                self.assertIn("ticket: PROJ-9", lines)
+        for line in ("none, tooling work", "none — split from PROJ-68", "None — split from #68", "#59 · y", "Fixes #59"):
             with self.subTest(line=line):
                 lines, _ = record.build(PR, [REVIEW], [], BODY + f"Ticket: {line}\n", "o/r", "abc1234", issue_comments=[])
                 self.assertIn("ticket: none", lines)
@@ -341,28 +342,35 @@ class Adjudication(unittest.TestCase):
                 lines, _ = record.build(PR, [REVIEW], [], body, "o/r", "abc1234", issue_comments=[])
                 self.assertIn("ticket: 59", lines)
                 self.assertIn('stack: {part: 1, of: 2, base: "main"}', lines)
-                lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: [#59](https://github.com/o/r/issues/59) · y\n", "o/r", "abc1234", issue_comments=[])
-                self.assertIn("ticket: 59", lines)
-                lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: none — split from #68\n", "o/r", "abc1234", issue_comments=[])
-                self.assertIn("ticket: none", lines)
-                for line, says in (("PROJ-9 · y", "names PROJ-9, but the tracker is GitHub's"), ("other/r#59 · y", "names other/r#59")):
-                    with self.assertRaisesRegex(record.Unsupported, says):
-                        record.build(PR, [REVIEW], [], BODY + f"Ticket: {line}\n", "o/r", "abc1234", issue_comments=[])
-        standard_for_o(PROJECT)
-        lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: #59 · y\n", "o/r", "abc1234", issue_comments=[])
-        self.assertIn("ticket: none", lines)
-        lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: none — split from #68\n", "o/r", "abc1234", issue_comments=[])
-        self.assertIn("ticket: none", lines)
+                for line in ("[#59](https://github.com/o/r/issues/59) · y", "Fixes #59", "https://github.com/o/r/issues/59",
+                             "**#59** · x", "`#59`", "o/r#59 · y"):
+                    with self.subTest(line=line):
+                        lines, _ = record.build(PR, [REVIEW], [], BODY + f"Ticket: {line}\n", "o/r", "abc1234", issue_comments=[])
+                        self.assertIn("ticket: 59", lines)
+                # Another tracker's key, as in a pull request from before the move to GitHub
+                # Issues, and the none line, record none.
+                for line in ("none — split from #68", "PROJ-9 · y", "https://x.atlassian.net/browse/PROJ-9", "other/r#59 · y",
+                             "https://github.com/other/r/issues/59"):
+                    with self.subTest(line=line):
+                        lines, _ = record.build(PR, [REVIEW], [], BODY + f"Ticket: {line}\n", "o/r", "abc1234", issue_comments=[])
+                        self.assertIn("ticket: none", lines)
 
     def test_a_github_tracker_elsewhere_names_its_issues_by_its_repository(self):
         self.addCleanup(standard_for_o, PROJECT)
         standard_for_o("issue_tracker:\n  kind: github\n  location: o/tracker\n  statuses: []\n  pr_statuses: []\n")
-        for line in ("o/tracker#59 · y", "[o/tracker#59](https://github.com/o/tracker/issues/59) · y", "O/Tracker#59 · y"):
+        for line in ("o/tracker#59 · y", "[o/tracker#59](https://github.com/o/tracker/issues/59) · y", "O/Tracker#59 · y",
+                     "https://github.com/o/tracker/issues/59"):
             with self.subTest(line=line):
                 lines, _ = record.build(PR, [REVIEW], [], BODY + f"Ticket: {line}\n", "o/r", "abc1234", issue_comments=[])
                 self.assertIn("ticket: 59", lines)
-        with self.assertRaisesRegex(record.Unsupported, "names #59; the tracker's issues are written o/tracker#<n>"):
-            record.build(PR, [REVIEW], [], BODY + "Ticket: #59 · y\n", "o/r", "abc1234", issue_comments=[])
+        for line in ("#59 · y", "other/r#59 · y", "o/r#59 · y", "none — split from o/tracker#68"):
+            with self.subTest(line=line):
+                lines, _ = record.build(PR, [REVIEW], [], BODY + f"Ticket: {line}\n", "o/r", "abc1234", issue_comments=[])
+                self.assertIn("ticket: none", lines)
+        # A location that is this repository reads a bare #59 as its issue.
+        standard_for_o("issue_tracker:\n  kind: github\n  location: o/r\n  statuses: []\n  pr_statuses: []\n")
+        lines, _ = record.build(PR, [REVIEW], [], BODY + "Ticket: #59 · y\n", "o/r", "abc1234", issue_comments=[])
+        self.assertIn("ticket: 59", lines)
 
     def test_a_part_of_a_stacked_ticket_reads_its_stack_and_claims(self):
         body = "Ticket: PROJ-9 · part 2 of 3 · base: PROJ-9-one\nClaims: AC-1, AC-3\n" + BODY

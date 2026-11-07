@@ -61,9 +61,11 @@ ticket-closed, an open one with no label the profile's `issue_tracker.statuses` 
 and one with a mapped label goes to that label's `next`; an issue with two mapped labels exits 1, as
 do `--ticket-status` on a GitHub tracker, `--issue-state` on any other, and `--label` without
 `--issue-state`, whichever row decides. A label the profile does not map is not a status and is
-passed over. The state block's `Ticket:` line names the key it starts with, as `record.py` reads
-it: on a GitHub tracker the issue's `#<n>`, or `<location>#<n>` when the tracker is another
-repository's; on any other a Jira key. A GitHub tracker's line naming another tracker's key exits 1.
+passed over. The state block's `Ticket:` line names its first key, as `record.py` reads it, or
+none when it starts with `none`: on a GitHub tracker the tracker's issue, from `#<n>`,
+`<location>#<n>` or its URL; on any other a Jira key. A line whose first key is another tracker's
+exits 1, where `record.py` records none, as does a profile that cannot be read for a line that
+does not start with `none`.
 Stdlib only.
 """
 
@@ -73,6 +75,7 @@ import argparse
 import importlib.util
 import re
 import sys
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -99,29 +102,24 @@ class Refused(Exception):
     """An input this script does not read."""
 
 
-def load_profile():
+def load_profile() -> types.ModuleType:
     spec = importlib.util.spec_from_file_location("profile", ROOT / "scripts" / "profile.py")
     profile = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(profile)
     return profile
 
 
-def tracker():
-    """The profile's `issue_tracker`, from the repository's standard over the default profile,
-    whose refusal is this script's, and the profile module that read it."""
-    profile = load_profile()
-    try:
-        return profile.defaults(ROOT)["issue_tracker"], profile
-    except (profile.ProfileError, OSError) as e:
-        raise Refused(f"the tracker's statuses could not be read: {e}") from e
-
-
 def workflow() -> tuple[str, dict[str, str], tuple[str, ...]] | None:
     """The tracker's kind, `jira` or `github`; its statuses, Jira statuses or GitHub labels,
     lowercased, each with where a ticket with no context page here goes; and the statuses at which
-    its pull request may exist with no local page, which work reads first. None when no workflow is
+    its pull request may exist with no local page, which work reads first; from the repository's
+    standard over the default profile, whose refusal is this script's. None when no workflow is
     recorded."""
-    t, profile = tracker()
+    profile = load_profile()
+    try:
+        t = profile.defaults(ROOT)["issue_tracker"]
+    except (profile.ProfileError, OSError) as e:
+        raise Refused(f"the tracker's statuses could not be read: {e}") from e
     if t == profile.NOT_RECORDED:
         return None
     return t["kind"], {s["name"].lower(): s["next"] for s in t["statuses"]}, tuple(s.lower() for s in t["pr_statuses"])
@@ -182,14 +180,21 @@ def read_state(text: str) -> dict:
         raise Refused("the state block has no '## pr-NNNN — state' heading, head:, draft:, state: or author: line")
     if not re.search(r"^contract: 6\s*$", text, re.M):
         raise Refused("the state block is not contract 6")
-    # The key the body's Ticket: line starts with, as record.py reads it through profile.py's
+    # The first key on the body's Ticket: line, as record.py reads it through profile.py's
     # ticket_named: on a GitHub tracker the issue's number, otherwise a Jira key.
+    # A key of another tracker's form is refused here, where record.py records none: routing on it
+    # would take the wrong ticket's facts.
     line = re.search(r"^ticket: Ticket:(.*)$", text, re.M)
     ticket = ""
-    if line:
-        t, profile = tracker()
+    if line and not re.match(r"\s*none\b", line.group(1), re.I):
+        profile = load_profile()
         try:
-            ticket = profile.ticket_named(line.group(1), t, r"[A-Z][A-Z0-9_]*-\d+")
+            t = profile.defaults(ROOT)["issue_tracker"]
+            origin = profile.remote("origin")
+        except (profile.ProfileError, OSError) as e:
+            raise Refused(f"pull request #{number.group(1)}'s Ticket: line cannot be read: the profile's issue_tracker is refused: {e}") from e
+        try:
+            ticket = profile.ticket_named(line.group(1), t, r"[A-Z][A-Z0-9_]*-\d+", "/".join(origin) if origin else None)
         except ValueError as e:
             raise Refused(f"pull request #{number.group(1)}: {e}") from e
     reviewed = re.findall(r"^findings review: \S+ reviewed: ([0-9a-f]{7,40})", text, re.M)

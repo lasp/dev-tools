@@ -9,11 +9,13 @@ the shape of `tests/fixtures/pr-0042/expected.yaml`.
 
 The record is the harvest's working form: the pull request's threads are the record, and
 `revise` regenerates this file from them at each revision; nothing writes it at review
-time. The ticket is the key on the body's `Ticket:` line, in the ticket key pattern of the
-repository's profile (`scripts/profile.py`), or on a GitHub tracker the issue's `#<n>`, recorded
-as its number, or `none`; a body with a `Ticket:` line under a
-profile that profile.py refuses, or one whose pattern reads `not yet recorded`, or a body with
-more than one `Ticket:` line, is refused. A
+time. The ticket is the first key on the body's `Ticket:` line, as `docs/contracts.md`'s "The
+record" defines it and `scripts/profile.py`'s `ticket_named` reads it: `none` for a line that
+starts with `none`; otherwise a key in the ticket key pattern of the repository's profile, or on
+a GitHub tracker the tracker's issue, recorded as its number; `none` when the line names no key,
+or when its first key is another tracker's. A body with a `Ticket:` line under a profile that
+profile.py refuses, under a Jira or unrecorded tracker whose pattern reads `not yet recorded`,
+or with more than one `Ticket:` line, is refused. A
 ticket in several pull requests gives `stack:` from that line's `part k of n · base: <branch>`
 and `claims:` from the `Claims:` line, each `none` when absent. The build, plan, gates and tokens
 are the lines of the body's Already checked block, which must carry them; its optional `Depth:` line,
@@ -81,7 +83,7 @@ review with no `html_url` or one on a repository other than --repo, or an input 
 JSON, exits 1 with the reason; nothing is guessed. Stdlib only, so the
 plugin needs no environment.
 
-A record's first line is `contract: 13` and the --state printout's `contract: 6`: the version
+A record's first line is `contract: 14` and the --state printout's `contract: 6`: the version
 of each interface as `docs/contracts.md` defines it.
 
 With --state it writes nothing and prints where the pull request stands: the head, then
@@ -141,7 +143,7 @@ AI_SIGNATURES = tuple(
 SEVERITIES = {"must fix before merge": "must-fix", "should fix": "should-fix", "suggestion": "suggestion", "question": "question"}
 # The versions of the --state printout and of the record, as docs/contracts.md defines them.
 CONTRACT = 6
-RECORD_CONTRACT = 13
+RECORD_CONTRACT = 14
 # What a judgment may say a reply means, as docs/contracts.md "The judgments" defines it.
 JUDGED = (*VERDICTS, "answered", "unclear")
 # The Already checked lines a built pull request's body must carry; pr-create's body.md writes them.
@@ -197,7 +199,9 @@ def ticket_pattern(repo: str) -> str:
 def ticket_key(repo: str, line: str) -> str:
     """The ticket the body's `Ticket:` line names, or `none`, as profile.py's `ticket_named` reads
     it: on a GitHub tracker the issue's number, whatever the pattern; otherwise the key in the
-    profile's pattern. A line that names the wrong tracker's key is refused."""
+    profile's pattern. A line whose first key is another tracker's, such as a Jira key in a pull
+    request from before the repository moved to GitHub Issues, names `none`, so its record can
+    still be written."""
     profile = load_profile()
     try:
         tracker = profile.defaults(ROOT, repo)["issue_tracker"]
@@ -205,9 +209,9 @@ def ticket_key(repo: str, line: str) -> str:
         raise Unsupported(f"the profile is refused: {e}") from e
     github = tracker != profile.NOT_RECORDED and tracker["kind"] == "github"
     try:
-        t = profile.ticket_named(line, tracker, "" if github else ticket_pattern(repo))
-    except ValueError as e:
-        raise Unsupported(str(e)) from e
+        t = profile.ticket_named(line, tracker, "" if github else ticket_pattern(repo), repo)
+    except ValueError:
+        t = ""
     return t or "none"
 
 

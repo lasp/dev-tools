@@ -493,7 +493,7 @@ number: a match is reduced to its digits, `ticket=59`, its plan
 session-start line shows it as `#59`; the pattern is the `ticket.pattern` the standard records,
 never one detected from the history, and with none it is `(issue-)?\d+`, so `59-x`, `issue-59-x` and `feature/59-x` give `59`. A Jira tracker, or none,
 reads the pattern as recorded (version 9). On a GitHub tracker a branch's number is followed by
-`-`, `_` or the name's end and is not a date's year, so `release/1.2.0`, `2fa-x`, `123abc` and
+`-`, `_` or the name's end, but not by `-NN-NN`, so `release/1.2.0`, `2fa-x`, `123abc` and
 `2026-11-06-x` name no issue, while `hotfix/3`, a number that is the whole last component, names
 issue 3; and `--ticket` takes the bare number, `--ticket 7`, as well as a key in the pattern
 (version 10). The files are read from the
@@ -527,8 +527,9 @@ labels and `--label` without `--issue-state` exit 1. The first line writes an is
 `argument:` as the number. The `unfiled` and `ticket-closed` lines name the tracker, not Jira.
 Version 6: `--ticket-status` on a GitHub tracker and `--issue-state` on any other exit 1 whichever
 row decides; the state block's `ticket: Ticket: …` line is read as "The record" reads a body's
-`Ticket:` line, its refusal an exit 1; and the first line names a pull request whose number is
-the issue's.
+`Ticket:` line, except that a first key of another tracker's form, or a profile that cannot be
+read for a line not starting with `none`, exits 1; and the first line names a pull request whose
+number is the issue's.
 
 Writers: `scripts/next_phase.py`. Readers: `work`.
 
@@ -714,21 +715,25 @@ Pinned by: tests/test_profile.py::test_a_github_tracker_maps_at_most_one_label_t
 
 ## The record
 
-Version: 13
+Version: 14
 
 Fields: `<log>/pr-NNNN.yaml`, `<log>` the records directory `revise`'s "The standard's repository"
-names, first line `contract: 13`. This section is the one
+names, first line `contract: 14`. This section is the one
 place the fields are defined; the records directory's own README says how the revision
 reads them.
 
-- `pr`, the number; `ticket`, the key the body's `Ticket:` line starts with, after a Markdown
-  link's `[`, so `Ticket: none — split from #68` is `none`: a key in the profile's ticket pattern;
-  or, where the profile's tracker is GitHub's, whatever the pattern, the issue's number, written
-  `#<n>` when `issue_tracker.location` is `none` and `<location>#<n>` otherwise; or `none`. On a
-  GitHub tracker a line that starts with another repository's `<owner/repo>#<n>`, or a bare `#<n>`
-  when the location names one, or a key such as `PROJ-9`, is refused, as a refused profile is,
-  rather than recorded as `none`. `scripts/profile.py`'s `ticket_named` is the one reading, which
-  `scripts/next_phase.py` shares.
+- `pr`, the number; `ticket`, the first key on the body's `Ticket:` line, anywhere in it, a
+  link, a URL or emphasis included, or `none`. A line whose value starts with `none`, in any case,
+  is `none`, so `Ticket: none — split from #68` is (version 14). The key is one in the profile's
+  ticket pattern; or, where the profile's tracker is GitHub's, whatever the pattern, the
+  tracker's issue, recorded as its number: its issues URL, `<owner/repo>#<n>`, or `#<n>`. With
+  `issue_tracker.location` `none` the tracker's issues are this repository's, a bare `#<n>` among
+  them; with a location they are that repository's, written `<location>#<n>` (version 14), and a
+  bare `#<n>` counts only when the location is this repository. A line whose first key is another
+  tracker's, a key such as `PROJ-9` or another repository's issue, records `none`, so a
+  repository's pull requests from before it moved to GitHub Issues still regenerate;
+  `scripts/next_phase.py`, routing on the same line, refuses it instead. `scripts/profile.py`'s
+  `ticket_named` is the one reading both share.
 - `stack`, `{part, of, base}` from that line's `part k of n · base: <branch>`, and `claims`, the
   list on the body's `Claims:` line, the criteria this part claims; each `none` when absent.
 - `branch`, the head branch; `head`, the commit the last findings review reviewed, or the merge

@@ -486,21 +486,34 @@ class Rows(unittest.TestCase):
         self.assertEqual(self.run_it(self.fields(), state([]), "--issue-state", "open")[0], 1)
         self.assertEqual(self.why(self.fields(context=""), None, "--ticket-status", "To Do"), ("implement-change", "ticket-to-do"))
 
-    def test_a_jira_ticket_line_names_the_key_it_starts_with(self):
-        self.assertEqual(next_phase.read_state(state([], ticket="PROJ-7 · fixes #59"))["ticket"], "PROJ-7")
-        for line in ("none, tooling work", "none — split from #68", "none — split from PROJ-68", "#59 · x"):
+    def test_a_jira_ticket_line_names_its_first_key(self):
+        for line in ("PROJ-7 · fixes #59", "https://x.atlassian.net/browse/PROJ-7", "**PROJ-7** · x", "`PROJ-7`", "see PROJ-7", "[ PROJ-7](u)"):
+            with self.subTest(line=line):
+                self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "PROJ-7")
+        for line in ("none, tooling work", "none — split from #68", "None — split from PROJ-68", "#59 · x", "Fixes #59"):
             with self.subTest(line=line):
                 self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "")
 
+    def test_a_ticket_line_under_a_refused_profile_exits_1(self):
+        self.github(" []")
+        Path("standards/profile.yaml").write_text("issue_tracker:\n  kind: trello\n")
+        with self.assertRaisesRegex(next_phase.Refused, "pull request #7's Ticket: line cannot be read: the profile's issue_tracker is refused"):
+            next_phase.read_state(state([], ticket="PROJ-7"))
+        self.assertEqual(self.run_it(self.fields(), state([], ticket="PROJ-7"), "--pr", "7")[0], 1)
+        # A none line needs no profile.
+        self.assertEqual(next_phase.read_state(state([], ticket="none — split from #68"))["ticket"], "")
+
     def test_a_pull_request_body_naming_a_github_issue_gives_its_number(self):
         self.github(" []")
-        for line in ("#59 · part 1 of 2 · base: main", "[#59](https://github.com/o/r/issues/59) · x"):
+        for line in ("#59 · part 1 of 2 · base: main", "[#59](https://github.com/o/r/issues/59) · x", "Fixes #59", "**#59** · x",
+                     "https://github.com/example-org/github/issues/59", "example-org/github#59 · x"):
             with self.subTest(line=line):
                 self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "59")
         for line in ("none, tooling work", "none — split from #68"):
             with self.subTest(line=line):
                 self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "")
-        for line, says in (("PROJ-7 · fixes #59", "names PROJ-7, but the tracker is GitHub's"), ("other/r#59 · x", "names other/r#59")):
+        for line, says in (("PROJ-7 · fixes #59", "names PROJ-7, but the tracker is GitHub's"), ("https://x.atlassian.net/browse/PROJ-7", "names PROJ-7"),
+                           ("other/r#59 · x", "names other/r#59"), ("https://github.com/other/r/issues/59", "names https://github.com/other/r/issues/59")):
             with self.subTest(line=line), self.assertRaisesRegex(next_phase.Refused, says):
                 next_phase.read_state(state([], ticket=line))
         rc, out = self.run_it(self.fields(ticket="59", branch="59-x"), state([], ticket="#59"), "--pr", "7")
@@ -510,9 +523,15 @@ class Rows(unittest.TestCase):
 
     def test_a_github_tracker_elsewhere_names_its_issues_by_its_repository(self):
         self.github(" []", location="o/tracker")
-        self.assertEqual(next_phase.read_state(state([], ticket="o/tracker#59 · x"))["ticket"], "59")
-        with self.assertRaisesRegex(next_phase.Refused, "names #59; the tracker's issues are written o/tracker#<n>"):
-            next_phase.read_state(state([], ticket="#59 · x"))
+        for line in ("o/tracker#59 · x", "https://github.com/o/tracker/issues/59"):
+            with self.subTest(line=line):
+                self.assertEqual(next_phase.read_state(state([], ticket=line))["ticket"], "59")
+        for line in ("#59 · x", "other/r#59 · x", "example-org/github#59 · x"):
+            with self.subTest(line=line), self.assertRaisesRegex(next_phase.Refused, "not the tracker's issue; its issues are written o/tracker#<n>"):
+                next_phase.read_state(state([], ticket=line))
+        # A location that is this repository reads a bare #59 as its issue.
+        self.github(" []", location="example-org/github")
+        self.assertEqual(next_phase.read_state(state([], ticket="#59 · x"))["ticket"], "59")
 
     def test_the_first_line_names_a_pull_request_whose_number_is_the_issues(self):
         self.github(" []")

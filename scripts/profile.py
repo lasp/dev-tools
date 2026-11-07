@@ -720,28 +720,46 @@ def resolve(repo: str, root: Path, detect: bool = True) -> dict:
     return resolve_here(repo, root, found, mine)
 
 
-def ticket_named(value: str, tracker, pattern: str) -> str:
+# What a Ticket: line can name on a GitHub tracker, the first in the line counting: an issue's URL,
+# an issue as `<owner/repo>#<n>` or `#<n>`, or a key such as `PROJ-9`, which is another tracker's.
+GITHUB_TICKET = re.compile(r"https?://github\.com/([\w.-]+/[\w.-]+)/issues/(\d+)\b"
+                           r"|(?<![\w&/#])([\w.-]+/[\w.-]+)?#(\d+)\b"
+                           r"|\b([A-Z][A-Z0-9_]*-\d+)\b")
+
+
+def ticket_named(value: str, tracker, pattern: str, here: str | None) -> str:
     """The ticket a pull request body's `Ticket:` line names, `value` being the text after
-    `Ticket:`, or empty for none. The key is read only where the value starts, after a Markdown
-    link's `[`, so `none — split from #68` names none. On a GitHub tracker, `tracker` being the
-    profile's `issue_tracker`, the key is the issue's number, written `#<n>` when its `location` is
-    `none` and `<location>#<n>` otherwise; on any other, the key in `pattern`. Raises ValueError on
-    a GitHub tracker for a value that starts with another repository's issue, or with a key such as
-    `PROJ-9`, rather than read it as naming none."""
-    v = value.strip().removeprefix("[")
+    `Ticket:`, or empty for none. A value that starts with `none`, in any case, names none, so
+    `none — split from #68` does; otherwise the first key anywhere in it counts, in a link, a URL
+    or emphasis included. On a GitHub tracker, `tracker` being the profile's `issue_tracker`, the
+    key is the issue's number, from its issues URL, `<owner/repo>#<n>` or `#<n>`; on any other, the
+    key in `pattern`. `here` is this repository's owner/repo, or None when unknown. A GitHub issue
+    counts when it is the tracker's: with `location` `none`, a bare `#<n>` or this repository's;
+    with a location, that repository's, or a bare `#<n>` when the location is this repository.
+    Raises ValueError on a GitHub tracker when the first key is another repository's issue or a
+    key such as `PROJ-9`; the caller decides whether that is a refusal or none."""
+    v = value.strip()
+    if re.match(r"none\b", v, re.I):
+        return ""
     if tracker == NOT_RECORDED or tracker["kind"] != "github":
-        m = re.match(rf"({pattern})\b", v)
+        m = re.search(rf"\b({pattern})\b", v)
         return m.group(1) if m else ""
+    m = GITHUB_TICKET.search(v)
+    if not m:
+        return ""
     location = tracker["location"]
-    m = re.match(r"([\w.-]+/[\w.-]+)?#(\d+)\b", v)
-    if m and (m.group(1) or "none").lower() == location.lower():
-        return m.group(2)
-    own = "#<n>" if location == "none" else f"{location}#<n>"
-    if m:
-        raise ValueError(f"the Ticket: line names {m.group(0)}; the tracker's issues are written {own}")
-    if (k := re.match(r"[A-Z][A-Z0-9_]*-\d+\b", v)):
-        raise ValueError(f"the Ticket: line names {k.group(0)}, but the tracker is GitHub's, whose issues are written {own}")
-    return ""
+    written = "#<n>" if location == "none" else f"{location}#<n>"
+    if m.group(5):
+        raise ValueError(f"the Ticket: line names {m.group(5)}, but the tracker is GitHub's, whose issues are written {written}")
+    named, number = (m.group(1), m.group(2)) if m.group(2) else (m.group(3), m.group(4))
+    if named is None:
+        ours = location == "none" or (here is not None and here.lower() == location.lower())
+    else:
+        target = here if location == "none" else location
+        ours = target is not None and named.lower() == target.lower()
+    if not ours:
+        raise ValueError(f"the Ticket: line names {m.group(0)}, not the tracker's issue; its issues are written {written}")
+    return number
 
 
 def render(v) -> str:

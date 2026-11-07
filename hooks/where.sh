@@ -28,7 +28,7 @@
 # Where the profile's tracker is GitHub's, the key is the issue's number, `ticket=59`, and the
 # session-start line shows it as `#59`; the pattern is the standard's, never one detected, and
 # with none recorded it is `(issue-)?\d+`. There a branch's number ends at `-`, `_` or the name's
-# end and is not a date's year, and `--ticket` takes the bare number as well as the pattern.
+# end, but not by `-NN-NN`, and `--ticket` takes the bare number as well as the pattern.
 #
 # .review/ is the one at the repository's top level, found from the SessionStart payload's cwd, or
 # the working directory when there is none, so a session in a subdirectory reads the same files.
@@ -132,8 +132,8 @@ else
   matched=""
   [ -n "$key" ] && matched=$(printf '%s' "$branch" | grep -oiE "^([A-Za-z]+/)?($key)" || true)
   ticket=${matched##*/}
-  # On a GitHub tracker the number is followed by `-`, `_` or the name's end, and is not a date's
-  # year: `release/1.2.0`, `2fa-support`, `123abc` and `2026-11-06-cleanup` name no issue, while
+  # On a GitHub tracker the number is followed by `-`, `_` or the name's end, but not by
+  # `-NN-NN`: `release/1.2.0`, `2fa-support`, `123abc` and `2026-11-06-cleanup` name no issue, while
   # `hotfix/3`, a number as the whole last component, names issue 3.
   if [ "$tracker" = github ] && [ -n "$matched" ]; then
     rest=${branch:${#matched}}
