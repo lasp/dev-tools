@@ -378,7 +378,7 @@ record `sources`.
     offered for commit before. A quote no comment, note or held candidate holds is not the
     person's, and comes out. An `unchecked` line is a held candidate's quote from a pull request no
     capture holds: it stays, and the check's first line goes into "Head" as printed. Ask, so `apply` can check the branch out: **Commit and push the
-    branch** (Recommended: the group marks it on GitHub or in any checkout), **Commit only**,
+    branch** (Recommended: the group discusses it on GitHub or in any checkout), **Commit only**,
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,
     or **Let's discuss**. Either commit answer commits the report in `<log>` with the records,
     `<log>/capture/` and the report's clusters file, in

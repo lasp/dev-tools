@@ -8,7 +8,7 @@ when a comment asks one, and nothing in the report changes for it. `<log>` and
 
 **Which report.** With the standard in this repository, the report is in `<log>` here. With it
 in another, this month's report is on the revision branch, `revision/<repo>-YYYY-MM`, until
-`apply` merges it, not on the standard's `main`: read it in the clone `prepare` left when its path
+its pull request merges, not on the standard's `main`: read it in the clone `prepare` left when its path
 is known, or through `using-github` from that branch, and the standard's `main` only for a month
 already merged. The report is the month the question names, or else the newest one found; say
 which month and branch it is in the answer's first line. When the month asked about has no
@@ -26,7 +26,9 @@ Answer from these files, read from the same place as the report, in this order, 
   report was written from, beside the report. A proposal from a cluster names it, `C<n>`, among its
   evidence pointers; its `cluster`, `prs`, `people`, `asked`, `said`, `ask`, `drafted` and `note`
   lines give the principle, the pull requests and people counted, and the clearest quotes.
-- **Each case:** `<log>/capture/pr-NNNN/`, one per pull request the cluster or the evidence names:
+- **Each case:** `<log>/capture/pr-NNNN/`, one per pull request the cluster or the evidence names,
+  and for one named `<repo>/pr-NNNN` in a standard with `profiles/`, that repository's log,
+  `<standard files>/log/<repo>/capture/pr-NNNN/`:
   `items.json`, every guidance item read from it with its verbatim quote, generality, kind and
   principle; `comment-list.json`, every comment with its author, authorship and thread, so a quote
   is read in its thread; `analysis.md`, the analyst's block; `body.md` and `pr.json`, the pull

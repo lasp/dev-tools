@@ -204,4 +204,4 @@ request without a yes. Propose a rule without the
 evidence its Dial requires. Write to Confluence or Jira; an accepted ticket reaches Jira only
 through `ticket-draft`, on the person's yes. Delete a rule's reasoning without
 archiving it first. Write a rule, a rewording or a promotion a gate of `rule-bar.md` fails, unless
-the group marked it `accept, override: <reason>`.
+the group's mark carries `override: <reason>`.

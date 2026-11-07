@@ -11,20 +11,26 @@ candidates.
 **Settle the marks.** The group decides in its own words, wherever it discussed: on a proposal's
 `Mark:` line; with a clone, in the draft pull request `prepare` may have opened on the report's
 branch, found as step 2 finds it and read through `using-github` (each review comment and its
-replies, by the line it is on, the reviews' bodies and the conversation comments), with no clone
-there being none to look for; and in
-meeting notes the driver pastes into `.review/revision/meeting/`, which `prepare` never reads, so
-an ask pasted for `prepare` into `revision/notes/` is not taken for a decision. When that pull
-request exists, or the check for it fails, and its threads cannot be read, stop here as
-`<plugin root>/skills/work/servers.md` says, since a verdict given there would be missed; the
-person can paste the threads into `revision/meeting/` instead. Read them all, then settle each
-proposal to one mark:
+replies, the reviews' bodies and the conversation comments), with no clone, or a branch never
+pushed, there being none to look for; and in meeting notes the driver pastes into
+`.review/revision/meeting/`, which `prepare` never reads, so an ask pasted for `prepare` into
+`revision/notes/` is not taken for a decision. A review comment belongs to the proposal its
+`diff_hunk` ends in, read against the report at the comment's own commit, never the head's line
+numbers, which later edits shift. When the branch was pushed and its pull request's threads
+cannot be read, the server unreachable or the check for the pull request failing, say so as
+`<plugin root>/skills/work/servers.md` words it and ask: **Paste the threads** into
+`revision/meeting/`, read in their place, **Go on without them**, the table saying the pull
+request was not read, or **Stop**. Read them all, then settle each proposal to one mark:
 `accept`, `accept, reworded: "<the words agreed>"`, `decline: <reason>`, `escalate: <reason>`,
 `accept, override: <reason>`, `accept, owner: <name>`, `answer: <the answer>`, or blank, deferred;
 a held proposal or a change to a live data convention given new words takes both parts,
 `accept, reworded: "<words>", override: <reason>` or `accept, reworded: "<words>", owner: <name>`,
-and agreed words that hold a double quote write it as a single one. Or `unclear: <why>`, when
-what was said does not settle it.
+and agreed words that hold a double quote write it as a single one. `reworded` is for a proposal
+with wording: a rule admitted, reworded, promoted or broadened, and an `A-`, `F-` or `D-` entry;
+new words for any other settle it to `unclear`. Or `unclear: <why>`, when what was said does not
+settle it. A `Mark:` line that already holds a mark in one of these forms with a `discussed:`
+line beneath it is one `apply` wrote on an earlier yes: it is settled, and read as the group's
+mark, not as discussion.
 
 Only people's words decide: a reply an agent drafted, whatever its attribution, and a bot's are
 read for what they say, never as the group's verdict; a person's reply in their own words is read
@@ -41,8 +47,9 @@ one line naming each file read from `revision/meeting/`, so a stale one is seen.
 **Write these marks** (Recommended, when none is unclear), **Change some**, the person naming the
 proposal and the mark, or **Let's discuss**. An `unclear` mark is settled with the person before
 anything is written, or left blank, deferred, on their word. On the yes, write each mark on its
-proposal's `Mark:` line and tick the box of each accepted one, the report being the record of
-what the group decided; nothing below reads the discussion again. Every `Mark:` line empty after
+proposal's `Mark:` line, moving any words the group had written there to a `discussed: <their
+words>` line beneath it so none is lost, and tick the box of each accepted one, the report being
+the record of what the group decided; nothing below reads the discussion again. Every `Mark:` line empty after
 that, the meeting having deferred everything: stop, there is nothing to write, and name the
 report's path and, in a clone, its branch. Then, by mark:
 - A proposal not marked `accept` gets no archive entry, no diff line of its own and no ticket. A
@@ -59,7 +66,9 @@ report's path and, in a clone, its branch. Then, by mark:
 - A mark carrying `reworded: "<words>"` drafts those words in place of the rule's proposed
   wording, its `> ` lines, or the drafted entry's statement, the rest of its `entry:` lines kept
   as they are; it is named in the lint like any other change, so the bar judges the words the
-  group agreed.
+  group agreed. With an override too, it is still named: the override waives only the gate the
+  proposal was held on, its lint line going beside the reason, and a failure of any other gate
+  stops as step 2's lint does.
 
 1. **Archive every rule that leaves.** For each rule graduating, retiring, expiring, demoted to
    the prose tier or rewritten, write all of these:
@@ -127,8 +136,9 @@ report's path and, in a clone, its branch. Then, by mark:
    under `mktemp -d` and run `rule_lint.py` on them with `--ledger`, `--instructions` only for a
    linked instruction file, `--repo .`, the `--decisions` and `--profiles` files `prepare.md`
    step 7 names, the copied `decisions.md` in place of its own, and `--changed` naming each accepted proposal that admits,
-   rewords, promotes or broadens a rule, less those accepted with an override, whose lint lines
-   go into the report beside the reason, and less each marked "check from <repo>": that one is
+   rewords, promotes or broadens a rule, less those accepted with an override and no new words, whose lint lines
+   go into the report beside the reason (one reworded with an override is named, as "Settle the
+   marks" says, its held gate's line beside the reason and any other failure stopping), and less each marked "check from <repo>": that one is
    linted apart on its own `--entry` with `--checks sync,wording,status,fields`, since `scope` and
    `anchors` read another repository's code, and named in a second run of the applied copy,
    `--checks budget --changed <its ids>`, so it cannot carry its repositories over budget; its

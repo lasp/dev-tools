@@ -209,7 +209,7 @@ Every finding is a proposal. Every count the revision reports is per rule, never
 - **Corpus:** the shared files in this plugin's `standards/`: the review contract, terminology, cross-repository decisions, context links, the archive and the records.
 - **Dial:** a named threshold in `standards/dials.md`, such as the Admission Dial; the revision applies no number that is not one.
 - **Held candidate:** a proposed rule whose evidence does not yet meet the Dials; the revision keeps it and judges it again as evidence accumulates.
-- **Rule bar:** `standards/rule-bar.md`, what a new or reworded rule passes before the group marks it, its example resolving in merged code.
+- **Rule bar:** `standards/rule-bar.md`, what a new or reworded rule passes before the group decides on it, its example resolving in merged code.
 - **Driver:** the person who runs the month's revision; the role rotates.
 - **Tier:** where a rule is enforced: `prose`, the instruction file only, which the reviewer does not check; `reviewer`, a ledger entry the reviewer checks every diff against; `check`, a tool's configuration, with the ledger entry kept as a pointer (the README's "How the corpus grows").
 - **Provisional, established, graduated:** a rule's status on its ledger entry. A rule is admitted provisional, becomes established when the Established Dial is met, and is graduated when the revision judges that a check enforces it; one that leaves is retired.
