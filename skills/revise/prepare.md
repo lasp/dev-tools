@@ -42,18 +42,31 @@ read; and read the decisions and terminology the changed pages and epics touch, 
 `decisions.md` or `terminology.md` or adds to them. Its proposals go where step 8 puts them. Then
 record `sources`.
 
-1. **Harvest the records.** Run harvest.md's "Records" for each other covered repository, from
-   the later of the window's first day and that repository's adoption date (`revise`'s "The standard's repository"),
-   since a pull request before it was reviewed against no standard, in either row of
-   `revise`'s "The standard's repository", then for this
-   repository last, from the window's first day, since each harvest starts its directories afresh, copying each repository's
-   records into its `<log>` (`revise`'s "The standard's repository") before the next harvest
-   starts, with `python3 "<plugin root>/scripts/archive_records.py" <its records> <its log>`, each
-   replacing a record of the same number, and making `<log>` on the repository's first harvest; the threads stay the source, and the copy lets the
-   history be read without GitHub. Before the first harvest, remove every
-   `.review/harvest/guidance-*/`, so no earlier run's tally is read. Before the next harvest empties its directories, run
-   harvest.md's "Guidance" on each other repository's comment lists, into
-   `.review/harvest/guidance-<repo>/`. The script refuses, copying nothing, when a harvested record
+1. **Load the window from the capture.** Each repository's merged pull requests are harvested,
+   analyzed and read for guidance between revisions, by `revise capture` (`capture.md`), into its
+   `<log>`; this step reads them from there, as fresh as the last capture. This repository is
+   captured only when the log does not hold the window, which its git shows; every other covered
+   repository is captured first, `capture.md` steps 1 to 5 for it, since no git here shows what
+   merged there since its last capture, and that capture's `pending` sends only the pull requests
+   new or changed since to the extractor. First remove every
+   `.review/harvest/guidance-*/`, so no earlier run's tally is read. Then, for each other covered
+   repository, from the later of the window's first day and that repository's adoption date
+   (`revise`'s "The standard's repository"), since a pull request before it was reviewed against no
+   standard, and for this repository last, from the window's first day, run `python3 "<plugin
+   root>/scripts/capture.py" load --log <its log> --since <its first day> --through <the last day>
+   --out <out> --guidance <guidance>`: for this repository, `<out>` is `.review/harvest`,
+   `<guidance>` `.review/harvest/guidance`, the last day the newest that `python3 "<plugin
+   root>/scripts/window_merges.py" --repo . --ref origin/main --since <the window's first day>`
+   prints, or the first day when it prints none, and `--merges` that printout, saved to a file;
+   for another, after its capture, `<out>` is `.review/harvest/captured-<repo>`, `<guidance>`
+   `.review/harvest/guidance-<repo>`, and the last day today, in UTC. An exit 2 names the days, the merges and the failed or missing records the log
+   does not hold: run `capture.md` steps 1 to 5 for that repository, then load again; a second exit
+   2 stops the step with its lines. The block `load` prints is the harvest's report for everything
+   below, its `not read · pr-NNNN` lines the pull requests whose comments were not read for
+   guidance, which go under "Not read"; the records are already in `<log>`, the threads and
+   records in `<out>`, and the guidance slices in `<guidance>`. For each other repository, run harvest.md's
+   "Guidance" from `guidance_check.py` on, with no extractor, into its `<guidance>`, on its loaded
+   slices and the comment lists of the pull requests they hold, leaving out those `not read`. When `capture.md` step 2 runs, `archive_records.py` refuses, copying nothing, when a harvested record
    would drop findings the log's record holds, which the threads cannot rebuild. Show its
    `refused` lines and ask: **Keep those records** (Recommended: rerun with `--keep <n>` for each,
    so the log's record stays as it is and is named under "Head" with its kept findings),
@@ -93,9 +106,12 @@ record `sources`.
    notes as counts, never evidence, and the cost: median and longest open-to-merge time of the
    window's pull requests, and the count merged without a build, whose body has no Already checked
    block.
-2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 wrote; the report
-   cites thread ids. Then run harvest.md's "Guidance" on this repository's comment lists, the
-   others' having run at step 1; into
+2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 loaded that have no
+   block in `.review/harvest/analysis/`, none when the capture analyzed them all, and its
+   `block_tally.py analysis` on every record loaded; the report cites thread ids. Then run
+   harvest.md's "Guidance" from `guidance_check.py` on, with no extractor, on this repository's
+   loaded slices and the comment lists of the pull requests they hold, leaving out those `not read`,
+   the others' having run at step 1; into
    "Head", one guidance line per repository from its check's printout, never counted by hand, and
    under "Not read" each repository's unread slices. What either did not
    read goes under "Not read".
@@ -233,7 +249,10 @@ record `sources`.
    whatever the cluster's kind, an `ask · <cluster>` line in the `guidance_clusters.py`
    printout, and the cluster is a proposal or, failing its cluster's kind's bar in harvest.md's
    "Destinations", held with that bar's reason; an ask on a `covered` line, an `ask ·
-   <covered_by>` line there, is listed under the live entry it names. Each admitted cluster is a proposal of its kind,
+   <covered_by>` line there, is listed under the live entry it names. A line a tally `drafted`
+   line names is a reply its poster sent through a skill, theirs as the tally reads it, and the
+   report marks it drafted with its AI assistance level from the `drafted · <cluster>` or `drafted ·
+   <covered_by>` line, so the meeting knows an agent worded it. Each admitted cluster is a proposal of its kind,
    with the id and destination harvest.md's "Destinations" gives it. A cluster with no `admit` line and a `hold`
    line is held with the tally's criterion. A `covered` line supports the live rule, decision,
    agent guidance entry, data convention or instruction it names, listed under it in "Rules", and
@@ -324,7 +343,8 @@ record `sources`.
     diff and no archive entry. Ask, so `apply` can check the branch out: **Commit and push the
     branch** (Recommended: the group marks it on GitHub or in any checkout), **Commit only**,
     naming the branch and any clone's path, **Stop**, nothing committed and any clone's path named,
-    or **Let's discuss**. Either commit answer commits the report in `<log>` with the records, in
+    or **Let's discuss**. Either commit answer commits the report in `<log>` with the records and
+    `<log>/capture/`, in
     the clone; with no clone, nothing is committed and the question is not asked: the report and
     the records stay in `<log>` here, as `revise`'s "The standard's repository" says, and no draft
     pull request is offered. With a clone, in the same widget, a second question, which counts only with **Commit and push the branch**: open the

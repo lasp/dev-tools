@@ -7,7 +7,7 @@ refuses. Then, for each `general` item, as `docs/contracts.md` "The guidance tal
 Admission Dial in `standards/dials.md` read it:
 
 - `admit · <key> · pr-NNNN · <comment id> · <author> · <kind> · <signal> · <url> · <quote>`: a
-  person's words (`authorship` `human`) that nothing live covers (`covered_by` null) and that meet
+  person's words that nothing live covers (`covered_by` null) and that meet
   the part of their kind's bar the tally can read: for `rule`, `agent-guidance` and `process`, a
   `signal` of `asks for guidance`, `states a principle`, `addresses agents` or `names a habit`; for `data-convention`
   and `decision`, those or `cites a source`, since a source is what their bar asks; for
@@ -21,7 +21,14 @@ Admission Dial in `standards/dials.md` read it:
   person's other general items, of a kind whose bar reads the signal, the criterion `no signal of
   generality` for signal `none` or `signal <signal>, not one that admits`;
 - `support · <key> · pr-NNNN · <comment id> · <author> · <kind> · <url> · <quote>`: an agent's
-  general item (`ai-drafted`) the pull request's author changed as asked, which never admits.
+  general item the pull request's author changed as asked, which never admits.
+
+A person's words are an item whose `authorship` is `human`, or `ai-drafted` in a reply a person
+read before it was posted, its poster's (`docs/design.md` says why): a comment its list gives `kind`
+`reply` whose attribution line, an own line as `record.py`'s `own_lines` reads it with the 🤖 and
+`AI-assisted`, ends with an AI assistance level of `1/5` to `4/5`, the last such line counting, or,
+with no level, carries the wording `reviewed and approved by @`. Every other `ai-drafted` item is an agent's words, a reply at `5/5` or with no sign
+that a person read it included.
 
 `<key>` is `s<n>-<i>`, the item's place: the n-th slice given, from 1, and its index in that
 slice's items, from 0, so a later step names one item however many share a comment.
@@ -29,8 +36,10 @@ slice's items, from 0, so a later step names one item however many share a comme
 An agent's other items, a bot's and every `pr-specific` item are counted, never listed. Lines run
 in the slices' order; then one `ask · <key> · pr-NNNN · <author> · <url>` per `admit` or `covered`
 line whose item's signal is `asks for guidance`, a person asking for the point to be kept, so the
-report names who asked; then a last line, `items: <n> · admit: <n> · covered: <n> · hold: <n> ·
-support: <n> · not listed: <n> · asks: <n>`. A quote is printed on one line, its whitespace runs as one space. Exits 0;
+report names who asked; then one `drafted · <key> · pr-NNNN · <author> · <level> · <url>` per
+`admit`, `covered` or `hold` line from an `ai-drafted` reply, `<level>` its AI assistance level,
+`<n>/5`, or `approved` for the attribution wording, so the report says whose words an agent drafted; then a last line, `items: <n> · admit: <n> · covered: <n> · hold: <n> · support: <n> · not
+listed: <n> · asks: <n> · drafted: <n>`. A quote is printed on one line, its whitespace runs as one space. Exits 0;
 exits 1 with the check's lines when it refuses. Stdlib only.
 """
 
@@ -41,12 +50,36 @@ import contextlib
 import importlib.util
 import io
 import json
+import re
 import sys
 from pathlib import Path
 
 SIGNALS = ("asks for guidance", "states a principle", "addresses agents", "names a habit")
 ANY_SIGNAL = ("tool-config", "exemplar", "review-calibration", "open-question")
 SOURCED = ("data-convention", "decision")
+LEVEL = re.compile(r"(?<![a-z])ai assistance level: *([1-5])/5( *\([^)]*\))?[^a-z0-9?]*$")
+APPROVED = "reviewed and approved by @"
+
+
+def load_record():
+    spec = importlib.util.spec_from_file_location("record", Path(__file__).with_name("record.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def read_level(record, body: str) -> str | None:
+    """The level of a reply a person read, `<n>/5` below 5 or `approved`, or None, read from its
+    attribution lines alone: its own lines, quotes and fenced code aside, with code spans removed,
+    that have the attribution's 🤖 and `AI-assisted` shape (`record.py`'s first AI signature). The
+    last that ends with a level gives it; with none, one carrying the approval wording gives
+    `approved`. A level or the wording in the reply's text is no sign anyone read it."""
+    lines = [line for line in (record.CODE_SPAN.sub("", x) for x in record.own_lines(body.lower()))
+             if record.AI_SIGNATURES[0].search(line)]
+    levels = [m[1] for m in map(LEVEL.search, lines) if m]
+    if levels:
+        return f"{levels[-1]}/5" if levels[-1] != "5" else None
+    return "approved" if any(APPROVED in line for line in lines) else None
 
 
 def load_check():
@@ -56,11 +89,12 @@ def load_check():
     return module
 
 
-def verdict(item: dict) -> tuple[str, str] | None:
-    """The tally's word for one item and what follows its kind, or None when it is not listed."""
+def verdict(item: dict, posted: bool) -> tuple[str, str] | None:
+    """The tally's word for one item and what follows its kind, or None when it is not listed;
+    `posted` when it is a person's words, `human` or an `ai-drafted` reply."""
     if item["generality"] != "general":
         return None
-    if item["authorship"] == "human":
+    if posted:
         if item["covered_by"] is not None:
             return "covered", item["covered_by"]
         if item["kind"] in ANY_SIGNAL or item["signal"] in SIGNALS or (item["kind"] in SOURCED and item["signal"] == "cites a source"):
@@ -78,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("slices", type=Path, nargs="+")
     p.add_argument("--comments", type=Path, nargs="+", required=True)
     args = p.parse_args(argv)
-    check = load_check()
+    check, record = load_check(), load_record()
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
         code = check.main([*map(str, args.slices), "--comments", *map(str, args.comments)])
@@ -88,9 +122,12 @@ def main(argv: list[str] | None = None) -> int:
     counts = {"admit": 0, "covered": 0, "hold": 0, "support": 0}
     items = [(f"s{n}-{i}", it) for n, path in enumerate(args.slices, 1)
              for i, it in enumerate(json.loads(path.read_text())["items"])]
-    asks = []
+    comments = {(c["pr"], c["id"]): c for path in args.comments for c in json.loads(path.read_text())["comments"]}
+    asks, drafted = [], []
     for key, it in items:
-        v = verdict(it)
+        comment = comments[(it["pr"], it["comment_id"])]
+        level = read_level(record, comment["body"]) if it["authorship"] == "ai-drafted" and comment["kind"] == "reply" else None
+        v = verdict(it, it["authorship"] == "human" or level is not None)
         if v is None:
             continue
         word, why = v
@@ -100,9 +137,12 @@ def main(argv: list[str] | None = None) -> int:
         print(" · ".join(cells))
         if word in ("admit", "covered") and it["signal"] == "asks for guidance":
             asks.append(f"ask · {key} · pr-{it['pr']:04d} · {it['author']} · {it['url']}")
-    print("\n".join(asks), end="\n" if asks else "")
+        if level:
+            drafted.append(f"drafted · {key} · pr-{it['pr']:04d} · {it['author']} · {level} · {it['url']}")
+    for extra in (asks, drafted):
+        print("\n".join(extra), end="\n" if extra else "")
     print(f"items: {len(items)} · " + " · ".join(f"{k}: {n}" for k, n in counts.items())
-          + f" · not listed: {len(items) - sum(counts.values())} · asks: {len(asks)}")
+          + f" · not listed: {len(items) - sum(counts.values())} · asks: {len(asks)} · drafted: {len(drafted)}")
     return 0
 
 

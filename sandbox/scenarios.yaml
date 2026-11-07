@@ -122,6 +122,64 @@ scenarios:
       says: ['(?i)gadgets[^\n]*(archive|count|comments)', '(?i)sprockets[^\n]*(archive|count|comments)', '(?i)widgets[^\n]*(swept|analy|threads (are )?read)']
       not_says: ['Harvest it too', '(?i)sprockets[^\n]*would count for nothing']
 
+  - id: revise-prepare-captured
+    repo: widgets
+    setup:
+      - mkdir -p standards
+      - cp "$SBX_FIXTURES/standard-review-rules.md" standards/review-rules.md
+      - git add -f standards && git -c user.name=Sandbox -c user.email=sandbox@example.com commit -qm "Adopt the standard"
+      - git -c user.name=Sandbox -c user.email=sandbox@example.com commit -q --allow-empty -m "Add a rows reader (#7)"
+      - git update-ref refs/remotes/origin/main HEAD
+      - mkdir -p standards/log/widgets/capture/pr-0007
+      - cp "$SBX_FIXTURES/capture/pr-0007/harvest.txt" "$SBX_FIXTURES/capture/pr-0007/pr.json" "$SBX_FIXTURES/capture/pr-0007/comment-list.json" "$SBX_FIXTURES/capture/pr-0007/items.json" standards/log/widgets/capture/pr-0007/
+      - "d=$(date -u +%F); for f in standards/log/widgets/capture/pr-0007/*; do sed -i.bak \"s/DAY/$d/g\" \"$f\" && rm \"$f.bak\"; done; printf '%s %s\\n' \"$(git log -1 --format=%cs -- standards/review-rules.md)\" \"$d\" > standards/log/widgets/capture/covered.txt"
+    origin: "#87"
+    why: >-
+      Runs revise prepare where `revise capture` has already captured the window's one merged pull
+      request into the standard's log, and no GitHub server is connected, so prepare restores the
+      window from the log with `capture.py load` and starts no pr-reader, thread-analyst or
+      guidance-extractor, then stops at the Revision floor, since the one pull request has no record.
+    turns:
+      - /lasp-dev:revise prepare
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)", "mcp__*", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
+    look_at: >-
+      Step 1 runs window_merges.py, which lists pr-0007 from git, and capture.py load with --merges,
+      which restores pr-0007 and prints a harvest block of one merged pull request and no record.
+      No agent is started. The run then asks at the Revision floor (Stop here recommended) or stops
+      there, saying the window has no record.
+    expect:
+      ends: success
+      agents_absent: ["lasp-dev:pr-reader", "lasp-dev:thread-analyst", "lasp-dev:guidance-extractor"]
+      files: [".review/harvest/threads/pr-0007/pr.json", ".review/harvest/guidance/slice-1.json"]
+      says: ['(?i)floor|Write the counts only']
+
+  - id: revise-prepare-uncaptured
+    repo: widgets
+    setup:
+      - mkdir -p standards
+      - cp "$SBX_FIXTURES/standard-review-rules.md" standards/review-rules.md
+      - git add -f standards && git -c user.name=Sandbox -c user.email=sandbox@example.com commit -qm "Adopt the standard"
+      - git -c user.name=Sandbox -c user.email=sandbox@example.com commit -q --allow-empty -m "Add a rows reader (#7)"
+      - git update-ref refs/remotes/origin/main HEAD
+    origin: "#87"
+    why: >-
+      Runs revise prepare where no capture holds the window's merged pull request, with no GitHub
+      server, so capture.py load refuses, naming pr-0007 and the uncovered days, and prepare goes
+      to capture them, which stops at the harvest without a server, as servers.md sets out, rather
+      than reading the window as empty.
+    turns:
+      - /lasp-dev:revise prepare
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)", "mcp__*", "Bash(git push*)", "Bash(git commit*)", "Bash(claude *)"]
+    look_at: >-
+      capture.py load exits 2 with `uncovered` and `uncaptured · pr-0007`; prepare says the window
+      is not captured and that capturing it needs the GitHub server, and never reports zero merged
+      pull requests or writes a report.
+    expect:
+      ends: success
+      says: ['pr-0007|#7', '(?i)captur']
+      not_says: ['(?i)no (pull requests )?merged', '(?i)0 merged']
+      files_absent: ["standards/log/widgets/ratchet-*.md"]
+
   - id: onboard-blanket-answer
     repo: widgets
     origin: "#9"
