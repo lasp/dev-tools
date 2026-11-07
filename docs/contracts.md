@@ -938,6 +938,34 @@ rules that apply.
 
 Pinned by: tests/test_rule_lint.py::test_the_anchor_form_parses
 
+## The capture
+
+Version: 1
+
+Fields: in `<log>`, `capture/pr-NNNN/`, one per merged pull request a capture harvested, each
+written whole by `scripts/capture.py store`: `harvest.txt`, its line of `pr-reader`'s harvest
+block, `pr-NNNN · created <YYYY-MM-DD> · merged <YYYY-MM-DD> · ...`; `pr.json` and
+`comment-list.json`, as "The thread dump" and "The comment list" give them, when its dump had them;
+`items.json`, a slice of "The guidance items" holding this pull request alone, when it had a
+comment list; and `analysis.md`, its block of "The analysis blocks", when it was analyzed. And
+`capture/covered.txt`, one `<from> <through>` line per capture, days as `YYYY-MM-DD`, the days its
+harvest searched. Its record stays `<log>/pr-NNNN.yaml`, written by `archive_records.py`.
+
+`scripts/capture.py load --log <log> --since <day> --through <day> --out <dir> --guidance <dir>
+[--merges <file>]` restores the pull requests captured as merged in those days, to `<out>/threads/
+pr-NNNN/`, `<out>/records/`, `<out>/analysis/` and one `slice-<n>.json` each in `<guidance>`,
+and prints `## harvest — <log> since <day>`, `merged: <n>; records written: <n>; labels unparsed:
+<n>` and their `harvest.txt` lines; or exits 2, writing nothing, printing `uncovered · <from> ·
+<to>` for days no `covered.txt` line covers, `uncaptured · pr-NNNN` for a pull request "The
+window's merges" lists as merged in them with no capture, and `missing · pr-NNNN · record` for a
+capture whose line says `record` and whose log has none.
+
+Writers: `scripts/capture.py store`, run by `revise` `capture` and `prepare` step 1. Readers:
+`scripts/capture.py load`, run by `revise` `prepare` step 1, whose later steps read what it
+restores as they read a harvest.
+
+Pinned by: tests/test_capture.py::test_load_refuses_days_and_merges_not_captured_and_writes_nothing
+
 ## The window's merges
 
 Version: 2
@@ -955,7 +983,8 @@ that adds the document; `doc <path>: predates pr-NNNN [...]`, those opened befor
 opened day pr-NNNN [...]`, those with no `pr.json`; or `doc <path>: not on <ref>` alone (version 2).
 A `--dumps` that is not a directory exits 2.
 
-Writers: `scripts/window_merges.py`. Readers: `revise` `prepare` step 2, which gives each
+Writers: `scripts/window_merges.py`. Readers: `scripts/capture.py load`, at `revise` `prepare`
+step 1, for the pull requests no capture holds; `revise` `prepare` step 2, which gives each
 `diff-probe` the rules whose line names its pull request, and each `every change` claim whose
 document's `doc` line names it.
 

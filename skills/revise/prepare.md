@@ -42,18 +42,28 @@ read; and read the decisions and terminology the changed pages and epics touch, 
 `decisions.md` or `terminology.md` or adds to them. Its proposals go where step 8 puts them. Then
 record `sources`.
 
-1. **Harvest the records.** Run harvest.md's "Records" for each other covered repository, from
-   the later of the window's first day and that repository's adoption date (`revise`'s "The standard's repository"),
-   since a pull request before it was reviewed against no standard, in either row of
-   `revise`'s "The standard's repository", then for this
-   repository last, from the window's first day, since each harvest starts its directories afresh, copying each repository's
-   records into its `<log>` (`revise`'s "The standard's repository") before the next harvest
-   starts, with `python3 "<plugin root>/scripts/archive_records.py" <its records> <its log>`, each
-   replacing a record of the same number, and making `<log>` on the repository's first harvest; the threads stay the source, and the copy lets the
-   history be read without GitHub. Before the first harvest, remove every
-   `.review/harvest/guidance-*/`, so no earlier run's tally is read. Before the next harvest empties its directories, run
-   harvest.md's "Guidance" on each other repository's comment lists, into
-   `.review/harvest/guidance-<repo>/`. The script refuses, copying nothing, when a harvested record
+1. **Load the window from the capture.** Each repository's merged pull requests are harvested,
+   analyzed and read for guidance as they merge, by `revise capture` (`capture.md`), into its
+   `<log>`; this step reads them from there and captures only what is missing. First remove every
+   `.review/harvest/guidance-*/`, so no earlier run's tally is read. Then, for each other covered
+   repository, from the later of the window's first day and that repository's adoption date
+   (`revise`'s "The standard's repository"), since a pull request before it was reviewed against no
+   standard, and for this repository last, from the window's first day, run `python3 "<plugin
+   root>/scripts/capture.py" load --log <its log> --since <its first day> --through <the last day>
+   --out <out> --guidance <guidance>`: for this repository, `<out>` is `.review/harvest`,
+   `<guidance>` `.review/harvest/guidance`, the last day the newest that `python3 "<plugin
+   root>/scripts/window_merges.py" --repo . --ref origin/main --since <the window's first day>`
+   prints, or the first day when it prints none, and `--merges` that printout, saved to a file;
+   for another, `<out>` is `.review/harvest/captured-<repo>`, `<guidance>`
+   `.review/harvest/guidance-<repo>`, and the last day today, in UTC, since its merges are not in
+   this clone's git. An exit 2 names the days and pull requests not yet captured: run
+   `capture.md` steps 2 to 5 for the days from the earliest it names through today, `pr-reader`
+   given that repository and step 3's analysts run for this repository alone, then load again; a
+   second exit 2 stops the step with its lines. The block `load` prints is the harvest's report
+   for everything below; the records are already in `<log>`, the threads and records in `<out>`,
+   and the guidance slices in `<guidance>`. For each other repository, run harvest.md's
+   "Guidance" from `guidance_check.py` on, on its loaded slices and comment lists, with no
+   extractor, into its `<guidance>`. When `capture.md` step 2 runs, `archive_records.py` refuses, copying nothing, when a harvested record
    would drop findings the log's record holds, which the threads cannot rebuild. Show its
    `refused` lines and ask: **Keep those records** (Recommended: rerun with `--keep <n>` for each,
    so the log's record stays as it is and is named under "Head" with its kept findings),
@@ -93,9 +103,11 @@ record `sources`.
    notes as counts, never evidence, and the cost: median and longest open-to-merge time of the
    window's pull requests, and the count merged without a build, whose body has no Already checked
    block.
-2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 wrote; the report
-   cites thread ids. Then run harvest.md's "Guidance" on this repository's comment lists, the
-   others' having run at step 1; into
+2. **Read the threads.** Run harvest.md's "Analysts" on the records step 1 loaded that have no
+   block in `.review/harvest/analysis/`, none when the capture analyzed them all, and its
+   `block_tally.py analysis` on every record loaded; the report cites thread ids. Then run
+   harvest.md's "Guidance" from `guidance_check.py` on, on this repository's loaded slices and
+   comment lists, with no extractor, the others' having run at step 1; into
    "Head", one guidance line per repository from its check's printout, never counted by hand, and
    under "Not read" each repository's unread slices. What either did not
    read goes under "Not read".
