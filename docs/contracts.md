@@ -708,7 +708,7 @@ Pinned by: tests/test_sandbox.py::test_the_no_standard_scenario_quotes_works_no_
 
 ## The profile
 
-Version: 16
+Version: 17
 
 Fields: each key is, first, the repository's standard's, read in the working directory's checkout
 when it is that repository, the owner being the argument's, or the `origin` remote's, never the
@@ -742,7 +742,12 @@ directory's checkout, when it is the repository: the fetched standard its pointe
 standard`, and any other exit 1 is a refusal: a working directory that is not the repository's
 checkout, a pointer that cannot be read, a standard not read, and anything `profile.py <repo>`
 refuses but what is detected, such as a standard that does not cover the repository or that the
-schema refuses (version 15).
+schema refuses (version 15). In every mode, `--defaults` included, a working directory that is
+the plugin's top level, `--root`, or inside it exits 1 before anything is read, with `profile.py:
+the working directory is inside the plugin (<root>), not a repository being worked on`, `<root>`
+the plugin's resolved top level, since `--defaults` too reads the working directory's standard;
+a working directory whose git checkout is the plugin's top level or inside it, such as a
+worktree, is read as that repository instead (version 17).
 Sections a standard's project settings and the default profile set, and a standard's
 `profiles/<repo>.yaml` does not: `issue_tracker` (`kind`, `jira` or `github`; `location`,
 optional, `owner/repo`, the repository whose GitHub issues the project's are, each repository's

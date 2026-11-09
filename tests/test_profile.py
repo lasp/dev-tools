@@ -23,9 +23,15 @@ _spec.loader.exec_module(profile)
 
 
 def run(*args: str) -> tuple[int, str, str]:
+    """profile.main run from a temporary directory, which is no checkout."""
     out, err = io.StringIO(), io.StringIO()
-    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-        rc = profile.main(list(args))
+    here = os.getcwd()
+    with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        os.chdir(tmp)
+        try:
+            rc = profile.main(list(args))
+        finally:
+            os.chdir(here)
     return rc, out.getvalue(), err.getvalue()
 
 
@@ -161,6 +167,40 @@ class Resolve(unittest.TestCase):
     def test_an_unknown_field_exits_1(self):
         rc, _, err = run("someone/x", "--field", "ticket.host")
         self.assertEqual((rc, err), (1, "profile.py: no field 'ticket.host'\n"))
+
+    def test_a_working_directory_inside_the_plugin_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            plugin = Path(tmp).resolve() / "plugin"
+            for d in ("scripts", "standards"):
+                shutil.copytree(ROOT / d, plugin / d)
+            script = str(plugin / "scripts/profile.py")
+            message = f"profile.py: the working directory is inside the plugin ({plugin}), not a repository being worked on\n"
+            for cwd, args in ((plugin, ["someone/x"]), (plugin / "scripts", ["--standard"]), (plugin, ["--defaults", "--field", "issue_tracker.kind"])):
+                out = subprocess.run([sys.executable, script, *args], cwd=cwd, capture_output=True, text=True)
+                self.assertEqual((out.returncode, out.stdout, out.stderr), (1, "", message), (cwd, args))
+            subprocess.run(["git", "init", "-q", tmp], check=True)
+            for cwd in (plugin, plugin / "scripts"):
+                out = subprocess.run([sys.executable, script, "--defaults", "--field", "issue_tracker.kind"], cwd=cwd, capture_output=True, text=True)
+                self.assertEqual((out.returncode, out.stdout, out.stderr), (1, "", message), cwd)
+
+    def test_a_plugin_checkout_worked_on_as_a_repository_is_read(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            plugin = Path(tmp) / "plugin"
+            for d in ("scripts", "standards"):
+                shutil.copytree(ROOT / d, plugin / d)
+            shutil.copy(ROOT / "sandbox/tracker-github/fixture/standard-profile.yaml", plugin / "standards/profile.yaml")
+            for cmd in (["init", "-q"], ["remote", "add", "origin", "git@github.com:someone/plugin.git"], ["add", "-A"],
+                        ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"]):
+                subprocess.run(["git", "-C", str(plugin), *cmd], check=True)
+            worktree = plugin / ".claude/worktrees/w"
+            subprocess.run(["git", "-C", str(plugin), "worktree", "add", "-q", str(worktree)], check=True)
+            script = str(plugin / "scripts/profile.py")
+            for cwd in (plugin, worktree):
+                out = subprocess.run([sys.executable, script, "--defaults", "--field", "issue_tracker.kind"], cwd=cwd, capture_output=True, text=True)
+                self.assertEqual((out.returncode, out.stdout, out.stderr), (0, "github\n", ""), cwd)
+                out = subprocess.run([sys.executable, script, "someone/plugin"], cwd=cwd, capture_output=True, text=True)
+                self.assertEqual((out.returncode, out.stderr), (0, ""), cwd)
+                self.assertIn("standards/profile.yaml", out.stdout.splitlines()[0], cwd)
 
 
 class Defaults(unittest.TestCase):
