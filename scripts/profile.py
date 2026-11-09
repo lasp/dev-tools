@@ -33,7 +33,10 @@ the fetched standard its pointer names, or its own `standards/`. A checkout with
 its message ending "the repository has no standard"; any other exit 1 is a refusal: a working
 directory that is not the repository's checkout, a pointer that cannot be read, a standard not
 read, and anything the repository's profile refuses but what is detected, such as a standard that
-does not cover it or that the schema refuses.
+does not cover it or that the schema refuses. In every mode, `--defaults` included, a working
+directory inside the top level of the plugin this script belongs to, `--root`, exits 1 before
+anything is read, unless the working directory's git checkout is that top level or inside it,
+such as a worktree, which is then read as the repository.
 
 Every one of these files takes the same schema. Any key, or any whole section, may read `not yet recorded`, which is
 printed as it stands: a value nobody has looked up is never guessed. The default profile and a
@@ -815,6 +818,20 @@ def answer(args: argparse.Namespace, root: Path, found, mine) -> tuple[int, str,
     return 0, render(v) + "\n", ""
 
 
+def in_plugin(root: Path) -> bool:
+    """Whether the working directory is `root` or inside it, compared by file identity so a path's
+    letter case does not matter, and the working directory's git checkout is not `root` or inside
+    it: a plugin checkout, or a worktree under it, worked on as a repository is read like any other."""
+    cwd = Path.cwd().resolve()
+    if not any(d.samefile(root) for d in (cwd, *cwd.parents)):
+        return False
+    top = git("rev-parse", "--show-toplevel")
+    if not top:
+        return True
+    top_path = Path(top).resolve()
+    return not any(d.samefile(root) for d in (top_path, *top_path.parents))
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("repo", nargs="?", help="owner/repo, as `git remote get-url origin` names it, without `.git`")
@@ -824,17 +841,25 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1], help="the plugin's top level")
     args = p.parse_args(argv)
     args.root = args.root.resolve()
+    if args.standard and (args.defaults or args.field):
+        p.error("--standard takes no --defaults or --field")
+    if not args.standard and bool(args.repo) == args.defaults:
+        p.error("give a repository or --defaults, one of them")
+    try:
+        inside = in_plugin(args.root)
+    except (ProfileError, OSError) as e:
+        print(f"profile.py: {e}", file=sys.stderr)
+        return 1
+    if inside:
+        print(f"profile.py: the working directory is inside the plugin ({args.root}), not a repository being worked on", file=sys.stderr)
+        return 1
     if args.standard:
-        if args.defaults or args.field:
-            p.error("--standard takes no --defaults or --field")
         try:
             print(standard_directory(args.repo, args.root))
         except (ProfileError, OSError) as e:
             print(f"profile.py: {e}", file=sys.stderr)
             return 1
         return 0
-    if bool(args.repo) == args.defaults:
-        p.error("give a repository or --defaults, one of them")
     try:
         run_owners = owners(args.repo)
     except (ProfileError, OSError) as e:
