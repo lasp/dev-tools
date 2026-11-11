@@ -665,6 +665,68 @@ scenarios:
       agents: [implementation-reviewer]
       says: ["(?i)swallow|except Exception|silently|broad except|skip"]
 
+  - id: verify-adhoc-swallowed
+    repo: widgets
+    setup:
+      - git remote set-head origin main
+      - git config commit.gpgsign false
+      - git checkout -q -B inventory-total
+      - mkdir -p standards && printf '# Decisions\n' > standards/decisions.md && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/swallow-total.py" src/widgets/total.py
+      - cp "$SBX_FIXTURES/swallow-test_total.py" tests/test_total.py
+      - git add src tests && git commit -qm "Total an inventory CSV"
+      - perl -pi -e 's/The sum of the count column\./The sum of the count column, 0 for a file with no rows./' src/widgets/total.py
+      - grep -q '0 for a file with no rows' src/widgets/total.py
+    origin: "ROADMAP.md, A route where the person writes the code: review for work written with no plan"
+    why: >-
+      Verifies the swallowed-exception change as work the person wrote with no plan, committed on
+      a branch with one edit uncommitted, so implement-change's verify runs the build's wave with
+      the goal as its brief and the diff since the default branch, and writes no plan.
+    turns:
+      - /lasp-dev:implement-change verify Total an inventory CSV
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(git commit*)"]
+    look_at: >-
+      implement-change reads verify.md, takes the base from origin/HEAD's merge-base, writes
+      .review/standard.md and runs the wave with Plan none and the goal as the brief. A reviewer
+      raises the swallowed exception as a should-fix or must-fix; the wave may fix it, and step 9's
+      gate lists each fix by finding and file. No plan file is written and nothing is committed.
+    verify:
+      - test -f .review/build/wave-1-conformance.md
+      - "! ls .review/implementation-plan-* 2>/dev/null"
+    expect:
+      ends: success
+      agents: [implementation-reviewer]
+      says: ["(?i)swallow|except Exception|silently|broad except|skip"]
+      files_absent: [".review/implementation-plan-*"]
+
+  - id: verify-asks-goal
+    repo: widgets
+    setup:
+      - git remote set-head origin main
+      - git config commit.gpgsign false
+      - git checkout -q -B inventory-total
+      - mkdir -p standards && printf '# Decisions\n' > standards/decisions.md && echo standards/ >> .git/info/exclude
+      - cp "$SBX_FIXTURES/swallow-total.py" src/widgets/total.py
+      - cp "$SBX_FIXTURES/swallow-test_total.py" tests/test_total.py
+      - git add src tests && git commit -qm "Total an inventory CSV"
+      - perl -pi -e 's/The sum of the count column\./The sum of the count column, 0 for a file with no rows./' src/widgets/total.py
+      - grep -q '0 for a file with no rows' src/widgets/total.py
+    origin: "ROADMAP.md, A route where the person writes the code: review for work written with no plan"
+    why: >-
+      Asks for verify on work written with no plan and gives no goal, so implement-change's
+      verify asks for the goal once before any reviewer runs. Plain words reaching verify is
+      trigger-implement-change-verify's to show.
+    turns:
+      - /lasp-dev:implement-change verify
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: >-
+      implement-change says when the person is needed and asks one
+      question: the goal of the change, beside which untracked files belong to it when there are
+      any. No reviewer runs before the answer.
+    expect:
+      ends: success
+      agents_absent: [implementation-reviewer]
+
   - id: review-agent-guidance
     repo: widgets
     setup:
