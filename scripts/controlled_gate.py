@@ -38,8 +38,9 @@ under one directory and paths past the first GLOB_LIMIT of one glob are not seen
 is a file the session could write. It asks only on a held file it found: a call it cannot read
 passes.
 
-`pre` and `post` always exit 0. `pre` prints `ask` naming the held file and its first line, which
-holds only the key and the warning; otherwise nothing, which lets the call through.
+`pre` prints `ask` naming the held file and its first line, which holds only the key and the
+warning; otherwise nothing, which lets the call through. hooks/controlled-gate.sh lets a call
+through when `pre` fails; when `post` fails, nothing is recorded.
 """
 import glob
 import itertools

@@ -206,29 +206,36 @@ class Gate(unittest.TestCase):
         self.asks("Read", {"file_path": upper})
         self.asks("Bash", {"command": f"cat {upper}"})
 
-    def test_past_the_walk_limit_only_held_files_found_ask(self):
+    def test_past_the_walk_and_glob_limits_only_held_files_found_ask(self):
         sys.path.insert(0, str(ROOT / "scripts"))
         import controlled_gate as gate
         many = make_repo(self.tmp / "many", held=False)
+        top = many / ".review" / "many"
+        (top / "sub").mkdir(parents=True)
         for i in range(6):
-            (many / ".review" / f"f{i}.md").write_text("x\n")
-        payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "grep -r x .review"},
-                              "cwd": str(many), "session_id": "s1"})
-        old = gate.WALK_LIMIT
-        gate.WALK_LIMIT = 3
-        try:
-            self.assertEqual(gate.reads("Bash", {"command": "grep -r x .review"}, str(many)), [])
+            (top / "sub" / f"f{i}.md").write_text("x\n")
+
+        def decision(command):
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
-                gate.pre(payload)
-            self.assertEqual(out.getvalue(), "")
-            gate.WALK_LIMIT = 100
-            (many / ".review" / "held.md").write_text("Controlled: PROJ-1 — CUI\nx\n")
-            with contextlib.redirect_stdout(out):
-                gate.pre(payload)
-            self.assertEqual(json.loads(out.getvalue())["hookSpecificOutput"]["permissionDecision"], "ask")
+                gate.pre(json.dumps({"tool_name": "Bash", "tool_input": {"command": command},
+                                     "cwd": str(many), "session_id": "s1"}))
+            return json.loads(out.getvalue())["hookSpecificOutput"]["permissionDecision"] if out.getvalue() else None
+
+        old = gate.WALK_LIMIT, gate.GLOB_LIMIT
+        gate.WALK_LIMIT, gate.GLOB_LIMIT = 3, 2
+        try:
+            self.assertIsNone(decision("grep -r x .review/many"))
+            self.assertIsNone(decision("cat .review/many/sub/*.md"))
+            (top / "held.md").write_text("Controlled: PROJ-1 — CUI\nx\n")
+            self.assertEqual(decision("grep -r x .review/many"), "ask")
+            self.assertEqual(decision("cat .review/many/*.md"), "ask")
+            (top / "held").mkdir()
+            for i in range(4):
+                (top / "held" / f"h{i}.md").write_text(f"Controlled: PROJ-{i} — CUI\nx\n")
+            self.assertEqual(decision("cat .review/many/held/*.md"), "ask")
         finally:
-            gate.WALK_LIMIT = old
+            gate.WALK_LIMIT, gate.GLOB_LIMIT = old
 
     # Clearance, per item and per session
 
