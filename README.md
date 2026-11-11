@@ -386,8 +386,10 @@ the first line alone passes, and so do a Write that keeps that line, parts such 
 `rm`, `find` without `-exec`, `git status` or `git commit -m`, and every command that does not
 name the file. It is there to
 catch a mistake, not to stop someone determined: a path built from a variable, a program that
-opens a path the command does not name, and a recursive read from above `.review/` are not seen,
-and the record is a file the session could write (`scripts/controlled_gate.py`).
+opens a path the command does not name, a recursive read from above `.review/`, and files past
+the first 5000 under one directory or 500 from one glob are not seen, and the record is a file the
+session could write. It asks only on a file it found: a call it cannot read or check passes
+(`scripts/controlled_gate.py`).
 
 ### Your responsibility
 

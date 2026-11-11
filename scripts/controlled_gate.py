@@ -33,13 +33,13 @@ item too, since only a session already holding the item's text writes that line.
 session's id replaces the record, so a new session asks again.
 
 It is a stop for a mistake, not a lock: a path built from a variable, a program that opens a path
-the command does not name, and a recursive read from above `.review/` are not seen, and the record
-is a file the session could write.
+the command does not name, a recursive read from above `.review/`, files past the first WALK_LIMIT
+under one directory and paths past the first GLOB_LIMIT of one glob are not seen, and the record
+is a file the session could write. It asks only on a held file it found: a call it cannot read
+passes.
 
 `pre` and `post` always exit 0. `pre` prints `ask` naming the held file and its first line, which
-holds only the key and the warning, or `ask` when the payload cannot be read; otherwise nothing,
-which lets the call through. hooks/controlled-gate.sh asks when `pre` fails or prints something it
-cannot read.
+holds only the key and the warning; otherwise nothing, which lets the call through.
 """
 import glob
 import itertools
@@ -51,14 +51,13 @@ import sys
 
 MARK = "Controlled:"
 RECORD = "controlled-cleared.json"
-WALK_LIMIT = 5000     # files looked at under one `.review/` before the check counts it as holding one
-GLOB_LIMIT = 500      # paths one glob may expand to before the check asks
+WALK_LIMIT = 5000     # files looked at under one directory
+GLOB_LIMIT = 500      # paths looked at from one glob
 FIRST_LINE = (["-1"], ["-n", "1"], ["-n1"], ["--lines=1"])
 QUIET = {"ls", "stat", "test", "du", "mkdir", "rmdir", "rm", "touch", "mv", "realpath", "echo",
          "printf", "pwd", "true", "false", "which", "basename", "dirname"}  # show no file's text
 OPERATORS = {"&&", "||", ";", ";;", "|", "|&", "&", "(", ")", "\n"}
 REVIEW_PATH = re.compile(r"(?:[\w.~/+-]*/)?\.review(?:/[^\s'\"`;|&<>()]*)?(?![\w.-])", re.IGNORECASE)
-TOO_MANY = "too many to check"
 
 
 def decide(reason):
@@ -101,7 +100,7 @@ def held_under(directory):
         for name in names:
             seen += 1
             if seen > WALK_LIMIT:
-                return found + [(directory, TOO_MANY)]
+                return found
             path = os.path.join(root, name)
             line = first_line(path)
             if line:
@@ -192,17 +191,14 @@ def named(path):
 
 
 def paths_named(word, cwd):
-    """The paths a word may name, a glob expanded, or None when a glob expands past GLOB_LIMIT."""
+    """The paths a word may name, a glob expanded to its first GLOB_LIMIT paths."""
     found = []
     for value in candidates(word) | {m.group(0) for m in REVIEW_PATH.finditer(word)}:
         if not value or "$" in value:
             continue
         path = os.path.join(cwd, os.path.expanduser(value))
         if re.search(r"[*?[]", value):
-            paths = list(itertools.islice(glob.iglob(path, recursive=True), GLOB_LIMIT + 1))
-            if len(paths) > GLOB_LIMIT:
-                return None
-            found += paths
+            found += itertools.islice(glob.iglob(path, recursive=True), GLOB_LIMIT)
         else:
             found.append(os.path.normpath(path))
     return found
@@ -216,10 +212,7 @@ def bash_reads(command, cwd):
         words = [w for ws, rs, xargs in parts if xargs or not quiet(ws, rs) for w in ws + [t for _, t in rs]]
     found = {}
     for word in words:
-        paths = paths_named(word, cwd)
-        if paths is None:
-            return [(os.path.join(cwd, word), TOO_MANY)]
-        for path in paths:
+        for path in paths_named(word, cwd):
             for held, line in named(path):
                 found.setdefault(os.path.realpath(held), (held, line))
     return list(found.values())
@@ -264,7 +257,7 @@ def cleared(path, session):
 def record(found, session):
     by_file = {}
     for path, line in found:
-        if line != TOO_MANY and record_path(path):
+        if record_path(path):
             by_file.setdefault(record_path(path), set()).add(item_of(line))
     for target, items in by_file.items():
         keys = sorted(cleared(target, session) | items)
@@ -276,11 +269,6 @@ def record(found, session):
 
 
 def reason(found, cwd):
-    for path, line in found:
-        if line == TOO_MANY:
-            return (f"{path} holds more files than the controlled-file check can look at, so it "
-                    "cannot tell whether one opens with Controlled:. Allow this only if it reads no "
-                    "such file.")
     lines = sorted({line for _, line in found})
     items = ", ".join(item_of(line) for line in lines)
     shown = "; ".join(f"{os.path.relpath(path, cwd) if cwd else path} opens with \"{line}\""
@@ -308,10 +296,9 @@ def pre(text):
     try:
         tool, inp, cwd, session = payload(text)
     except (ValueError, AttributeError):
-        decide("The tool call could not be read, so the controlled-file check could not run.")
         return
     found = [(path, line) for path, line in reads(tool, inp, cwd)
-             if line == TOO_MANY or item_of(line) not in cleared(path, session)]
+             if item_of(line) not in cleared(path, session)]
     if found:
         decide(reason(found, cwd))
 

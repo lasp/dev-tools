@@ -206,26 +206,27 @@ class Gate(unittest.TestCase):
         self.asks("Read", {"file_path": upper})
         self.asks("Bash", {"command": f"cat {upper}"})
 
-    def test_too_many_files_to_check_asks(self):
+    def test_past_the_walk_limit_only_held_files_found_ask(self):
         sys.path.insert(0, str(ROOT / "scripts"))
         import controlled_gate as gate
         many = make_repo(self.tmp / "many", held=False)
         for i in range(6):
             (many / ".review" / f"f{i}.md").write_text("x\n")
+        payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "grep -r x .review"},
+                              "cwd": str(many), "session_id": "s1"})
         old = gate.WALK_LIMIT
         gate.WALK_LIMIT = 3
         try:
-            [(_, line)] = gate.reads("Bash", {"command": "grep -r x .review"}, str(many))
-            self.assertEqual(line, gate.TOO_MANY)
-            payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "grep -r x .review"},
-                                  "cwd": str(many), "session_id": "s1"})
+            self.assertEqual(gate.reads("Bash", {"command": "grep -r x .review"}, str(many)), [])
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 gate.pre(payload)
-            self.assertIn("more files than the controlled-file check can look at",
-                          json.loads(out.getvalue())["hookSpecificOutput"]["permissionDecisionReason"])
-            gate.post(payload)
-            self.assertFalse((many / ".review" / gate.RECORD).exists())
+            self.assertEqual(out.getvalue(), "")
+            gate.WALK_LIMIT = 100
+            (many / ".review" / "held.md").write_text("Controlled: PROJ-1 — CUI\nx\n")
+            with contextlib.redirect_stdout(out):
+                gate.pre(payload)
+            self.assertEqual(json.loads(out.getvalue())["hookSpecificOutput"]["permissionDecision"], "ask")
         finally:
             gate.WALK_LIMIT = old
 
@@ -293,20 +294,20 @@ class Gate(unittest.TestCase):
                 record.write_text(text)
                 self.asks("Read", {"file_path": HELD})
 
-    # Failing closed
+    # A call the check cannot read passes
 
-    def test_an_unreadable_payload_asks(self):
+    def test_an_unreadable_payload_passes(self):
         for payload in ("not json",
                         json.dumps({"tool_name": "Read", "tool_input": {"file_path": 7}, "cwd": str(self.repo)}),
                         json.dumps({"tool_name": "Bash", "tool_input": {"command": ["cat", HELD]}, "cwd": str(self.repo)})):
             with self.subTest(payload=payload):
                 for cmd in ([sys.executable, str(SCRIPT), "pre"], [str(GATE), "pre"]):
                     out = subprocess.run(cmd, input=payload, capture_output=True, text=True, check=True).stdout
-                    self.assertEqual(json.loads(out)["hookSpecificOutput"]["permissionDecision"], "ask")
+                    self.assertEqual(out, "")
                 out = subprocess.run([str(GATE), "post"], input=payload, capture_output=True, text=True, check=True).stdout
                 self.assertEqual(out, "")
 
-    def test_a_crash_or_a_garbled_answer_in_the_script_asks(self):
+    def test_a_crash_or_a_garbled_answer_in_the_script_passes(self):
         for body in ("raise RuntimeError('boom')", "print('not a decision')"):
             with self.subTest(body=body):
                 copy = Path(tempfile.mkdtemp(dir=self.tmp))
@@ -317,7 +318,7 @@ class Gate(unittest.TestCase):
                 payload = json.dumps({"tool_name": "Read", "tool_input": {"file_path": "x"}, "cwd": str(self.repo)})
                 out = subprocess.run([str(copy / "hooks" / "controlled-gate.sh"), "pre"], input=payload,
                                      capture_output=True, text=True, check=True).stdout
-                self.assertEqual(json.loads(out)["hookSpecificOutput"]["permissionDecision"], "ask")
+                self.assertEqual(out, "")
 
     def test_the_script_runs_alone_with_no_other_script_beside_it(self):
         alone = Path(tempfile.mkdtemp(dir=self.tmp))
@@ -340,17 +341,17 @@ class Gate(unittest.TestCase):
         self.ran("Read", {"file_path": HELD}, script=False)
         self.passes("Read", {"file_path": HELD}, script=False)
 
-    def test_with_no_python3_a_call_naming_review_asks_and_the_rest_pass(self):
+    def test_with_no_python3_every_call_passes(self):
         bin_dir = self.tmp / "bin"
         bin_dir.mkdir()
-        for tool in ("bash", "cat", "dirname"):
+        for tool in ("bash", "dirname"):
             (bin_dir / tool).symlink_to(shutil.which(tool))
         def run(inp, event="pre"):
             payload = json.dumps({"tool_name": "Read", "tool_input": inp, "cwd": str(self.repo)})
             out = subprocess.run([str(bin_dir / "bash"), str(GATE), event], input=payload, capture_output=True,
                                  text=True, env={"PATH": str(bin_dir)}, check=True).stdout
             return json.loads(out)["hookSpecificOutput"]["permissionDecision"] if out.strip() else None
-        self.assertEqual(run({"file_path": ".review/plain.md"}), "ask")
+        self.assertIsNone(run({"file_path": HELD}))
         self.assertIsNone(run({"file_path": "src/outside.md"}))
         self.assertIsNone(run({"file_path": ".review/plain.md"}, event="post"))
 
