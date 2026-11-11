@@ -99,13 +99,10 @@ Before reading the source, say in a line when the person is needed (the brief, t
 the pull request) and that the branch, build and review loop run without them unless a stop needs
 them.
 
-**Run from the repository being changed.** When the change is to another repository, say so: the
-hooks record under this session's `.review/`, so the Already checked block would count the other
-repository's work as this one's. Ask: **Stop**, to start a session in that repository
-(recommended); **Go on unrecorded**, where the block's gates and tokens read `not recorded` once an
-edit there is made; or **Let's discuss**. The build hook refuses the build's edits in each other
-repository and asks the same; on **Go on unrecorded**, make the refused edit again, and it and
-every later edit there are allowed.
+**Run from the repository being changed.** The hooks record under this session's `.review/`, so
+once the build edits another repository, the Already checked block's gates and tokens read `not
+recorded`, naming that repository. When the change is to another repository, say so once and go
+on; a session started in that repository records its build there.
 
 The request comes from one of these. Find a remote source's tools with a `ToolSearch` keyword
 search for what the tool does, never a server prefix.
