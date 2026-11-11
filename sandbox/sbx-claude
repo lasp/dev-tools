@@ -58,7 +58,8 @@ for served in "$sandbox"/served/*/*.git; do
     done
 done
 
-args=(-p "$prompt" --plugin-dir "${SBX_PLUGIN_DIR:-$sandbox/repos/dev-tools}" --settings "$sandbox/settings.json"
+# The session's name marks it as a sandbox session, so scripts/usage_report.py leaves it out.
+args=(-p "$prompt" --name lasp-dev-sandbox --plugin-dir "${SBX_PLUGIN_DIR:-$sandbox/repos/dev-tools}" --settings "$sandbox/settings.json"
     --setting-sources project,local --mcp-config "$sandbox/mcp.json" --strict-mcp-config --permission-mode dontAsk
     --model "${SBX_MODEL:-sonnet}" --output-format stream-json --verbose --max-budget-usd "${SBX_BUDGET_USD:-5}")
 (cd "$cwd" && claude "${args[@]}" "${extra[@]+"${extra[@]}"}" </dev/null >>"$log" 2>>"$log.stderr") || true

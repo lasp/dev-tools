@@ -208,7 +208,9 @@ bare repository as its push URL; fetches still go to GitHub, from `github.com/<-
 --strict-mcp-config`: the repository's settings and exactly the servers `--mcp-from-user` copied
 from your configuration, an mcp-atlassian server with `READ_ONLY_MODE` set and `--read-only` appended whatever yours has,
 and nothing from your user settings, so your installed plugin, skills,
-hooks and allow rules stay out and a variant is never answered by your installed copy. Checked
+hooks and allow rules stay out and a variant is never answered by your installed copy. It names
+the session `lasp-dev-sandbox` (`--name`), as `run.py` names the judge's, so `scripts/usage_report.py`
+leaves sandbox sessions out of a usage report. Checked
 on Claude Code 2.1.287: both servers connect, `lasp-dev` loads once from the clone, and the
 repository's `CLAUDE.md` loads. (`--restricted` skips `CLAUDE.md`; `--setting-sources` without
 `--mcp-config` drops the servers.) `--setting-sources` does not keep out a `CLAUDE.md` in a

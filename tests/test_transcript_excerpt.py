@@ -20,8 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "feedback-transcript.jsonl"
 DEFAULT = (ROOT / "standards" / "default-profile.yaml").read_text()
 
-# The module reads the internal domains once, at import, from the working directory's standard: a
-# checkout whose standard names `internal.example`.
+# The module reads the internal domains once, at its first redaction, from the working directory's
+# standard: a checkout whose standard names `internal.example`.
 _HERE = Path(tempfile.mkdtemp())
 subprocess.run(["git", "init", "-q", str(_HERE)], check=True)
 subprocess.run(["git", "-C", str(_HERE), "remote", "add", "origin", "git@github.com:someone/thing.git"], check=True)
@@ -33,6 +33,7 @@ try:
     _spec = importlib.util.spec_from_file_location("transcript_excerpt", ROOT / "scripts" / "transcript_excerpt.py")
     excerpt = importlib.util.module_from_spec(_spec)
     _spec.loader.exec_module(excerpt)
+    excerpt.redactions()
 finally:
     os.chdir(_cwd)
     shutil.rmtree(_HERE)
@@ -264,7 +265,7 @@ class Redaction(unittest.TestCase):
     )
 
     def redact(self, text):
-        counts = dict.fromkeys([kind for kind, _, _ in excerpt.REDACTIONS] + ["home"], 0)
+        counts = dict.fromkeys([kind for kind, _, _ in excerpt.redactions()] + ["home"], 0)
         return excerpt.redact(text, counts, "/home/someone"), counts
 
     def test_each_kind_is_removed_and_counted(self):
@@ -306,13 +307,13 @@ class Redaction(unittest.TestCase):
         )
 
     def test_dashed_home_replaces_underscores_too(self):
-        counts = dict.fromkeys([kind for kind, _, _ in excerpt.REDACTIONS] + ["home"], 0)
+        counts = dict.fromkeys([kind for kind, _, _ in excerpt.redactions()] + ["home"], 0)
         out = excerpt.redact("projects/-Users-some-one-repos-x", counts, "/Users/some_one")
         self.assertEqual(out, "projects/-~-repos-x")
         self.assertEqual(counts["home"], 1)
 
     def test_dashed_home_replaces_every_character_but_letters_and_digits(self):
-        counts = dict.fromkeys([kind for kind, _, _ in excerpt.REDACTIONS] + ["home"], 0)
+        counts = dict.fromkeys([kind for kind, _, _ in excerpt.redactions()] + ["home"], 0)
         out = excerpt.redact("projects/-home-john-corp-com-repo", counts, "/home/john@corp.com")
         self.assertEqual(out, "projects/-~-repo")
         self.assertEqual(counts["home"], 1)
@@ -320,7 +321,7 @@ class Redaction(unittest.TestCase):
     def test_dashed_home_starts_at_a_name_boundary(self):
         for text in ("pip install --root /opt/x", "cert-root-ca", "my-root"):
             with self.subTest(text=text):
-                counts = dict.fromkeys([kind for kind, _, _ in excerpt.REDACTIONS] + ["home"], 0)
+                counts = dict.fromkeys([kind for kind, _, _ in excerpt.redactions()] + ["home"], 0)
                 self.assertEqual(excerpt.redact(text, counts, "/root"), text)
                 self.assertEqual(counts["home"], 0)
 
@@ -626,6 +627,14 @@ class InternalDomains(unittest.TestCase):
         rc, out, err = self.run_copy("see https://jira.internal.example/x\n", cwd=self.domains("not yet recorded"))
         self.assertEqual((rc, out), (1, ""))
         self.assertIn("internal links cannot be redacted", err)
+
+    def test_importing_the_module_reads_no_standard(self):
+        code = ("import importlib.util, sys; s = importlib.util.spec_from_file_location('t', sys.argv[1]); "
+                "m = importlib.util.module_from_spec(s); s.loader.exec_module(m); print('imported'); m.redactions()")
+        p = subprocess.run([sys.executable, "-c", code, str(ROOT / "scripts/transcript_excerpt.py")], capture_output=True, text=True,
+                           cwd=self.domains("not yet recorded"))
+        self.assertEqual((p.returncode, p.stdout), (1, "imported\n"))
+        self.assertIn("internal links cannot be redacted", p.stderr)
 
     def test_the_default_profiles_domains_are_redacted_beside_the_standards(self):
         default = DEFAULT.replace("  domains: []", "  domains: [internal.example]")

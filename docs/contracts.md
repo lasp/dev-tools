@@ -1329,7 +1329,8 @@ has no entry.
 
 Writers: people, for `patterns`, `mission`, a raised count and a moved file's entry;
 `check_static.py --update-coupling`, for a lowered count. Readers: `scripts/check_static.py`'s
-`coupling` check.
+`coupling` check; `scripts/usage_report.py`, which reads `patterns` at run time to write a
+question header naming a project as `other`, and exits 1 without them.
 
 Pinned by: tests/test_check_static.py::test_the_update_writes_the_baseline
 
@@ -1501,3 +1502,70 @@ Writers: `scripts/survey.py`. Readers: `onboard`, which presents the rows and ke
 `sandbox/onboard_roundtrip.py`, which reads the candidate and its sources.
 
 Pinned by: tests/test_survey.py::test_the_table_has_its_fixed_header_and_one_row_per_family
+
+## The usage report
+
+Version: 1
+
+Fields: `scripts/usage_report.py`'s `--out`, one JSON object, its keys sorted, counting plugin use
+in the person's transcripts inside the window. Every string in it is a field name or a word from
+the vocabulary: the installed plugin's skill, agent, script and hook names, `other`, Claude Code's
+built-in tool names, the GitHub and Atlassian MCP tools the plugin's skills and agents name
+(`MCP_TOOLS`) as `mcp__<tool>`, their server dropped, any other MCP tool as `mcp__other`, Claude
+Code's auto-mode denial categories (`AUTO_MODE_CATEGORIES`), Claude model ids (opus, sonnet, haiku
+or fable), Claude Code versions, the plugin's commit, the window's times and the fixed words below;
+any other value is written `other`.
+A question header counts only when the files of the skill that asked it hold it as a phrase in the
+same case and no pattern in the plugin's `scripts/coupling.json`, its list of project names,
+matches it. Personal skill and agent names, text, paths
+and repository names never appear. A count of zero is left out; the top-level fields are always
+present.
+
+A sandbox session, one whose main transcript holds a `custom-title` entry `lasp-dev-sandbox` (the
+`--name` `sandbox/sbx-claude` and `run.py`'s judge pass), is left out with its agents. An entry
+whose `uuid` an earlier main transcript held, as a resumed or forked session repeats it, is read
+once, and a request's tokens count once. Entries of a top-level kind the script does not read
+(any but `user`, `assistant`, `attachment` and `system`) are skipped; one of those four kinds not
+in the shape it reads stops the script.
+
+- `schema`: 1. `plugin_commit`: 12 hex digits. `claude_code_versions`, `models`: sorted lists.
+  `window`: `start`, `end`, ISO times in UTC. `sessions`, `turns`: every main transcript with an
+  entry in the window, and every message from the person, plugin use or not.
+- `repos`: `with_plugin_use`, repositories a plugin skill or agent ran in, told apart by their git
+  directory; `with_standard`, those holding `standards/profile.yaml`; `not_a_repository`, working
+  directories that are gone or no git repository now. Any other git failure stops the script.
+- `skills`: per plugin skill, `runs`, `typed`, `model_triggered`, `turns` and `tokens` as
+  `{median, p90}` (nearest rank), `reruns` (a run of the same skill started within 3 of the
+  person's messages of the last), `compacted` (runs a compaction fell in). A run starts at a typed
+  `/<plugin>:<skill>` or a `Skill` call and ends at the next skill start, a personal one or another
+  plugin's typed `/<namespace>:<name>` included, or the session's end. Its turns are the person's
+  messages in it, the typed start included; its tokens are input, cache and output tokens, once per request, with the
+  agents it started.
+- `questions`: per plugin skill, per header, the count of each answer type, `recommended` (the
+  option whose label ends `(Recommended)`), `other_option`, `free_text`, `declined`, `not_shown`
+  (a tool error), and `free_text_median_chars`.
+- `scripts`: per plugin script run by a `Bash` call from the plugin's path, `runs` and `exits`,
+  a count per exit code, or `background`, `interrupted`, `denied` or `error`.
+- `hooks`: per plugin hook, `runs`, `allow`, `ask`, `deny` (its permission decision),
+  `canceled` and `error`.
+- `denials`: per tool, per category (an auto-mode category, `permission_denied`,
+  `dont_ask_mode`, `safety_check` or `user_rejected`), the count inside plugin skill runs, plugin
+  agents, and any agent a plugin skill run started, with the agents below it.
+- `chains`: `transitions`, `"<skill> -> <skill>"` counts from a plugin skill run to the next skill
+  start, once per transcript that continues the run, so a run two forked sessions continue counts
+  twice; `push_after` and `pr_open_after`, per skill, the runs with a `git push`, or a `gh pr
+  create` or `create_pull_request` call.
+- `after_run`: null as the script writes it; the outcomes the skill classifies.
+- `agents`: per plugin agent, `runs`, `models` (runs per model), `tokens` as `{median, p90}`,
+  `unfinished` (its `.meta.json` says `finished: false`).
+- `overlap`: `skills` and `agents`, per plugin name, how many personal skills, commands or agents
+  under the config directory hold the same words or a superset or subset of them; zeros left out.
+- `notes`: null as the script writes it.
+
+`--pending`, never sent, at a path the skill gives under `${CLAUDE_PLUGIN_DATA}`, outside every
+repository: a JSON list of the most recent 40 plugin skill runs, `{skill, started, next_message}`, the person's next message cut to 400 characters or null.
+
+Writers: `scripts/usage_report.py`. Readers: the person, who sees the payload before anything is
+sent.
+
+Pinned by: tests/test_usage_report.py::test_the_payload_has_the_contract_fields

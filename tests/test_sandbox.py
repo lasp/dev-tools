@@ -813,6 +813,7 @@ class Sandbox(unittest.TestCase):
         argv = called.call_args[0][0]
         self.assertEqual(argv[argv.index("--settings") + 1], str(self.sandbox / "settings.json"))
         self.assertEqual(argv[argv.index("--setting-sources") + 1], "project,local")
+        self.assertEqual(argv[argv.index("--name") + 1], "lasp-dev-sandbox")
 
     def test_settings_deny_every_write_tool_of_mcp_atlassian_0_23_1(self):
         writes = """jira_add_watcher jira_remove_watcher jira_create_issue jira_batch_create_issues
@@ -958,7 +959,8 @@ class Served(unittest.TestCase):
         (bin_dir / "claude").write_text("#!/bin/sh\necho count=$GIT_CONFIG_COUNT helper=$GIT_CONFIG_KEY_0\n"
                                         "echo fetch=$(git remote get-url origin)\n"
                                         "echo bare=$(git ls-remote --get-url https://github.com/o/n)\n"
-                                        "echo push=$(git remote get-url --push origin)\n")
+                                        "echo push=$(git remote get-url --push origin)\n"
+                                        "echo args=\"$*\"\n")
         (bin_dir / "claude").chmod(0o755)
         log = sandbox.parent / "log.jsonl"
         subprocess.run([str(ROOT / "sandbox/sbx-claude"), str(sandbox), "r", str(log), "--", "x"], capture_output=True, text=True,
@@ -976,6 +978,9 @@ class Served(unittest.TestCase):
         out = self.session(False)
         self.assertIn("count=1 helper=credential.helper", out)
         self.assertIn("push=https://github.com/o/n.git\n", out)
+
+    def test_the_session_is_named_as_a_sandbox_session(self):
+        self.assertIn("-p x --name lasp-dev-sandbox ", self.session(False))
 
 
 class Smoke(unittest.TestCase):
@@ -1941,3 +1946,10 @@ class RuleCases(unittest.TestCase):
         self.assertFalse(rule_cases.holds("read", "ASK"))
         self.assertTrue(rule_cases.holds("either", "READ") and rule_cases.holds("either", "WARN"))
         self.assertFalse(rule_cases.holds("either", "MAYBE"))
+
+    def test_a_case_runs_under_the_sandbox_name(self):
+        reply = json.dumps({"result": "READ", "total_cost_usd": 0.01})
+        with mock.patch.object(rule_cases.subprocess, "run", return_value=mock.Mock(stdout=reply, stderr="")) as called:
+            rule_cases.ask("rule", "item", "haiku", ".")
+        argv = called.call_args[0][0]
+        self.assertEqual(argv[argv.index("--name") + 1], "lasp-dev-sandbox")
