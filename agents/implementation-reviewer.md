@@ -2,8 +2,8 @@
 name: implementation-reviewer
 description: >
   Verifies a finished change against its agreed plan, running the tests and linters; returns
-  SATISFIED or NOT SATISFIED. Run by the review wave, or asked to "verify this implementation" or
-  "check this is ready to commit".
+  SATISFIED or NOT SATISFIED. Run by the review wave, or asked to "verify this implementation".
+  Work written with no plan reaches it through implement-change's verify, not a direct request.
 tools:
   - Bash
   - Read
@@ -21,7 +21,7 @@ Decide whether a finished change is ready to commit: it passes, it does what was
 
 ## Step 1: Take the Inputs
 
-The caller gives you the plan file path, the brief (goal, scope and non-goals, acceptance criteria), and the base to diff against: a commit; given a branch name, use `git merge-base <branch> HEAD`, so commits that branch gained since the change began are not read, reversed, as part of it. Read the plan file itself, not a summary of it. Review `git diff <base>` plus untracked files — the change is usually uncommitted.
+The caller gives you the plan file path, the brief (goal, scope and non-goals, acceptance criteria), and the base to diff against: a commit; given a branch name, use `git merge-base <branch> HEAD`, so commits that branch gained since the change began are not read, reversed, as part of it. Read the plan file itself, not a summary of it; with `Plan: none` there is no plan file, so read none and judge against the brief. Review `git diff <base>` plus untracked files — the change is usually uncommitted.
 
 On a later round the caller also gives your previous findings. Check each was fixed, and review the whole change again: a fix can break something that passed before.
 
@@ -41,7 +41,7 @@ The caller does not run them, so every round runs them fresh; never carry a resu
 
 ## Step 4: Judge the Change Against the Plan and Scope
 
-Implementation always teaches something the plan could not know, so expect small deviations. Judge the spirit: did the change reach the brief's goal by roughly the agreed route?
+Implementation always teaches something the plan could not know, so expect small deviations. Judge the spirit: did the change reach the brief's goal by roughly the agreed route? With no plan, judge the goal, the scope and the acceptance criteria against the brief; the plan's steps and deviations do not apply.
 
 - **Every acceptance criterion is met**, by whichever step ended up meeting it.
 - **Every plan step is done** or visibly superseded — not stubbed, half-done, or quietly dropped.
