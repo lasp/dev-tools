@@ -28,6 +28,8 @@ notification, next to the code. Write for that moment.
   happens here if `token` is expired?") instead of asserting a finding.
 - Critique the code, not the author: "this drops the error", not "you forgot to
   handle the error". Never speculate about intent or skill.
+- No "just", "simply" or "obviously": they tell the author the fix is easy
+  and add nothing to it, as `writing`'s prose standards, "Overclaiming", say.
 - Blocking concerns come before stylistic ones. An aside that cannot survive
   being last gets dropped.
 

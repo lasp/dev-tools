@@ -2,13 +2,16 @@
 name: implement-change
 description: >
   Takes one change request (a file, a Jira ticket, a GitHub issue or the prompt) to an agreed
-  plan, verified code and an offered pull request. Use when asked to "implement this", "build
-  this feature" or "plan and implement". Not for routing a ticket to its next phase, which is
-  work.
-argument-hint: "[file | ticket key | issue | description]"
+  plan, verified code and an offered pull request; `verify` puts work written with no plan through
+  the same review. Use when asked to "implement this", "build this feature", "plan and
+  implement", "verify this change", "review what I just wrote" or "check this is ready to
+  commit". Not for routing a ticket to its next phase, which is work; a pull request's review,
+  which is pr-review; the tests alone, which is test-suite-review; or one pass over a diff, which
+  is /code-review.
+argument-hint: "[file | ticket key | issue | description] | verify [goal]"
 metadata:
   author: llm-tooling
-  version: 1.19.0
+  version: 1.20.0
 ---
 
 # Implement Change
@@ -22,7 +25,7 @@ it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The p
 
 | Option | Default |
 |---|---|
-| Source | A markdown or text file, a Jira ticket, a GitHub issue or discussion, or the change described in the prompt; asked for when none is given |
+| Source | A markdown or text file, a Jira ticket, a GitHub issue or discussion, or the change described in the prompt; asked for when none is given; a verify asks for its goal instead |
 
 ## How Each Turn Reads
 
@@ -71,6 +74,9 @@ steps that build on it. One with no reason it is not final is a final decision.
 
 **Read on these paths only:**
 
+- **Invoked as `verify`, or asked to review or verify work written with no plan.** Read
+  `${CLAUDE_SKILL_DIR}/verify.md` in place of steps 1 to 7 and of the next bullet: only an
+  approved plan at `where.sh`'s `plan=` for this branch or ticket goes to `resume.md`.
 - **A plan for this work may exist.** Before step 1, run `where.sh --fields`, with `--ticket <key>`
   when the invocation names a ticket. When its `plan=` file exists, or with no ticket a draft
   `.review/implementation-plan-*.md`, one with no `Approved by:` line, not yet branched for,
@@ -99,13 +105,10 @@ Before reading the source, say in a line when the person is needed (the brief, t
 the pull request) and that the branch, build and review loop run without them unless a stop needs
 them.
 
-**Run from the repository being changed.** When the change is to another repository, say so: the
-hooks record under this session's `.review/`, so the Already checked block would count the other
-repository's work as this one's. Ask: **Stop**, to start a session in that repository
-(recommended); **Go on unrecorded**, where the block's gates and tokens read `not recorded` once an
-edit there is made; or **Let's discuss**. The build hook refuses the build's edits in each other
-repository and asks the same; on **Go on unrecorded**, make the refused edit again, and it and
-every later edit there are allowed.
+**Run from the repository being changed.** The hooks record under this session's `.review/`, so
+once the build edits another repository, the Already checked block's gates and tokens read `not
+recorded`, naming that repository. When the change is to another repository, say so once and go
+on; a session started in that repository records its build there.
 
 The request comes from one of these. Find a remote source's tools with a `ToolSearch` keyword
 search for what the tool does, never a server prefix.
@@ -417,8 +420,10 @@ that waits for their answer is not an end.
 ## Rules
 
 - **The person approves the plan before any file is touched**, and approves the diff before it is
-  committed. The plan's approval is an answer to step 5's gate, or a request that names it: an
-  instruction given before the plan is shown that does not, such as "take your recommended answer
-  to every question", settles the gate's other questions, never the approval.
+  committed. A verify has no plan: the person asked for a review of work already written, and
+  the wave's fixes are shown at the diff gate. The plan's approval is an answer to step 5's gate,
+  or a request that names it: an instruction given before the plan is shown that does not, such
+  as "take your recommended answer to every question", settles the gate's other questions, never
+  the approval.
 - **Never invent a requirement the source does not carry.** A gap is an assumption you state in the
   brief or a question you ask, not a decision you bury in the code.

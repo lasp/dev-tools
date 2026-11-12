@@ -102,8 +102,7 @@ standard, its profile and the default values are both refused, or a gate pattern
 tried a Write, Edit or NotebookEdit in another repository while it was recorded, with the session's
 working directory still in the build's repository, reads `Gates: not
 recorded, this session also <edits> while its build was recorded here`, where `<edits>` joins with
-` and ` one `edited <repository>`, or `tried to edit <repository>` when every attempt there was
-refused, per repository, named by its top-level directory's name and never by a path or remote,
+` and ` one `edited <repository>` per repository, an attempt included, named by its top-level directory's name and never by a path or remote,
 and `Tokens since the build started: not recorded` (version 10). A pattern a
 profile leaves out takes the default profile's value as every left-out key does. Optional: `Depth:`, one of light, standard or
 deep, read into the record's `inner.depth` (version 2); `Reopened:`, one line per reopened thread or `session-<pr>-<n>` reopen, read into the list

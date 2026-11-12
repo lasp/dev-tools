@@ -109,7 +109,7 @@ Evaluate every change against:
 2. **Security** — injection, exposed secrets, unsafe deserialization, missing auth checks, path traversal.
 3. **Performance** — needless allocations, O(n²) where O(n) is available, missing indexes, unbounded queries, repeated expensive work.
 4. **Style and consistency** — naming, organization, and idioms measured against Step 2 and the surrounding code.
-5. **Test coverage** — new paths tested, edge cases covered, existing tests updated for changed behavior, as the caller's test checklist sets out.
+5. **Test coverage** — new paths tested, edge cases covered, existing tests updated for changed behavior, as the caller's test checklist sets out; and which tests the diff adds that CI does not run, read from its workflow's test commands and the tests' markers or paths, never by running them.
 6. **Documentation** — public APIs documented, complex algorithms explained, breaking changes noted.
 7. **Changelog and version** — whether an entry or bump is owed is the repo's call: infer it from what exists (`CHANGELOG.md`, `.changeset/`, `changelog.d/`; the version in `pyproject.toml`, `package.json`, `Cargo.toml`) and what comparable merges touched. Where release tooling generates them, nothing is owed.
 8. **Unnecessary abstraction** — flag a new private helper that should be inlined at its call sites. The signs, for a function or method under 10 lines, are weighed together rather than flagged one at a time; a short helper called from many places may well earn its place:
@@ -168,7 +168,7 @@ Raise nothing the contract's "Do not flag" lists, nits included. Finding prose i
 
 ## Test Coverage Assessment
 
-<Whether the changes are adequately tested. Name specific untested paths and missing edge cases.>
+<Whether the changes are adequately tested. Name specific untested paths, missing edge cases, and each test the diff adds that CI's configuration or markers leave out.>
 
 ## CI/Workflow Status
 

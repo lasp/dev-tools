@@ -125,6 +125,21 @@ scenarios:
       ends: success
       skills: [implement-change]
 
+  - id: trigger-implement-change-verify
+    repo: widgets
+    setup:
+      - perl -pi -e 's/raise ValueError\(f"part \{w\.part\} is listed twice"\)/counts[w.part] += w.count; continue/' src/widgets/inventory.py
+      - grep -qF 'counts[w.part] += w.count; continue' src/widgets/inventory.py
+    origin: "ROADMAP.md, A route where the person writes the code: review for work written with no plan"
+    why: Asks in plain words for a review of a change the person wrote by hand, with no plan and no goal, so a run shows whether it reaches implement-change's verify, which stops at its goal question.
+    turns:
+      - I changed by_part by hand. Can you check it's ready to commit?
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)", "Bash(git commit*)", "Edit", "Write(*/repos/widgets/[!.]*)"]
+    look_at: The request reaches implement-change, which says when the person is needed and asks for the goal of the uncommitted change.
+    expect:
+      ends: success
+      skills: [implement-change]
+
   - id: trigger-onboard
     repo: widgets
     turns:

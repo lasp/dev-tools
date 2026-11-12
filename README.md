@@ -110,10 +110,9 @@ Start Claude Code in the repository you are changing. The build's lock and recor
 `.review/` of the session's working directory. A build whose session makes or tries a Write,
 Edit or NotebookEdit in another repository records its gates and tokens as `not recorded` rather
 than as counts, naming that repository by its directory's name. Not seen: a change made there only
-through shell commands, and edits made after the session's working directory moves into it. While the build's session also holds the lock, the build hook refuses
-such edits in each other repository, so the person can stop or go on unrecorded, until a refused
-edit there is made again; that edit and every later one there are allowed. A `pr-fix` session, with no build open,
-is not refused. A repository inside the session's, such as a submodule, one the session's sits in,
+through shell commands, and edits made after the session's working directory moves into it. The
+build hook only marks such an edit; it never refuses one. A `pr-fix` session, with no build open,
+marks nothing. A repository inside the session's, such as a submodule, one the session's sits in,
 a worktree of the same repository, and a repository holding Claude Code's own directory
 (`~/.claude`, or `CLAUDE_CONFIG_DIR`), for a file in that directory, are not another repository;
 a repository cloned inside that directory, such as an installed plugin, is.
@@ -387,8 +386,10 @@ the first line alone passes, and so do a Write that keeps that line, parts such 
 `rm`, `find` without `-exec`, `git status` or `git commit -m`, and every command that does not
 name the file. It is there to
 catch a mistake, not to stop someone determined: a path built from a variable, a program that
-opens a path the command does not name, and a recursive read from above `.review/` are not seen,
-and the record is a file the session could write (`scripts/controlled_gate.py`).
+opens a path the command does not name, a recursive read from above `.review/`, and files past
+the first 5000 under one directory or 500 from one glob are not seen, and the record is a file the
+session could write. It asks only on a file it found: a call it cannot read or check passes
+(`scripts/controlled_gate.py`).
 
 ### Your responsibility
 
@@ -446,7 +447,7 @@ The skills a person types, in the order they meet them:
 - `work`: works out where a ticket or its pull request stands and runs the next phase; each phase
   keeps its own approvals.
 - `implement-change`: takes one change to an agreed plan, code verified by a wave of reviewers, and
-  an offered pull request.
+  an offered pull request; `verify` runs the same wave on work you wrote with no plan.
 
 ![Inside implement-change: a plan loop of up to three rounds, your approval of the plan, up to five review rounds with fresh agents, up to two simplify passes, then your review of the diff](docs/img/build-loop.svg)
 
@@ -499,7 +500,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `quickstart` | typed or asked | Say where this machine and repository stand, what to fix first and what to type next, with `onboard` first in a repository with no standard, and the skills by group; with a question, answer it from the plugin's own files. Reads only |
 | | `onboard` | typed or asked | Survey a repository for the facts the plugin works from, its committed templates, contributing guide, test commands (instruction files, docs, CI) and pre-commit, and its history, and the tracker's statuses and fields when the servers are connected; say where each fact would be read from, the repository's own file first; first asking where the repository's rules live, here or in another repository's standard; then ask where facts should live, which value holds where the repository's files disagree, and which proposals to keep. Writes only `.review/onboard/` unless the person says yes to a named write: the repository's standard, or its `standard:` pointer and the standard's `profiles/<repo>.yaml` |
 | Phases, also run alone | `ticket-draft` | typed or asked | Turn a prompt, an existing ticket or a pull request with none into one in the team's format, a Jira ticket or, on a GitHub tracker, an issue: duplicates merged, dependencies, follow-up tickets for out-of-scope work, an in-session estimate, and an Open Questions section for what cannot be settled yet. `investigate` answers your questions about the code first; `settle` folds later answers in and records a departure the work keeps as a comment; `reformat` moves a drafted ticket to the current format, asking only what the format needs. Run directly for an epic or a group ticket session |
-| | `implement-change` | typed or asked | Take a change request to an agreed plan, an implementation and a diff verified by a wave of reviewers |
+| | `implement-change` | typed or asked | Take a change request to an agreed plan, an implementation and a diff verified by a wave of reviewers; `verify` runs the wave on work written with no plan |
 | | `pr-create` | typed or asked | Write a reviewer-focused description and open the pull request |
 | | `pr-review` | typed or asked | Review a pull request and present the findings at their lines, each citing a rule, decision, term, ticket criterion or test check when one applies, and no key otherwise; draft comments when asked, and post one review with the verdict you choose only on your yes. A posted review's threads are what the revision reads; a review kept local leaves it nothing |
 | | `pr-fix` | typed or asked | Assess every thread, your own comments included, take your agree, disagree or discuss on each (posting them is optional, and each run links the ones not yet on GitHub), offer a rebase when the branch is behind, then plan, implement and reply to the agreed feedback on a pull request, people's comments before AI findings |

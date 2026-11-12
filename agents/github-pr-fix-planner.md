@@ -45,7 +45,7 @@ For each row, after Steps 2 and 3, read the file the thread anchors to and the d
 - **Draft answer:** <the answer, on a question>
 ```
 
-Recommend **agree** when the claim holds and the proposed change is in this pull request's scope, **disagree** when the claim does not hold or the change is outside the ticket, with the reason a reply would give, **discuss** when the code alone cannot settle it, and **answer** on a question. A claim that points at a sibling pull request of the stack or upstream, as D-006 says, is an agree whose reason says where it goes. A thread the pull request author opened is assessed like anyone's; one that asks nothing and only tells reviewers something, such as why the code is as it is, is an agree, reply only: `a note for reviewers, no change`.
+Recommend **agree** when the claim holds and the proposed change is in this pull request's scope, **disagree** when the claim does not hold or the change is outside the ticket, with the reason a reply would give, **discuss** when the code alone cannot settle it, and **answer** on a question. A claim that points at a sibling pull request of the stack or upstream, in the repository the code belongs in, is an agree whose reason says where it goes. A thread the pull request author opened is assessed like anyone's; one that asks nothing and only tells reviewers something, such as why the code is as it is, is an agree, reply only: `a note for reviewers, no change`.
 
 Then, after the entries, list the **Conflicts**: each place where a thread a person opened, the author or anyone else, and an AI finding (a thread from a findings review) ask for different things in the same code, one block each:
 
@@ -77,8 +77,9 @@ A findings thread's `Proposed:` line is its work item. The approach implements t
    A comment can point at a symptom of a larger problem; classify that as Needs Clarification,
    sized `changes the plan`.
 5. **Classify the destination.** A comment that belongs in a sibling pull request of the stack,
-   read from the `part k of n` on the dump's `body.md` `Ticket:` line, or upstream as D-006 says,
-   is a **Move**: plan it with where it goes and no code change here.
+   read from the `part k of n` on the dump's `body.md` `Ticket:` line, or upstream, in the
+   repository the code belongs in, is a **Move**: plan it with where it goes and no code change
+   here.
 6. **Write the plan entry.** Clear comments get a concrete approach — what changes, where, and why, against the Step 2 conventions. Needs-Clarification comments get a question precise enough that the answer unblocks implementation, and **no** proposed fix. You cannot ask it yourself — no user is present — so it goes in the plan for the calling session to ask.
 
 ## Step 5: Return the Fix Plan

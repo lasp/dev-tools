@@ -8,7 +8,7 @@ description: >
 argument-hint: "[PR number or URL] [scope] [skip the gate] [rebase]"
 metadata:
   author: llm-tooling
-  version: 2.8.0
+  version: 2.9.0
 ---
 
 # PR Fix
@@ -69,7 +69,7 @@ When it is behind, **stop**: say by how many commits and whether the base's new 
 
 ## 5. Disposition the Threads
 
-Every thread ends this step with one of four dispositions: **agree**, **disagree** or **discuss**, the three verdict words of `pr-review`'s "Whose reply counts", or **answer** for a question. Step 7 refines an agree into one of two kinds, each posted as `Agree`: **move**, for a comment that belongs in a sibling pull request of the stack or upstream as D-006 says, whose reply names where it goes and whose code change here is none; and **reopen**, for a thread whose `Proposed:` line opens `changes the plan`, or a person's thread the author marks as design: the review showed the design is wrong.
+Every thread ends this step with one of four dispositions: **agree**, **disagree** or **discuss**, the three verdict words of `pr-review`'s "Whose reply counts", or **answer** for a question. Step 7 refines an agree into one of two kinds, each posted as `Agree`: **move**, for a comment that belongs in a sibling pull request of the stack or upstream, in the repository the code belongs in, whose reply names where it goes and whose code change here is none; and **reopen**, for a thread whose `Proposed:` line opens `changes the plan`, or a person's thread the author marks as design: the review showed the design is wrong.
 
 **Read them.** One `pr-reader` call in `state` mode, given the repository and the pull request, lists every thread, finding threads and people's threads alike, with its state in the script's words: `agree`, `disagree`, `discuss`, `unanswered`, `unparsed`, `answered` for a question, `none`, and `contested: yes`, and in its last column whether the verdict was judged from a reply in the person's own words (`yes, <login>: <basis>`), and `unclear: <basis>` where the judge could not tell. A contested row shows the first verdict's word in the verdict column and `yes` in the contested column, so read that column before the word.
 
@@ -160,7 +160,7 @@ Get explicit approval before committing. If the person wants changes, go back to
 
 ## 11. Commit
 
-Commit the approved work through `/lasp-dev:commit`, which keeps `.review/` and the plan out — one commit per thread when the fixes are independent, a single commit when they are one coherent change. Use the repo's existing message style. Describe what changed, not that a reviewer asked for it.
+Commit the approved work through `/lasp-dev:commit`, which keeps `.review/` and the plan out — one commit per thread, or per group of threads that share a concern, so each commit answers what its threads asked; a single commit when they are one coherent change. Use the repo's existing message style. Describe what changed, not that a reviewer asked for it.
 
 When step 4's answer was **fix first, rebase before the push**, rebase the committed fixes onto `origin/<base>` now, after `git fetch origin <base>`. Conflicts stop the skill, as in step 4. Step 9's checks ran before the rebase: say so at step 12, and run step 9 again first when the person asks.
 
@@ -178,6 +178,8 @@ Its first line carries the decision when it is not yet on GitHub, so each thread
 - **Discuss**: `Discuss` on the first line when not yet posted, then what is open, in the person's words.
 
 A conversation-tab comment is not a thread and is read at the harvest, not here; reply only if the person asks.
+
+**A summary comment**, optional: when the round answers several threads, offer one comment on the pull request's conversation that lists what was fixed, moved, declined and left in discussion, each with its thread's link. It follows the Substance, Form and Attribution sections of `comment-style.md`, ends with the attribution line, and is drafted with the replies and counted among them, so it posts only under their yes; under **Push only** it is dropped, and the next run drafts it afresh.
 
 **Ask once, for the push and the replies.** Show every reply in final form, with its thread's link, then ask, naming the branch, the commits and the count: **Push N commits to `<branch>` and post M replies** (Recommended); **Push only**, keeping the replies for the next run; **Edit the replies**; or **Stop here**, keeping the commits local. When the round has no new commits, the options are **Post M replies** (Recommended), **Edit the replies** or **Stop here**. Where the branch was rebased, at step 4 or step 11, the push is not a fast-forward: say so in the question, and push with `--force-with-lease`, which refuses if the remote moved since you fetched. **Never plain `--force`**, and never push to the base branch. Where the repository's instructions forbid an agent's push, the first option is to post the replies once the person has pushed, as `using-github`'s "Pushing" says. Silence or an ambiguous answer pushes and posts nothing.
 

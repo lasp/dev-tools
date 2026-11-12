@@ -37,6 +37,8 @@ the review contract's product scenarios, `review-specified-retry`, whose review 
 a retry the plan specifies, `review-fail-loud-decision`, whose wave raises a silent cache fallback
 under an adopted fail-loud decision, and `review-swallowed-exception`, whose wave raises a swallowed
 exception under the contract's floor alone,
+`verify-adhoc-swallowed`, which runs `implement-change verify` on the same change written with no
+plan, and `verify-asks-goal`, which asks for the goal of an unplanned change before any reviewer,
 `review-agent-guidance`, whose wave loads a standard's agent guidance and data conventions and raises
 a deprecated alias under its agent guidance against compatibility shims, and its control,
 `review-agent-guidance-control`, the same without the agent guidance,

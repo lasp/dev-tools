@@ -23,15 +23,15 @@ in place of the digest, its first line naming the error.
 
 ## Inputs
 
-The caller gives you: the path of your brief, the plan file path, the ticket's context page
-when one exists, `.review/standard.md` when it exists, and the base to diff against: a commit;
-given a branch name, use `git merge-base <branch> HEAD`, so commits that branch gained since the
-change began are not read, reversed, as part of it. On a later wave, also the delta since the
-previous wave and your focus's previous findings.
+The caller gives you: the path of your brief, the plan file path, or `none` for work written
+with no plan, the ticket's context page when one exists, `.review/standard.md` when it exists,
+and the base to diff against: a commit; given a branch name, use `git merge-base <branch> HEAD`,
+so commits that branch gained since the change began are not read, reversed, as part of it. On a
+later wave, also the delta since the previous wave and your focus's previous findings.
 
 Read the brief first and hold to it: its "Raise" is your whole job, its "Leave to others" is
 owned by another reviewer in the same wave, and its "Read first" says where the rules live.
-Then read the plan, then `git diff <base>` plus untracked files; the change is usually
+Then read the plan, if there is one, then `git diff <base>` plus untracked files; the change is usually
 uncommitted. Read the code around each hunk, not only the hunk.
 
 ## What you raise

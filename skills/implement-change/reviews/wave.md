@@ -1,12 +1,14 @@
 # The review wave
 
-How a change is verified: `implement-change` step 8 runs it for a build, and `pr-fix` step 9 for
-a round of review fixes. The plan file, the brief and the report folder are the caller's:
-`implement-change` writes the wave reports to `.review/build/`, `pr-fix` to `.review/fix/pr-<n>/`,
-so a round of fixes leaves the build's reports alone. The base is a commit, never a branch name:
-`implement-change` passes `git merge-base <the plan's Base: branch> HEAD`, and `pr-fix` passes
-`HEAD`. Every reviewer and `surface_diff.py` get that commit, so commits the base branch gains
-during the build are not read, reversed, as part of the change. Each profile value on this page
+How a change is verified: `implement-change` step 8 runs it for a build, `pr-fix` step 9 for a
+round of review fixes, and `implement-change verify` for work written with no plan, its plan file
+`none` and its brief the goal the person gave. The plan file, the brief and the report folder are
+the caller's: `implement-change` writes the wave reports to `.review/build/`, a verify included,
+`pr-fix` to `.review/fix/pr-<n>/`, so a round of fixes leaves the build's reports alone. The base
+is a commit, never a branch name: `implement-change` passes `git merge-base <the plan's Base:
+branch> HEAD`, a verify `git merge-base <the default branch> HEAD`, and `pr-fix` passes `HEAD`.
+Every reviewer and `surface_diff.py` get that commit, so commits the base branch gains during the
+build are not read, reversed, as part of the change. Each profile value on this page
 is `python3 "<plugin root>/scripts/profile.py" <owner/repo> --field <key>`.
 
 ## Depth
@@ -163,7 +165,8 @@ Stop and bring the person the latest wave's reports on any of these, the one lis
 - A fix would weaken an existing test: a loosened tolerance or assertion, a removed
   `pytest.raises`, a new skip or xfail, a dropped parametrize case (`stopped for a person:
   weakens <test>`).
-- A finding would change the agreed plan (`stopped for a person: changes the plan`).
+- A finding would change the agreed plan (`stopped for a person: changes the plan`), or, with no
+  plan, the brief's goal or scope (`stopped for a person: changes the brief`).
 - A finding would move code across a repository boundary (`stopped for a person: crosses a
   repository`).
 - `downstream check` says a consumer breaks (`stopped for a person: breaks <consumer>`).
