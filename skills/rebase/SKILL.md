@@ -4,7 +4,7 @@ description: >
   Rebases the current branch onto the fetched default branch, or its pull request's base,
   resolving every conflict whose resolution the two sides' commits show, dropping commits the
   target already holds, and asking only where the sides want incompatible behavior; then pushes
-  with a pinned lease on your yes. Use when asked to "rebase this", "rebase onto main", "replay my
+  on your yes, its lease pinned where the branch is published. Use when asked to "rebase this", "rebase onto main", "replay my
   commits on top of main", "bring my branch up to date with main" or "my branch is behind main".
   Not for answering a review: pr-fix rebases within its round by this skill's conflict rules.
 argument-hint: "[target] [just show me]"
@@ -58,7 +58,8 @@ Otherwise `git status -sb`, and stop, saying why and what the person can run, wh
 - HEAD is detached, or the current branch is the target itself.
 
 When the rules this session loaded (`CLAUDE.md` and what it imports, `AGENTS.md`, the standard's
-rules) forbid a rebase or a force-push in words that name it, say so, quoting the line, and ask:
+rules) forbid a rebase, a force-push or rewriting a branch's published history in words that
+name it, say so, quoting the line, and ask:
 stop and merge the target instead, which the person runs (Recommended, as the rules ask); rebase
 anyway; or `Let's discuss`. General care with git, such as asking before a destructive command,
 forbids neither: invoking this skill is the ask.
@@ -123,9 +124,13 @@ the rebase replaces what they did. When any merges another branch, recommend kee
 (`git cherry <target> HEAD` marks it `-`). It does not catch one the target holds in another form:
 a pull request merged by squash, possibly with review changes, or a fix cherry-picked and amended.
 Compare the branch's commits with the target's since the merge base, by subject, pull request
-number and diff. When the branch's first commits are already in the target this way, say which
-and why, and rebase with `git rebase --onto <target> <the last of them>`, which drops them in one
-step. Any later one is dropped at its stop in step 4.
+number and diff. When the branch's first commits are already in the target this way, every change
+each one makes present in the target as written or as review changed it, say which and why, and
+step 4 rebases with `git rebase --onto <target> <the last of them>`, which drops them in one step.
+A commit that also carries a change the target lacks, such as one amended after the squash, is
+replayed instead, and step 4 takes the target's side only of the hunks the target holds. Any later
+duplicate is dropped at its stop in step 4. When the person said to keep every commit, use no
+`--onto`: step 4 asks at each.
 
 ## 3. Read the Test Command
 
@@ -136,7 +141,8 @@ without it.
 
 ## 4. Rebase and Resolve
 
-Print `git rev-parse HEAD`, the recovery point, then `git rebase <target>`. At each stop, take
+Print `git rev-parse HEAD`, the recovery point, then `git rebase <target>`, or the `--onto` form
+step 2 chose. At each stop, take
 every conflicted file (`git diff --name-only --diff-filter=U`) and read both sides of each hunk,
 with the commit being replayed (`git show REBASE_HEAD`) and what the target changed in that file
 since the merge base.
@@ -160,8 +166,9 @@ other's. Among them:
   separate tests and functions, all kept, in the order the file uses;
 - the same change on both sides, or one side's fuller version of it: keep the fuller one;
 - a commit the target already holds, as step 2 describes, possibly with review changes since:
-  take the target's side of each hunk, and when the commit then changes nothing, `git rebase
-  --skip` it and name it in step 6;
+  take the target's side of each hunk the target holds, and when the commit then changes
+  nothing, `git rebase --skip` it and name it in step 6. When the person said to keep every
+  commit, ask at each instead;
 - a lockfile (`uv.lock`, `poetry.lock`, `package-lock.json`, `Cargo.lock` and the like) or other
   generated file: resolve its sources, then regenerate it with the repository's tool (`uv lock`,
   `npm install --package-lock-only` and the like) when that tool is installed. Without the tool,
@@ -190,8 +197,8 @@ or "use origin/main's version", run `git checkout HEAD -- <file>`, not `git chec
 -- <file>`. During a rebase HEAD is the target plus the branch's commits replayed so far, so it
 keeps their changes to the file; the target's name would silently drop them.
 
-Run nothing that rewrites files while the
-rebase is in progress: no formatter, linter fix or hook. After resolving a file, check that no
+Run nothing else that rewrites files while the rebase is in progress, beyond regenerating a
+lockfile as above: no formatter, linter fix or hook. After resolving a file, check that no
 conflict markers remain, then `git add <file>`, naming it.
 
 When every conflict at a stop is resolved, `git rebase --continue`, with `GIT_EDITOR=true` so
@@ -225,11 +232,12 @@ Never run or print plain `--force`, a bare `--force-with-lease`, or a push witho
 `refs/heads/<dest>` as step 2 chose it, and neither the target's branch nor any remote's default
 branch. When the check fails, offer no push and print no command, and say why.
 
-Then ask, showing the command: **Push** (Recommended when `<push remote>/<dest>` exists, since
-the pull request shows the old commits until then), **Print it** for the person to run, or
-**Stop here**, keeping the rebase local. A yes the person gave at invocation that named the push
-answers it: say so and run it. When a step-4 conflict was resolved and the test command failed or
-there is none, recommend **Print it**, so the person looks first.
+Then ask, showing the command: **Push**, **Print it** for the person to run, or **Stop here**,
+keeping the rebase local. Recommend **Push**, since a published branch's pull request shows the
+old commits until it runs and a new branch needs it before a pull request can be opened, unless a step-4 conflict was resolved and
+the test command failed or there is none: then recommend **Print it**, so the person looks first.
+A yes the person gave at invocation that named the push answers the question: say so and run it,
+except in that case, where the question is asked again with the resolutions shown.
 
 When the loaded rules forbid an agent's push, or the person chose to rebase anyway under a rule
 that forbids a force-push, print the command, quoting the rule, as `using-github`'s "Pushing"

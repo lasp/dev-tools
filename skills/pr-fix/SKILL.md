@@ -61,9 +61,9 @@ When it is behind, **stop**: say by how many commits and whether the base's new 
 
 - **Rebase now** — rebase onto `origin/<base>` before anything is planned; recommended when the base's new commits touch this pull request's files. Not offered on a dirty tree; say why.
 - **Fix first, rebase before the push** — step 11 rebases the committed fixes; recommended otherwise.
-- **Don't rebase** — the round goes on against the current base; recommended only when the loaded instructions forbid a rebase in words that name it, which the question then quotes; general care with git forbids nothing.
+- **Don't rebase** — the round goes on against the current base; recommended only when the loaded instructions forbid a rebase, a force-push or rewriting published history in words that name it, which the question then quotes; general care with git forbids nothing.
 
-"Rebase" at invocation is the first answer, given in advance; on a dirty tree, say it cannot run yet and ask between the other two. **Rebase as `rebase` does** (`${CLAUDE_PLUGIN_ROOT}/skills/rebase/SKILL.md`), by its "Commits the target already holds" paragraph in step 2 and its step 4, "Rebase and Resolve": print the recovery point, drop a commit the base already holds, resolve each conflict the commits show the answer to, and stop only at one where the sides want incompatible behavior, asking as that step does with the rebase paused. Never `--skip` past a conflict. Each resolution and dropped commit goes in step 13's summary.
+"Rebase" at invocation is the first answer, given in advance; on a dirty tree, say it cannot run yet and ask between the other two. **Rebase as `rebase` does** (`${CLAUDE_PLUGIN_ROOT}/skills/rebase/SKILL.md`), by its "Commits the target already holds" paragraph in step 2 and its step 4, "Rebase and Resolve": print the recovery point, drop a commit the base already holds, resolve each conflict the commits show the answer to, and stop only at one where the sides want incompatible behavior, asking as that step does with the rebase paused. Never `--skip` past a conflict. Each resolution and dropped commit goes in step 13's report.
 
 **Do not push the rebase.** Step 12 pushes it together with the fixes.
 
@@ -162,7 +162,7 @@ Get explicit approval before committing. If the person wants changes, go back to
 
 Commit the approved work through `/lasp-dev:commit`, which keeps `.review/` and the plan out — one commit per thread, or per group of threads that share a concern, so each commit answers what its threads asked; a single commit when they are one coherent change. Use the repo's existing message style. Describe what changed, not that a reviewer asked for it.
 
-When step 4's answer was **fix first, rebase before the push**, rebase the committed fixes onto `origin/<base>` now, after `git fetch origin <base>`, resolving and dropping as in step 4. Step 9's checks ran before the rebase: say so at step 12, and run step 9 again first when the person asks.
+When step 4's answer was **fix first, rebase before the push**, rebase the committed fixes onto `origin/<base>` now, after `git fetch origin <base>`, resolving and dropping as in step 4. Step 9's checks ran before the rebase: say so at step 12, and run step 9 again first when the person asks; when a conflict was resolved, recommend running it again.
 
 ## 12. Push and Reply
 
@@ -191,7 +191,7 @@ Do not resolve threads — that is the reviewer's call. Offer it only if the per
 
 ## 13. Report
 
-Give the pushed SHAs, the count of threads agreed and fixed, answered, moved, disagreed and left in discussion, which decisions stayed unposted, each with its thread's link, and that until each is on GitHub the record counts its thread unanswered, so `work` keeps routing to pr-fix and the next run raises it again, and any comment left unaddressed with the reason. Note whether the suite passed at the pushed commit, and whether the branch was rebased, at step 4 or before the push. After a reopen, say that the design goes back to `ticket-draft settle` and `implement-change` now, as step 7 says, and after a kept `ticket/` thread, that `ticket-draft settle` records its departure now. Otherwise the last line names the next command, `/lasp-dev:work`, which picks the next phase; when `work` invoked this skill, skip this offer: `work` asks.
+Give the pushed SHAs, the count of threads agreed and fixed, answered, moved, disagreed and left in discussion, which decisions stayed unposted, each with its thread's link, and that until each is on GitHub the record counts its thread unanswered, so `work` keeps routing to pr-fix and the next run raises it again, and any comment left unaddressed with the reason. Note whether the suite passed at the pushed commit, and whether the branch was rebased, at step 4 or before the push, with each conflict it resolved and each commit it dropped. After a reopen, say that the design goes back to `ticket-draft settle` and `implement-change` now, as step 7 says, and after a kept `ticket/` thread, that `ticket-draft settle` records its departure now. Otherwise the last line names the next command, `/lasp-dev:work`, which picks the next phase; when `work` invoked this skill, skip this offer: `work` asks.
 
 Then release the working tree: `printf '{"session_id":"%s"}' "${CLAUDE_SESSION_ID}" | bash "${CLAUDE_PLUGIN_ROOT}/hooks/build-record.sh" release`. Release it the same way wherever the skill ends sooner, at a stop that hands the work back to the person or when they say to stop; a question that waits for their answer is not an end.
 

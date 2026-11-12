@@ -320,8 +320,9 @@ layer that does not depend on the skill text, and that still asks in auto mode. 
 }
 ```
 
-Nothing in the plugin needs a denied tool: `pr-fix` and `rebase` push with `--force-with-lease` only
-after a rebase the person chose and on their yes, which the `ask` rule covers and the `--force` rules do not match. Rules
+Nothing in the plugin needs a denied tool: `pr-fix` and `rebase` push a rebased, published
+branch with `--force-with-lease` only on the person's yes, which the `ask` rule covers and the
+`--force` rules do not match. Rules
 match a command's prefix, so this is a backstop, not a complete list. The review tool cannot be
 asked about by event, so a posted review's verdict, COMMENT, REQUEST_CHANGES or APPROVE, is the one
 the person chose at `pr-review`'s post step, and the prompt this block keeps asks again. On the

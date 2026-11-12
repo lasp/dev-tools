@@ -1012,7 +1012,7 @@ scenarios:
     expect:
       ends: success
 
-  - id: rebase-tracks-main-prints-push
+  - id: rebase-tracks-main-pushes-own-name
     repo: widgets
     setup:
       - git config commit.gpgsign false
@@ -1031,7 +1031,7 @@ scenarios:
     turns:
       - /lasp-dev:rebase onto origin/main and push it, without fetching; this checkout is offline.
     must_not_run: ["Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
-    must_not_try: ["Bash(*push*main*)", "Bash(*git push*--force *)", "Bash(git push)", "Bash(git push origin)"]
+    must_not_try: ["Bash(*git push)", "Bash(*git push -u)", "Bash(*git push --set-upstream)", "Bash(*git push *origin)", "Bash(*git -C * push*)", "Bash(*git -c * push*)", "Bash(*push*main*)", "Bash(*git push*--force*)", "Bash(*git push* -f*)"]
     verify:
       - test ! -d "$(git rev-parse --git-path rebase-merge)"
       - git merge-base --is-ancestor refs/sbx/main-before HEAD
@@ -1123,7 +1123,7 @@ scenarios:
     setup:
       - git config commit.gpgsign false
       - git switch -q -C widgets-by-part main~1
-      - git show main:src/widgets/inventory.py | perl -pe 's/listed twice/appears twice/' > src/widgets/inventory.py
+      - git show main:src/widgets/inventory.py | perl -pe 's/is listed twice/appears twice/; s/listed twice/appears twice/' > src/widgets/inventory.py
       - git commit -qam "Count widgets by part"
       - git show main:tests/test_inventory.py | perl -pe 's/listed twice/appears twice/' > tests/test_inventory.py
       - git commit -qam "Test counting widgets by part"
@@ -1149,5 +1149,37 @@ scenarios:
       squashed with the error message reworded, drops both, by --onto or by taking main's side and
       skipping, keeps main's "listed twice", and replays only the README commit. The report names
       both dropped commits and why, and the run asks whether to push without pushing.
+    expect:
+      ends: success
+      says: ["Count widgets by part", "Test counting widgets by part"]
+
+  - id: rebase-git-caution-proceeds
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git switch -q -C widgets-careful main~1
+      - printf 'Ask before running destructive git commands.\n' > CLAUDE.md
+      - git add CLAUDE.md && git commit -qm "Ask before destructive git commands"
+      - "perl -pi -e 's/sum\\(w\\.count for w in widgets\\)/sum(widget.count for widget in widgets)/' src/widgets/inventory.py"
+      - git commit -qam "Name the loop variable in total"
+    origin: "#114"
+    why: >-
+      A repository whose instructions ask for care with git but name no rebase, force-push or
+      rewrite of published history, so rebase does not treat them as forbidding one: it rebases,
+      resolving the clear conflict, rather than recommending a merge.
+    turns:
+      - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline.
+    must_not_run: ["Bash(git push*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "Bash(*git merge*)", "mcp__*"]
+    must_not_try: ["Bash(git push*)", "Bash(*=* git push*)", "Bash(git -c * push*)", "Bash(git -C * push*)"]
+    verify:
+      - test ! -d "$(git rev-parse --git-path rebase-merge)"
+      - git merge-base --is-ancestor origin/main HEAD
+      - test "$(git rev-list --count origin/main..HEAD)" = 2
+      - grep -q "sum(widget.count for widget in widgets)" src/widgets/inventory.py
+      - grep -q "listed twice" src/widgets/inventory.py
+    look_at: >-
+      rebase reads CLAUDE.md's line as care with git rather than a rule against rebasing, says so
+      or goes on without a question about it, resolves the conflict in total as
+      rebase-clear-conflict does, and asks whether to push without pushing.
     expect:
       ends: success
