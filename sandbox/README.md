@@ -43,6 +43,9 @@ a deprecated alias under its agent guidance against compatibility shims, and its
 `implement-change-keeps-todo`, which builds by_part and stops at verification (widgets has no test
 environment) with the TODO still in place, the `skill-feedback` previews,
 whose planted credentials are placeholders `run.py` fills in, as [its docstring](run.py) says,
+`usage-report-payload`, `usage-report-standing-answer` and `usage-report-file`, which run
+`usage-report` over fixture transcripts whose runs are labeled by hand and hold its after-run
+labels to them, its send to a yes and its `file` destination to a byte-for-byte copy and no other file,
 and `pr-create-new-flow`, a description for a branch that adds a pipeline.
 The trigger pack, `triggers/scenarios.yaml`, runs in the same `widgets` sandbox and asks for each
 skill a person types in plain words, never its slash command, one `trigger-<skill>` scenario per
@@ -79,7 +82,11 @@ third turn, taking every recommended answer, must file nothing, after a slash co
 "file an issue for" alike; `ticket-audit` sweeping the open issues, finding a duplicate and an issue
 the code already satisfies and closing the duplicate on a yes, the same sweep answered Paste it
 all, and sweeping the open pull requests, through `pr-reader` dumps of the stub's
-`pull_request_read`, for one whose issue is closed, one that names none and one whose issue waits for approval. Its `mcp.json` names the stub as `${SBX_FIXTURES}/github-mcp-server-stub.py`
+`pull_request_read`, for one whose issue is closed, one that names none and one whose issue waits for approval; and
+`usage-report` over the generic pack's fixture transcripts, whose send question, Send it
+recommended with the server present, is answered by taking every recommended answer and must
+create no issue, and, with a `usage-report` issue the person opened and a newer one by another
+login seeded in the stub's writes, whose window opens at the person's report's `window.end`. Its `mcp.json` names the stub as `${SBX_FIXTURES}/github-mcp-server-stub.py`
 with `--writes .git/github-writes.jsonl`, as the pack's header shows; the file name holds
 `github-mcp-server`, so `run.py` gives it the GitHub rules, except that a pack's stub run with
 `--writes` has `issue_write` and `add_issue_comment` neither allowed nor denied. Under `dontAsk`
@@ -210,7 +217,11 @@ from your configuration, an mcp-atlassian server with `READ_ONLY_MODE` set and `
 and nothing from your user settings, so your installed plugin, skills,
 hooks and allow rules stay out and a variant is never answered by your installed copy. It names
 the session `lasp-dev-sandbox` (`--name`), as `run.py` names the judge's, so `scripts/usage_report.py`
-leaves sandbox sessions out of a usage report. Checked
+leaves sandbox sessions out of a usage report. A setup that leaves `.sbx-env` in the clone has it sourced
+before each Bash command, through Claude Code's `CLAUDE_ENV_FILE`, and nowhere else: the
+usage-report scenarios point `CLAUDE_CONFIG_DIR` there at fixture transcripts that
+`fixture/usage_config.py` writes, and `TMPDIR` at a directory of the scenario's own under `/tmp`,
+outside every repository, which the fixture records and where their verify finds the report, while the session keeps your configuration. Checked
 on Claude Code 2.1.287: both servers connect, `lasp-dev` loads once from the clone, and the
 repository's `CLAUDE.md` loads. (`--restricted` skips `CLAUDE.md`; `--setting-sources` without
 `--mcp-config` drops the servers.) `--setting-sources` does not keep out a `CLAUDE.md` in a

@@ -1529,7 +1529,9 @@ once, and a request's tokens count once. Entries of a top-level kind the script 
 in the shape it reads stops the script.
 
 - `schema`: 1. `plugin_commit`: 12 hex digits. `claude_code_versions`, `models`: sorted lists.
-  `window`: `start`, `end`, ISO times in UTC. `sessions`, `turns`: every main transcript with an
+  `window`: `start`, `end`, ISO times in UTC to the second: `start` from `--since`, which the
+  script requires, a date `YYYY-MM-DD` or a UTC time, and refuses when it is neither or is not
+  before now; `end`, when the script ran. `sessions`, `turns`: every main transcript with an
   entry in the window, and every message from the person, plugin use or not.
 - `repos`: `with_plugin_use`, repositories a plugin skill or agent ran in, told apart by their git
   directory; `with_standard`, those holding `standards/profile.yaml`; `not_a_repository`, working
@@ -1555,17 +1557,37 @@ in the shape it reads stops the script.
   start, once per transcript that continues the run, so a run two forked sessions continue counts
   twice; `push_after` and `pr_open_after`, per skill, the runs with a `git push`, or a `gh pr
   create` or `create_pull_request` call.
-- `after_run`: null as the script writes it; the outcomes the skill classifies.
+- `after_run`: null as the script writes it; `--fill --labels` gives the outcome the
+  `usage-report` skill assigns each run of the pending file, one of `approve`, `correct`,
+  `status`, `new_task`, `interrupt` or `none` (no next message, and only then), counted per
+  plugin skill, so it covers the most recent 40 runs, not every run.
 - `agents`: per plugin agent, `runs`, `models` (runs per model), `tokens` as `{median, p90}`,
   `unfinished` (its `.meta.json` says `finished: false`).
-- `overlap`: `skills` and `agents`, per plugin name, how many personal skills, commands or agents
-  under the config directory hold the same words or a superset or subset of them; zeros left out.
-- `notes`: null as the script writes it.
+- `overlap`: null as the script writes it; `--fill --overlap` gives `skills` and `agents`, per
+  plugin skill or agent, how many of the person's own skills and agents the `usage-report` skill
+  judged a request would plausibly reach in its place; zeros left out.
+- `notes`: null as the script writes it; `--fill --notes` gives the person's words as typed,
+  stripped, or null when there are none. The one value outside the vocabulary.
 
-`--pending`, never sent, at a path the skill gives under `${CLAUDE_PLUGIN_DATA}`, outside every
-repository: a JSON list of the most recent 40 plugin skill runs, `{skill, started, next_message}`, the person's next message cut to 400 characters or null.
+The payload is written with its keys sorted, two-space indents and non-ASCII kept, one final
+newline, and `--fill` prints it as written and then `sha256:<hex>`, the digest of those bytes, so a
+copy can be checked against the file. `--fill` refuses a label count that is not the pending
+file's run count, a `none` on a run with a next message or any other label on one without, an
+overlap item that is not one of the plugin's skills or agents with a count of 1 or more, and a
+filled payload over `--max-bytes`, 60,000 by default, under a GitHub issue body's 65,536
+characters; a refusal writes nothing.
 
-Writers: `scripts/usage_report.py`. Readers: the person, who sees the payload before anything is
-sent.
+`--pending`, never sent, at a path the skill gives in a directory of its own under `$TMPDIR`, or
+`/tmp` when that is unset, outside every repository: a JSON list of the most recent 40 plugin skill runs, `{skill, started, next_message}`, the person's next message cut to 400 characters or null.
+
+Nothing records a report as sent. The `usage-report` skill opens the window at the person's
+`since` date; else, sending to the plugin's repository, at the `window.end` of the newest
+`usage-report` issue the person opened there (through the server, among the 300 newest), read from
+the report in its body; else 30 days back.
+
+Writers: `scripts/usage_report.py`; the `usage-report` skill, through `--fill`.
+Readers: the person, who sees the payload before anything is sent; the maintainer, from the
+`usage-report` issue or the file the person sends; the `usage-report` skill, which parses the `json`
+fence of the person's own earlier issue for its `window.end`.
 
 Pinned by: tests/test_usage_report.py::test_the_payload_has_the_contract_fields

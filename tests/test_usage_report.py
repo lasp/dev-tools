@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
@@ -123,10 +124,9 @@ class Fixture(unittest.TestCase):
         if meta is not None:
             (directory / f"agent-{agent_id}.meta.json").write_text(json.dumps(meta))
 
-    def run_report(self, *extra, state=None):
+    def run_report(self, *extra, since=stamp(30)):
         out, pending = self.tmp / "out" / "payload.json", self.tmp / "out" / "pending.json"
-        argv = ["--plugin-root", str(self.plugin), "--state", str(state or self.tmp / "state.json"),
-                "--out", str(out), "--pending", str(pending), *extra]
+        argv = ["--plugin-root", str(self.plugin), "--since", since, "--out", str(out), "--pending", str(pending), *extra]
         stdout, stderr = io.StringIO(), io.StringIO()
         with mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(self.config)}), \
                 contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
@@ -135,8 +135,8 @@ class Fixture(unittest.TestCase):
         runs = json.loads(pending.read_text()) if code == 0 else None
         return code, payload, runs, stderr.getvalue()
 
-    def ok(self, *extra, state=None):
-        code, payload, runs, err = self.run_report(*extra, state=state)
+    def ok(self, *extra, since=stamp(30)):
+        code, payload, runs, err = self.run_report(*extra, since=since)
         self.assertEqual(code, 0, err)
         return payload, runs
 
@@ -218,11 +218,15 @@ def outside_vocabulary(p):
         counts(f"agents.{agent}", {k: v for k, v in record.items() if k not in ("models", "tokens")}, {"runs", "unfinished"})
         counts(f"agents.{agent}.models", record["models"], lambda v: v == "other" or fullmatch(r"claude-(opus|sonnet|haiku|fable)-[0-9-]+")(v))
         spread(f"agents.{agent}.tokens", record["tokens"])
-    check("overlap", set(p["overlap"]), lambda keys: keys == {"skills", "agents"})
-    counts("overlap.skills", p["overlap"]["skills"], SKILLS)
-    counts("overlap.agents", p["overlap"]["agents"], AGENTS)
-    check("after_run", p["after_run"], lambda v: v is None)
-    check("notes", p["notes"], lambda v: v is None)
+    if p["overlap"] is not None:
+        check("overlap", set(p["overlap"]), lambda keys: keys == {"skills", "agents"})
+        counts("overlap.skills", p["overlap"]["skills"], SKILLS)
+        counts("overlap.agents", p["overlap"]["agents"], AGENTS)
+    for skill, record in (p["after_run"] or {}).items():
+        check("after_run", skill, names(SKILLS))
+        counts(f"after_run.{skill}", record, set(usage.OUTCOMES))
+    # The person's notes are their own words, the one field outside the vocabulary.
+    check("notes", p["notes"], lambda v: v is None or isinstance(v, str))
     return bad
 
 
@@ -275,8 +279,8 @@ class FieldGroups(Fixture):
     def test_the_payload_has_the_contract_fields(self):
         self.assertEqual(set(self.payload), FIELDS)
         self.assertEqual(self.payload["schema"], 1)
-        self.assertIsNone(self.payload["after_run"])
-        self.assertIsNone(self.payload["notes"])
+        for field in ("after_run", "overlap", "notes"):
+            self.assertIsNone(self.payload[field], f"{field} is the skill's to fill")
         self.assertNotIn("reruns", self.payload["skills"]["work"], "a count of zero is left out")
         self.assertNotIn("declined", self.payload["questions"]["work"]["Next step"])
 
@@ -317,10 +321,9 @@ class FieldGroups(Fixture):
         self.assertEqual(chains["push_after"], {"commit": 1})
         self.assertEqual(chains["pr_open_after"], {})
 
-    def test_agents_and_overlap(self):
+    def test_agents(self):
         self.assertEqual(self.payload["agents"], {"test-runner": {
             "runs": 1, "models": {"claude-haiku-5-5": 1}, "tokens": {"median": 1000, "p90": 1000}, "unfinished": 1}})
-        self.assertEqual(self.payload["overlap"], {"skills": {"pr-review": 1}, "agents": {"test-runner": 1}})
 
     def test_a_personal_skill_name_never_appears(self):
         text = json.dumps(self.payload)
@@ -589,8 +592,8 @@ class Failures(Fixture):
         path = self.write(t)
         self.assert_fails(words, str(path))
 
-    def assert_fails(self, *words, state=None, extra=()):
-        code, _, _, err = self.run_report(*extra, state=state)
+    def assert_fails(self, *words, since=stamp(30), extra=()):
+        code, _, _, err = self.run_report(*extra, since=since)
         self.assertEqual(code, 1, err)
         for w in words:
             self.assertIn(w, err)
@@ -650,13 +653,12 @@ class Failures(Fixture):
         self.plugin = self.plugin.rename(self.plugin.with_name("latest"))
         self.assert_fails("neither a git checkout nor a cache directory")
 
-    def test_a_bad_since_raises(self):
-        self.assert_fails("--since 'last week' is not a date", extra=("--since", "last week"))
+    def test_a_since_that_is_neither_a_date_nor_a_utc_time_raises(self):
+        for since in ("last week", "2026-13-01", "2026-11-01T00:00:00", "2026-11-01T00:00:00+01:00", "2026-02-30T00:00:00Z"):
+            self.assert_fails(f"--since {since!r} is not a date YYYY-MM-DD or a UTC time", since=since)
 
-    def test_a_state_file_that_is_not_json_raises(self):
-        state = self.tmp / "state.json"
-        state.write_text("{")
-        self.assert_fails(str(state), "is not readable JSON", state=state)
+    def test_a_since_not_before_now_raises(self):
+        self.assert_fails("is not before now", since=stamp(-1))
 
     def test_a_meta_with_no_agent_type_raises(self):
         session = self.write(Transcript().person("hi"))
@@ -749,29 +751,27 @@ class Window(Fixture):
         self.write(Transcript(days_ago=10).typed("/lasp-dev:commit"))
         self.write(Transcript(days_ago=1).typed("/lasp-dev:pr-review"))
 
-    def test_with_no_state_the_window_is_30_days(self):
-        payload, _ = self.ok()
-        self.assertEqual(sorted(payload["skills"]), ["commit", "pr-review"])
-
-    def test_the_window_opens_at_the_last_report_sent(self):
-        state = self.tmp / "state.json"
-        state.write_text(json.dumps({"last_sent": stamp(5)}))
-        payload, _ = self.ok(state=state)
+    def test_the_window_opens_at_a_utc_time(self):
+        payload, _ = self.ok(since=stamp(5))
         self.assertEqual(sorted(payload["skills"]), ["pr-review"])
         self.assertEqual(payload["window"]["start"], stamp(5)[:19] + "Z")
 
-    def test_since_overrides_the_state(self):
-        state = self.tmp / "state.json"
-        state.write_text(json.dumps({"last_sent": stamp(5)}))
-        payload, _ = self.ok("--since", (NOW - timedelta(days=50)).strftime("%Y-%m-%d"), state=state)
+    def test_the_window_opens_at_the_start_of_a_date(self):
+        day = (NOW - timedelta(days=50)).strftime("%Y-%m-%d")
+        payload, _ = self.ok(since=day)
         self.assertEqual(sorted(payload["skills"]), ["commit", "pr-review", "work"])
+        self.assertEqual(payload["window"]["start"], f"{day}T00:00:00Z")
 
-    def test_a_malformed_state_raises(self):
-        state = self.tmp / "state.json"
-        state.write_text(json.dumps({"last_sent": "last week"}))
-        code, _, _, err = self.run_report(state=state)
-        self.assertEqual(code, 1)
-        self.assertIn("last_sent", err)
+    def test_a_reports_window_end_opens_the_next_and_its_runs_are_not_counted_again(self):
+        payload, _ = self.ok()
+        later, _ = self.ok(since=payload["window"]["end"])
+        self.assertEqual(later["window"]["start"], payload["window"]["end"])
+        self.assertEqual(later["skills"], {})
+
+    def test_since_is_required(self):
+        with contextlib.redirect_stderr(io.StringIO()) as err, self.assertRaises(SystemExit):
+            usage.main(["--plugin-root", "p", "--out", "o", "--pending", "q"])
+        self.assertIn("build needs --since", err.getvalue())
 
 
 class Caps(Fixture):
@@ -792,6 +792,157 @@ class Caps(Fixture):
         self.assertTrue(runs[0]["next_message"].startswith("05"))
         self.assertEqual(len(runs[0]["next_message"]), 400)
         self.assertNotIn("xxxx", json.dumps(payload))
+
+
+class Fill(Fixture):
+    """--fill: the skill's labels, overlap counts and notes written into the payload, checked."""
+
+    def setUp(self):
+        super().setUp()
+        t = Transcript()
+        t.typed("/lasp-dev:work").person("looks good, go on")
+        t.typed("/lasp-dev:commit")
+        t.typed("/lasp-dev:work").person("no, the title is wrong")
+        self.write(t)
+        self.ok()
+        self.out, self.pending_path = self.tmp / "out" / "payload.json", self.tmp / "out" / "pending.json"
+
+    def fill(self, *argv):
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            try:
+                code = usage.main(["--fill", str(self.out), *argv])
+            except SystemExit as e:
+                code = e.code
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    def labels(self, *labels):
+        return self.fill("--pending", str(self.pending_path), "--labels", *labels)
+
+    def refused(self, result, says):
+        code, _, err = result
+        self.assertEqual(code, 1, err)
+        self.assertIn(says, err)
+        self.assertIsNone(json.loads(self.out.read_text())["after_run"], "a refusal writes nothing")
+
+    def test_labels_count_per_skill_and_the_payload_prints_with_its_digest(self):
+        code, out, err = self.labels("approve", "none", "correct")
+        self.assertEqual(code, 0, err)
+        written = self.out.read_text()
+        self.assertEqual(json.loads(written)["after_run"], {"commit": {"none": 1}, "work": {"approve": 1, "correct": 1}})
+        text, digest = out.rsplit("sha256:", 1)
+        self.assertEqual(text, written)
+        self.assertEqual(digest.strip(), hashlib.sha256(written.encode()).hexdigest())
+        self.assertEqual(outside_vocabulary(json.loads(written)), [])
+        self.assertNotIn("title is wrong", written)
+
+    def test_a_label_count_that_is_not_the_run_count_is_refused(self):
+        self.refused(self.labels("approve", "none"), says="2 labels for the 3 runs")
+
+    def test_none_is_the_label_of_a_run_with_no_next_message_and_of_no_other(self):
+        self.refused(self.labels("approve", "approve", "correct"), says="run 2 (commit) has no next message")
+        self.refused(self.labels("none", "none", "correct"), says="run 1 (work) has a next message")
+
+    def test_a_label_outside_the_outcomes_is_refused(self):
+        code, _, err = self.labels("approve", "none", "grumble")
+        self.assertEqual(code, 2)
+        self.assertIn("invalid choice: 'grumble'", err)
+
+    def test_a_pending_run_not_in_the_written_shape_is_refused(self):
+        self.pending_path.write_text(json.dumps([{"skill": "work"}]))
+        self.refused(self.labels("approve"), says="run 1 is not {skill, started, next_message}")
+
+    def test_a_pending_file_that_is_not_json_or_not_a_list_is_refused_and_nothing_written(self):
+        before = self.out.read_text()
+        for text, says in (("not json", "is not a readable pending file"), ("{}", "is not a pending file: it holds a dict")):
+            self.pending_path.write_text(text)
+            code, _, err = self.labels("approve", "none", "correct")
+            self.assertEqual(code, 1, text)
+            self.assertIn(says, err)
+            self.assertEqual(self.out.read_text(), before, text)
+
+    def test_a_notes_file_that_cannot_be_read_is_refused_and_nothing_written(self):
+        before = self.out.read_text()
+        code, _, err = self.fill("--notes", str(self.tmp / "missing.txt"))
+        self.assertEqual(code, 1)
+        self.assertIn("missing.txt cannot be read as text", err)
+        self.assertEqual(self.out.read_text(), before)
+
+    def test_overlap_names_the_plugins_skills_and_agents_with_counts_of_one_or_more(self):
+        code, _, err = self.fill("--plugin-root", str(self.plugin), "--overlap", "skill:pr-review=2", "agent:test-runner=1")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(self.out.read_text())["overlap"], {"skills": {"pr-review": 2}, "agents": {"test-runner": 1}})
+        code, _, err = self.fill("--plugin-root", str(self.plugin), "--overlap")
+        self.assertEqual(json.loads(self.out.read_text())["overlap"], {"skills": {}, "agents": {}}, err)
+        for items, says in ((["skill:zanzibar-pr-review=1"], "is not skill:<name>=<n>"), (["agent:work=1"], "is not skill:<name>=<n>"),
+                            (["skill:work=0"], "is not skill:<name>=<n>"), (["skill:work=1", "skill:work=2"], "names skill work twice")):
+            code, _, err = self.fill("--plugin-root", str(self.plugin), "--overlap", *items)
+            self.assertEqual(code, 1, items)
+            self.assertIn(says, err)
+        self.assertEqual(json.loads(self.out.read_text())["overlap"], {"skills": {}, "agents": {}}, "a refusal writes nothing")
+
+    def test_notes_are_kept_as_typed_and_empty_notes_are_null(self):
+        notes = self.tmp / "notes.txt"
+        notes.write_text("  The commit skill asks one question too many. Ça va.\n")
+        code, out, err = self.fill("--notes", str(notes))
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(self.out.read_text())["notes"], "The commit skill asks one question too many. Ça va.")
+        self.assertIn("Ça va.", out)
+        notes.write_text("\n")
+        self.fill("--notes", str(notes))
+        self.assertIsNone(json.loads(self.out.read_text())["notes"])
+
+    def test_a_filled_payload_over_the_cap_is_refused_and_nothing_written(self):
+        before = self.out.read_text()
+        notes = self.tmp / "notes.txt"
+        notes.write_text("x" * 70000)
+        code, _, err = self.fill("--notes", str(notes))
+        self.assertEqual(code, 1)
+        self.assertIn("over --max-bytes 60000", err)
+        self.assertEqual(self.out.read_text(), before)
+
+    def test_a_payload_this_script_did_not_write_is_refused(self):
+        self.out.write_text('{"schema": 1}')
+        code, _, err = self.fill("--notes", str(self.out))
+        self.assertEqual(code, 1)
+        self.assertIn("not a payload this script wrote", err)
+
+    def test_each_mode_takes_only_its_own_options(self):
+        for argv, says in ((["--since", "2026-11-01"], "fill takes no --since"), ([], "--fill needs --labels, --overlap or --notes"),
+                           (["--labels", "none"], "--labels needs --pending"), (["--overlap"], "--overlap needs --plugin-root")):
+            code, _, err = self.fill(*argv)
+            self.assertEqual(code, 2, argv)
+            self.assertIn(says, err)
+        with contextlib.redirect_stderr(io.StringIO()) as err, self.assertRaises(SystemExit):
+            usage.main(["--plugin-root", "p", "--since", "2026-11-01", "--out", "o", "--pending", "q", "--labels", "none"])
+        self.assertIn("build takes no --labels", err.getvalue())
+
+
+class OverlapRead(unittest.TestCase):
+    """The skill's awk command that prints the person's own skills' and agents' frontmatter."""
+
+    COMMAND = next(line for line in (ROOT / "skills" / "usage-report" / "SKILL.md").read_text().splitlines() if line.startswith("awk '"))
+
+    def read(self, config: Path) -> subprocess.CompletedProcess:
+        return subprocess.run(["bash", "-c", self.COMMAND], capture_output=True, text=True, env={**os.environ, "CLAUDE_CONFIG_DIR": str(config)})
+
+    def write(self, path: Path, description: str) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"---\nname: {path.stem}\ndescription: {description}\n---\n\nbody\n")
+
+    def test_a_kind_with_no_directory_does_not_stop_the_other(self):
+        for present in ("skills/mine/SKILL.md", "agents/mine.md"):
+            with self.subTest(present=present), tempfile.TemporaryDirectory() as tmp:
+                self.write(Path(tmp) / present, "does a job")
+                done = self.read(Path(tmp))
+                self.assertEqual((done.returncode, done.stderr), (0, ""))
+                self.assertEqual(done.stdout.splitlines()[1:], [f"name: {Path(present).stem}", "description: does a job"])
+
+    def test_each_line_is_cut_to_300_characters(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.write(Path(tmp) / "skills" / "long" / "SKILL.md", "x" * 500)
+            lines = self.read(Path(tmp)).stdout.splitlines()
+        self.assertEqual(lines[2], ("description: " + "x" * 500)[:300])
 
 
 if __name__ == "__main__":

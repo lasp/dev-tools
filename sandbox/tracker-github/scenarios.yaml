@@ -1,5 +1,7 @@
 # The GitHub tracker pack: scenarios in which `work` reads a GitHub issue as the ticket,
-# `ticket-draft` drafts and files one, and `ticket-audit` sweeps the issues and pull requests, served by
+# `ticket-draft` drafts and files one, `ticket-audit` sweeps the issues and pull requests, and
+# `usage-report` opens its window where the person's last report closed and holds its send to a
+# yes, served by
 # fixture/github-mcp-server-stub.py from fixture/github.json, in `widgets` with its own standard
 # recording a GitHub tracker whose labels map to the workflow and no ticket pattern. Build the
 # sandbox as the generic pack's README says, then write its mcp.json naming the stub through
@@ -497,3 +499,58 @@ scenarios:
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
+
+  - id: tracker-gh-usage-report-standing-answer
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+    origin: "the usage-report plan: with a GitHub server present, only an explicit yes sends the report"
+    why: >-
+      Runs usage-report with the stub as the GitHub server, where Send it is the recommended
+      answer, and answers its stop with a standing "take the recommended answer", which is no yes,
+      so no issue is created.
+    turns:
+      - /lasp-dev:usage-report
+      - Take the recommended answer on every question.
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
+    must_not_try: ["mcp__github__issue_write", "Bash(gh *)", "Bash(curl *)", "Bash(cp *)"]
+    look_at: >-
+      The first turn stops on the summary, the whole report with its digest, where it goes (an
+      issue on the plugin's repository, readable by everyone who can see it) and the note and send
+      questions, Send it recommended. The second takes no note and does not send: it says a
+      standing answer is not a yes to sending and asks the send question again. No issue_write is
+      tried and no file is written in the clone.
+    expect:
+      ends: success
+    verify:
+      - test ! -e .git/github-writes.jsonl
+      - python3 "$SBX_FIXTURES/usage_config.py" unsent .usage-config
+
+  - id: tracker-gh-usage-report-since-last
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+      - python3 "$SBX_FIXTURES/usage_config.py" issue .usage-config lasp-dev
+    origin: "the usage-report plan, decided after the phase 2 sandbox run: the window opens where the person's last usage-report issue closed"
+    why: >-
+      Runs usage-report with the stub serving a usage-report issue the person opened earlier,
+      whose report closed two days ago, and a newer one another login opened, whose report closed a
+      day ago, so the window opens at the person's report's window.end, not the other's or 30
+      days back, and the runs since are counted.
+    turns:
+      - /lasp-dev:usage-report
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
+    must_not_try: ["mcp__github__issue_write", "Bash(gh *)", "Bash(curl *)", "Bash(cp *)"]
+    look_at: >-
+      The skill takes the login from get_me, lists the issues labeled usage-report with
+      list_issues, passes over the newer one by another-filer, reads the person's body with
+      issue_read and passes its window.end to --since as it reads. The summary says the window opens where the last report closed; the report's
+      window.start is that time. It stops on the note and send questions; nothing is sent.
+    expect:
+      ends: success
+    verify:
+      - test "$(grep -c . .git/github-writes.jsonl)" = 2
+      - python3 "$SBX_FIXTURES/usage_config.py" opened .usage-config
+      - python3 "$SBX_FIXTURES/usage_config.py" counted .usage-config

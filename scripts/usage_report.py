@@ -4,7 +4,7 @@
 Reads the main transcripts, `projects/*/*.jsonl`, and the agents' transcripts,
 `projects/*/*/subagents/*.jsonl` with their `.meta.json`, under `$CLAUDE_CONFIG_DIR`, or
 `~/.claude` when that is unset. Only entries timestamped inside the window count: from
-`--since`, else the `last_sent` time in the `--state` file, else 30 days before now, to now.
+`--since`, a date `YYYY-MM-DD` or a time in UTC `YYYY-MM-DDTHH:MM:SS[.fff]Z`, to now.
 A file last modified before the window opens is not read. A sandbox session, one whose main transcript
 holds a `custom-title` entry `lasp-dev-sandbox` (the name `sandbox/sbx-claude` and `sandbox/run.py` give
 each session they start), is left out with its agents. Main transcripts are read oldest first, and an
@@ -27,7 +27,15 @@ Writes `--out`, one JSON object, the payload, version 1 in `docs/contracts.md`'s
 report", and `--pending`, a JSON list of the most recent 40 plugin skill runs, each with the
 skill, its start time and the person's next message cut to 400 characters, or null when there was
 none. The pending file holds the person's words and is never part of the payload; the skill passes a
-path under `${CLAUDE_PLUGIN_DATA}`, outside every repository. Prints one summary line to stdout.
+path in a directory of its own under `$TMPDIR`, outside every repository. Prints one summary line to stdout.
+`after_run`, `overlap` and `notes` are written null, for the skill to fill.
+
+`--fill PAYLOAD` replaces those fields in a payload this script wrote, each only when its flag is
+given: `--labels`, one outcome per run of `--pending`, in its order, counted per skill into
+`after_run`; `--overlap`, `skill:<name>=<n>` or `agent:<name>=<n>` items naming the plugin's skills
+and agents of `--plugin-root`, into `overlap`, zeros left out; `--notes FILE`, the file's text,
+stripped, into `notes`, or null when it is empty. It rewrites the payload and prints it, then its
+`sha256:` digest.
 
 Every string in the payload is a field name or from the vocabulary: the plugin's names, `other`,
 Claude Code's built-in tool names, the GitHub and Atlassian MCP tools in `MCP_TOOLS` as
@@ -39,8 +47,8 @@ of the skill that asked it hold it as a phrase, in the same case, and no pattern
 the top-level fields are always present.
 
 Exits 1 with the reason on stderr when the plugin root has no plugin manifest, no skills or no
-`scripts/coupling.json` with patterns, the
-state file is not a JSON object with an ISO `last_sent`, `--since` is not a date, a transcript
+`scripts/coupling.json` with patterns, `--since` is not a date or a UTC time in
+those forms or is not before now, a transcript
 cannot be read or is not JSON lines, an entry has no `type`, or an entry of a kind the script reads
 (user, assistant, attachment, system) does not have the shape it reads: a timestamp, a uuid, a message
 with content, a tool call with a name, id and input, a `Skill` call with a skill name, a `Bash`
@@ -49,12 +57,17 @@ call with a command, a usage record of counts, an `AskUserQuestion` call or resu
 names the file. Entries of other top-level kinds are skipped unread, since Claude Code adds kinds
 often and none of them carries a value reported here. Also exits 1 when git fails on a working
 directory for a reason other than its being gone or no repository, when agents nest more than 20
-deep, and when the payload is over `--max-bytes`, rather than cut. Stdlib only.
+deep, and when the payload is over `--max-bytes`, rather than cut. `--fill` exits 1, writing nothing,
+on a payload or pending file that is not the JSON this script writes, a count of labels that is not
+the count of runs, a run given `none` that has a next message or one with a next message given
+anything but `none`, an overlap item that does not name one of the plugin's skills or agents with a
+count of 1 or more or names one twice, and a filled payload over `--max-bytes`. Stdlib only.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import math
@@ -63,7 +76,7 @@ import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 _spec = importlib.util.spec_from_file_location("transcript_excerpt", Path(__file__).with_name("transcript_excerpt.py"))
@@ -72,13 +85,15 @@ _spec.loader.exec_module(excerpt)
 
 SCHEMA = 1
 LEGACY_NAMESPACES = ("libera-tools",)
-DEFAULT_DAYS = 30
 PENDING_RUNS = 40
 PENDING_CHARS = 400
 RERUN_TURNS = 3
-DEFAULT_MAX_BYTES = 65536
+# Under a GitHub issue body's 65,536 characters, with room for the fence, the digest and the footer.
+DEFAULT_MAX_BYTES = 60000
 OTHER = "other"
 ANSWER_TYPES = ("recommended", "other_option", "free_text", "declined", "not_shown")
+# What the person did next after a run, as the skill labels it; `none` is a run with no next message.
+OUTCOMES = ("approve", "correct", "status", "new_task", "interrupt", "none")
 HOOK_OUTCOMES = ("allow", "ask", "deny", "canceled", "error")
 DENIAL_KINDS = ("permission_denied", "dont_ask_mode", "safety_check", "user_rejected")
 EXIT_WORDS = ("background", "interrupted", "denied", "error")
@@ -120,6 +135,7 @@ EXIT_CODE = re.compile(r"(?:Error: )?Exit code (\d+)\b")
 PUSH = re.compile(r"\bgit\s+(?:-C\s+\S+\s+)?push\b")
 PR_OPEN = re.compile(r"\bgh\s+pr\s+create\b")
 HOOK_COMMAND = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/hooks/([\w-]+)\.sh\b")
+OVERLAP_ITEM = re.compile(r"(skill|agent):([\w-]+)=([1-9]\d*)")
 
 
 class UsageError(Exception):
@@ -584,7 +600,7 @@ class Report:
             raise UsageError(f"agent {tool_use_id} nests more than 20 deep")
         return [tool_use_id] + [d for c in self.agent_children.get(tool_use_id, []) for d in self.lineage(c, depth + 1)]
 
-    def payload(self, commit: str, start: str, end: str, repos: dict, overlap: dict) -> dict:
+    def payload(self, commit: str, start: str, end: str, repos: dict) -> dict:
         for run in self.runs:
             for a in run["agents"]:
                 for d in self.lineage(a):
@@ -637,7 +653,7 @@ class Report:
             },
             "after_run": None,
             "agents": agents,
-            "overlap": overlap,
+            "overlap": None,
             "notes": None,
         }
 
@@ -646,44 +662,21 @@ class Report:
         return [{"skill": r["skill"], "started": r["started"], "next_message": r["next"]} for r in recent]
 
 
-def window_start(since: str | None, state: Path, now: datetime) -> datetime:
-    """`--since` when given, else the state file's `last_sent`, else `DEFAULT_DAYS` before now; all UTC."""
-    if since:
-        try:
-            return datetime.strptime(since, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        except ValueError as e:
-            raise UsageError(f"--since {since!r} is not a date YYYY-MM-DD") from e
-    if not state.exists():
-        return now - timedelta(days=DEFAULT_DAYS)
+def window_start(since: str, now: datetime) -> datetime:
+    """`--since`, a date or a UTC time to the second, as a UTC datetime before `now`."""
     try:
-        data = json.loads(state.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as e:
-        raise UsageError(f"{state} is not readable JSON: {e}") from e
-    sent = data.get("last_sent") if isinstance(data, dict) else None
-    if not isinstance(sent, str) or not TIMESTAMP.match(sent):
-        raise UsageError(f"{state}: last_sent is {sent!r}, not an ISO time in UTC such as 2026-11-01T00:00:00Z")
-    return datetime.strptime(sent[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+        start = datetime.strptime(since[:19], "%Y-%m-%dT%H:%M:%S") if TIMESTAMP.match(since) else datetime.strptime(since, "%Y-%m-%d")
+    except ValueError as e:
+        raise UsageError(f"--since {since!r} is not a date YYYY-MM-DD or a UTC time such as 2026-11-01T00:00:00Z") from e
+    start = start.replace(tzinfo=timezone.utc)
+    if start >= now:
+        raise UsageError(f"--since {since!r} is not before now, {now.strftime('%Y-%m-%dT%H:%M:%SZ')}")
+    return start
 
 
-def words(name: str) -> frozenset[str]:
-    return frozenset(w for w in re.split(r"[-_:\s]+", name.lower()) if w)
-
-
-def personal_names(config: Path) -> tuple[set[str], set[str]]:
-    """The person's own skills and commands, and their own agents, under the config directory."""
-    skills = {p.parent.name for p in config.glob("skills/*/SKILL.md")} | {p.stem for p in config.glob("commands/*.md")}
-    return skills, {p.stem for p in config.glob("agents/*.md")}
-
-
-def overlap(plugin_names: set[str], personal: set[str]) -> dict:
-    """Per plugin name, how many personal names compete with it: the same words in any order, or one's words holding the other's."""
-    counts = {}
-    for name in sorted(plugin_names):
-        mine = words(name)
-        n = sum(1 for p in personal if words(p) and (mine <= words(p) or words(p) <= mine))
-        if n:
-            counts[name] = n
-    return counts
+def personal_skills(config: Path) -> set[str]:
+    """The person's own skills and commands under the config directory, whose typed start ends a run."""
+    return {p.parent.name for p in config.glob("skills/*/SKILL.md")} | {p.stem for p in config.glob("commands/*.md")}
 
 
 def repos(cwds: set[str]) -> dict:
@@ -708,8 +701,7 @@ def repos(cwds: set[str]) -> dict:
 
 
 def build(plugin: Plugin, config: Path, start: datetime, end: datetime) -> tuple[dict, list[dict]]:
-    skills, agents = personal_names(config)
-    report = Report(plugin, skills)
+    report = Report(plugin, personal_skills(config))
     lo, hi = start.strftime("%Y-%m-%dT%H:%M:%S"), end.strftime("%Y-%m-%dT%H:%M:%S")
     opens = start.timestamp()
     sandboxes: set[Path] = set()
@@ -735,32 +727,114 @@ def build(plugin: Plugin, config: Path, start: datetime, end: datetime) -> tuple
         if not isinstance(meta, dict) or not isinstance(meta.get("agentType"), str):
             raise UsageError(f"{meta_path} has no agentType")
         report.agent(path, meta, entries)
-    payload = report.payload(plugin.commit(), lo, hi, repos(report.cwds),
-                             {"skills": overlap(plugin.skills, skills), "agents": overlap(plugin.agents, agents)})
+    payload = report.payload(plugin.commit(), lo, hi, repos(report.cwds))
     return payload, report.pending()
+
+
+def text_of(payload: dict) -> str:
+    """The payload as written: keys sorted, two-space indents, non-ASCII kept, one final newline."""
+    return json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+def read_json(path: Path, kind: type, what: str):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        raise UsageError(f"{path} is not a readable {what}: {e}") from e
+    if not isinstance(data, kind):
+        raise UsageError(f"{path} is not a {what}: it holds a {type(data).__name__}")
+    return data
+
+
+def fill(args: argparse.Namespace) -> dict:
+    """The payload at `args.fill` with `after_run`, `overlap` and `notes` replaced, each when its flag is given."""
+    payload = read_json(args.fill, dict, "payload")
+    if not {"schema", "window", "after_run", "overlap", "notes"} <= set(payload):
+        raise UsageError(f"{args.fill} is not a payload this script wrote: it lacks schema, window, after_run, overlap or notes")
+    if args.labels is not None:
+        runs = read_json(args.pending, list, "pending file")
+        if len(args.labels) != len(runs):
+            raise UsageError(f"{len(args.labels)} labels for the {len(runs)} runs in {args.pending}; give one per run, in its order")
+        after: dict = defaultdict(Counter)
+        for n, (run, label) in enumerate(zip(runs, args.labels), 1):
+            if not isinstance(run, dict) or not isinstance(run.get("skill"), str) or not isinstance(run.get("next_message", 0), (str, type(None))):
+                raise UsageError(f"{args.pending}: run {n} is not {{skill, started, next_message}}")
+            if (run.get("next_message") is None) != (label == "none"):
+                said = "has no next message, so it is none" if run.get("next_message") is None else "has a next message, so it is not none"
+                raise UsageError(f"run {n} ({run['skill']}) {said}; it was given {label}")
+            after[run["skill"]][label] += 1
+        payload["after_run"] = {skill: dict(sorted(c.items())) for skill, c in sorted(after.items())}
+    if args.overlap is not None:
+        plugin = Plugin(args.plugin_root)
+        counts: dict = {"skills": {}, "agents": {}}
+        for item in args.overlap:
+            m = OVERLAP_ITEM.fullmatch(item)
+            kind = f"{m.group(1)}s" if m else None
+            if not m or m.group(2) not in getattr(plugin, kind):
+                raise UsageError(f"overlap item {item!r} is not skill:<name>=<n> or agent:<name>=<n> for a skill or agent of {args.plugin_root}, n 1 or more")
+            if m.group(2) in counts[kind]:
+                raise UsageError(f"overlap names {m.group(1)} {m.group(2)} twice")
+            counts[kind][m.group(2)] = int(m.group(3))
+        payload["overlap"] = {kind: dict(sorted(c.items())) for kind, c in counts.items()}
+    if args.notes is not None:
+        try:
+            notes = args.notes.read_text(encoding="utf-8").strip()
+        except (OSError, ValueError) as e:
+            raise UsageError(f"{args.notes} cannot be read as text: {e}") from e
+        payload["notes"] = notes or None
+    return payload
+
+
+# What each mode needs, and what else it may be given.
+MODES = {
+    "build": ({"plugin_root", "out", "pending", "since"}, set()),
+    "fill": (set(), {"plugin_root", "pending", "labels", "overlap", "notes"}),
+}
+OPTIONS = ("plugin_root", "out", "pending", "since", "labels", "overlap", "notes")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--plugin-root", type=Path, required=True, help="the installed plugin's directory")
-    parser.add_argument("--state", type=Path, required=True, help="the user-level state file; absent means no report sent yet")
-    parser.add_argument("--out", type=Path, required=True, help="where the payload is written")
-    parser.add_argument("--pending", type=Path, required=True, help="where the runs awaiting classification are written; the skill passes a path under ${CLAUDE_PLUGIN_DATA}")
-    parser.add_argument("--since", metavar="YYYY-MM-DD", help="open the window on this date, UTC, instead")
+    parser.add_argument("--plugin-root", type=Path, help="the installed plugin's directory")
+    parser.add_argument("--out", type=Path, help="where the payload is written")
+    parser.add_argument("--pending", type=Path, help="where the runs awaiting classification are written, or read by --labels; the skill passes a path under $TMPDIR")
+    parser.add_argument("--since", metavar="YYYY-MM-DD|YYYY-MM-DDTHH:MM:SSZ", help="open the window on this date or UTC time")
     parser.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES, help=f"refuse a payload larger than this (default {DEFAULT_MAX_BYTES})")
+    parser.add_argument("--fill", type=Path, metavar="PAYLOAD", help="fill a written payload's after_run, overlap or notes, and print it")
+    parser.add_argument("--labels", nargs="*", choices=OUTCOMES, help="with --fill: one outcome per run of --pending, in its order")
+    parser.add_argument("--overlap", nargs="*", metavar="KIND:NAME=N", help="with --fill: skill:<name>=<n> or agent:<name>=<n> per plugin skill or agent with competitors")
+    parser.add_argument("--notes", type=Path, help="with --fill: a file holding the person's notes")
     args = parser.parse_args(argv)
-    config = Path(os.environ["CLAUDE_CONFIG_DIR"]) if os.environ.get("CLAUDE_CONFIG_DIR") else Path.home() / ".claude"
-    now = datetime.now(timezone.utc)
+    name = "fill" if args.fill else "build"
+    needed, optional = MODES[name]
+    given = {o for o in OPTIONS if getattr(args, o) is not None}
+    if needed - given:
+        parser.error(f"{name} needs --{', --'.join(sorted(o.replace('_', '-') for o in needed - given))}")
+    if given - needed - optional:
+        parser.error(f"{name} takes no --{', --'.join(sorted(o.replace('_', '-') for o in given - needed - optional))}")
+    if name == "fill" and not given & {"labels", "overlap", "notes"}:
+        parser.error("--fill needs --labels, --overlap or --notes")
+    if name == "fill" and (args.labels is not None and args.pending is None or args.overlap is not None and args.plugin_root is None):
+        parser.error("--labels needs --pending, and --overlap needs --plugin-root")
     try:
-        start = window_start(args.since, args.state, now)
-        payload, pending = build(Plugin(args.plugin_root), config, start, now)
-        text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+        if name == "fill":
+            payload, pending = fill(args), None
+        else:
+            config = Path(os.environ["CLAUDE_CONFIG_DIR"]) if os.environ.get("CLAUDE_CONFIG_DIR") else Path.home() / ".claude"
+            now = datetime.now(timezone.utc)
+            start = window_start(args.since, now)
+            payload, pending = build(Plugin(args.plugin_root), config, start, now)
+        text = text_of(payload)
         size = len(text.encode("utf-8"))
         if size > args.max_bytes:
             raise UsageError(f"the payload is {size} bytes, over --max-bytes {args.max_bytes}; nothing was written")
     except UsageError as e:
         print(f"usage_report.py: {e}", file=sys.stderr)
         return 1
+    if name == "fill":
+        args.fill.write_text(text, encoding="utf-8")
+        print(text + f"sha256:{hashlib.sha256(text.encode('utf-8')).hexdigest()}")
+        return 0
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(text, encoding="utf-8")
     args.pending.parent.mkdir(parents=True, exist_ok=True)
