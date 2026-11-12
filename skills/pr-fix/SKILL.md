@@ -61,9 +61,9 @@ When it is behind, **stop**: say by how many commits and whether the base's new 
 
 - **Rebase now** — rebase onto `origin/<base>` before anything is planned; recommended when the base's new commits touch this pull request's files. Not offered on a dirty tree; say why.
 - **Fix first, rebase before the push** — step 11 rebases the committed fixes; recommended otherwise.
-- **Don't rebase** — the round goes on against the current base; recommended when the repository's instructions forbid a rebase nobody asked for, which the question then says.
+- **Don't rebase** — the round goes on against the current base; recommended only when the loaded instructions forbid a rebase in words that name it, which the question then quotes; general care with git forbids nothing.
 
-"Rebase" at invocation is the first answer, given in advance; on a dirty tree, say it cannot run yet and ask between the other two. Conflicts stop the skill — report the files and hand them to the person rather than resolving or `--skip`ping them.
+"Rebase" at invocation is the first answer, given in advance; on a dirty tree, say it cannot run yet and ask between the other two. **Rebase as `rebase` does** (`${CLAUDE_PLUGIN_ROOT}/skills/rebase/SKILL.md`), by its "Commits the target already holds" paragraph in step 2 and its step 4, "Rebase and Resolve": print the recovery point, drop a commit the base already holds, resolve each conflict the commits show the answer to, and stop only at one where the sides want incompatible behavior, asking as that step does with the rebase paused. Never `--skip` past a conflict. Each resolution and dropped commit goes in step 13's summary.
 
 **Do not push the rebase.** Step 12 pushes it together with the fixes.
 
@@ -162,7 +162,7 @@ Get explicit approval before committing. If the person wants changes, go back to
 
 Commit the approved work through `/lasp-dev:commit`, which keeps `.review/` and the plan out — one commit per thread, or per group of threads that share a concern, so each commit answers what its threads asked; a single commit when they are one coherent change. Use the repo's existing message style. Describe what changed, not that a reviewer asked for it.
 
-When step 4's answer was **fix first, rebase before the push**, rebase the committed fixes onto `origin/<base>` now, after `git fetch origin <base>`. Conflicts stop the skill, as in step 4. Step 9's checks ran before the rebase: say so at step 12, and run step 9 again first when the person asks.
+When step 4's answer was **fix first, rebase before the push**, rebase the committed fixes onto `origin/<base>` now, after `git fetch origin <base>`, resolving and dropping as in step 4. Step 9's checks ran before the rebase: say so at step 12, and run step 9 again first when the person asks.
 
 ## 12. Push and Reply
 

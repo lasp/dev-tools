@@ -951,8 +951,9 @@ scenarios:
     look_at: >-
       rebase replays the one commit onto origin/main, keeps both the renamed loop variable and
       main's by_part, and continues without a question. The report names the file, says what each
-      side did and how it was resolved, names the recovery point, and prints, without running it,
-      git push -u origin HEAD:refs/heads/widgets-rename, since the branch has no upstream.
+      side did and how it was resolved, names the recovery point, and asks whether to push with
+      git push -u origin HEAD:refs/heads/widgets-rename, since the branch has no upstream, pushing
+      nothing before the answer.
     expect:
       ends: success
 
@@ -1024,13 +1025,13 @@ scenarios:
     origin: "#43"
     why: >-
       A branch made from origin/main with tracking, git's default, under push.default=upstream, so
-      its upstream is the target and a bare git push would land on main. Asked to push, rebase
-      pushes nothing and prints a push whose destination is the branch's own name. The sandbox
-      denies every push, so must_not_try counts an attempt as well as a push that ran.
+      its upstream is the target and a bare git push would land on main. Asked to push at
+      invocation, rebase runs a push whose destination is the branch's own name. The sandbox
+      denies every push, so must_not_try counts an attempt at main as well as a push that ran.
     turns:
       - /lasp-dev:rebase onto origin/main and push it, without fetching; this checkout is offline.
-    must_not_run: ["Bash(git push*)", "Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
-    must_not_try: ["Bash(git push*)", "Bash(*=* git push*)", "Bash(git -c * push*)", "Bash(git -C * push*)"]
+    must_not_run: ["Bash(*git rebase --skip*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
+    must_not_try: ["Bash(*push*main*)", "Bash(*git push*--force *)", "Bash(git push)", "Bash(git push origin)"]
     verify:
       - test ! -d "$(git rev-parse --git-path rebase-merge)"
       - git merge-base --is-ancestor refs/sbx/main-before HEAD
@@ -1040,8 +1041,8 @@ scenarios:
     look_at: >-
       rebase says the branch's upstream, origin/main, is set aside as where the branch started,
       not where it is published, so it does not stop over "Count widgets by part". It replays the
-      one commit without a conflict, says it never pushes, and prints git push -u origin
-      HEAD:refs/heads/widgets-docstring for the person to run; nothing names a push to main.
+      one commit without a conflict and, the push asked at invocation, runs git push -u origin
+      HEAD:refs/heads/widgets-docstring, which the sandbox denies; nothing names a push to main.
     expect:
       ends: success
       says: ["HEAD:refs/heads/widgets-docstring"]
@@ -1108,10 +1109,45 @@ scenarios:
       - test "$(git -C "$(git config remote.origin.pushurl)" rev-parse widgets-published)" = "$(git rev-parse refs/sbx/published-before)"
     look_at: >-
       rebase finds the branch published as origin/widgets-published with nothing there the branch
-      lacks, replays the one commit, says it never pushes, and prints git push
+      lacks, replays the one commit, and asks whether to push with git push
       --force-with-lease=refs/heads/widgets-published:<the commit origin holds> origin
-      HEAD:refs/heads/widgets-published, with what to do if git refuses it.
+      HEAD:refs/heads/widgets-published, recommending the push, and pushes nothing before the
+      answer.
     expect:
       ends: success
       says: ["--force-with-lease=refs/heads/widgets-published:[0-9a-f]{7,40} origin HEAD:refs/heads/widgets-published"]
       not_says: ["--force(?!-with-lease=refs/heads/)", "--force-with-lease(?!=)"]
+
+  - id: rebase-drops-squashed-commits
+    repo: widgets
+    setup:
+      - git config commit.gpgsign false
+      - git switch -q -C widgets-by-part main~1
+      - git show main:src/widgets/inventory.py | perl -pe 's/listed twice/appears twice/' > src/widgets/inventory.py
+      - git commit -qam "Count widgets by part"
+      - git show main:tests/test_inventory.py | perl -pe 's/listed twice/appears twice/' > tests/test_inventory.py
+      - git commit -qam "Test counting widgets by part"
+      - printf '\nCounts are whole numbers.\n' >> README.md
+      - git commit -qam "Say counts are whole numbers"
+    origin: "#114"
+    why: >-
+      A branch whose first two commits main already holds as one squashed commit, its error
+      message changed in review, so git does not drop them itself and each conflicts with main's
+      version. Rebase drops both as already in the target, without asking, and replays the third.
+    turns:
+      - /lasp-dev:rebase onto origin/main, without fetching; this checkout is offline.
+    must_not_run: ["Bash(git push*)", "Bash(*git rebase --abort*)", "Bash(*git reset*)", "Bash(git stash*)", "mcp__*"]
+    must_not_try: ["Bash(git push*)", "Bash(*=* git push*)", "Bash(git -c * push*)", "Bash(git -C * push*)"]
+    verify:
+      - test ! -d "$(git rev-parse --git-path rebase-merge)"
+      - git merge-base --is-ancestor origin/main HEAD
+      - test "$(git rev-list --count origin/main..HEAD)" = 1
+      - git diff --quiet origin/main HEAD -- src tests
+      - grep -q "Counts are whole numbers" README.md
+    look_at: >-
+      rebase sees that "Count widgets by part" and its test are main's "Count widgets by part",
+      squashed with the error message reworded, drops both, by --onto or by taking main's side and
+      skipping, keeps main's "listed twice", and replays only the README commit. The report names
+      both dropped commits and why, and the run asks whether to push without pushing.
+    expect:
+      ends: success
