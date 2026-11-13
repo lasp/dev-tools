@@ -320,8 +320,9 @@ layer that does not depend on the skill text, and that still asks in auto mode. 
 }
 ```
 
-Nothing in the plugin needs a denied tool: `pr-fix` pushes with `--force-with-lease` only after
-a rebase the person chose, which the `ask` rule covers and the `--force` rules do not match. Rules
+Nothing in the plugin needs a denied tool: `pr-fix` and `rebase` push a rebased, published
+branch with `--force-with-lease` only on the person's yes, which the `ask` rule covers and the
+`--force` rules do not match. Rules
 match a command's prefix, so this is a backstop, not a complete list. The review tool cannot be
 asked about by event, so a posted review's verdict, COMMENT, REQUEST_CHANGES or APPROVE, is the one
 the person chose at `pr-review`'s post step, and the prompt this block keeps asks again. On the
@@ -474,8 +475,9 @@ The skills a person types, in the order they meet them:
 
 **Supporting**
 - `commit`: chooses what belongs in a commit and writes the message; never pushes.
-- `rebase`: rebases the branch onto its target, resolving the clear conflicts and asking at the
-  rest; never pushes, and prints the push command for you to run.
+- `rebase`: rebases the branch onto its target, resolving the conflicts its commits show the
+  answer to, dropping commits the target already holds, and asking at the rest; pushes with a
+  pinned lease on your yes, or prints the command for you to run.
 - `test-suite-review`: judges test changes for loosening, missed failure paths and factoring; reads
   only.
 - `downstream`: says which consuming repositories a change breaks, why a CI run went red, and which
@@ -499,7 +501,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `implement-change` | typed or asked | Take a change request to an agreed plan, an implementation and a diff verified by a wave of reviewers; `verify` runs the wave on work written with no plan |
 | | `pr-create` | typed or asked | Write a reviewer-focused description and open the pull request |
 | | `pr-review` | typed or asked | Review a pull request and present the findings at their lines, each citing a rule, decision, term, ticket criterion or test check when one applies, and no key otherwise; draft comments when asked, and post one review with the verdict you choose only on your yes. A posted review's threads are what the revision reads; a review kept local leaves it nothing |
-| | `pr-fix` | typed or asked | Assess every thread, your own comments included, take your agree, disagree or discuss on each (posting them is optional, and each run links the ones not yet on GitHub), offer a rebase when the branch is behind, then plan, implement and reply to the agreed feedback on a pull request, people's comments before AI findings |
+| | `pr-fix` | typed or asked | Assess every thread, your own comments included, take your agree, disagree or discuss on each (posting them is optional, and each run links the ones not yet on GitHub), offer a rebase when the branch is behind, resolving conflicts as `rebase` does, then plan, implement and reply to the agreed feedback on a pull request, people's comments before AI findings |
 | Called by other skills, also typed | `commit` | typed or asked | Choose what belongs in a commit and write the message, Conventional Commits unless another style is asked for; never pushes |
 | | `test-suite-review` | typed or asked | Judge test changes: loosening, failure paths, factoring, placement and lanes; run it directly on a colleague's test changes |
 | | `downstream` | typed or asked | Say which consuming repositories a change breaks, why a run went red, and which pins a release leaves behind |
@@ -515,7 +517,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `revise` | typed only | Monthly: prepare the revision report before the meeting, with `measures` adding tickets, escaped defects and build yield; a sweep of the window's merged diffs reports where they follow or break the rules and the documented practice; `apply` drafts what the group accepted; `correct`, between revisions, corrects something the shared standards got wrong, everywhere it is carried, while a disagreement with a rule goes through Disagree and the revision; `capture`, weekly or whenever pull requests have merged, harvests and reads them into the standard's log so `prepare` reads the month from there |
 | | `ticket-audit` | typed only | Sweeps across the project's Jira, or on a GitHub tracker its issues' duplicates and its open pull requests, written to `.review/audit/`, then the actions they propose applied in the tracker through one write plan on your yes |
 | | `skill-feedback` | typed or asked | File a complaint about a skill or agent as a `skill-feedback` issue here, in your words, with the session's last turns attached when you choose, or a draft `revise` wrote for a procedure finding; you see the whole issue before your yes |
-| | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts with one objectively clear resolution and stop at any where the two sides differ in intent or approach, showing both with a recommendation; never pushes, and prints the push command, its destination explicit and any `--force-with-lease` pinned to the commit it fetched |
+| | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts whose answer the two sides' commits show, drop commits the target already holds, and stop only where the sides want incompatible behavior, showing both with a recommendation; then ask to push, the command's destination explicit and any `--force-with-lease` pinned to the commit it fetched, or print it for you to run |
 
 `implement-change`, `commit`, `pr-create`, `pr-review` and `pr-fix` began from upstream and have
 since been rewritten; the rest were written here.

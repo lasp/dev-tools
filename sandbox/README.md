@@ -18,7 +18,8 @@ things read it:
 - **`--check`**, for testing: each summary against the scenario's `expect` block, `must_not_run` and `verify`.
   `must_not_run` counts only a use the settings let run, since a scenario may expect a denial, as
   `quickstart` does of `claude plugin list`; `must_not_try` counts a denied use too, for a command
-  the sandbox denies but the run must not even try, as the rebase scenarios hold every push.
+  the sandbox denies but the run must not even try, as the rebase scenarios hold every push they
+  do not expect, and a push to main or a forced one where one is expected.
 
 This repository holds several scenario packs. The generic one, `scenarios.yaml`, is `run.py`'s default: each
 scenario runs offline in `widgets`, a made-up repository `fixture/make_widgets.sh` builds with the
@@ -27,12 +28,14 @@ same commits every time, so it needs no server and no access to anyone's reposit
 `no-standard`, `onboard-blanket-answer`, which answers onboard's first question with a blanket "take the recommended option", 
 the controlled-content gates of `design-doc`, `ticket-draft` and `pr-create`,
 `rebase-clear-conflict`, `rebase-intent-conflict`, `rebase-remote-ahead`,
-`rebase-tracks-main-prints-push`, `rebase-later-stop-takes-target` and
-`rebase-rewrites-published`, which resolve a clear conflict, stop at one of intent, stop before
-rebasing over commits only the remote holds, print, when asked to push, a push of a branch that
+`rebase-tracks-main-pushes-own-name`, `rebase-later-stop-takes-target`,
+`rebase-rewrites-published`, `rebase-drops-squashed-commits` and
+`rebase-git-caution-proceeds`, which resolve a clear conflict, stop at one of intent, stop
+before rebasing over commits only the remote holds, push, when asked at invocation, a branch that
 tracks main to the branch's own name and never to main, take the target's side of a file at a
-later stop without dropping a commit already replayed, and print the forced push of a published
-branch with its lease pinned,
+later stop without dropping a commit already replayed, offer the forced push of a published
+branch with its lease pinned, drop commits main already holds as a squash, and rebase where
+the repository's instructions only ask for care with git,
 the review contract's product scenarios, `review-specified-retry`, whose review wave must not raise
 a retry the plan specifies, `review-fail-loud-decision`, whose wave raises a silent cache fallback
 under an adopted fail-loud decision, and `review-swallowed-exception`, whose wave raises a swallowed
