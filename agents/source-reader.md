@@ -22,6 +22,10 @@ writes nothing. For `search`, the caller names the Jira project from the reposit
 on a GitHub tracker the issues' repository (`Tracker: github <owner/repo>`); a `search` without
 either line returns `search: no Jira project named` and nothing else.
 
+A GitHub tracker is one where `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults
+--field issue_tracker.kind` prints `github`, or one the caller names with `Tracker: github
+<owner/repo>`, whose repository takes precedence over `--field issue_tracker.location`.
+
 ## Servers
 
 Resolve the Atlassian tools with `ToolSearch` on `jira` and `confluence`, and the GitHub tools
@@ -52,8 +56,8 @@ jira.roles` gives that role. An error from it, a non-zero exit, makes each line
 that needs a role `not read: <error verbatim>`, and `not yet recorded` makes it `not read: no Jira
 workflow is recorded for this repository`; a status is never taken from a skill's prose in its
 place. On a GitHub tracker the role's label is `--defaults --field issue_tracker.roles.<role>`, in
-place of `jira.roles`, `none` meaning the role has no label, and an error from it makes the line
-`not read: <error verbatim>` as above.
+place of `jira.roles`, `none` or `not yet recorded` meaning the role has no label, and an error
+from it makes the line `not read: <error verbatim>` as above.
 
 ## Tasks
 
@@ -76,17 +80,18 @@ returns its heading. The caller passes the person's yes back as a line in the ta
 stored, in Jira's wiki markup with their line endings; `jira_get_issue` converts both to
 Markdown, so it is not the text verbatim.
 
-On a GitHub tracker, where `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
-issue_tracker.kind` prints `github`, the key is an issue's number: read it with `issue_read`,
-methods `get`, whose `labels` are the label names, and `get_comments`, and `get_parent` when
-`get`'s `has_parent` is true, on the repository `--field issue_tracker.location` names, or the
-caller's repository when it prints `none`. The block's heading is `## #<n> — ticket`,
-its `Fields:` line reads `<title · state (its state_reason when closed) · labels, comma-separated,
-or none · assignees, or none · author · created>`, `Description:` holds the issue's body verbatim,
+On a GitHub tracker, the key is an issue's number: read it with `issue_read`, methods `get`, whose
+`labels` are the label names, and `get_comments`, and `get_parent` when `get`'s `has_parent` is
+true, on the repository the caller's `Tracker:` line names, or else the one `--field
+issue_tracker.location` names, or the caller's repository when that prints `none`. The block's
+heading is `## #<n> — ticket`, its `Fields:` line reads `<title · state (its state_reason when
+closed) · labels, comma-separated, or none · assignees, or none · author · created>`,
+`Description:` holds the issue's body verbatim,
 `Comments:` its comments as below, `Sections:` its Markdown headings, `Links:` `parent: #<n>
 <title>` from `get_parent`, or `none`,
 `Markup:` reads `intact`, since an issue's body is stored as Markdown, and `Original request
-comment:` is read from its comments as for Jira. A pull request's number is not an issue: when `get`'s `html_url` holds
+comment:` is read from its comments as for Jira. A pull request's number is not an issue: when
+`get`'s `html_url` holds
 `/pull/`, return `## #<n> — ticket`, then `Not an issue: #<n> is a pull request`, and `Questions:`.
 
 ```

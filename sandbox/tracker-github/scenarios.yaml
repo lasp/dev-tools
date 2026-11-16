@@ -323,6 +323,96 @@ scenarios:
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
+
+  # ticket-draft on a repository with no standard, so no tracker is recorded, asked for a GitHub
+  # issue; origin is github.com/<owner>/widgets unless a setup points it elsewhere.
+  - id: tracker-gh-ticket-draft-unrecorded-ask
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+    origin: "#130: ticket-draft asks to use GitHub Issues on origin's repository where no tracker is recorded"
+    why: >-
+      Asks for a GitHub issue in a repository with no tracker recorded and origin on github.com, so
+      ticket-draft asks in one line whether to use GitHub Issues on origin's repository, before
+      reading anything, and never says the tracker is not GitHub Issues.
+    turns:
+      - "/lasp-dev:ticket-draft open a GitHub issue: total() should refuse a negative count with a ValueError naming the part"
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Agent", "mcp__*"]
+    look_at: >-
+      One line saying the tracker looks like GitHub Issues on <owner>/widgets, then a question: Use
+      GitHub Issues on <owner>/widgets (Recommended), Draft it as a Jira ticket, or Stop. No reader
+      runs and nothing is written.
+    expect:
+      ends: success
+      says: ["GitHub Issues on [\\w.-]+/widgets", "(?i)\\bStop\\b"]
+      files_absent: [".review/context/*"]
+      not_says: ["(?i)not GitHub Issues", "(?m)^## total"]
+    verify:
+      - test ! -e .git/github-writes.jsonl
+
+  - id: tracker-gh-ticket-draft-unrecorded
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+    origin: "#130: ticket-draft files a GitHub issue on origin's repository where no tracker is recorded"
+    why: >-
+      Asks for a GitHub issue with no tracker recorded, says yes to GitHub Issues on origin's
+      repository, and says yes to the write plan, so the create goes to origin's owner and
+      repository with no labels, through the approval record and the issue gate.
+    turns:
+      - "/lasp-dev:ticket-draft open a GitHub issue: make total() refuse a negative count with a ValueError naming the part, since a bad export once gave a count of -3 and the total came out low without anyone noticing."
+      - Use GitHub Issues on that repository.
+      - The goal is right. Draft this ticket.
+      - Take the recommended answer on every question.
+      - Looks right. Write all.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__github__sub_issue_write", "mcp__github__update_issue_comment"]
+    look_at: >-
+      The plan shows a create on origin's owner/widgets with no labels, then the Comment to post
+      and the Session comment. Each step that needs a role's label is skipped, said in one line.
+      After Write all the issue is read back and the approval record is gone. The closing summary
+      names the issue, says the approval label is skipped since no tracker is recorded, and names
+      /lasp-dev:onboard in place of /lasp-dev:work.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_write, mcp__github__issue_read]
+      files: [".review/context/[0-9]*.md", ".review/context/[0-9]*.issue.md"]
+    verify:
+      - test ! -e .review/github-approval.json
+      - >-
+        python3 -c 'import json, re, subprocess;
+        o = subprocess.run(["git", "remote", "get-url", "origin"], capture_output=True, text=True).stdout.strip();
+        m = re.search(r"github\.com[:/]([^/]+)/([^/]+?)(\.git)?$", o); assert m, o;
+        w = [json.loads(l) for l in open(".git/github-writes.jsonl")];
+        c = [x["arguments"] for x in w if x["tool"] == "issue_write" and x["arguments"]["method"] == "create"];
+        assert c, w;
+        assert (c[0]["owner"], c[0]["repo"]) == m.group(1, 2), (c[0], o);
+        assert all(not x.get("labels") for x in c), c'
+
+  - id: tracker-gh-ticket-draft-unrecorded-other-origin
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - git remote set-url origin https://git.example.org/example/widgets.git
+    origin: "#130: ticket-draft names onboard where no tracker is recorded and origin is not on github.com"
+    why: >-
+      Asks for a GitHub issue with no tracker recorded and origin off github.com, so ticket-draft
+      says no tracker is recorded and onboard records one, and asks Draft it as a Jira ticket or
+      Stop, before reading anything, never offering GitHub Issues on a repository.
+    turns:
+      - "/lasp-dev:ticket-draft open a GitHub issue: total() should refuse a negative count with a ValueError naming the part"
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Agent", "mcp__*"]
+    look_at: >-
+      One line saying no tracker is recorded and origin is not on github.com, so /lasp-dev:onboard
+      records one, then a question: Draft it as a Jira ticket or Stop. No reader runs and nothing
+      is written.
+    expect:
+      ends: success
+      says: ["(?i)no (issue )?tracker (is )?recorded", "/lasp-dev:onboard", "(?i)\\bStop\\b"]
+      files_absent: [".review/context/*"]
+      not_says: ["(?i)not GitHub Issues", "GitHub Issues on ", "(?m)^## total"]
+    verify:
+      - test ! -e .git/github-writes.jsonl
+
   # onboard on a repository with no standard, reading its GitHub issues. The stub also answers
   # onboard's search_repositories (public, on main) and search_code (nothing), so no standard
   # elsewhere covers widgets. Each setup makes its own history, and a run's reset restores the branches.

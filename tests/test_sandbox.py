@@ -237,7 +237,8 @@ class TrackerGithubPack(unittest.TestCase):
     WORK = {"tracker-gh-work-unlabeled", "tracker-gh-work-labeled", "tracker-gh-work-closed", "tracker-gh-work-branch",
             "tracker-gh-work-pr", "tracker-gh-work-closed-labeled"}
     DRAFT = {"tracker-gh-ticket-draft-new", "tracker-gh-ticket-draft-refine", "tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket",
-             "tracker-gh-ticket-draft-standing-answer"}
+             "tracker-gh-ticket-draft-standing-answer", "tracker-gh-ticket-draft-unrecorded-ask", "tracker-gh-ticket-draft-unrecorded",
+             "tracker-gh-ticket-draft-unrecorded-other-origin"}
     ONBOARD = {"tracker-gh-onboard", "tracker-gh-onboard-mixed"}
     AUDIT = {"tracker-gh-audit-duplicates", "tracker-gh-audit-pulls", "tracker-gh-audit-declined"}
 

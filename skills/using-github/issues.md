@@ -2,12 +2,14 @@
 
 How a skill writes a ticket where the standard's tracker is GitHub Issues
 (`python3 "<plugin root>/scripts/profile.py" --defaults --field issue_tracker.kind` prints
-`github`): the issue's fields, the items a write plan may hold, the read-back and the paste file.
-The ticket is an issue at `--field issue_tracker.location`, or this repository's own issues when
-that prints `none`; its key is the number, `12` in file names and arguments, `#12` wherever a
-person reads it. Showing the plan, its gate, the order, running it and failures are
-`<plugin root>/skills/using-jira/write-plan.md`'s, read with the differences below; the server is
-picked as `<plugin root>/skills/using-github/SKILL.md` says.
+`github`), or where it prints `not yet recorded` and the skill confirmed GitHub Issues on a
+repository with the person for the run: the issue's fields, the items a write plan may hold, the
+read-back and the paste file. The ticket is an issue in that confirmed repository, or at `--field
+issue_tracker.location`, or this repository's own issues when that prints `none`; its key is the
+number, `12` in file names and arguments, `#12` wherever a person reads it. Showing the plan, its
+gate, the order, running it and failures are `<plugin root>/skills/using-jira/write-plan.md`'s,
+read with the differences below; the server is picked as `<plugin root>/skills/using-github/SKILL.md`
+says.
 
 ## The issue
 
@@ -20,7 +22,7 @@ picked as `<plugin root>/skills/using-github/SKILL.md` says.
   would send with `get_label`, and offer only those the profile maps or the repository's issues
   carry (`list_issues`, `issue_read` `get_labels`): a label no issue carries yet is missed unless
   the person names it. One `get_label` cannot find is left out and said so. A role's label is `--defaults --field issue_tracker.roles.<role>`, `none` for a
-  role with no label.
+  role with no label, and `not yet recorded`, on a tracker not yet recorded, read as `none`.
 - **State**: `open`, or `closed` with a `state_reason`: `completed` for the `finished` role,
   `not_planned` for `abandoned`, and `duplicate`, with `duplicate_of`, for a ticket merged into
   another.
@@ -40,10 +42,11 @@ issue on the `Ticket:` line `pr-create` writes, never with a closing keyword.
 | Comment | `add_issue_comment`: `owner`, `repo`, `issue_number`, `body` | `<owner>/<repo>#<n>` | The comment in full. An `Original request` or a session comment opens with the plain first line `using-jira`'s "Copy-paste output" gives, no Markdown before its first word, since the revision finds the baseline by it |
 
 Moving a ticket into a role is a labels update: the role's label added and any other mapped
-label removed, since an issue carries at most one. A move into a role whose label is `none` is
-skipped and said so: an open issue with no mapped label is already `filed`, and `approved` and
-`implementation` have nothing to move to. The move from `filed` to `approved` is the ticket
-writer's approval, proposed only when the person asks for it. Closing is a state update, last.
+label removed, since an issue carries at most one. A move into a role whose label is `none` or
+`not yet recorded` is skipped and said so: an open issue with no mapped label is already `filed`,
+and `approved` and `implementation` have nothing to move to. The move from `filed` to `approved` is
+the ticket writer's approval, proposed only when the person asks for it. Closing is a state
+update, last.
 
 The order is `write-plan.md`'s, with these steps empty: links, and assignees, which no plan holds
 here.
