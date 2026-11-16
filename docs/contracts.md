@@ -1538,8 +1538,10 @@ in the shape it reads stops the script.
 - `skills`: per plugin skill, `runs`, `typed`, `model_triggered`, `turns` and `tokens` as
   `{median, p90}` (nearest rank), `reruns` (a run of the same skill started within 3 of the
   person's messages of the last), `compacted` (runs a compaction fell in). A run starts at a typed
-  `/<plugin>:<skill>` or a `Skill` call and ends at the next skill start, a personal one or another
-  plugin's typed `/<namespace>:<name>` included, or the session's end. Its turns are the person's
+  `/<plugin>:<skill>` or a `Skill` call and ends at the next skill start, a personal one, a typed
+  project one (a directory `.claude/skills/<name>/` or a file `.claude/commands/<name>.md` under
+  the session's working directory) or another plugin's typed `/<namespace>:<name>` included, or the
+  session's end. Its turns are the person's
   messages in it, the typed start included; its tokens are input, cache and output tokens, once per request, with the
   agents it started.
 - `questions`: per plugin skill, per header, the count of each answer type, `recommended` (the
@@ -1580,19 +1582,22 @@ characters; a refusal writes nothing.
 `/tmp` when that is unset, outside every repository: a JSON list of the most recent 40 plugin skill runs, `{skill, started, next_message}`, the person's next message cut to 400 characters or null.
 
 Nothing records a report as sent. The `usage-report` skill opens the window at the person's
-`since` date; else, sending to the plugin's repository, at the `window.end` of the newest
-`usage-report` issue the person opened there (through the server, among the 300 newest), read from
-the report in its body; else 30 days back.
+`since` date; else, sending to the plugin's repository, at the `window.end` of the newest issue
+titled `usage-report: …` the person opened there (through the server, among the 300 newest
+issues), read from the report in its body; else 30 days back. A report is found by that title, not
+by its `usage-report` label, which GitHub drops when the sender has no push access.
 
 Writers: `scripts/usage_report.py`; the `usage-report` skill, through `--fill`.
-The issue body the `usage-report` skill files is the report as `--fill` last printed it, byte for
-byte, in a `json` fence, then the digest line in backticks, `` `sha256:<hex>` ``, then
+The issue the `usage-report` skill files is titled `usage-report: <window start date> to <window
+end date>`, and its body is the report as `--fill` last printed it, byte for byte, in a `json`
+fence, then the digest line in backticks, `` `sha256:<hex>` ``, then
 `Filed with /<plugin>:usage-report.` on a line of its own.
 
 Readers: the person, who sees the payload before anything is sent; the maintainer, from the
-`usage-report` issue or the file the person sends; the `usage-report` skill, which parses the `json`
-fence of the person's own earlier issue for its `window.end`; `scripts/usage_merge.py`, which
-checks the issue body's digest and the payload's shape.
+issue or the file the person sends; the `usage-report` skill, which parses the `json` fence of the
+person's own earlier issue for its `window.end`; `scripts/usage_merge.py`, which checks the issue
+body's digest and the payload's shape, both when `collect` merges the reports and when the
+`usage-report` skill reads an issue back after sending it.
 
 Pinned by: tests/test_usage_report.py::test_the_payload_has_the_contract_fields
 

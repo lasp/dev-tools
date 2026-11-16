@@ -24,12 +24,13 @@ so the skill's run directory, which it makes under `$TMPDIR`, is `<tmp>/<one dir
 `payload.json`, or for `collect`, `merged.json`. A check that finds no such directory, or more than one, exits 1.
 
 `issue` appends to `.git/github-writes.jsonl` two `issue_write` creates the stub replays at start,
-each a `usage-report` issue whose body is a report in a `json` fence and whose author and creation
-time are `seeded`: first the person's (`PERSON`, the stub's `get_me` login), created when its window
+each a `usage-report: …` issue whose body is a report in a `json` fence and whose author and creation
+time are `seeded`: first the person's (`PERSON`, the stub's `get_me` login), with no label, as
+GitHub leaves a sender without push access, created when its window
 ends two days ago, that end recorded as `since` in `<dir>/expected.json`; then one by another login,
 created when its window ends a day ago, so it is the highest numbered, the newest and, newest
 first, listed first. `reports` appends three, each a filled report of typed `work` runs
-(`COLLECT`) by a login of its own, created when its window ends, the last with a digest that is not
+(`COLLECT`) by a login of its own, the person's with no label, created when its window ends, the last with a digest that is not
 its report's, and records the good ones' count and runs as `collect` in `<dir>/expected.json`;
 `merged` holds the one `<tmp>/*/merged.json` to it. Run from the clone, as a scenario's setup and
 verify run.
@@ -126,13 +127,14 @@ def stamp(days: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def create(plugin: str, report: dict, digest: "str | None" = None) -> dict:
-    """An issue_write create of a usage-report issue whose body holds `report`, with its digest, or `digest` in its place."""
+def create(plugin: str, report: dict, digest: "str | None" = None, labeled: bool = True) -> dict:
+    """An issue_write create of a usage-report issue whose body holds `report`, with its digest, or `digest` in its place, and
+    the `usage-report` label unless not `labeled`, as GitHub drops it for a sender with no push access."""
     text = json.dumps(report, indent=2, sort_keys=True) + "\n"
     body = f"```json\n{text}```\n`sha256:{digest or hashlib.sha256(text.encode()).hexdigest()}`\nFiled with /{plugin}:usage-report.\n"
     start, end = report["window"]["start"], report["window"]["end"]
     return {"method": "create", "owner": "owner", "repo": "repo", "title": f"usage-report: {start[:10]} to {end[:10]}", "body": body,
-            "labels": ["usage-report"]}
+            "labels": ["usage-report"] if labeled else []}
 
 
 def seed(*issues: tuple) -> None:
@@ -145,7 +147,7 @@ def seed(*issues: tuple) -> None:
 
 def issue(directory: Path, plugin: str) -> None:
     end = stamp(2)
-    seed((PERSON, create(plugin, {"schema": 1, "window": {"end": end, "start": stamp(32)}})),
+    seed((PERSON, create(plugin, {"schema": 1, "window": {"end": end, "start": stamp(32)}}, labeled=False)),
          ("another-filer", create(plugin, {"schema": 1, "window": {"end": stamp(1), "start": stamp(31)}})))
     expected = json.loads((directory / "expected.json").read_text())
     (directory / "expected.json").write_text(json.dumps({**expected, "since": end}, indent=2) + "\n")
@@ -161,7 +163,8 @@ def full(start: str, end: str, runs: int) -> dict:
 
 
 def reports(directory: Path, plugin: str) -> None:
-    seed(*((login, create(plugin, full(stamp(start), stamp(end), runs), digest)) for login, start, end, runs, digest in COLLECT))
+    seed(*((login, create(plugin, full(stamp(start), stamp(end), runs), digest, labeled=login != PERSON))
+           for login, start, end, runs, digest in COLLECT))
     expected = json.loads((directory / "expected.json").read_text())
     good = [runs for _, _, _, runs, digest in COLLECT if digest is None]
     (directory / "expected.json").write_text(json.dumps({**expected, "collect": {"reports": len(good), "runs": sum(good)}}, indent=2) + "\n")

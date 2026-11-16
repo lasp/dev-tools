@@ -381,6 +381,22 @@ class Bucketing(Fixture):
         self.assertEqual(payload["skills"]["work"]["turns"]["median"], 2)
         self.assertEqual(payload["chains"]["transitions"], {"work -> other": 1})
 
+    def test_a_typed_project_skill_or_command_ends_the_run(self):
+        project = self.tmp / "project"
+        (project / ".claude" / "skills" / "zanzibar-check").mkdir(parents=True)
+        (project / ".claude" / "commands").mkdir()
+        (project / ".claude" / "commands" / "zanzibar-ship.md").write_text("x")
+        for name in ("zanzibar-check", "zanzibar-ship"):
+            t = Transcript()
+            t.typed("/lasp-dev:work").person("one").typed(f"/{name}").person("two").person("three")
+            for e in t.entries:
+                e["cwd"] = str(project)
+            self.write(t)
+        payload, _ = self.ok()
+        self.assertEqual(payload["skills"]["work"]["turns"], {"median": 2, "p90": 2})
+        self.assertEqual(payload["chains"]["transitions"], {"work -> other": 2})
+        self.assertNotIn("zanzibar", json.dumps(payload))
+
     def test_a_rerun_within_three_turns_is_counted(self):
         t = Transcript()
         t.typed("/lasp-dev:work").person("a").typed("/lasp-dev:work")
@@ -604,6 +620,10 @@ class Failures(Fixture):
 
     def test_an_entry_with_no_uuid_raises(self):
         self.assert_refused({"type": "user", "timestamp": stamp(1), "uuid": None, "message": {"content": "x"}}, "has no uuid")
+
+    def test_a_typed_command_with_no_cwd_raises(self):
+        self.assert_refused({"type": "user", "timestamp": stamp(1), "message": {"content": "<command-name>/zanzibar-check</command-name>"}},
+                            "a typed command's entry has no cwd")
 
     def test_a_usage_that_is_not_a_record_raises(self):
         self.assert_refused(self.assistant([], usage="lots"), "usage is not a record")
@@ -921,10 +941,16 @@ class Fill(Fixture):
 class OverlapRead(unittest.TestCase):
     """The skill's awk command that prints the person's own skills' and agents' frontmatter."""
 
-    COMMAND = next(line for line in (ROOT / "skills" / "usage-report" / "SKILL.md").read_text().splitlines() if line.startswith("awk '"))
+    SKILL = ROOT / "skills" / "usage-report" / "SKILL.md"
+    COMMAND = next(line for line in SKILL.read_text().splitlines() if line.startswith("awk -f "))
 
     def read(self, config: Path) -> subprocess.CompletedProcess:
-        return subprocess.run(["bash", "-c", self.COMMAND], capture_output=True, text=True, env={**os.environ, "CLAUDE_CONFIG_DIR": str(config)})
+        env = {**os.environ, "CLAUDE_CONFIG_DIR": str(config)}
+        command = self.COMMAND.replace("${CLAUDE_SKILL_DIR}", str(self.SKILL.parent))
+        return subprocess.run(["bash", "-c", command], capture_output=True, text=True, env=env)
+
+    def test_the_skill_body_holds_no_positional_argument_token(self):
+        self.assertIsNone(re.search(r"\$\d", self.SKILL.read_text()), "Claude Code replaces $N in a skill body with an argument")
 
     def write(self, path: Path, description: str) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

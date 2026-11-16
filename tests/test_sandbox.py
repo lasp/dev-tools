@@ -319,6 +319,7 @@ class TrackerGithubPack(unittest.TestCase):
         self.assertEqual(tools["pull_request_read"]["required"], ["method", "owner", "repo", "pullNumber"])
         self.assertEqual(tools["issue_read"]["required"], ["method", "owner", "repo", "issue_number"])
         self.assertEqual(tools["search_pull_requests"]["required"], ["query"])
+        self.assertIn("title", tools["list_issues"]["properties"]["fields"]["items"]["enum"])
 
     def test_with_writes_the_stub_lists_the_issue_writes_and_records_each_call(self):
         writes = Path(tempfile.mkdtemp()) / "writes.jsonl"
@@ -523,13 +524,17 @@ class TrackerGithubPack(unittest.TestCase):
         for command in ("make", "issue"):
             subprocess.run([sys.executable, str(script), command, ".usage-config", "lasp-dev"], cwd=clone, check=True)
         self.addCleanup(shutil.rmtree, json.loads((clone / ".usage-config" / "expected.json").read_text())["tmp"])
-        fields = ["number", "user", "created_at"]
+        fields = ["number", "title", "user", "created_at"]
         calls = [{"id": 1, "method": "tools/call", "params": {"name": "get_me", "arguments": {}}},
-                 {"id": 2, "method": "tools/call", "params": {"name": "list_issues", "arguments": {"owner": "o", "repo": "r", "labels": ["usage-report"],
-                                                                                                    "orderBy": "CREATED_AT", "direction": "DESC",
-                                                                                                    "fields": fields}}}]
+                 {"id": 2, "method": "tools/call", "params": {"name": "list_issues", "arguments": {"owner": "o", "repo": "r", "orderBy": "CREATED_AT",
+                                                                                                    "direction": "DESC", "fields": fields}}}]
         me, listed = (json.loads(r["result"]["content"][0]["text"]) for r in self.serve(*calls, writes=clone / ".git" / "github-writes.jsonl"))
+        listed["issues"] = [i for i in listed["issues"] if i["title"].startswith("usage-report:")]
         other, mine = listed["issues"]
+        labeled = {"id": 4, "method": "tools/call", "params": {"name": "list_issues", "arguments": {"owner": "o", "repo": "r", "labels": ["usage-report"]}}}
+        (got,) = self.serve(labeled, writes=clone / ".git" / "github-writes.jsonl")
+        self.assertEqual([i["number"] for i in json.loads(got["result"]["content"][0]["text"])["issues"]], [other["number"]],
+                         "the person's report carries no label, so only its title finds it")
         self.assertEqual([sorted(other), sorted(mine)], [sorted(fields)] * 2)
         self.assertEqual([other["user"]["login"], mine["user"]["login"]], ["another-filer", me["login"]])
         self.assertGreater(other["number"], mine["number"])
@@ -565,9 +570,13 @@ class TrackerGithubPack(unittest.TestCase):
         self.addCleanup(shutil.rmtree, expected["tmp"])
         writes = clone / ".git" / "github-writes.jsonl"
         listed = {"id": 1, "method": "tools/call", "params": {"name": "list_issues", "arguments": {
-            "owner": "o", "repo": "r", "labels": ["usage-report"], "orderBy": "CREATED_AT", "direction": "DESC", "fields": ["number", "user"]}}}
+            "owner": "o", "repo": "r", "orderBy": "CREATED_AT", "direction": "DESC", "fields": ["number", "title", "user"]}}}
         (got,) = self.serve(listed, writes=writes)
-        issues = json.loads(got["result"]["content"][0]["text"])["issues"]
+        issues = [i for i in json.loads(got["result"]["content"][0]["text"])["issues"] if i["title"].startswith("usage-report:")]
+        labeled = {"id": 3, "method": "tools/call", "params": {"name": "list_issues", "arguments": {"owner": "o", "repo": "r", "labels": ["usage-report"]}}}
+        (got,) = self.serve(labeled, writes=writes)
+        self.assertEqual(sorted(i["number"] for i in json.loads(got["result"]["content"][0]["text"])["issues"]), [25, 26],
+                         "the person's report carries no label, so only its title finds it")
         self.assertEqual(sorted((i["number"], i["user"]["login"]) for i in issues),
                          [(24, "sbx-person"), (25, "another-filer"), (26, "third-filer")])
         run_dir = Path(expected["tmp"]) / "usage-report.abc123"

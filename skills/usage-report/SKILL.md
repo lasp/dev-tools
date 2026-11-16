@@ -32,10 +32,13 @@ makes it and calls it `<run>`:
 
 - the report: `<run>/payload.json`;
 - the runs to classify, which hold the person's own words and are never sent: `<run>/pending.json`;
-- the person's note: `<run>/notes.txt`; on the `gh` path, the issue's body: `<run>/body.md`.
+- the person's note: `<run>/notes.txt`; the issue's body: `<run>/body.md` on the `gh` path, and
+  as read back after the send, `<run>/sent.md`.
 
 Nothing records a report once it is sent: the next report finds where this one closed from the
-person's `usage-report` issues.
+person's issues titled `usage-report: …`. The title, which this skill always writes, is how a
+report is found; the `usage-report` label is optional, since GitHub drops it without a word when
+the sender has no push access to the repository.
 
 Where `${CLAUDE_PLUGIN_ROOT}` is not set, such as under Copilot, there are no Claude Code
 transcripts to count: say so and stop.
@@ -53,8 +56,8 @@ files, each optionally with `since YYYY-MM-DD`; nothing was counted."
 The window closes now. It opens at the first of these that applies, and the summary says which:
 
 1. the date the arguments give, `since YYYY-MM-DD`, for either destination;
-2. for `dev-tools`, where the person's last report closed: the `window.end` of the newest
-   `usage-report` issue they opened on the plugin's repository, open or closed;
+2. for `dev-tools`, where the person's last report closed: the `window.end` of the newest issue
+   titled `usage-report: …` they opened on the plugin's repository, open or closed;
 3. 30 days ago, when there is no such issue, none in the first 3 pages, the GitHub server cannot
    be reached, or the destination is `file`:
 
@@ -66,17 +69,20 @@ For the second, the plugin's repository is the `homepage` in
 `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`, `https://github.com/<owner>/<repo>`. Resolve
 the GitHub tools, the issue write tool among them, as `${CLAUDE_SKILL_DIR}/../using-github/SKILL.md`
 says, and take the person's login from `get_me`. Then `list_issues` on `<owner>/<repo>` with
-`labels: ["usage-report"]`, `orderBy: CREATED_AT`, `direction: DESC`, `fields: ["number", "user",
-"created_at"]` and `perPage: 100`, and no `state`, so closed issues count too, paging with `after`
-until an issue whose author is that login, or none is left, or 3 pages are read; past 3 pages, the
-window opens 30 days ago and the summary line says no report of theirs was among the newest 300.
+`orderBy: CREATED_AT`, `direction: DESC`, `fields: ["number", "title", "user", "created_at"]` and
+`perPage: 100`, and no `state` or `labels`, so closed and unlabeled issues count too, paging with
+`after` until an issue whose title begins `usage-report:` and whose author is that login, or none
+is left, or 3 pages are read; past 3 pages, the window opens 30 days ago and the summary line says
+no report of theirs was among the newest 300 issues.
 Read only the person's issue, with `issue_read` `get`: its body is a report this skill sent, in a
 `json` fence, and its `window.end` is where this window opens, passed to the script as it reads. On
 `gh`, when the person has said so:
 
 ```bash
-gh issue list --repo <owner>/<repo> --label usage-report --author @me --state all --limit 1 --json number,body
+gh issue list --repo <owner>/<repo> --search 'in:title "usage-report:" sort:created-desc' --author @me --state all --limit 100 --json number,title,body --jq 'first(.[] | select(.title | startswith("usage-report:"))) | {number, body}'
 ```
+
+No output is no such issue.
 
 An issue whose body holds no `window.end`, or whose `window.end` the script refuses at step 2,
 stops the skill before it counts anything: name the issue, and say that `since YYYY-MM-DD` sets the
@@ -130,7 +136,7 @@ Print the frontmatter of the person's own skills and agents, at most 15 lines of
 first 50 files, each line cut to 300 characters:
 
 ```bash
-awk 'BEGIN {for (i = 1; i < ARGC; i++) if ((getline x < ARGV[i]) < 0) delete ARGV[i]; else close(ARGV[i])} FNR == 1 {n = k = 0; if (++f > 50) {left++; nextfile} print "== " FILENAME} /^---\r?$/ {if (++n == 2) nextfile; next} n == 1 && k++ < 15 {print substr($0, 1, 300)} END {if (left) print "== " left " more files left out"}' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/skills/*/SKILL.md "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/agents/*.md < /dev/null
+awk -f "${CLAUDE_SKILL_DIR}/frontmatter.awk" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/skills/*/SKILL.md "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/agents/*.md < /dev/null
 ```
 
 A kind whose pattern matches no file has none, and no output means the person has neither. A last
@@ -172,12 +178,12 @@ One message, in this order:
 2. **The report as it will be sent**: what step 5 printed, whole, in one `json` fence, then the
    digest line. Never cut, reorder or retype a value; it is what the person checks.
 3. **Where it goes**, in one line before the question:
-   - `dev-tools`: an issue on `<owner>/<repo>`, labeled `usage-report`, titled `usage-report:
-     <window start date> to <window end date>`, with the report as its body. Everyone who can see
+   - `dev-tools`: an issue on `<owner>/<repo>`, titled `usage-report: <window start date> to
+     <window end date>`, with the report as its body. Everyone who can see
      `<owner>/<repo>` can read it, under the person's GitHub login.
    - `file`: written where the person says, and sent by them as they choose; nothing is sent or
      recorded from here, so the next report does not start where this one closes: it starts 30
-     days back, at the person's `since`, or, sent as an issue, where their last `usage-report`
+     days back, at the person's `since`, or, sent as an issue, where their last `usage-report: …`
      issue closed.
 4. **One widget, two questions**:
    - **A note?** "Anything to add in your own words? It goes into the report's `notes` as you
@@ -215,23 +221,46 @@ report as step 5 last printed it, byte for byte, in a `json` fence, then the dig
 backticks, then `Filed with /lasp-dev:usage-report.` on a line of its own.
 
 - **The server:** `issue_write` with method `create`, owner `<owner>`, repo `<repo>`, the title,
-  the body and labels `["usage-report"]`; then read the issue back with `issue_read`.
+  the body and labels `["usage-report"]`; then read the issue back with `issue_read` `get` and
+  write its `body` to `<run>/sent.md` with the Write tool, exactly as it came: no character
+  changed, added or dropped.
 - **`gh`:** write the body to `<run>/body.md` with the Write tool, then:
 
   ```bash
   gh api repos/<owner>/<repo>/issues -f 'title=usage-report: <window start date> to <window end date>' -F body=@<run>/body.md -f 'labels[]=usage-report' --jq .number
   ```
 
-  Then `gh issue view <number> --repo <owner>/<repo> --json url,labels`.
+  Then `gh issue view <number> --repo <owner>/<repo> --json body --jq .body > <run>/sent.md`; the
+  issue's URL is `https://github.com/<owner>/<repo>/issues/<number>`.
 
-Report the issue's URL, and when it has no `usage-report` label, say in one line that the label did
-not attach and that anyone with push access can add it; until then the next report does not find
-it and opens where your previous labeled report closed, or 30 days back. A failed create is said
-as `servers.md` sets out, the error verbatim: nothing was sent; offer `Write it to a file instead`.
-A create that succeeded and a read-back that failed is said apart from that: the report was sent
-but could not be confirmed, with the issue's number or URL when the create returned one, and the
-error verbatim. Nothing is offered, so no second issue follows, and the next report still opens
-where this one closed, since step 1 finds the issue.
+Then check the body as GitHub holds it:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/usage_merge.py" --out <run>/check.json --report sender <run>/sent.md
+```
+
+Exit 0: report the issue's URL. The label is not checked: reports are found by their title.
+
+Exit 1: the issue's body does not match the report shown, so `collect` will refuse it. Say so, with
+the script's line and the issue's URL, link the text either write option would send, `<run>/body.md`
+on `gh` or `<run>/payload.json` otherwise, with its sha256 digest, as the report shown at step 6,
+unchanged; on the server the body sent is that report in a `json` fence, the digest line and
+`Filed with /lasp-dev:usage-report.`, as above. Then ask one question:
+`Correct the issue (Recommended)`, which replaces its body with that report's body (`issue_write`
+`update` with `issue_number` and `body`; on `gh`, `gh api -X PATCH
+repos/<owner>/<repo>/issues/<number> -F body=@<run>/body.md`), then reads it back and checks it
+again; `Close it and send again`, which closes it (`state: closed`, `state_reason: not_planned`;
+on `gh`, `gh issue close <number> --repo <owner>/<repo> --reason "not planned"`) and creates a new
+issue as above; `Leave it`, which leaves the issue as it is, named as one `collect` will
+refuse; and `Let's discuss`. Only `Correct the issue` or `Close it and send again` writes, as
+only `Send it` sent the report. A body that still does not match after a correction or a resend
+is said with the issue's URL, and nothing more is written. Never leave a mismatch unsaid.
+
+A failed create is said as `servers.md` sets out, the error verbatim: nothing was sent; offer
+`Write it to a file instead`. A create that succeeded and a read-back that failed is said apart
+from that: the report was sent but could not be confirmed, with the issue's number or URL when the
+create returned one, and the error verbatim. Nothing is offered, so no second issue follows, and
+the next report still opens where this one closed, since step 1 finds the issue.
 
 **A file.** At the path the person gave or chose, never replacing a file: `test -e <path>` first,
 and when it exists, ask for another path. Then `cp <run>/payload.json <path>`. Say the path, and

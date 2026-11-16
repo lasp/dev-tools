@@ -90,9 +90,9 @@ all, and sweeping the open pull requests, through `pr-reader` dumps of the stub'
 `pull_request_read`, for one whose issue is closed, one that names none and one whose issue waits for approval; and
 `usage-report` over the generic pack's fixture transcripts, whose send question, Send it
 recommended with the server present, is answered by taking every recommended answer and must
-create no issue, and, with a `usage-report` issue the person opened and a newer one by another
+create no issue, and, with an unlabeled `usage-report: …` issue the person opened and a newer one by another
 login seeded in the stub's writes, whose window opens at the person's report's `window.end`, and
-`collect` over three seeded report issues, one whose digest does not match its report, which
+`collect` over three seeded report issues, the person's unlabeled, one whose digest does not match its report, which
 merges the other two, names the third as refused and writes nothing to GitHub. Its `mcp.json` names the stub as `${SBX_FIXTURES}/github-mcp-server-stub.py`
 with `--writes .git/github-writes.jsonl`, as the pack's header shows; the file name holds
 `github-mcp-server`, so `run.py` gives it the GitHub rules, except that a pack's stub run with

@@ -65,7 +65,10 @@ TOOLS = {
                    ["method", "owner", "repo", "issue_number"]),
     "list_issues": ("List issues in a GitHub repository.",
                     {**REPO, "state": {"type": "string", "enum": ["OPEN", "CLOSED"]}, "labels": FIELDS, "perPage": NUMBER,
-                     "after": TEXT, "since": TEXT, "orderBy": TEXT, "direction": TEXT, "fields": FIELDS},
+                     "after": TEXT, "since": TEXT, "orderBy": TEXT, "direction": TEXT,
+                     "fields": {"type": "array", "items": {"type": "string", "enum": [
+                         "number", "title", "body", "state", "user", "labels", "assignees", "comments", "created_at", "updated_at",
+                         "field_values"]}}},
                     ["owner", "repo"]),
     "search_issues": ("Search issues using natural-language semantic matching. Already scoped to is:issue.", SEARCH, ["query"]),
     "search_pull_requests": ("Search for pull requests in GitHub repositories using issues search syntax already scoped to is:pr",

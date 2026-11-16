@@ -18,8 +18,9 @@ plugin's when it is named `<plugin>:<name>` or `libera-tools:<name>`, the plugin
 a name in that namespace the plugin no longer has counts as `other`.
 
 A plugin skill run starts at a typed `/<plugin>:<skill>` or a `Skill` call naming one, in a main
-transcript, and ends at the next skill start, typed or called, of any skill, a personal one or
-another plugin's `/<namespace>:<name>` included, or at the session's end. Its turns are the
+transcript, and ends at the next skill start, typed or called, of any skill, a personal one, a
+typed project one (`.claude/skills/<name>/` or `.claude/commands/<name>.md` under the entry's
+`cwd`) or another plugin's `/<namespace>:<name>` included, or at the session's end. Its turns are the
 person's messages from its start to its end, the one that typed it included; its tokens are the input, cache and output tokens of each request
 in it, counted once a request, and those of the agents it started, theirs included.
 
@@ -52,7 +53,7 @@ those forms or is not before now, a transcript
 cannot be read or is not JSON lines, an entry has no `type`, or an entry of a kind the script reads
 (user, assistant, attachment, system) does not have the shape it reads: a timestamp, a uuid, a message
 with content, a tool call with a name, id and input, a `Skill` call with a skill name, a `Bash`
-call with a command, a usage record of counts, an `AskUserQuestion` call or result
+call with a command, a typed command, other than a plugin, personal or namespaced one, with a `cwd`, a usage record of counts, an `AskUserQuestion` call or result
 `transcript_excerpt.py` refuses (a call that errored is counted, not read), or an agent with no `.meta.json` or no `agentType` in it; each
 names the file. Entries of other top-level kinds are skipped unread, since Claude Code adds kinds
 often and none of them carries a value reported here. Also exits 1 when git fails on a working
@@ -453,7 +454,7 @@ class Report:
                         start(skill, True, e, e["uuid"], new)
                         continue
                     word = name.lstrip("/").split()[0]
-                    if word in self.personal or ":" in word:
+                    if word in self.personal or ":" in word or project_skill(path, e, word):
                         start(None, True, e, e["uuid"], new)
                 if run and new:
                     run["turns"] += 1
@@ -672,6 +673,14 @@ def window_start(since: str, now: datetime) -> datetime:
     if start >= now:
         raise UsageError(f"--since {since!r} is not before now, {now.strftime('%Y-%m-%dT%H:%M:%SZ')}")
     return start
+
+
+def project_skill(path: Path, e: dict, name: str) -> bool:
+    """Whether a typed `name` is a skill or command of the project at the entry's working directory, whose typed start ends a run."""
+    if not isinstance(e.get("cwd"), str):
+        raise UsageError(f"{path}: a typed command's entry has no cwd")
+    claude = Path(e["cwd"]) / ".claude"
+    return (claude / "skills" / name).is_dir() or (claude / "commands" / f"{name}.md").is_file()
 
 
 def personal_skills(config: Path) -> set[str]:

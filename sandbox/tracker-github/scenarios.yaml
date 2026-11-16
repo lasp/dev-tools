@@ -536,7 +536,7 @@ scenarios:
     origin: "the usage-report plan, decided after the phase 2 sandbox run: the window opens where the person's last usage-report issue closed"
     why: >-
       Runs usage-report with the stub serving a usage-report issue the person opened earlier,
-      whose report closed two days ago, and a newer one another login opened, whose report closed a
+      with no label, as GitHub leaves a sender without push access, whose report closed two days ago, and a newer one another login opened, whose report closed a
       day ago, so the window opens at the person's report's window.end, not the other's or 30
       days back, and the runs since are counted.
     turns:
@@ -544,8 +544,8 @@ scenarios:
     must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
     must_not_try: ["mcp__github__issue_write", "Bash(gh *)", "Bash(curl *)", "Bash(cp *)"]
     look_at: >-
-      The skill takes the login from get_me, lists the issues labeled usage-report with
-      list_issues, passes over the newer one by another-filer, reads the person's body with
+      The skill takes the login from get_me, lists the issues with list_issues, no labels filter
+      and the title among the fields, keeps those titled usage-report:, passes over the newer one by another-filer, reads the person's body with
       issue_read and passes its window.end to --since as it reads. The summary says the window opens where the last report closed; the report's
       window.start is that time. It stops on the note and send questions; nothing is sent.
     expect:
@@ -564,14 +564,15 @@ scenarios:
     origin: "the usage-report plan, decided for phase 3: collect merges the usage-report issues and refuses one whose digest does not match its report"
     why: >-
       Runs usage-report collect with the stub serving three usage-report issues by three logins,
-      the newest, #26, carrying a digest that is not its report's, so the merged table holds the
+      the person's with no label, the newest, #26, carrying a digest that is not its report's, so the merged table holds the
       other two, #26 is named as refused, and nothing is written to GitHub or the clone.
     turns:
       - /lasp-dev:usage-report collect
     must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
     must_not_try: ["mcp__github__issue_write", "mcp__github__add_issue_comment", "Bash(gh *)", "Bash(curl *)"]
     look_at: >-
-      The skill lists the issues labeled usage-report with list_issues, reads #24, #25 and #26
+      The skill lists the issues with list_issues, no labels filter, keeps those titled
+      usage-report:, among them the unlabeled #24, reads #24, #25 and #26
       with issue_read, writes each body as it reads into a run directory mktemp -d makes under
       TMPDIR, and runs usage_merge.py with each issue's author. The merge refuses #26 by its file,
       its digest not matching; the skill leaves it out, says so with the reason, and merges the

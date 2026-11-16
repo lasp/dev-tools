@@ -1,9 +1,10 @@
 # Collecting the reports
 
 `/lasp-dev:usage-report collect` is the maintainer's side: it merges the reports people sent, the
-`usage-report` issues on the plugin's repository and any report files given, into one table. It
-reads GitHub and the files, writes only inside a run directory of its own under the temporary
-directory, and posts nothing. `<plugin root>` is the plugin root `SKILL.md` names.
+issues titled `usage-report: …` on the plugin's repository and any report files given, into one
+table. A report is found by that title, never by the `usage-report` label, which GitHub drops when
+the sender has no push access. It reads GitHub and the files, writes only inside a run directory
+of its own under the temporary directory, and posts nothing. `<plugin root>` is the plugin root `SKILL.md` names.
 
 After `collect`, `since YYYY-MM-DD` reads only the issues created on or after that date; every
 other argument is the path of a report file, a report as `usage-report file` writes it.
@@ -23,13 +24,14 @@ The plugin's repository is the `homepage` in `<plugin root>/.claude-plugin/plugi
 `<plugin root>/skills/using-github/SKILL.md` says; collecting writes nothing to GitHub, so no
 write tool is resolved.
 
-`list_issues` on `<owner>/<repo>` with `labels: ["usage-report"]`, `orderBy: CREATED_AT`,
-`direction: DESC`, `fields: ["number", "user", "created_at"]`, `perPage: 100` and no `state`, so
-closed issues count too, paging with `after` until none is left, 3 pages are read, or, with
-`since`, an issue created before that date. Keep the 5 newest. A body is typically about 20 KB, 60 KB at
-most, and passes through the conversation twice, read and then written, so 5 is what one run
-reads; past it, say how many issues were left out, by their numbers, that `collect since <date>`
-narrows the run to newer ones, and that `collect with gh` reads up to 50.
+`list_issues` on `<owner>/<repo>` with `orderBy: CREATED_AT`, `direction: DESC`, `fields:
+["number", "title", "user", "created_at"]`, `perPage: 100` and no `state` or `labels`, so closed
+and unlabeled issues count too, paging with `after` until none is left, 3 pages are read, or, with
+`since`, an issue created before that date. Of the issues whose title begins `usage-report:`, keep
+the 5 newest. A body is typically about 20 KB, 60 KB at most, and passes through the conversation
+twice, read and then written, so 5 is what one run reads; past it, say how many reports were left
+out, by their numbers, that `collect since <date>` narrows the run to newer ones, and that
+`collect with gh` reads up to 50.
 
 For each issue kept, newest first: `issue_read` with method `get`, then write its `body` to
 `<run>/issue-<number>.md` with the Write tool, exactly as it came: no character changed, added or
@@ -42,7 +44,7 @@ On `gh`, when the person has said so, the bodies never pass through the conversa
 newest are kept, `since` applied as above:
 
 ```bash
-gh issue list --repo <owner>/<repo> --label usage-report --state all --limit 300 --json number,author,createdAt
+gh issue list --repo <owner>/<repo> --search 'in:title "usage-report:" sort:created-desc' --state all --limit 300 --json number,title,author,createdAt --jq '[.[] | select(.title | startswith("usage-report:"))]'
 gh issue view <number> --repo <owner>/<repo> --json body --jq .body > <run>/issue-<number>.md
 ```
 
