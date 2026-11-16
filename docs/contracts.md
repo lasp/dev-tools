@@ -1585,8 +1585,68 @@ Nothing records a report as sent. The `usage-report` skill opens the window at t
 the report in its body; else 30 days back.
 
 Writers: `scripts/usage_report.py`; the `usage-report` skill, through `--fill`.
+The issue body the `usage-report` skill files is the report as `--fill` last printed it, byte for
+byte, in a `json` fence, then the digest line in backticks, `` `sha256:<hex>` ``, then
+`Filed with /<plugin>:usage-report.` on a line of its own.
+
 Readers: the person, who sees the payload before anything is sent; the maintainer, from the
 `usage-report` issue or the file the person sends; the `usage-report` skill, which parses the `json`
-fence of the person's own earlier issue for its `window.end`.
+fence of the person's own earlier issue for its `window.end`; `scripts/usage_merge.py`, which
+checks the issue body's digest and the payload's shape.
 
 Pinned by: tests/test_usage_report.py::test_the_payload_has_the_contract_fields
+
+## The merged usage reports
+
+Version: 1
+
+Input: `scripts/usage_merge.py --report AUTHOR PATH`, once per report: an issue body as "The usage
+report" sets it out, blank lines allowed between its parts and the `Filed with` line optional, or a
+payload file, the report's JSON alone. AUTHOR, the sender's GitHub login or any name used for that
+sender throughout, compared without case, is read only to find one sender's overlapping windows.
+
+Fields: `--out`, one JSON object written as the report is (keys sorted, two-space indents,
+non-ASCII kept, one final newline). No author and no path appear in it.
+
+- `schema`: 1, this result's version; `report_schema`: the report version merged, 1.
+- `reports`: how many were merged; `authors`: how many distinct AUTHORs sent them.
+- `window`: the earliest `start` and the latest `end` of the reports' windows. The windows may
+  leave gaps between them.
+- `plugin_commits`, `claude_code_versions`, `models`: per value, the number of reports that list
+  it.
+- `repos`, `sessions`, `turns`: summed. A repository two people used counts once for each.
+- `skills`: per skill, `runs`, `typed`, `model_triggered`, `reruns` and `compacted` summed;
+  `reports`, how many reports hold the skill; `turns` and `tokens`, one `[runs, median, p90]` per
+  report holding the skill, sorted descending. A median or p90 of several reports cannot be
+  computed from theirs, and the runs behind them are not in the reports, so each report's stays
+  beside the run count it was taken over.
+- `questions`: per skill and header, each answer type summed; `free_text_median_chars`, one
+  `[free_text, median]` per report that has it, sorted descending.
+- `scripts`, `hooks`, `denials`, `chains`, `after_run`, `overlap`: every count summed, per key at
+  every level. `after_run` covers each report's most recent 40 runs, so it is a sample, not every
+  run.
+- `agents`: per agent, `runs`, `unfinished` and `models` summed; `reports`; `tokens` as `skills`
+  keeps them.
+- `notes`: the reports' notes that are not null, sorted, so their order says nothing of who wrote
+  them.
+
+A count of zero stays left out, as in the reports. Stdout: one line of totals, a table of the ten
+skills with the most runs and of the eight agents with the most, with the range of the reports'
+medians, and one line each for questions, denials, hooks, overlap and notes.
+
+Refusals: exit 1, nothing written, one stderr line per refused report naming its path, then the
+count. A report is refused when it cannot be read, is neither a body of that shape nor JSON, has a
+digest line that does not match its JSON's sha256, has a `schema` other than 1, or is not in the
+shape "The usage report" sets out, with `after_run` and `overlap` filled. Among the rest, a
+report whose JSON is an earlier argument's, in either form and from any AUTHOR, is refused as the
+same report, and of two reports by one AUTHOR whose windows overlap (one starts before the other
+ends; windows that only touch merge), the one given second is refused, naming the first. Refusing rather than dropping one
+leaves the choice of which report stands to the person.
+
+An AUTHOR that is empty or holds a space exits 2 with a usage error naming it and its path; nothing is written.
+
+Writers: `scripts/usage_merge.py`, run by the `usage-report` skill's `collect` mode in a run
+directory under `$TMPDIR`.
+Readers: the maintainer.
+
+Pinned by: tests/test_usage_merge.py::test_counts_are_summed_and_the_list_fields_counted_per_report

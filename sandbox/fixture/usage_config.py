@@ -8,6 +8,8 @@
     usage_config.py counted <dir>               exit 1 unless a report exists and its skills' runs are the fixture's
     usage_config.py opened <dir>                exit 1 unless the report's window opens where the earlier issue's closed
     usage_config.py sent <file> <dir>           exit 1 unless <file> holds the report's bytes and the run wrote no other file
+    usage_config.py reports <dir> <plugin name> add three usage-report issues to the GitHub stub's writes, the last with a wrong digest
+    usage_config.py merged <dir>                exit 1 unless one merged result exists and it merged the two good reports
 
 `make` writes one main transcript under `<dir>/projects/`, of twelve plugin skill runs typed a day
 ago, each followed by a person's message whose outcome is plain (`RUNS`), or by none; two
@@ -19,20 +21,25 @@ temporary directory outside every repository that sandboxed Bash may write, and 
 in `expected.json`. It writes `.sbx-env` in the working directory, the clone, exporting
 `CLAUDE_CONFIG_DIR=<dir>` and `TMPDIR=<tmp>` for the session's Bash commands (sandbox/sbx-claude),
 so the skill's run directory, which it makes under `$TMPDIR`, is `<tmp>/<one directory>/`, holding
-`payload.json`. A check that finds no such directory, or more than one, exits 1.
+`payload.json`, or for `collect`, `merged.json`. A check that finds no such directory, or more than one, exits 1.
 
 `issue` appends to `.git/github-writes.jsonl` two `issue_write` creates the stub replays at start,
 each a `usage-report` issue whose body is a report in a `json` fence and whose author and creation
 time are `seeded`: first the person's (`PERSON`, the stub's `get_me` login), created when its window
 ends two days ago, that end recorded as `since` in `<dir>/expected.json`; then one by another login,
 created when its window ends a day ago, so it is the highest numbered, the newest and, newest
-first, listed first. Run from the clone, as a scenario's setup and verify run.
+first, listed first. `reports` appends three, each a filled report of typed `work` runs
+(`COLLECT`) by a login of its own, created when its window ends, the last with a digest that is not
+its report's, and records the good ones' count and runs as `collect` in `<dir>/expected.json`;
+`merged` holds the one `<tmp>/*/merged.json` to it. Run from the clone, as a scenario's setup and
+verify run.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import sys
 import uuid
@@ -62,6 +69,9 @@ PERSONAL_SKILLS = {
 }
 PERSONAL_AGENTS = {"run-tests": "Runs the project's test suite and summarizes the failures."}
 EXPECTED_OVERLAP = {"skills": {"pr-review": 1}, "agents": {"test-runner": 1}}
+# The reports `reports` seeds, in order: login, window start and end in days ago, work runs, and a
+# digest standing in for the report's own, which only the last has.
+COLLECT = [(PERSON, 9, 2, 3, None), ("another-filer", 8, 1, 5, None), ("third-filer", 7, 1, 4, "0" * 64)]
 
 
 def expected_after_run() -> dict:
@@ -116,22 +126,45 @@ def stamp(days: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def create(plugin: str, start: str, end: str) -> dict:
-    report = json.dumps({"schema": 1, "window": {"end": end, "start": start}}, indent=2, sort_keys=True) + "\n"
-    body = f"```json\n{report}```\n`sha256:{hashlib.sha256(report.encode()).hexdigest()}`\nFiled with /{plugin}:usage-report.\n"
+def create(plugin: str, report: dict, digest: "str | None" = None) -> dict:
+    """An issue_write create of a usage-report issue whose body holds `report`, with its digest, or `digest` in its place."""
+    text = json.dumps(report, indent=2, sort_keys=True) + "\n"
+    body = f"```json\n{text}```\n`sha256:{digest or hashlib.sha256(text.encode()).hexdigest()}`\nFiled with /{plugin}:usage-report.\n"
+    start, end = report["window"]["start"], report["window"]["end"]
     return {"method": "create", "owner": "owner", "repo": "repo", "title": f"usage-report: {start[:10]} to {end[:10]}", "body": body,
             "labels": ["usage-report"]}
 
 
+def seed(*issues: tuple) -> None:
+    """Append each (login, issue_write arguments) to the stub's writes, created when its report's window ends."""
+    with Path(".git/github-writes.jsonl").open("a") as f:
+        for login, arguments in issues:
+            end = json.loads(re.search(r"```json\n(.*?)```", arguments["body"], re.S).group(1))["window"]["end"]
+            f.write(json.dumps({"tool": "issue_write", "arguments": arguments, "seeded": {"login": login, "created_at": end}}) + "\n")
+
+
 def issue(directory: Path, plugin: str) -> None:
     end = stamp(2)
-    with Path(".git/github-writes.jsonl").open("a") as f:
-        f.write(json.dumps({"tool": "issue_write", "arguments": create(plugin, stamp(32), end),
-                            "seeded": {"login": PERSON, "created_at": end}}) + "\n")
-        f.write(json.dumps({"tool": "issue_write", "arguments": create(plugin, stamp(31), stamp(1)),
-                            "seeded": {"login": "another-filer", "created_at": stamp(1)}}) + "\n")
+    seed((PERSON, create(plugin, {"schema": 1, "window": {"end": end, "start": stamp(32)}})),
+         ("another-filer", create(plugin, {"schema": 1, "window": {"end": stamp(1), "start": stamp(31)}})))
     expected = json.loads((directory / "expected.json").read_text())
     (directory / "expected.json").write_text(json.dumps({**expected, "since": end}, indent=2) + "\n")
+
+
+def full(start: str, end: str, runs: int) -> dict:
+    """A filled report, in the shape usage_report.py writes, of `runs` typed work runs."""
+    return {"schema": 1, "plugin_commit": "0123456789ab", "claude_code_versions": ["2.1.300"], "models": ["claude-opus-5-5"],
+            "window": {"start": start, "end": end}, "repos": {"with_plugin_use": 1}, "sessions": runs, "turns": 3 * runs,
+            "skills": {"work": {"runs": runs, "typed": runs, "turns": {"median": 3, "p90": 5}, "tokens": {"median": 90000, "p90": 150000}}},
+            "questions": {}, "scripts": {}, "hooks": {}, "denials": {}, "chains": {"transitions": {}, "push_after": {}, "pr_open_after": {}},
+            "after_run": {"work": {"approve": runs}}, "agents": {}, "overlap": {"skills": {}, "agents": {}}, "notes": None}
+
+
+def reports(directory: Path, plugin: str) -> None:
+    seed(*((login, create(plugin, full(stamp(start), stamp(end), runs), digest)) for login, start, end, runs, digest in COLLECT))
+    expected = json.loads((directory / "expected.json").read_text())
+    good = [runs for _, _, _, runs, digest in COLLECT if digest is None]
+    (directory / "expected.json").write_text(json.dumps({**expected, "collect": {"reports": len(good), "runs": sum(good)}}, indent=2) + "\n")
 
 
 def run_dir(tmp: Path) -> Path:
@@ -148,7 +181,7 @@ def written(directory: Path, before: dict) -> list:
 
 
 def main(argv: list[str]) -> int:
-    arity = {"make": 3, "issue": 3, "labels": 2, "unsent": 2, "counted": 2, "opened": 2, "sent": 3}
+    arity = {"make": 3, "issue": 3, "reports": 3, "labels": 2, "unsent": 2, "counted": 2, "opened": 2, "sent": 3, "merged": 2}
     if not argv or arity.get(argv[0]) != len(argv):
         print(__doc__.split("\n\n")[1], file=sys.stderr)
         return 2
@@ -159,12 +192,26 @@ def main(argv: list[str]) -> int:
     if command == "issue":
         issue(Path(argv[1]), argv[2])
         return 0
+    if command == "reports":
+        reports(Path(argv[1]), argv[2])
+        return 0
     directory = Path(argv[-1])
     expected = json.loads((directory / "expected.json").read_text())
     if command == "unsent":
         changed = written(directory, expected["files"])
         if changed:
             print(f"the run wrote or removed {changed} in the clone", file=sys.stderr)
+            return 1
+        return 0
+    if command == "merged":
+        found = sorted(Path(expected["tmp"]).glob("*/merged.json"))
+        if len(found) != 1:
+            print(f"{len(found)} merged results under {expected['tmp']}, not one", file=sys.stderr)
+            return 1
+        merged = json.loads(found[0].read_text())
+        got = {"reports": merged["reports"], "runs": merged["skills"].get("work", {}).get("runs")}
+        if got != expected["collect"]:
+            print(f"the merged result holds {got}, the two good reports {expected['collect']}", file=sys.stderr)
             return 1
         return 0
     payload_path = run_dir(Path(expected["tmp"])) / "payload.json"

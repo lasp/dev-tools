@@ -71,6 +71,9 @@ def well_formed(case: unittest.TestCase, known: dict, repos: set) -> None:
 
 GITHUB_SERVER = {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}
 ATLASSIAN_SERVER = {"command": "uvx", "args": ["mcp-atlassian@0.23.1", "--read-only"], "env": {"READ_ONLY_MODE": "true"}}
+# The one file rule outside the sandbox and the plugin: the Write tool into the usage-report
+# fixture's temporary directories, as `usage-report` writes a note or an issue body there.
+USAGE_TMP_WRITES = {"Edit(//tmp/usage-report-sbx-*/**)", "Edit(//private/tmp/usage-report-sbx-*/**)"}
 
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
@@ -240,7 +243,7 @@ class TrackerGithubPack(unittest.TestCase):
              "tracker-gh-ticket-draft-standing-answer"}
     ONBOARD = {"tracker-gh-onboard", "tracker-gh-onboard-mixed"}
     AUDIT = {"tracker-gh-audit-duplicates", "tracker-gh-audit-pulls", "tracker-gh-audit-declined"}
-    USAGE = {"tracker-gh-usage-report-standing-answer", "tracker-gh-usage-report-since-last"}
+    USAGE = {"tracker-gh-usage-report-standing-answer", "tracker-gh-usage-report-since-last", "tracker-gh-usage-report-collect"}
 
     def setUp(self):
         patch = mock.patch.object(run, "SCENARIOS", self.PACK)
@@ -550,6 +553,46 @@ class TrackerGithubPack(unittest.TestCase):
             (Path(expected["tmp"]) / "run" / "payload.json").write_text(json.dumps({"window": {"start": end[chosen["number"]]}}))
             opened = subprocess.run([sys.executable, str(script), "opened", ".usage-config"], cwd=clone, capture_output=True, text=True)
             self.assertEqual(opened.returncode, 0 if pick == "the person's" else 1, (pick, opened.stderr))
+
+    def test_the_collect_fixtures_reports_merge_through_the_stub_but_the_one_with_a_wrong_digest(self):
+        clone = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, clone)
+        (clone / ".git").mkdir()
+        script = ROOT / "sandbox" / "fixture" / "usage_config.py"
+        for command in ("make", "reports"):
+            subprocess.run([sys.executable, str(script), command, ".usage-config", "lasp-dev"], cwd=clone, check=True)
+        expected = json.loads((clone / ".usage-config" / "expected.json").read_text())
+        self.addCleanup(shutil.rmtree, expected["tmp"])
+        writes = clone / ".git" / "github-writes.jsonl"
+        listed = {"id": 1, "method": "tools/call", "params": {"name": "list_issues", "arguments": {
+            "owner": "o", "repo": "r", "labels": ["usage-report"], "orderBy": "CREATED_AT", "direction": "DESC", "fields": ["number", "user"]}}}
+        (got,) = self.serve(listed, writes=writes)
+        issues = json.loads(got["result"]["content"][0]["text"])["issues"]
+        self.assertEqual(sorted((i["number"], i["user"]["login"]) for i in issues),
+                         [(24, "sbx-person"), (25, "another-filer"), (26, "third-filer")])
+        run_dir = Path(expected["tmp"]) / "usage-report.abc123"
+        run_dir.mkdir()
+        argv = []
+        for i in issues:
+            read = {"id": 2, "method": "tools/call", "params": {"name": "issue_read", "arguments": {
+                "owner": "o", "repo": "r", "method": "get", "issue_number": i["number"]}}}
+            (got,) = self.serve(read, writes=writes)
+            (run_dir / f"issue-{i['number']}.md").write_text(json.loads(got["result"]["content"][0]["text"])["issue"]["body"])
+            argv += ["--report", i["user"]["login"], str(run_dir / f"issue-{i['number']}.md")]
+        merge = [sys.executable, str(ROOT / "scripts" / "usage_merge.py"), "--out", str(run_dir / "merged.json")]
+        refused = subprocess.run(merge + argv, capture_output=True, text=True)
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(re.findall(r"issue-(\d+)\.md: its digest line", refused.stderr), ["26"])
+        merged = lambda: subprocess.run([sys.executable, str(script), "merged", ".usage-config"], cwd=clone, capture_output=True, text=True)
+        self.assertEqual(merged().returncode, 1, "no merged result")
+        good = [a for n in (24, 25) for a in ("--report", "x" + str(n), str(run_dir / f"issue-{n}.md"))]
+        subprocess.run(merge + good[:3], check=True, capture_output=True)
+        self.assertEqual(merged().returncode, 1, "one report merged, not two")
+        subprocess.run(merge + good, check=True, capture_output=True)
+        self.assertEqual(merged().returncode, 0)
+        (Path(expected["tmp"]) / "usage-report.def456").mkdir()
+        (Path(expected["tmp"]) / "usage-report.def456" / "merged.json").write_text((run_dir / "merged.json").read_text())
+        self.assertEqual(merged().returncode, 1, "two merged results")
 
 
 class UsageFixture(unittest.TestCase):
@@ -986,8 +1029,9 @@ class Sandbox(unittest.TestCase):
         for rule in allow:
             if rule.startswith(("Bash(python3 ", "Bash(.venv/bin/python ")) and " -m " not in rule:
                 self.assertTrue(any(f"/{root}/" in rule for root in roots), rule)
-            if rule.startswith(("Read(", "Edit(", "Write(", "Bash(cat ", "Bash(find ", "Bash(bash ", "Bash(/")):
+            if rule.startswith(("Read(", "Edit(", "Write(", "Bash(cat ", "Bash(find ", "Bash(bash ", "Bash(/")) and rule not in USAGE_TMP_WRITES:
                 self.assertTrue(any(f"/{root}/" in rule for root in roots), rule)
+        self.assertLessEqual(USAGE_TMP_WRITES, set(allow))
         self.assertEqual([r for r in allow if r.startswith("Bash(")], ["Bash(*)"])
         self.assertIn(f"Read(//{run.spellings(variant)[-1]}/**)", allow)
         self.assertNotIn(f"Edit(//{run.spellings(variant)[-1]}/**)", allow)

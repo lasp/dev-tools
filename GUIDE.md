@@ -190,6 +190,14 @@ Every finding is a proposal. Every count the revision reports is per rule, never
 
 **Pushing.** `pr-create` and `pr-fix` push a branch only after you say yes, and only where the repository's instructions allow an agent to push. Where they forbid it, as libera_utils' do, both stop at the push, print the command, and go on once you have run it. `revise`, in any of its modes, pushes a branch of the standard's repository when the standard lives elsewhere, after a yes. Nothing else pushes.
 
+## Usage reports
+
+The maintainer decides what to build, cut or fix from how the plugin is used, and one person's use is not the team's. When asked, or whenever you like, type `/lasp-dev:usage-report`. It counts your plugin use since your last report, or over the last 30 days, and shows you your own summary first: which skills you ran, the turns and tokens they took and what you did next. It then shows the whole report and asks whether to send it. On your yes it becomes a `usage-report` issue on the plugin's repository, under your GitHub login; `/lasp-dev:usage-report file` writes it to a file for you to send as you choose. The [skill](skills/usage-report/SKILL.md) holds the steps, and the README's skills table says what each mode does.
+
+**What leaves your machine.** Only the report you were shown, and only on your yes: numbers, times and words from a fixed list, with your own note the one text; [`docs/contracts.md`](docs/contracts.md), "The usage report", lists every field.
+
+**Collecting.** The maintainer runs `/lasp-dev:usage-report collect`, adding any report files, and gets one merged table, posting nothing; "The merged usage reports" in the same file says what it merges and refuses.
+
 ## Glossary
 
 - **Standard:** a repository's rules, each with its wording, and its optional decisions, reviewed under the plugin's one contract.

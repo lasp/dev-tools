@@ -4,12 +4,14 @@ description: >
   Counts how you have used the lasp-dev plugin from your own Claude Code transcripts on this
   machine, shows you your summary and then the whole report, numbers and fixed words only, and on
   your yes sends it to the plugin's maintainer as a `usage-report` issue, or writes it to a file.
-  Use when asked to "run usage-report", "send a usage report", "report my plugin usage" or "how
-  have I used lasp-dev". Not for a complaint about a skill, which is skill-feedback's, or for
-  Claude Code's built-in `/usage` (also `/cost` and `/stats`), which shows session cost and plan
-  limits, `/insights`, which analyzes recent sessions, or `/skill-doctor` (Claude Code 2.1.252 or
-  later), which shows each skill's context cost and use.
-argument-hint: "[file] [since YYYY-MM-DD]"
+  `collect`, for the maintainer, merges the reports sent into one table, posting nothing.
+  Use when asked to "run usage-report", "send a usage report", "report my plugin usage", "how
+  have I used lasp-dev", "collect the usage reports" or "merge the usage reports". Not for a
+  complaint about a skill, which is skill-feedback's, or for Claude Code's built-in `/usage` (also
+  `/cost` and `/stats`), which shows session cost and plan limits, `/insights`, which analyzes
+  recent sessions, or `/skill-doctor` (Claude Code 2.1.252 or later), which shows each skill's
+  context cost and use.
+argument-hint: "[file | collect [<report file>...]] [since YYYY-MM-DD]"
 metadata:
   author: lasp-dev
   version: 1.0.0
@@ -40,9 +42,11 @@ transcripts to count: say so and stop.
 
 The arguments set the destination. With none, it is `dev-tools`: an issue on the plugin's
 repository. With `file`, it is `file`: the report is written where the person says, and the skill
-stops. Either may be followed by `since YYYY-MM-DD`. Any other argument stops the skill before it
-counts anything, with one line: "usage-report takes no argument or `file`, either optionally
-followed by `since YYYY-MM-DD`; nothing was counted."
+stops. Either may be followed by `since YYYY-MM-DD`. With `collect`, nothing is counted: read
+`${CLAUDE_SKILL_DIR}/collect.md` and follow it in place of the steps below; the plugin root it
+writes as `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`. Any other argument stops the skill before it
+counts anything, with one line: "usage-report takes no argument, `file`, or `collect` and any report
+files, each optionally with `since YYYY-MM-DD`; nothing was counted."
 
 ## 1. Where the window opens
 

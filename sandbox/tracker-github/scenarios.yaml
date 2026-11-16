@@ -1,7 +1,7 @@
 # The GitHub tracker pack: scenarios in which `work` reads a GitHub issue as the ticket,
 # `ticket-draft` drafts and files one, `ticket-audit` sweeps the issues and pull requests, and
-# `usage-report` opens its window where the person's last report closed and holds its send to a
-# yes, served by
+# `usage-report` opens its window where the person's last report closed, holds its send to a yes
+# and, in `collect`, merges the reports filed as issues, served by
 # fixture/github-mcp-server-stub.py from fixture/github.json, in `widgets` with its own standard
 # recording a GitHub tracker whose labels map to the workflow and no ticket pattern. Build the
 # sandbox as the generic pack's README says, then write its mcp.json naming the stub through
@@ -554,3 +554,34 @@ scenarios:
       - test "$(grep -c . .git/github-writes.jsonl)" = 2
       - python3 "$SBX_FIXTURES/usage_config.py" opened .usage-config
       - python3 "$SBX_FIXTURES/usage_config.py" counted .usage-config
+
+  - id: tracker-gh-usage-report-collect
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+      - python3 "$SBX_FIXTURES/usage_config.py" reports .usage-config lasp-dev
+    origin: "the usage-report plan, decided for phase 3: collect merges the usage-report issues and refuses one whose digest does not match its report"
+    why: >-
+      Runs usage-report collect with the stub serving three usage-report issues by three logins,
+      the newest, #26, carrying a digest that is not its report's, so the merged table holds the
+      other two, #26 is named as refused, and nothing is written to GitHub or the clone.
+    turns:
+      - /lasp-dev:usage-report collect
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
+    must_not_try: ["mcp__github__issue_write", "mcp__github__add_issue_comment", "Bash(gh *)", "Bash(curl *)"]
+    look_at: >-
+      The skill lists the issues labeled usage-report with list_issues, reads #24, #25 and #26
+      with issue_read, writes each body as it reads into a run directory mktemp -d makes under
+      TMPDIR, and runs usage_merge.py with each issue's author. The merge refuses #26 by its file,
+      its digest not matching; the skill leaves it out, says so with the reason, and merges the
+      other two. It shows the summary the script printed: 2 reports from 2 authors, 8 work runs.
+      Nothing is posted or written in the clone.
+    expect:
+      ends: success
+      mcp: [mcp__github__list_issues, mcp__github__issue_read]
+      says: ["Merged 2 reports from 2 authors", "#26\\b"]
+    verify:
+      - test "$(grep -c . .git/github-writes.jsonl)" = 3
+      - python3 "$SBX_FIXTURES/usage_config.py" merged .usage-config
+      - python3 "$SBX_FIXTURES/usage_config.py" unsent .usage-config

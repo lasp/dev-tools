@@ -88,7 +88,9 @@ all, and sweeping the open pull requests, through `pr-reader` dumps of the stub'
 `usage-report` over the generic pack's fixture transcripts, whose send question, Send it
 recommended with the server present, is answered by taking every recommended answer and must
 create no issue, and, with a `usage-report` issue the person opened and a newer one by another
-login seeded in the stub's writes, whose window opens at the person's report's `window.end`. Its `mcp.json` names the stub as `${SBX_FIXTURES}/github-mcp-server-stub.py`
+login seeded in the stub's writes, whose window opens at the person's report's `window.end`, and
+`collect` over three seeded report issues, one whose digest does not match its report, which
+merges the other two, names the third as refused and writes nothing to GitHub. Its `mcp.json` names the stub as `${SBX_FIXTURES}/github-mcp-server-stub.py`
 with `--writes .git/github-writes.jsonl`, as the pack's header shows; the file name holds
 `github-mcp-server`, so `run.py` gives it the GitHub rules, except that a pack's stub run with
 `--writes` has `issue_write` and `add_issue_comment` neither allowed nor denied. Under `dontAsk`
@@ -223,7 +225,11 @@ leaves sandbox sessions out of a usage report. A setup that leaves `.sbx-env` in
 before each Bash command, through Claude Code's `CLAUDE_ENV_FILE`, and nowhere else: the
 usage-report scenarios point `CLAUDE_CONFIG_DIR` there at fixture transcripts that
 `fixture/usage_config.py` writes, and `TMPDIR` at a directory of the scenario's own under `/tmp`,
-outside every repository, which the fixture records and where their verify finds the report, while the session keeps your configuration. Checked
+outside every repository, which the fixture records and where their verify finds the report, while the session keeps your configuration.
+The `Write` tool may write in that directory too, by the one file rule `settings.template.json`
+holds outside the sandbox and the plugin, an `Edit` rule, the form Claude Code matches for every
+file tool, for the note `usage-report` writes and the issue bodies
+`collect` saves. Checked
 on Claude Code 2.1.287: both servers connect, `lasp-dev` loads once from the clone, and the
 repository's `CLAUDE.md` loads. (`--restricted` skips `CLAUDE.md`; `--setting-sources` without
 `--mcp-config` drops the servers.) `--setting-sources` does not keep out a `CLAUDE.md` in a
