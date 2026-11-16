@@ -14,7 +14,7 @@ description: >
 argument-hint: "[investigate | settle | reformat] <ticket key | issue #n | description | pull request> [thread id]"
 metadata:
   author: lasp-dev
-  version: 1.11.0
+  version: 1.12.0
 ---
 
 Every question, and every file it writes, follows `${CLAUDE_PLUGIN_ROOT}/skills/work/decision-points.md`. The plugin root is `${CLAUDE_PLUGIN_ROOT}`: a path written `<plugin root>/…` in a file this skill reads starts there.
@@ -118,10 +118,22 @@ never in a preamble. Nothing comes before step 1's opening block.
 On a GitHub tracker, where `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/profile.py" --defaults --field
 issue_tracker.kind` prints `github`, read `${CLAUDE_SKILL_DIR}/github.md` first, which says what
 changes in every step below and in the files. Where it prints anything else and the request asks
-for a GitHub issue, say before step 1, in one line, that this repository's tracker is not GitHub
-Issues and what it is (`jira`, or none recorded, where `/lasp-dev:onboard` records one), and
-ask: **Draft it as a Jira ticket** (Recommended where the tracker is Jira), which goes on with the
-steps below, or **Stop**, which writes nothing. Nothing is read before the answer.
+for a GitHub issue, ask one question before step 1; nothing is read before the answer:
+
+- **`not yet recorded`, origin on github.com.** `git remote get-url origin` names a repository on
+  github.com (`https://github.com/<owner>/<repo>`, `git@github.com:<owner>/<repo>` or
+  `ssh://git@github.com/<owner>/<repo>`, with or without `.git`). Say in one line that the tracker
+  looks like GitHub Issues on `<owner>/<repo>`, and ask: **Use GitHub Issues on <owner>/<repo>**
+  (Recommended), which reads `${CLAUDE_SKILL_DIR}/github.md` and runs the steps below on a GitHub
+  tracker on that repository with no labels recorded; **Draft it as a Jira ticket**, which goes on
+  with the steps below; or **Stop**, which writes nothing. The answer holds for this run only;
+  nothing is recorded.
+- **`not yet recorded`, origin elsewhere.** Where origin is not on github.com or there is none,
+  say in one line that no tracker is recorded and origin is not on github.com, so
+  `/lasp-dev:onboard` records one, and ask: **Draft it as a Jira ticket** or **Stop**.
+- **Another recorded kind.** Say in one line that this repository's tracker is not GitHub Issues
+  and what it is (`jira`), and ask: **Draft it as a Jira ticket** (Recommended where the tracker is
+  Jira), which goes on with the steps below, or **Stop**, which writes nothing.
 
 A pull request as the source, or a slug whose page exists under `.review/context/`, which `work`
 names for a page with no key yet: read `${CLAUDE_SKILL_DIR}/sources.md` first, which says what
