@@ -9,6 +9,7 @@
     "skills/using-curryer/": "the curryer constellation and its downstream map"
   },
   "patterns": {
+    "(?<![\\w-])LASP(?![\\w-])": "LASP, the organization; not the plugin's own name, lasp-dev",
     "(?<![\\w.-])\\d{8,9}(?![\\w-]|\\.\\d)": "a Confluence page ID",
     "(?i)(?<!lasp-dev@)\\blibera(?!-tools)(?:_\\w+)?\\b": "Libera, LASP-Libera, the LIBERA space and a libera_* repository, this one included; not the plugin's own name, lasp-dev, or its marketplace, lasp-dev@lasp-dev-tools, which change together when the plugin is renamed",
     "(?i)\\bCSDS\\b": "CSDS",

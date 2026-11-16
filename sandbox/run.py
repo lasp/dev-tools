@@ -579,7 +579,7 @@ def judge(rubric: str, summary: dict, run_dir: Path, sandbox: Path) -> dict:
     prompt = (f"{rubric.strip()}\n\n## The run's last message\n\n{(run_dir / 'final.md').read_text().strip()}\n\n"
               f"## The run's summary.json\n\n{json.dumps({k: v for k, v in summary.items() if k not in ('final', 'variant', 'plugin', 'run_id', 'key', 'reused', 'taken')}, indent=2)}\n\nScore the run against the rubric above, "
               'from 0 to 10. Reply with one JSON object and nothing else: {"score": <integer>, "sentence": "<one sentence>"}')
-    done = child(["claude", "-p", prompt, "--model", JUDGE_MODEL, "--tools", "", "--strict-mcp-config",
+    done = child(["claude", "-p", prompt, "--name", "lasp-dev-sandbox", "--model", JUDGE_MODEL, "--tools", "", "--strict-mcp-config",
                   "--settings", str(sandbox / "settings.json"), "--setting-sources", "project,local",
                   "--output-format", "json", "--max-budget-usd", str(JUDGE_BUDGET_USD)],
                  cwd=run_dir, stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False)

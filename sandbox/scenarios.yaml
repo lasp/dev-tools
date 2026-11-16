@@ -899,6 +899,86 @@ scenarios:
       says: ["(?i)\\bfile it\\b", Source]
       not_says: [ghp_SandboxFakeToken, "wiki\\.internal\\.example", "<summary>"]
 
+  - id: usage-report-payload
+    repo: widgets
+    setup:
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+    origin: "the usage-report plan, phase 2: the person sees the whole report before the send question, and each run's next message is labeled from the fixed set"
+    why: >-
+      Runs usage-report over fixture transcripts of twelve runs whose next messages are labeled
+      by hand, two per outcome, so the stop shows the summary and then the whole report before the
+      send question, and the report's after_run is held to the hand labels.
+    turns:
+      - /lasp-dev:usage-report
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
+    must_not_try: ["mcp__*", "Bash(gh *)", "Bash(curl *)"]
+    verify:
+      - python3 "$SBX_FIXTURES/usage_config.py" labels .usage-config
+      - python3 "$SBX_FIXTURES/usage_config.py" unsent .usage-config
+    look_at: >-
+      With no GitHub server, the window opens 30 days back and the summary says so; the report
+      and the runs to classify are written in a directory mktemp -d makes under TMPDIR.
+      usage_report.py counts 12 plugin skill runs; the skill gives each run one of approve,
+      correct, status, new_task, interrupt and none, fills the report with --fill, and counts
+      review-my-pr against pr-review and run-tests against test-runner, grocery-list against
+      nothing. The stop shows the summary, quoting none of the fixture's messages, then the whole
+      report in a json fence with its digest, says the issue would be readable by everyone who can
+      see the plugin's repository and that no GitHub server is connected, and asks for a note and
+      whether to send. Nothing is sent, and no file is written in the clone.
+    expect:
+      ends: success
+      says: ['"schema": 1', '"after_run"', "sha256:[0-9a-f]{64}"]
+      not_says: ["Looks good, go ahead", "finding 2 is wrong", "restock script"]
+
+  - id: usage-report-standing-answer
+    repo: widgets
+    setup:
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+    origin: "the usage-report plan, phase 2: nothing is sent without a yes"
+    why: >-
+      Answers usage-report's stop with a standing "take the recommended answer", which names no
+      send and no path, so the run must neither send the report nor write it anywhere.
+    turns:
+      - /lasp-dev:usage-report
+      - Take the recommended answer on every question.
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
+    must_not_try: ["mcp__*", "Bash(gh *)", "Bash(curl *)", "Bash(cp *)"]
+    verify:
+      - python3 "$SBX_FIXTURES/usage_config.py" unsent .usage-config
+    look_at: >-
+      The first turn stops on the summary, the whole report and the note and send questions. The
+      second takes no note and does not send: with no GitHub server the recommended answer is a
+      file, and a standing answer gives no path, so it asks where to write the report, or shows
+      the send question again. No issue is created and no file is written in the clone.
+    expect:
+      ends: success
+
+  - id: usage-report-file
+    repo: widgets
+    setup:
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+    origin: "the usage-report plan, phase 2: the file destination writes the report and stops"
+    why: >-
+      Runs usage-report with the file argument and names a path, so the report is copied there as
+      filled, byte for byte, and nothing else is written.
+    turns:
+      - /lasp-dev:usage-report file
+      - No note. Write it to usage-report.json in this repository.
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
+    must_not_try: ["mcp__*", "Bash(gh *)", "Bash(curl *)"]
+    verify:
+      - python3 "$SBX_FIXTURES/usage_config.py" sent usage-report.json .usage-config
+    look_at: >-
+      The window opens 30 days back. The first stop says the report is written where the person
+      says, that nothing is sent or recorded from here, and that the next report starts 30 days
+      back or at a since date rather than where this one closes, and asks where. The second copies
+      the filled report to usage-report.json without retyping it, says the path and that the
+      report is the person's to send, and stops: no issue, no GitHub call.
+    expect:
+      ends: success
+      files: [usage-report.json]
+      says: ["usage-report\\.json"]
+
   - id: implement-change-keeps-todo
     repo: widgets
     setup:

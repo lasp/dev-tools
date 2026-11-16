@@ -71,6 +71,9 @@ def well_formed(case: unittest.TestCase, known: dict, repos: set) -> None:
 
 GITHUB_SERVER = {"type": "http", "url": "https://api.githubcopilot.com/mcp/"}
 ATLASSIAN_SERVER = {"command": "uvx", "args": ["mcp-atlassian@0.23.1", "--read-only"], "env": {"READ_ONLY_MODE": "true"}}
+# The one file rule outside the sandbox and the plugin: the Write tool into the usage-report
+# fixture's temporary directories, as `usage-report` writes a note or an issue body there.
+USAGE_TMP_WRITES = {"Edit(//tmp/usage-report-sbx-*/**)", "Edit(//private/tmp/usage-report-sbx-*/**)"}
 
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
@@ -241,6 +244,7 @@ class TrackerGithubPack(unittest.TestCase):
              "tracker-gh-ticket-draft-unrecorded-other-origin"}
     ONBOARD = {"tracker-gh-onboard", "tracker-gh-onboard-mixed"}
     AUDIT = {"tracker-gh-audit-duplicates", "tracker-gh-audit-pulls", "tracker-gh-audit-declined"}
+    USAGE = {"tracker-gh-usage-report-standing-answer", "tracker-gh-usage-report-since-last", "tracker-gh-usage-report-collect"}
 
     def setUp(self):
         patch = mock.patch.object(run, "SCENARIOS", self.PACK)
@@ -264,7 +268,7 @@ class TrackerGithubPack(unittest.TestCase):
         return json.loads(result["content"][0]["text"])
 
     def test_every_scenario_is_well_formed_and_copies_fixtures_the_pack_holds(self):
-        self.assertEqual(set(self.known), self.WORK | self.DRAFT | self.ONBOARD | self.AUDIT)
+        self.assertEqual(set(self.known), self.WORK | self.DRAFT | self.ONBOARD | self.AUDIT | self.USAGE)
         well_formed(self, self.known, {"widgets"})
         for s in self.known.values():
             if s["id"] in self.WORK:
@@ -272,12 +276,14 @@ class TrackerGithubPack(unittest.TestCase):
             self.assertIn("rm -f .git/github-writes.jsonl", s["setup"], s["id"])
             for name in re.findall(r'"\$SBX_FIXTURES/([^"]+)"', " ".join(s.get("setup", []))):
                 self.assertTrue((run.fixture_dir() / name).is_file(), (s["id"], name))
-        for name in self.DRAFT | self.AUDIT:
+        for name in self.DRAFT | self.AUDIT | self.USAGE:
             self.assertTrue(any("github-writes.jsonl" in v for v in self.known[name]["verify"]), name)
         for name in ("tracker-gh-audit-pulls", "tracker-gh-audit-declined"):
             self.assertEqual(self.known[name]["must_not_try"], ["mcp__github__issue_write", "mcp__github__add_issue_comment"], name)
         for name in ("tracker-gh-ticket-draft-declined", "tracker-gh-ticket-draft-blanket", "tracker-gh-ticket-draft-standing-answer"):
             self.assertEqual(self.known[name]["must_not_try"], ["mcp__github__issue_write", "mcp__github__add_issue_comment"], name)
+        for name in self.USAGE:
+            self.assertIn("mcp__github__issue_write", self.known[name]["must_not_try"], name)
 
     def perms(self, servers: dict) -> dict:
         sandbox = Path(tempfile.mkdtemp())
@@ -314,6 +320,7 @@ class TrackerGithubPack(unittest.TestCase):
         self.assertEqual(tools["pull_request_read"]["required"], ["method", "owner", "repo", "pullNumber"])
         self.assertEqual(tools["issue_read"]["required"], ["method", "owner", "repo", "issue_number"])
         self.assertEqual(tools["search_pull_requests"]["required"], ["query"])
+        self.assertIn("title", tools["list_issues"]["properties"]["fields"]["items"]["enum"])
 
     def test_with_writes_the_stub_lists_the_issue_writes_and_records_each_call(self):
         writes = Path(tempfile.mkdtemp()) / "writes.jsonl"
@@ -497,6 +504,192 @@ class TrackerGithubPack(unittest.TestCase):
         listed = self.read("list_issues", orderBy="UPDATED_AT", direction="DESC", perPage=50)
         self.assertEqual(sorted(label for i in listed["issues"] for label in i["labels"]), ["enhancement", "in progress", "ready"])
 
+    def test_the_stub_lists_issues_by_creation_only_when_asked(self):
+        def numbers(**arguments):
+            return [i["number"] for i in self.read("list_issues", **arguments)["issues"]]
+
+        fixture = numbers()
+        created = {i["number"]: i["created_at"] for i in self.read("list_issues")["issues"]}
+        newest = sorted(fixture, key=created.get, reverse=True)
+        self.assertNotEqual(fixture, newest)
+        self.assertEqual(numbers(orderBy="CREATED_AT", direction="DESC"), newest)
+        self.assertEqual(numbers(orderBy="CREATED_AT"), newest)
+        self.assertEqual(numbers(orderBy="CREATED_AT", direction="ASC"), newest[::-1])
+        self.assertEqual(numbers(orderBy="UPDATED_AT", direction="DESC"), fixture)
+
+    def test_the_usage_fixtures_earlier_issue_is_listed_as_the_persons_with_its_reports_window_end(self):
+        clone = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, clone)
+        (clone / ".git").mkdir()
+        script = ROOT / "sandbox" / "fixture" / "usage_config.py"
+        for command in ("make", "issue"):
+            subprocess.run([sys.executable, str(script), command, ".usage-config", "lasp-dev"], cwd=clone, check=True)
+        self.addCleanup(shutil.rmtree, json.loads((clone / ".usage-config" / "expected.json").read_text())["tmp"])
+        fields = ["number", "title", "user", "created_at"]
+        calls = [{"id": 1, "method": "tools/call", "params": {"name": "get_me", "arguments": {}}},
+                 {"id": 2, "method": "tools/call", "params": {"name": "list_issues", "arguments": {"owner": "o", "repo": "r", "orderBy": "CREATED_AT",
+                                                                                                    "direction": "DESC", "fields": fields}}}]
+        me, listed = (json.loads(r["result"]["content"][0]["text"]) for r in self.serve(*calls, writes=clone / ".git" / "github-writes.jsonl"))
+        listed["issues"] = [i for i in listed["issues"] if i["title"].startswith("usage-report:")]
+        other, mine = listed["issues"]
+        labeled = {"id": 4, "method": "tools/call", "params": {"name": "list_issues", "arguments": {"owner": "o", "repo": "r", "labels": ["usage-report"]}}}
+        (got,) = self.serve(labeled, writes=clone / ".git" / "github-writes.jsonl")
+        self.assertEqual([i["number"] for i in json.loads(got["result"]["content"][0]["text"])["issues"]], [other["number"]],
+                         "the person's report carries no label, so only its title finds it")
+        self.assertEqual([sorted(other), sorted(mine)], [sorted(fields)] * 2)
+        self.assertEqual([other["user"]["login"], mine["user"]["login"]], ["another-filer", me["login"]])
+        self.assertGreater(other["number"], mine["number"])
+        self.assertGreater(other["created_at"], mine["created_at"])
+        read = {"id": 3, "method": "tools/call", "params": {"name": "issue_read", "arguments": {"owner": "o", "repo": "r", "method": "get"}}}
+        ends = []
+        for n in (other["number"], mine["number"]):
+            read["params"]["arguments"]["issue_number"] = n
+            (got,) = self.serve(read, writes=clone / ".git" / "github-writes.jsonl")
+            body = json.loads(got["result"]["content"][0]["text"])["issue"]["body"]
+            ends.append(json.loads(re.search(r"```json\n(.*?)```", body, re.S).group(1))["window"]["end"])
+        expected = json.loads((clone / ".usage-config" / "expected.json").read_text())
+        self.assertEqual(ends[1], expected["since"])
+        self.assertEqual(mine["created_at"], expected["since"])
+        issues = listed["issues"]
+        end = dict(zip((other["number"], mine["number"]), ends))
+        picks = {"first listed": issues[0], "highest number": max(issues, key=lambda i: i["number"]),
+                 "newest": max(issues, key=lambda i: i["created_at"]), "the person's": next(i for i in issues if i["user"]["login"] == me["login"])}
+        (Path(expected["tmp"]) / "run").mkdir()
+        for pick, chosen in picks.items():
+            (Path(expected["tmp"]) / "run" / "payload.json").write_text(json.dumps({"window": {"start": end[chosen["number"]]}}))
+            opened = subprocess.run([sys.executable, str(script), "opened", ".usage-config"], cwd=clone, capture_output=True, text=True)
+            self.assertEqual(opened.returncode, 0 if pick == "the person's" else 1, (pick, opened.stderr))
+
+    def test_the_collect_fixtures_reports_merge_through_the_stub_but_the_one_with_a_wrong_digest(self):
+        clone = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, clone)
+        (clone / ".git").mkdir()
+        script = ROOT / "sandbox" / "fixture" / "usage_config.py"
+        for command in ("make", "reports"):
+            subprocess.run([sys.executable, str(script), command, ".usage-config", "lasp-dev"], cwd=clone, check=True)
+        expected = json.loads((clone / ".usage-config" / "expected.json").read_text())
+        self.addCleanup(shutil.rmtree, expected["tmp"])
+        writes = clone / ".git" / "github-writes.jsonl"
+        listed = {"id": 1, "method": "tools/call", "params": {"name": "list_issues", "arguments": {
+            "owner": "o", "repo": "r", "orderBy": "CREATED_AT", "direction": "DESC", "fields": ["number", "title", "user"]}}}
+        (got,) = self.serve(listed, writes=writes)
+        issues = [i for i in json.loads(got["result"]["content"][0]["text"])["issues"] if i["title"].startswith("usage-report:")]
+        labeled = {"id": 3, "method": "tools/call", "params": {"name": "list_issues", "arguments": {"owner": "o", "repo": "r", "labels": ["usage-report"]}}}
+        (got,) = self.serve(labeled, writes=writes)
+        self.assertEqual(sorted(i["number"] for i in json.loads(got["result"]["content"][0]["text"])["issues"]), [25, 26],
+                         "the person's report carries no label, so only its title finds it")
+        self.assertEqual(sorted((i["number"], i["user"]["login"]) for i in issues),
+                         [(24, "sbx-person"), (25, "another-filer"), (26, "third-filer")])
+        run_dir = Path(expected["tmp"]) / "usage-report.abc123"
+        run_dir.mkdir()
+        argv = []
+        for i in issues:
+            read = {"id": 2, "method": "tools/call", "params": {"name": "issue_read", "arguments": {
+                "owner": "o", "repo": "r", "method": "get", "issue_number": i["number"]}}}
+            (got,) = self.serve(read, writes=writes)
+            (run_dir / f"issue-{i['number']}.md").write_text(json.loads(got["result"]["content"][0]["text"])["issue"]["body"])
+            argv += ["--report", i["user"]["login"], str(run_dir / f"issue-{i['number']}.md")]
+        merge = [sys.executable, str(ROOT / "scripts" / "usage_merge.py"), "--out", str(run_dir / "merged.json")]
+        refused = subprocess.run(merge + argv, capture_output=True, text=True)
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(re.findall(r"issue-(\d+)\.md: its digest line", refused.stderr), ["26"])
+        merged = lambda: subprocess.run([sys.executable, str(script), "merged", ".usage-config"], cwd=clone, capture_output=True, text=True)
+        self.assertEqual(merged().returncode, 1, "no merged result")
+        good = [a for n in (24, 25) for a in ("--report", "x" + str(n), str(run_dir / f"issue-{n}.md"))]
+        subprocess.run(merge + good[:3], check=True, capture_output=True)
+        self.assertEqual(merged().returncode, 1, "one report merged, not two")
+        subprocess.run(merge + good, check=True, capture_output=True)
+        self.assertEqual(merged().returncode, 0)
+        (Path(expected["tmp"]) / "usage-report.def456").mkdir()
+        (Path(expected["tmp"]) / "usage-report.def456" / "merged.json").write_text((run_dir / "merged.json").read_text())
+        self.assertEqual(merged().returncode, 1, "two merged results")
+
+
+class UsageFixture(unittest.TestCase):
+    """fixture/usage_config.py: the usage-report scenarios' transcripts and the checks their verify runs."""
+
+    SCRIPT = ROOT / "sandbox" / "fixture" / "usage_config.py"
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp)
+        (self.tmp / "README.md").write_text("widgets\n")
+        (self.tmp / ".git").mkdir()
+
+    def make(self) -> Path:
+        """The scenario's TMPDIR, which `make` records."""
+        self.assertEqual(self.fixture("make", ".usage-config", "lasp-dev").returncode, 0)
+        tmp = Path(json.loads((self.tmp / ".usage-config" / "expected.json").read_text())["tmp"])
+        self.addCleanup(shutil.rmtree, tmp, True)
+        return tmp
+
+    def fixture(self, *args):
+        return subprocess.run([sys.executable, str(self.SCRIPT), *args], cwd=self.tmp, capture_output=True, text=True)
+
+    def report(self, *args):
+        env = {**os.environ, "CLAUDE_CONFIG_DIR": str(self.tmp / ".usage-config")}
+        return subprocess.run([sys.executable, str(ROOT / "scripts" / "usage_report.py"), *args], cwd=self.tmp, capture_output=True, text=True,
+                              env=env, check=True)
+
+    def count(self, run: Path, since: str = "2026-01-01"):
+        run.mkdir(exist_ok=True)
+        self.report("--plugin-root", str(ROOT), "--since", since, "--out", str(run / "payload.json"), "--pending", str(run / "pending.json"))
+
+    def test_the_hand_labels_fill_the_report_and_the_checks_tell_a_right_run_from_a_wrong_one(self):
+        tmp = self.make()
+        config = (self.tmp / ".usage-config").resolve()
+        self.assertEqual((self.tmp / ".sbx-env").read_text(), f"export CLAUDE_CONFIG_DIR='{config}'\nexport TMPDIR='{tmp}'\n")
+        self.assertEqual(tmp.parent, Path("/tmp"))
+        (tmp / "usage-report.stale").mkdir()
+        self.assertEqual(self.make(), tmp)
+        self.assertEqual(list(tmp.iterdir()), [], "the same directory, emptied, on a second make")
+        self.assertEqual(self.fixture("counted", ".usage-config").returncode, 1, "no report written")
+        run = tmp / "usage-report.abc123"
+        session = self.tmp / ".usage-config" / "projects" / "-fixture" / "session.jsonl"
+        session.with_name("other.jsonl").write_text(session.read_text().replace('"uuid": "', '"uuid": "0'))
+        self.count(run)
+        self.assertEqual(self.fixture("counted", ".usage-config").returncode, 1, "a report that counted transcripts besides the fixture's")
+        session.with_name("other.jsonl").unlink()
+        self.count(run)
+        self.assertEqual(self.fixture("counted", ".usage-config").returncode, 0)
+        spec = importlib.util.spec_from_file_location("usage_config", self.SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        labels = [label for _, _, label in module.RUNS]
+        payload, pending = str(run / "payload.json"), str(run / "pending.json")
+        self.assertEqual([r["next_message"] is None for r in json.loads(Path(pending).read_text())], [x == "none" for x in labels])
+        self.report("--fill", payload, "--pending", pending, "--labels", *labels)
+        self.assertEqual(self.fixture("labels", ".usage-config").returncode, 0)
+        self.report("--fill", payload, "--pending", pending, "--labels", *["approve"] * 10, "none", "none")
+        self.assertEqual(self.fixture("labels", ".usage-config").returncode, 1)
+        self.assertEqual(self.fixture("unsent", ".usage-config").returncode, 0)
+        shutil.copy(payload, self.tmp / "usage-report.json")
+        self.assertEqual(self.fixture("unsent", ".usage-config").returncode, 1, "a copy written in the clone")
+        self.assertEqual(self.fixture("sent", "usage-report.json", ".usage-config").returncode, 0)
+        (self.tmp / "usage-report.json").write_text("{}")
+        self.assertEqual(self.fixture("sent", "usage-report.json", ".usage-config").returncode, 1, "a file that is not the report")
+        shutil.copy(payload, self.tmp / "usage-report.json")
+        (self.tmp / "README.md").write_text("changed\n")
+        self.assertEqual(self.fixture("sent", "usage-report.json", ".usage-config").returncode, 1, "another file changed")
+        (self.tmp / "README.md").unlink()
+        self.assertEqual(self.fixture("sent", "usage-report.json", ".usage-config").returncode, 1, "another file removed")
+        self.count(tmp / "usage-report.def456")
+        self.assertEqual(self.fixture("counted", ".usage-config").returncode, 1, "two run directories")
+
+    def test_the_earlier_issue_sets_where_the_window_opens(self):
+        run = self.make() / "usage-report.abc123"
+        self.assertEqual(self.fixture("issue", ".usage-config", "lasp-dev").returncode, 0)
+        since = json.loads((self.tmp / ".usage-config" / "expected.json").read_text())["since"]
+        self.count(run)
+        self.assertEqual(self.fixture("opened", ".usage-config").returncode, 1, "a window that opens elsewhere")
+        other = json.loads((self.tmp / ".git" / "github-writes.jsonl").read_text().splitlines()[1])
+        self.assertEqual(other["seeded"]["login"], "another-filer")
+        self.count(run, json.loads(re.search(r"```json\n(.*?)```", other["arguments"]["body"], re.S).group(1))["window"]["end"])
+        self.assertEqual(self.fixture("opened", ".usage-config").returncode, 1, "a window that opens at another login's report")
+        self.count(run, since)
+        self.assertEqual(self.fixture("opened", ".usage-config").returncode, 0)
+        self.assertEqual(self.fixture("counted", ".usage-config").returncode, 0)
+
 
 @unittest.skipIf(run is None, "sandbox/run.py needs PyYAML")
 class Sandbox(unittest.TestCase):
@@ -516,7 +709,7 @@ class Sandbox(unittest.TestCase):
 
     def test_every_generic_scenario_is_well_formed_and_runs_in_the_fixture(self):
         known = run.scenarios()
-        self.assertEqual(len(known), 40)
+        self.assertEqual(len(known), 43)
         well_formed(self, known, {"widgets"})
 
     def test_every_fixture_a_scenario_copies_is_in_the_pack(self):
@@ -814,6 +1007,7 @@ class Sandbox(unittest.TestCase):
         argv = called.call_args[0][0]
         self.assertEqual(argv[argv.index("--settings") + 1], str(self.sandbox / "settings.json"))
         self.assertEqual(argv[argv.index("--setting-sources") + 1], "project,local")
+        self.assertEqual(argv[argv.index("--name") + 1], "lasp-dev-sandbox")
 
     def test_settings_deny_every_write_tool_of_mcp_atlassian_0_23_1(self):
         writes = """jira_add_watcher jira_remove_watcher jira_create_issue jira_batch_create_issues
@@ -845,8 +1039,9 @@ class Sandbox(unittest.TestCase):
         for rule in allow:
             if rule.startswith(("Bash(python3 ", "Bash(.venv/bin/python ")) and " -m " not in rule:
                 self.assertTrue(any(f"/{root}/" in rule for root in roots), rule)
-            if rule.startswith(("Read(", "Edit(", "Write(", "Bash(cat ", "Bash(find ", "Bash(bash ", "Bash(/")):
+            if rule.startswith(("Read(", "Edit(", "Write(", "Bash(cat ", "Bash(find ", "Bash(bash ", "Bash(/")) and rule not in USAGE_TMP_WRITES:
                 self.assertTrue(any(f"/{root}/" in rule for root in roots), rule)
+        self.assertLessEqual(USAGE_TMP_WRITES, set(allow))
         self.assertEqual([r for r in allow if r.startswith("Bash(")], ["Bash(*)"])
         self.assertIn(f"Read(//{run.spellings(variant)[-1]}/**)", allow)
         self.assertNotIn(f"Edit(//{run.spellings(variant)[-1]}/**)", allow)
@@ -943,11 +1138,13 @@ class Served(unittest.TestCase):
     """sbx-claude serves each bare repository under <sandbox>/served/ in place of GitHub's, for
     fetches only, beside the empty credential helper."""
 
-    def session(self, served: bool) -> str:
+    def session(self, served: bool, env_file: bool = False) -> str:
         sandbox = Path(tempfile.mkdtemp()) / "a sandbox"
         self.addCleanup(shutil.rmtree, sandbox.parent)
         repo = sandbox / "repos/r"
         repo.mkdir(parents=True)
+        if env_file:
+            (repo / ".sbx-env").write_text("export CLAUDE_CONFIG_DIR=x\n")
         for name in ("settings.json", "mcp.json"):
             (sandbox / name).write_text("{}")
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
@@ -959,11 +1156,13 @@ class Served(unittest.TestCase):
         (bin_dir / "claude").write_text("#!/bin/sh\necho count=$GIT_CONFIG_COUNT helper=$GIT_CONFIG_KEY_0\n"
                                         "echo fetch=$(git remote get-url origin)\n"
                                         "echo bare=$(git ls-remote --get-url https://github.com/o/n)\n"
-                                        "echo push=$(git remote get-url --push origin)\n")
+                                        "echo push=$(git remote get-url --push origin)\n"
+                                        "echo env_file=$CLAUDE_ENV_FILE\n"
+                                        "echo args=\"$*\"\n")
         (bin_dir / "claude").chmod(0o755)
         log = sandbox.parent / "log.jsonl"
         subprocess.run([str(ROOT / "sandbox/sbx-claude"), str(sandbox), "r", str(log), "--", "x"], capture_output=True, text=True,
-                       env={**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}"})
+                       env={**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}", "CLAUDE_ENV_FILE": "/outer/session-env"})
         return log.read_text().replace(str(sandbox), "<sandbox>")
 
     def test_a_served_repository_is_fetched_from_its_path_and_pushed_nowhere(self):
@@ -977,6 +1176,13 @@ class Served(unittest.TestCase):
         out = self.session(False)
         self.assertIn("count=1 helper=credential.helper", out)
         self.assertIn("push=https://github.com/o/n.git\n", out)
+
+    def test_the_session_is_named_as_a_sandbox_session(self):
+        self.assertIn("-p x --name lasp-dev-sandbox ", self.session(False))
+
+    def test_a_setups_sbx_env_is_sourced_before_each_bash_command_and_none_is_by_default(self):
+        self.assertIn("env_file=\n", self.session(False))
+        self.assertIn("env_file=<sandbox>/repos/r/.sbx-env\n", self.session(False, env_file=True))
 
 
 class Smoke(unittest.TestCase):
@@ -1942,3 +2148,10 @@ class RuleCases(unittest.TestCase):
         self.assertFalse(rule_cases.holds("read", "ASK"))
         self.assertTrue(rule_cases.holds("either", "READ") and rule_cases.holds("either", "WARN"))
         self.assertFalse(rule_cases.holds("either", "MAYBE"))
+
+    def test_a_case_runs_under_the_sandbox_name(self):
+        reply = json.dumps({"result": "READ", "total_cost_usd": 0.01})
+        with mock.patch.object(rule_cases.subprocess, "run", return_value=mock.Mock(stdout=reply, stderr="")) as called:
+            rule_cases.ask("rule", "item", "haiku", ".")
+        argv = called.call_args[0][0]
+        self.assertEqual(argv[argv.index("--name") + 1], "lasp-dev-sandbox")

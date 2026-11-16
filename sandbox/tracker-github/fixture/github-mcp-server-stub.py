@@ -9,7 +9,9 @@ denied. Read-only unless given `--writes <file>`:
 With `--writes` it also serves `issue_write` (`create` and `update`) and `add_issue_comment`, and
 appends each call that succeeds to the file, a path relative to the session's directory, as one
 JSON line `{"tool": <name>, "arguments": <its arguments>}`; at start it replays the file, so a
-later turn's server sees the issues an earlier turn wrote. A created issue takes the next number
+later turn's server sees the issues an earlier turn wrote. A replayed create whose line also holds
+`"seeded": {"login", "created_at"}`, which only a scenario's setup writes, is that login's issue,
+created then. A created issue takes the next number
 after every issue and pull request the fixture holds. Each write returns `{"id", "url"}`, as the
 server's minimal response does. A label is recorded as sent, as GitHub would create one it does not
 know, so a scenario's verify checks the labels it may use. `run.py` neither allows nor denies a
@@ -20,7 +22,8 @@ server: `get_me`; `get_label`, an error for a label the fixture does not hold; `
 `get_parent`, where `get` gives labels by name and `get_labels` as objects, `get_parent` gives a
 null parent, since no fixture issue has one, and `get` on a pull request's number returns it as
 an issue whose `html_url` holds `/pull/`, as GitHub's issue API does; `list_issues`, whose states
-are upper-case, as the server's GraphQL gives them; `search_issues`, which returns the issues
+are upper-case, as the server's GraphQL gives them, and which, given `orderBy` `CREATED_AT`, lists
+newest first unless `direction` is `ASC`, any other order being the fixture's; `search_issues`, which returns the issues
 sharing a word of three letters or more with the query; and `search_pull_requests`, which returns
 the pull requests whose title or body holds every quoted phrase of the query and every bare word
 that is not a qualifier such as `repo:`, `is:`, `in:` or `state:`, matched by whole words and
@@ -62,7 +65,10 @@ TOOLS = {
                    ["method", "owner", "repo", "issue_number"]),
     "list_issues": ("List issues in a GitHub repository.",
                     {**REPO, "state": {"type": "string", "enum": ["OPEN", "CLOSED"]}, "labels": FIELDS, "perPage": NUMBER,
-                     "after": TEXT, "since": TEXT, "orderBy": TEXT, "direction": TEXT, "fields": FIELDS},
+                     "after": TEXT, "since": TEXT, "orderBy": TEXT, "direction": TEXT,
+                     "fields": {"type": "array", "items": {"type": "string", "enum": [
+                         "number", "title", "body", "state", "user", "labels", "assignees", "comments", "created_at", "updated_at",
+                         "field_values"]}}},
                     ["owner", "repo"]),
     "search_issues": ("Search issues using natural-language semantic matching. Already scoped to is:issue.", SEARCH, ["query"]),
     "search_pull_requests": ("Search for pull requests in GitHub repositories using issues search syntax already scoped to is:pr",
@@ -233,6 +239,8 @@ def call(name: str, args: dict):
                  "user": {"login": i["user"]["login"]}, "assignees": i["assignees"], "created_at": i["created_at"],
                  "updated_at": i["updated_at"], **({"comments": len(i["comments"])} if i["comments"] else {})}
                 for i in ISSUES.values() if (not state or i["state"].upper() == state) and wanted <= set(i["labels"])]
+        if args.get("orderBy") == "CREATED_AT":
+            rows.sort(key=lambda r: r["created_at"], reverse=args.get("direction") != "ASC")
         rows = [chosen(r, args.get("fields")) for r in rows]
         return {"issues": rows, "pageInfo": {"endCursor": "", "hasNextPage": False, "hasPreviousPage": False, "startCursor": ""},
                 "totalCount": len(rows)}
@@ -326,6 +334,10 @@ def main() -> None:
             if line.strip():
                 done = json.loads(line)
                 write(done["tool"], done["arguments"])
+                if "seeded" in done:
+                    login = done["seeded"]["login"]
+                    ISSUES[max(ISSUES)].update(user={"id": 1001 if login == DATA["me"]["login"] else 1002, "login": login},
+                                               created_at=done["seeded"]["created_at"])
     for line in sys.stdin:
         if not line.strip():
             continue

@@ -1328,7 +1328,8 @@ has no entry.
 
 Writers: people, for `patterns`, `mission`, a raised count and a moved file's entry;
 `check_static.py --update-coupling`, for a lowered count. Readers: `scripts/check_static.py`'s
-`coupling` check.
+`coupling` check; `scripts/usage_report.py`, which reads `patterns` at run time to write a
+question header naming a project as `other`, and exits 1 without them.
 
 Pinned by: tests/test_check_static.py::test_the_update_writes_the_baseline
 
@@ -1500,3 +1501,157 @@ Writers: `scripts/survey.py`. Readers: `onboard`, which presents the rows and ke
 `sandbox/onboard_roundtrip.py`, which reads the candidate and its sources.
 
 Pinned by: tests/test_survey.py::test_the_table_has_its_fixed_header_and_one_row_per_family
+
+## The usage report
+
+Version: 1
+
+Fields: `scripts/usage_report.py`'s `--out`, one JSON object, its keys sorted, counting plugin use
+in the person's transcripts inside the window. Every string in it is a field name or a word from
+the vocabulary: the installed plugin's skill, agent, script and hook names, `other`, Claude Code's
+built-in tool names, the GitHub and Atlassian MCP tools the plugin's skills and agents name
+(`MCP_TOOLS`) as `mcp__<tool>`, their server dropped, any other MCP tool as `mcp__other`, Claude
+Code's auto-mode denial categories (`AUTO_MODE_CATEGORIES`), Claude model ids (opus, sonnet, haiku
+or fable), Claude Code versions, the plugin's commit, the window's times and the fixed words below;
+any other value is written `other`.
+A question header counts only when the files of the skill that asked it hold it as a phrase in the
+same case and no pattern in the plugin's `scripts/coupling.json`, its list of project names,
+matches it. Personal skill and agent names, text, paths
+and repository names never appear. A count of zero is left out; the top-level fields are always
+present.
+
+A sandbox session, one whose main transcript holds a `custom-title` entry `lasp-dev-sandbox` (the
+`--name` `sandbox/sbx-claude` and `run.py`'s judge pass), is left out with its agents. An entry
+whose `uuid` an earlier main transcript held, as a resumed or forked session repeats it, is read
+once, and a request's tokens count once. Entries of a top-level kind the script does not read
+(any but `user`, `assistant`, `attachment` and `system`) are skipped; one of those four kinds not
+in the shape it reads stops the script.
+
+- `schema`: 1. `plugin_commit`: 12 hex digits. `claude_code_versions`, `models`: sorted lists.
+  `window`: `start`, `end`, ISO times in UTC to the second: `start` from `--since`, which the
+  script requires, a date `YYYY-MM-DD` or a UTC time, and refuses when it is neither or is not
+  before now; `end`, when the script ran. `sessions`, `turns`: every main transcript with an
+  entry in the window, and every message from the person, plugin use or not.
+- `repos`: `with_plugin_use`, repositories a plugin skill or agent ran in, told apart by their git
+  directory; `with_standard`, those holding `standards/profile.yaml`; `not_a_repository`, working
+  directories that are gone or no git repository now. Any other git failure stops the script.
+- `skills`: per plugin skill, `runs`, `typed`, `model_triggered`, `turns` and `tokens` as
+  `{median, p90}` (nearest rank), `reruns` (a run of the same skill started within 3 of the
+  person's messages of the last), `compacted` (runs a compaction fell in). A run starts at a typed
+  `/<plugin>:<skill>` or a `Skill` call and ends at the next skill start, a personal one, a typed
+  project one (a directory `.claude/skills/<name>/` or a file `.claude/commands/<name>.md` under
+  the session's working directory) or another plugin's typed `/<namespace>:<name>` included, or the
+  session's end. Its turns are the person's
+  messages in it, the typed start included; its tokens are input, cache and output tokens, once per request, with the
+  agents it started.
+- `questions`: per plugin skill, per header, the count of each answer type, `recommended` (the
+  option whose label ends `(Recommended)`), `other_option`, `free_text`, `declined`, `not_shown`
+  (a tool error), and `free_text_median_chars`.
+- `scripts`: per plugin script run by a `Bash` call from the plugin's path, `runs` and `exits`,
+  a count per exit code, or `background`, `interrupted`, `denied` or `error`.
+- `hooks`: per plugin hook, `runs`, `allow`, `ask`, `deny` (its permission decision),
+  `canceled` and `error`.
+- `denials`: per tool, per category (an auto-mode category, `permission_denied`,
+  `dont_ask_mode`, `safety_check` or `user_rejected`), the count inside plugin skill runs, plugin
+  agents, and any agent a plugin skill run started, with the agents below it.
+- `chains`: `transitions`, `"<skill> -> <skill>"` counts from a plugin skill run to the next skill
+  start, once per transcript that continues the run, so a run two forked sessions continue counts
+  twice; `push_after` and `pr_open_after`, per skill, the runs with a `git push`, or a `gh pr
+  create` or `create_pull_request` call.
+- `after_run`: null as the script writes it; `--fill --labels` gives the outcome the
+  `usage-report` skill assigns each run of the pending file, one of `approve`, `correct`,
+  `status`, `new_task`, `interrupt` or `none` (no next message, and only then), counted per
+  plugin skill, so it covers the most recent 40 runs, not every run.
+- `agents`: per plugin agent, `runs`, `models` (runs per model), `tokens` as `{median, p90}`,
+  `unfinished` (its `.meta.json` says `finished: false`).
+- `overlap`: null as the script writes it; `--fill --overlap` gives `skills` and `agents`, per
+  plugin skill or agent, how many of the person's own skills and agents the `usage-report` skill
+  judged a request would plausibly reach in its place; zeros left out.
+- `notes`: null as the script writes it; `--fill --notes` gives the person's words as typed,
+  stripped, or null when there are none. The one value outside the vocabulary.
+
+The payload is written with its keys sorted, two-space indents and non-ASCII kept, one final
+newline, and `--fill` prints it as written and then `sha256:<hex>`, the digest of those bytes, so a
+copy can be checked against the file. `--fill` refuses a label count that is not the pending
+file's run count, a `none` on a run with a next message or any other label on one without, an
+overlap item that is not one of the plugin's skills or agents with a count of 1 or more, and a
+filled payload over `--max-bytes`, 60,000 by default, under a GitHub issue body's 65,536
+characters; a refusal writes nothing.
+
+`--pending`, never sent, at a path the skill gives in a directory of its own under `$TMPDIR`, or
+`/tmp` when that is unset, outside every repository: a JSON list of the most recent 40 plugin skill runs, `{skill, started, next_message}`, the person's next message cut to 400 characters or null.
+
+Nothing records a report as sent. The `usage-report` skill opens the window at the person's
+`since` date; else, sending to the plugin's repository, at the `window.end` of the newest issue
+titled `usage-report: …` the person opened there (through the server, among the 300 newest
+issues), read from the report in its body; else 30 days back. A report is found by that title, not
+by its `usage-report` label, which GitHub drops when the sender has no push access.
+
+Writers: `scripts/usage_report.py`; the `usage-report` skill, through `--fill`.
+The issue the `usage-report` skill files is titled `usage-report: <window start date> to <window
+end date>`, and its body is the report as `--fill` last printed it, byte for byte, in a `json`
+fence, then the digest line in backticks, `` `sha256:<hex>` ``, then
+`Filed with /<plugin>:usage-report.` on a line of its own.
+
+Readers: the person, who sees the payload before anything is sent; the maintainer, from the
+issue or the file the person sends; the `usage-report` skill, which parses the `json` fence of the
+person's own earlier issue for its `window.end`; `scripts/usage_merge.py`, which checks the issue
+body's digest and the payload's shape, both when `collect` merges the reports and when the
+`usage-report` skill reads an issue back after sending it.
+
+Pinned by: tests/test_usage_report.py::test_the_payload_has_the_contract_fields
+
+## The merged usage reports
+
+Version: 1
+
+Input: `scripts/usage_merge.py --report AUTHOR PATH`, once per report: an issue body as "The usage
+report" sets it out, blank lines allowed between its parts and the `Filed with` line optional, or a
+payload file, the report's JSON alone. AUTHOR, the sender's GitHub login or any name used for that
+sender throughout, compared without case, is read only to find one sender's overlapping windows.
+
+Fields: `--out`, one JSON object written as the report is (keys sorted, two-space indents,
+non-ASCII kept, one final newline). No author and no path appear in it.
+
+- `schema`: 1, this result's version; `report_schema`: the report version merged, 1.
+- `reports`: how many were merged; `authors`: how many distinct AUTHORs sent them.
+- `window`: the earliest `start` and the latest `end` of the reports' windows. The windows may
+  leave gaps between them.
+- `plugin_commits`, `claude_code_versions`, `models`: per value, the number of reports that list
+  it.
+- `repos`, `sessions`, `turns`: summed. A repository two people used counts once for each.
+- `skills`: per skill, `runs`, `typed`, `model_triggered`, `reruns` and `compacted` summed;
+  `reports`, how many reports hold the skill; `turns` and `tokens`, one `[runs, median, p90]` per
+  report holding the skill, sorted descending. A median or p90 of several reports cannot be
+  computed from theirs, and the runs behind them are not in the reports, so each report's stays
+  beside the run count it was taken over.
+- `questions`: per skill and header, each answer type summed; `free_text_median_chars`, one
+  `[free_text, median]` per report that has it, sorted descending.
+- `scripts`, `hooks`, `denials`, `chains`, `after_run`, `overlap`: every count summed, per key at
+  every level. `after_run` covers each report's most recent 40 runs, so it is a sample, not every
+  run.
+- `agents`: per agent, `runs`, `unfinished` and `models` summed; `reports`; `tokens` as `skills`
+  keeps them.
+- `notes`: the reports' notes that are not null, sorted, so their order says nothing of who wrote
+  them.
+
+A count of zero stays left out, as in the reports. Stdout: one line of totals, a table of the ten
+skills with the most runs and of the eight agents with the most, with the range of the reports'
+medians, and one line each for questions, denials, hooks, overlap and notes.
+
+Refusals: exit 1, nothing written, one stderr line per refused report naming its path, then the
+count. A report is refused when it cannot be read, is neither a body of that shape nor JSON, has a
+digest line that does not match its JSON's sha256, has a `schema` other than 1, or is not in the
+shape "The usage report" sets out, with `after_run` and `overlap` filled. Among the rest, a
+report whose JSON is an earlier argument's, in either form and from any AUTHOR, is refused as the
+same report, and of two reports by one AUTHOR whose windows overlap (one starts before the other
+ends; windows that only touch merge), the one given second is refused, naming the first. Refusing rather than dropping one
+leaves the choice of which report stands to the person.
+
+An AUTHOR that is empty or holds a space exits 2 with a usage error naming it and its path; nothing is written.
+
+Writers: `scripts/usage_merge.py`, run by the `usage-report` skill's `collect` mode in a run
+directory under `$TMPDIR`.
+Readers: the maintainer.
+
+Pinned by: tests/test_usage_merge.py::test_counts_are_summed_and_the_list_fields_counted_per_report
