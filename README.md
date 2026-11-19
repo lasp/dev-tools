@@ -128,11 +128,12 @@ The tokens step 3 creates:
   registration Claude Code's OAuth needs. Its repository permissions:
   - Contents read, for files and commits;
   - Pull requests read and write, for `pr-create`, `pr-review` and `pr-fix`;
-  - Issues read and write: read for `ticket-draft`'s search, write for `skill-feedback` to file
-    an issue on this plugin's repository. A fine-grained token has one resource owner, so when
-    that owner is not the plugin repository's, filing needs a second token from that owner, on a
-    second GitHub server whose name contains the owner; without one, `skill-feedback`'s filing
-    call fails and it hands over the title, the body and the new-issue link to paste;
+  - Issues read and write: read for `ticket-draft`'s search, write for `skill-feedback` and
+    `usage-report` to file an issue on this plugin's repository. A fine-grained token has one
+    resource owner, so when that owner is not the plugin repository's, filing needs a second
+    token from that owner, on a second GitHub server whose name contains the owner; without one,
+    `skill-feedback`'s filing call fails and it hands over the title, the body and the new-issue
+    link to paste, and `usage-report` offers to write its report to a file;
   - Checks read, so the skills can read a pull request's check runs, which a token without it
     cannot do on a private repository.
 - **Jira and Confluence:** a personal access token from your own profile on each server, never
@@ -195,7 +196,7 @@ on `gh`, `pr-fix` stops at its start and `pr-review` posts only a pull request's
 
 | Server | Skills |
 | --- | --- |
-| GitHub | `work`, `pr-create`, `pr-review`, `pr-fix`, `ticket-draft`, `ticket-audit`, `revise`, `skill-feedback`; `work`'s ticket status too where the standard's tracker is GitHub's; `implement-change` when its source is a GitHub issue; `downstream`, for `ci <run>`; `onboard`, when connected, the repository's issues and their labels for its tracker included, and its first rules; `rebase`, when connected, for the pull request's base |
+| GitHub | `work`, `pr-create`, `pr-review`, `pr-fix`, `ticket-draft`, `ticket-audit`, `revise`, `skill-feedback`, `usage-report`; `work`'s ticket status too where the standard's tracker is GitHub's; `implement-change` when its source is a GitHub issue; `downstream`, for `ci <run>`; `onboard`, when connected, the repository's issues and their labels for its tracker included, and its first rules; `rebase`, when connected, for the pull request's base |
 | Jira | `ticket-draft`, `design-doc`, `architecture-doc` and `process-doc` (only the tickets you or a page name), `ticket-audit`, `revise` (with `measures`, for an epic it adds or a context entry reads, or for an issue `correct` cites); `pr-review`, for the ticket when no context page holds it; `work`, for a ticket's status when it has no context page here; `implement-change` when its source is a ticket; `onboard`, when connected, and its first rules |
 | Confluence | `design-doc` (your notes, the area's pages, and the publish), `architecture-doc` (the system's page, the area's pages, and the publish), `process-doc` (your notes, the pages you point at, and the publish), `ticket-draft` (the year plan, and `investigate`), `revise` (the context refresh, or a page `correct` cites), `ticket-audit` (the year plan); `onboard`, when connected, and its first rules |
 | Neither | `commit`, `rebase` with no GitHub server connected, `drawio`, `architecture-doc` and `process-doc` until they publish, `implement-change` from a file or a description, `test-suite-review`, `writing`, `quickstart`, `onboard` with no server connected, the repository alone |
@@ -484,6 +485,10 @@ The skills a person types, in the order they meet them:
   pins a release leaves behind.
 - `skill-feedback`: files a complaint about a skill as an issue here, shown to you whole before your
   yes.
+- `usage-report`: counts how you have used the plugin from your own transcripts since your last
+  report here, or the last 30 days, shows you your summary and the whole report, and sends it here
+  on your yes, or writes it to a file; `collect` merges the reports sent into one table for the
+  maintainer.
 
 The `using-*` skills are not typed: they load when another skill reads GitHub, Jira, Confluence or a
 shared library. The table below is the reference.
@@ -517,6 +522,7 @@ Most days need one command, `work`. Started, in the skills table: `typed only` r
 | | `revise` | typed only | Monthly: prepare the revision report before the meeting, with `measures` adding tickets, escaped defects and build yield; a sweep of the window's merged diffs reports where they follow or break the rules and the documented practice; `apply` drafts what the group accepted; `correct`, between revisions, corrects something the shared standards got wrong, everywhere it is carried, while a disagreement with a rule goes through Disagree and the revision; `capture`, weekly or whenever pull requests have merged, harvests and reads them into the standard's log so `prepare` reads the month from there |
 | | `ticket-audit` | typed only | Sweeps across the project's Jira, or on a GitHub tracker its issues' duplicates and its open pull requests, written to `.review/audit/`, then the actions they propose applied in the tracker through one write plan on your yes |
 | | `skill-feedback` | typed or asked | File a complaint about a skill or agent as a `skill-feedback` issue here, in your words, with the session's last turns attached when you choose, or a draft `revise` wrote for a procedure finding; you see the whole issue before your yes |
+| | `usage-report` | typed or asked | Count how you have used the plugin from your own Claude Code transcripts since your last `usage-report: …` issue here, the last 30 days, or a date you give, numbers and fixed words only, with your own note if you add one; you see your summary and the whole report first, and it is sent as a `usage-report: …` issue here, found again by that title, or written to a file, only on your yes. `collect` merges the `usage-report: …` issues here and any report files you give into one table, refusing what `docs/contracts.md`'s "The merged usage reports" lists; it posts nothing |
 | | `rebase` | typed or asked | Rebase the current branch onto the default branch, or its pull request's base when you choose it; resolve the conflicts whose answer the two sides' commits show, drop commits the target already holds, and stop only where the sides want incompatible behavior, showing both with a recommendation; then ask to push, the command's destination explicit and any `--force-with-lease` pinned to the commit it fetched, or print it for you to run |
 
 `implement-change`, `commit`, `pr-create`, `pr-review` and `pr-fix` began from upstream and have

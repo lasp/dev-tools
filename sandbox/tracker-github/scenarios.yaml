@@ -1,5 +1,7 @@
 # The GitHub tracker pack: scenarios in which `work` reads a GitHub issue as the ticket,
-# `ticket-draft` drafts and files one, and `ticket-audit` sweeps the issues and pull requests, served by
+# `ticket-draft` drafts and files one, `ticket-audit` sweeps the issues and pull requests, and
+# `usage-report` opens its window where the person's last report closed, holds its send to a yes
+# and, in `collect`, merges the reports filed as issues, served by
 # fixture/github-mcp-server-stub.py from fixture/github.json, in `widgets` with its own standard
 # recording a GitHub tracker whose labels map to the workflow and no ticket pattern. Build the
 # sandbox as the generic pack's README says, then write its mcp.json naming the stub through
@@ -323,6 +325,96 @@ scenarios:
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
+
+  # ticket-draft on a repository with no standard, so no tracker is recorded, asked for a GitHub
+  # issue; origin is github.com/<owner>/widgets unless a setup points it elsewhere.
+  - id: tracker-gh-ticket-draft-unrecorded-ask
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+    origin: "#130: ticket-draft asks to use GitHub Issues on origin's repository where no tracker is recorded"
+    why: >-
+      Asks for a GitHub issue in a repository with no tracker recorded and origin on github.com, so
+      ticket-draft asks in one line whether to use GitHub Issues on origin's repository, before
+      reading anything, and never says the tracker is not GitHub Issues.
+    turns:
+      - "/lasp-dev:ticket-draft open a GitHub issue: total() should refuse a negative count with a ValueError naming the part"
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Agent", "mcp__*"]
+    look_at: >-
+      One line saying the tracker looks like GitHub Issues on <owner>/widgets, then a question: Use
+      GitHub Issues on <owner>/widgets (Recommended), Draft it as a Jira ticket, or Stop. No reader
+      runs and nothing is written.
+    expect:
+      ends: success
+      says: ["GitHub Issues on [\\w.-]+/widgets", "(?i)\\bStop\\b"]
+      files_absent: [".review/context/*"]
+      not_says: ["(?i)not GitHub Issues", "(?m)^## total"]
+    verify:
+      - test ! -e .git/github-writes.jsonl
+
+  - id: tracker-gh-ticket-draft-unrecorded
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+    origin: "#130: ticket-draft files a GitHub issue on origin's repository where no tracker is recorded"
+    why: >-
+      Asks for a GitHub issue with no tracker recorded, says yes to GitHub Issues on origin's
+      repository, and says yes to the write plan, so the create goes to origin's owner and
+      repository with no labels, through the approval record and the issue gate.
+    turns:
+      - "/lasp-dev:ticket-draft open a GitHub issue: make total() refuse a negative count with a ValueError naming the part, since a bad export once gave a count of -3 and the total came out low without anyone noticing."
+      - Use GitHub Issues on that repository.
+      - The goal is right. Draft this ticket.
+      - Take the recommended answer on every question.
+      - Looks right. Write all.
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "mcp__github__sub_issue_write", "mcp__github__update_issue_comment"]
+    look_at: >-
+      The plan shows a create on origin's owner/widgets with no labels, then the Comment to post
+      and the Session comment. Each step that needs a role's label is skipped, said in one line.
+      After Write all the issue is read back and the approval record is gone. The closing summary
+      names the issue, says the approval label is skipped since no tracker is recorded, and names
+      /lasp-dev:onboard in place of /lasp-dev:work.
+    expect:
+      ends: success
+      mcp: [mcp__github__issue_write, mcp__github__issue_read]
+      files: [".review/context/[0-9]*.md", ".review/context/[0-9]*.issue.md"]
+    verify:
+      - test ! -e .review/github-approval.json
+      - >-
+        python3 -c 'import json, re, subprocess;
+        o = subprocess.run(["git", "remote", "get-url", "origin"], capture_output=True, text=True).stdout.strip();
+        m = re.search(r"github\.com[:/]([^/]+)/([^/]+?)(\.git)?$", o); assert m, o;
+        w = [json.loads(l) for l in open(".git/github-writes.jsonl")];
+        c = [x["arguments"] for x in w if x["tool"] == "issue_write" and x["arguments"]["method"] == "create"];
+        assert c, w;
+        assert (c[0]["owner"], c[0]["repo"]) == m.group(1, 2), (c[0], o);
+        assert all(not x.get("labels") for x in c), c'
+
+  - id: tracker-gh-ticket-draft-unrecorded-other-origin
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - git remote set-url origin https://git.example.org/example/widgets.git
+    origin: "#130: ticket-draft names onboard where no tracker is recorded and origin is not on github.com"
+    why: >-
+      Asks for a GitHub issue with no tracker recorded and origin off github.com, so ticket-draft
+      says no tracker is recorded and onboard records one, and asks Draft it as a Jira ticket or
+      Stop, before reading anything, never offering GitHub Issues on a repository.
+    turns:
+      - "/lasp-dev:ticket-draft open a GitHub issue: total() should refuse a negative count with a ValueError naming the part"
+    must_not_run: ["Bash(git push*)", "Bash(git commit*)", "Agent", "mcp__*"]
+    look_at: >-
+      One line saying no tracker is recorded and origin is not on github.com, so /lasp-dev:onboard
+      records one, then a question: Draft it as a Jira ticket or Stop. No reader runs and nothing
+      is written.
+    expect:
+      ends: success
+      says: ["(?i)no (issue )?tracker (is )?recorded", "/lasp-dev:onboard", "(?i)\\bStop\\b"]
+      files_absent: [".review/context/*"]
+      not_says: ["(?i)not GitHub Issues", "GitHub Issues on ", "(?m)^## total"]
+    verify:
+      - test ! -e .git/github-writes.jsonl
+
   # onboard on a repository with no standard, reading its GitHub issues. The stub also answers
   # onboard's search_repositories (public, on main) and search_code (nothing), so no standard
   # elsewhere covers widgets. Each setup makes its own history, and a run's reset restores the branches.
@@ -497,3 +589,90 @@ scenarios:
     verify:
       - test ! -e .git/github-writes.jsonl
       - test ! -e .review/github-approval.json
+
+  - id: tracker-gh-usage-report-standing-answer
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+    origin: "the usage-report plan: with a GitHub server present, only an explicit yes sends the report"
+    why: >-
+      Runs usage-report with the stub as the GitHub server, where Send it is the recommended
+      answer, and answers its stop with a standing "take the recommended answer", which is no yes,
+      so no issue is created.
+    turns:
+      - /lasp-dev:usage-report
+      - Take the recommended answer on every question.
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
+    must_not_try: ["mcp__github__issue_write", "Bash(gh *)", "Bash(curl *)", "Bash(cp *)"]
+    look_at: >-
+      The first turn stops on the summary, the whole report with its digest, where it goes (an
+      issue on the plugin's repository, readable by everyone who can see it) and the note and send
+      questions, Send it recommended. The second takes no note and does not send: it says a
+      standing answer is not a yes to sending and asks the send question again. No issue_write is
+      tried and no file is written in the clone.
+    expect:
+      ends: success
+    verify:
+      - test ! -e .git/github-writes.jsonl
+      - python3 "$SBX_FIXTURES/usage_config.py" unsent .usage-config
+
+  - id: tracker-gh-usage-report-since-last
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+      - python3 "$SBX_FIXTURES/usage_config.py" issue .usage-config lasp-dev
+    origin: "the usage-report plan, decided after the phase 2 sandbox run: the window opens where the person's last usage-report issue closed"
+    why: >-
+      Runs usage-report with the stub serving a usage-report issue the person opened earlier,
+      with no label, as GitHub leaves a sender without push access, whose report closed two days ago, and a newer one another login opened, whose report closed a
+      day ago, so the window opens at the person's report's window.end, not the other's or 30
+      days back, and the runs since are counted.
+    turns:
+      - /lasp-dev:usage-report
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
+    must_not_try: ["mcp__github__issue_write", "Bash(gh *)", "Bash(curl *)", "Bash(cp *)"]
+    look_at: >-
+      The skill takes the login from get_me, lists the issues with list_issues, no labels filter
+      and the title among the fields, keeps those titled usage-report:, passes over the newer one by another-filer, reads the person's body with
+      issue_read and passes its window.end to --since as it reads. The summary says the window opens where the last report closed; the report's
+      window.start is that time. It stops on the note and send questions; nothing is sent.
+    expect:
+      ends: success
+    verify:
+      - test "$(grep -c . .git/github-writes.jsonl)" = 2
+      - python3 "$SBX_FIXTURES/usage_config.py" opened .usage-config
+      - python3 "$SBX_FIXTURES/usage_config.py" counted .usage-config
+
+  - id: tracker-gh-usage-report-collect
+    repo: widgets
+    setup:
+      - rm -f .git/github-writes.jsonl
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+      - python3 "$SBX_FIXTURES/usage_config.py" reports .usage-config lasp-dev
+    origin: "the usage-report plan, decided for phase 3: collect merges the usage-report issues and refuses one whose digest does not match its report"
+    why: >-
+      Runs usage-report collect with the stub serving three usage-report issues by three logins,
+      the person's with no label, the newest, #26, carrying a digest that is not its report's, so the merged table holds the
+      other two, #26 is named as refused, and nothing is written to GitHub or the clone.
+    turns:
+      - /lasp-dev:usage-report collect
+    must_not_run: ["Edit", "Write(*/repos/widgets/[!.]*)"]
+    must_not_try: ["mcp__github__issue_write", "mcp__github__add_issue_comment", "Bash(gh *)", "Bash(curl *)"]
+    look_at: >-
+      The skill lists the issues with list_issues, no labels filter, keeps those titled
+      usage-report:, among them the unlabeled #24, reads #24, #25 and #26
+      with issue_read, writes each body as it reads into a run directory mktemp -d makes under
+      TMPDIR, and runs usage_merge.py with each issue's author. The merge refuses #26 by its file,
+      its digest not matching; the skill leaves it out, says so with the reason, and merges the
+      other two. It shows the summary the script printed: 2 reports from 2 authors, 8 work runs.
+      Nothing is posted or written in the clone.
+    expect:
+      ends: success
+      mcp: [mcp__github__list_issues, mcp__github__issue_read]
+      says: ["Merged 2 reports from 2 authors", "#26\\b"]
+    verify:
+      - test "$(grep -c . .git/github-writes.jsonl)" = 3
+      - python3 "$SBX_FIXTURES/usage_config.py" merged .usage-config
+      - python3 "$SBX_FIXTURES/usage_config.py" unsent .usage-config

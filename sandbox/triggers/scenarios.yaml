@@ -267,6 +267,22 @@ scenarios:
       ends: success
       skills: [skill-feedback]
 
+  - id: trigger-usage-report
+    repo: widgets
+    setup:
+      - python3 "$SBX_FIXTURES/usage_config.py" make .usage-config lasp-dev
+    turns:
+      - How much have I used the lasp-dev skills this month? The maintainers asked us to send them the numbers.
+    must_not_run: ["mcp__*", "Bash(git push*)", "Bash(gh *)"]
+    must_not_try: ["Bash(cp *)"]
+    verify:
+      - python3 "$SBX_FIXTURES/usage_config.py" unsent .usage-config
+      - python3 "$SBX_FIXTURES/usage_config.py" counted .usage-config
+    look_at: The request reaches usage-report, which counts the fixture's runs and stops on the summary and the whole report before anything is sent.
+    expect:
+      ends: success
+      skills: [usage-report]
+
   - id: trigger-test-suite-review
     repo: widgets
     setup:

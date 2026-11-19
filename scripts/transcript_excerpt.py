@@ -65,6 +65,7 @@ Claude Code changed the shape this script reads. Exits 2 when `--stdin` is given
 from __future__ import annotations
 
 import argparse
+import functools
 import importlib.util
 import json
 import os
@@ -104,14 +105,10 @@ def internal_domains() -> list[str]:
         sys.exit(f"transcript_excerpt.py: internal links cannot be redacted: {e}")
 
 
-# Any host under one of them, the longest first so one domain that ends another is tried whole;
-# with none, a pattern that matches nothing.
-DOMAINS = "|".join(re.escape(d) for d in sorted(internal_domains(), key=len, reverse=True)) or "(?!)"
-
 DEFAULT_TURNS = 10
 REDACTED = "<redacted>"
 INTERNAL = "<internal link>"
-REDACTIONS = (
+SECRETS = (
     (
         "private-key",
         re.compile(
@@ -171,16 +168,29 @@ REDACTIONS = (
         ),
         r"\g<1>" + REDACTED,
     ),
-    (
-        "internal-link",
-        re.compile(
-            r"(?<![\w.-])(?:https?://)?(?:[\w-]+\.)*(?:" + DOMAINS + r")(?![\w-])(?::\d+)?"
-            r"(?:/(?:[^\s)\]>\"'`]*[^\s)\]>\"'`.,;:!?])?|:(?=[\w~/])[^\s)\]>\"'`]*[^\s)\]>\"'`.,;:!?])?",
-            re.I,
-        ),
-        INTERNAL,
-    ),
 )
+
+
+@functools.cache
+def redactions() -> tuple:
+    """`SECRETS` and the internal-link pattern, whose domains are read on the first call, so importing
+    the module reads no standard."""
+    # Any host under one of them, the longest first so one domain that ends another is tried whole;
+    # with none, a pattern that matches nothing.
+    domains = "|".join(re.escape(d) for d in sorted(internal_domains(), key=len, reverse=True)) or "(?!)"
+    return SECRETS + (
+        (
+            "internal-link",
+            re.compile(
+                r"(?<![\w.-])(?:https?://)?(?:[\w-]+\.)*(?:" + domains + r")(?![\w-])(?::\d+)?"
+                r"(?:/(?:[^\s)\]>\"'`]*[^\s)\]>\"'`.,;:!?])?|:(?=[\w~/])[^\s)\]>\"'`]*[^\s)\]>\"'`.,;:!?])?",
+                re.I,
+            ),
+            INTERNAL,
+        ),
+    )
+
+
 SYSTEM_REMINDER = re.compile(r"<system-reminder>.*?</system-reminder>", re.S)
 COMMAND_NAME = re.compile(r"<command-name>(.*?)</command-name>", re.S)
 COMMAND_ARGS = re.compile(r"<command-args>(.*?)</command-args>", re.S)
@@ -288,6 +298,23 @@ def skill_matches(started: str, skill: str) -> bool:
     return started == skill or started.rsplit(":", 1)[-1] == skill
 
 
+def person_message(e: dict) -> str | None:
+    """The text of a message from the person, system reminders removed, or None for any other entry."""
+    if e.get("isSidechain") or e.get("isMeta"):
+        return None
+    kind = e.get("type")
+    if kind == "user":
+        text = text_of((e.get("message") or {}).get("content"))
+        origin = (e.get("origin") or {}).get("kind")
+        typed = origin is None and (BASH_INPUT.search(text) or COMMAND_NAME.search(text))
+        return text if (origin == "human" or typed) and text and person_text(text) else None
+    if kind == "attachment":
+        att = e.get("attachment") or {}
+        if att.get("type") == "queued_command" and (att.get("origin") or {}).get("kind") == "human":
+            return text_of(att.get("prompt")) or None
+    return None
+
+
 def events(entries: list[dict]) -> list[tuple[str, str]]:
     """The session as (kind, value) pairs in order: `person`, `claude` text, `tool` label, `asked`
     and `answered` for `AskUserQuestion`, and `skill` started."""
@@ -302,20 +329,11 @@ def events(entries: list[dict]) -> list[tuple[str, str]]:
             for block in content:
                 if isinstance(block, dict) and block.get("type") == "tool_result" and block.get("tool_use_id") in asked:
                     out.append(("answered", answers_of(asked.pop(block["tool_use_id"]), e.get("toolUseResult"))))
-        origin = (e.get("origin") or {}).get("kind")
-        typed = origin is None and (BASH_INPUT.search(text_of(content)) or COMMAND_NAME.search(text_of(content)))
-        if kind == "user" and (origin == "human" or typed):
-            text = text_of(content)
-            if text and person_text(text):
-                out.append(("person", person_text(text)))
-                if COMMAND_NAME.search(text):
-                    out.append(("skill", person_text(text)))
-        elif kind == "attachment":
-            att = e.get("attachment") or {}
-            if att.get("type") == "queued_command" and (att.get("origin") or {}).get("kind") == "human":
-                text = text_of(att.get("prompt"))
-                if text:
-                    out.append(("person", person_text(text)))
+        text = person_message(e)
+        if text:
+            out.append(("person", person_text(text)))
+            if kind == "user" and COMMAND_NAME.search(text):
+                out.append(("skill", person_text(text)))
         elif kind == "assistant":
             for block in (e.get("message") or {}).get("content") or []:
                 if not isinstance(block, dict):
@@ -364,7 +382,7 @@ def select(turns: list[list[tuple[str, str]]], count: int, before_skill: str | N
 
 
 def redact(text: str, counts: dict[str, int], home: str) -> str:
-    for kind, pattern, replacement in REDACTIONS:
+    for kind, pattern, replacement in redactions():
         text, n = pattern.subn(replacement, text)
         counts[kind] += n
     if home and home != "/":
@@ -425,7 +443,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-chars", type=int, metavar="N", help="drop the oldest turns until the excerpt is N characters or fewer")
     parser.add_argument("--stdin", action="store_true", help="redact the text on stdin instead of reading a transcript")
     args = parser.parse_args(argv)
-    counts = {kind: 0 for kind, _, _ in REDACTIONS}
+    counts = {kind: 0 for kind, _, _ in redactions()}
     counts["home"] = 0
     if args.stdin:
         if args.file or args.before_skill or args.max_chars is not None:

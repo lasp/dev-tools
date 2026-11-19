@@ -96,9 +96,8 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 | --- | --- | --- | --- | --- |
 | Measure the delegation | Record the hook's token line per sitting and the main session's cache reads on the next real ticket through `work`, against the first run's cache reads per sitting: 3.90M, 7.68M, 3.79M and 3.08M for its four sittings (September 2026) | plugin maintainer | the next ticket through `work` | planned |
 | `skill-note` (`<text>`, `list`, `share`) and the local procedure log outside every repository | Notes caught seven of nine problem types in the planned run; the sharing path needs people to share, and `share` would hand a note to `skill-feedback`, which files it as a `skill-feedback` issue | plugin maintainer | a teammate other than the maintainer has used the plugin for a month, or the maintainer writes more than about 15 notes in a month | deferred |
-| Gate counts by hook: option taken, Recommended taken, free text, declined | The design's reviewers disagree whether a PostToolUse hook on `AskUserQuestion` receives the answers | plugin maintainer | the maintainer runs a live check in one session; yes means one hook, no means one `procedure_log.sh` call per gate, after `skill-note` | waiting on the check |
 | A `tooling_changes.sh` script under `scripts/`: merged tooling pull requests with their `Origin:` lines, then open `skill-feedback` issues with dispositions, for a monthly meeting's five minutes | The list is read aloud monthly | plugin maintainer | the second revision meeting | deferred |
-| Skill retirement and gate folding: a skill uninvoked for three months by `/skill-doctor`, a gate approved as drafted over 20 or more events | A skill nobody runs and a gate nobody changes cost every session their descriptions and every run its question | plugin maintainer | six months of use across the team | idea |
+| Skill retirement and gate folding: a skill uninvoked for three months by `/skill-doctor` or the merged usage reports, a gate approved as drafted over 20 or more events | A skill nobody runs and a gate nobody changes cost every session their descriptions and every run its question | plugin maintainer | six months of use across the team | idea |
 
 ## Platforms and projects
 
@@ -110,3 +109,9 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 | GitHub Issues as a tracker (#59), what is left | GitHub Issues is the first tracker adapter after Jira; reading, routing, drafting and filing, the audit sweeps and onboard's detection have landed. Left: no Projects fields, estimates or sub-issues | plugin maintainer | a project that needs them | deferred |
 | A GitLab forge adapter (#61) | A repository on GitLab gets local-only reviews; the adapter writes the thread shape (#60) through a GitLab server or `glab` | plugin maintainer | step 5 of #24's order, after #60 | planned |
 | Bitbucket, other trackers, Markdown files as a wiki (#62) | No team has asked yet | plugin maintainer | a team asks | idea |
+
+## Publishing
+
+| Item | Why | Owner | Trigger | Status |
+| --- | --- | --- | --- | --- |
+| `usage-report`'s public destination (#15) | Its default destination is an issue on this repository, which is public, so each report is public under the sender's login, and the skill does not say so | plugin maintainer | now | planned |

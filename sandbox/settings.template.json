@@ -31,6 +31,8 @@
       "Read(//{plugin}/**)",
       "Edit(//{sandbox}/**)",
       "Write(//{sandbox}/**)",
+      "Edit(//tmp/usage-report-sbx-*/**)",
+      "Edit(//private/tmp/usage-report-sbx-*/**)",
       "Glob",
       "Grep",
       "Agent",

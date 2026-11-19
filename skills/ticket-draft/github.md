@@ -1,21 +1,26 @@
 # A GitHub tracker
 
 Read by `ticket-draft` where `python3 "<plugin root>/scripts/profile.py" --defaults --field
-issue_tracker.kind` prints `github`. The ticket is an issue, its key the number: `12` in file
-names, `#12` wherever a person reads it. The issue's fields, the plan's items, the record, the
-read-back and the paste file are `<plugin root>/skills/using-github/issues.md`'s; read it before
-step 7. What differs from SKILL.md's steps is below; the rest runs as written, `settle.md` and
-`reformat.md` included.
+issue_tracker.kind` prints `github`, and where it prints `not yet recorded` and the person said
+yes to GitHub Issues on origin's repository. The issues' repository, `<owner/repo>` below, is the
+one `--field issue_tracker.location` prints, or origin's, from `git remote get-url origin`, where
+that prints `none` or the tracker is not yet recorded. Every `source-reader` task this run starts
+is given `Tracker: github <owner/repo>`, `settle.md`'s and `reformat.md`'s `ticket` reads and the
+stored read-back included. With no tracker recorded, no role has a
+label: each step that needs one is skipped and said so in one line. The ticket is an issue, its
+key the number: `12` in file names, `#12` wherever a person reads it. The issue's fields, the
+plan's items, the record, the read-back and the paste file are
+`<plugin root>/skills/using-github/issues.md`'s; read it before step 7. What differs from
+SKILL.md's steps is below; the rest runs as written, `settle.md` and `reformat.md` included.
 
 - **The source.** An issue's number, `#12` or `12`, is read with one `source-reader` running
-  `ticket 12`; a block that says `Not an issue: #12 is a pull request` makes it a pull request
-  source (`sources.md`). GitHub stops the draft for an existing issue where SKILL.md says
-  Atlassian does; Atlassian is needed only for the year plan, which is skipped without it and said
-  once, as "Reads" says.
+  `ticket 12`, given `Tracker: github <owner/repo>`; a block that says `Not an issue: #12 is a pull
+  request` makes it a pull request source (`sources.md`). GitHub stops the draft for an existing
+  issue where SKILL.md says Atlassian does; Atlassian is needed only for the year plan, which is
+  skipped without it and said once, as "Reads" says.
 - **Step 1.** `<ticket>.original.txt` holds the issue's body verbatim. The opening block's heading
   is `## #12 · <title>` and its second line `Issue · <state> · <labels, or no labels>`.
-- **Step 2.** The `search` reader is given `Tracker: github <owner/repo>`, the tracker's location
-  or this repository when `--field issue_tracker.location` prints `none`, in place of `Jira:
+- **Step 2.** The `search` reader is given `Tracker: github <owner/repo>` in place of `Jira:
   <project>`.
 - **Steps 3 and 5.** An issue has no epic, component, due date or typed link. The year-plan month,
   when the plan was read, and a parent the `ticket` block's `Links:` line names, `parent: #<n>`,
@@ -34,8 +39,8 @@ step 7. What differs from SKILL.md's steps is below; the rest runs as written, `
   - A merge closes the issue not kept with `state_reason: duplicate` and `duplicate_of` the kept
     one, after its `Merged from` comment on the kept one.
   - A move into a role is a labels update, offered only when the person asks for it and only
-    when `--defaults --field issue_tracker.roles.<role>` prints a label; `none` skips it, said in
-    one line. `jira.roles` is not read.
+    when `--defaults --field issue_tracker.roles.<role>` prints a label; `none` or `not yet
+    recorded` skips it, said in one line. `jira.roles` is not read.
 - **Step 8.** The paste file `<ticket>.issue.md` is written first, as `issues.md`'s "The paste
   file" lays it out. Then, on Write all:
   1. Write each text to `.review/context/<ticket>.send/<item>.md`, then
@@ -53,4 +58,6 @@ step 7. What differs from SKILL.md's steps is below; the rest runs as written, `
   create or the read-back gave. Unless the plan moved it, the last line says a ticket writer
   approves the issue next by adding the label `--defaults --field issue_tracker.roles.approved`
   prints, naming it, or, where that prints `none`, on the issue itself, and names
-  `/lasp-dev:work 12`.
+  `/lasp-dev:work 12`. On a tracker not yet recorded, the last line says the approval label is
+  skipped since no tracker is recorded, and names `/lasp-dev:onboard`, which records one, in place
+  of `/lasp-dev:work 12`.

@@ -56,7 +56,7 @@ def holds(expect: str, verdict: str) -> bool:
 
 def ask(rule: str, item: str, model: str, cwd: str) -> tuple[str, str, float]:
     prompt = f"{rule}\n\n---\n\n{QUESTION}\n\nThe item:\n\n{item.replace('FILLER', FILLER)}"
-    done = subprocess.run(["claude", "-p", prompt, "--model", model, "--tools", "", "--strict-mcp-config",
+    done = subprocess.run(["claude", "-p", prompt, "--name", "lasp-dev-sandbox", "--model", model, "--tools", "", "--strict-mcp-config",
                            "--setting-sources", "project", "--output-format", "json", "--max-budget-usd", "0.05"],
                           cwd=cwd, stdin=subprocess.DEVNULL, capture_output=True, text=True, check=False)
     try:
