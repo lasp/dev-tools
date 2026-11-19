@@ -103,7 +103,7 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 
 | Item | Why | Owner | Trigger | Status |
 | --- | --- | --- | --- | --- |
-| Neutral examples in generic skills (#21) | `quickstart` still checks for the plugin this one replaced, and `using-curryer` still ships in the plugin, loaded only in curryer and the repositories that depend on it (#67). `scripts/coupling.json` allows the rest and does not scan the docs (#15). `using-curryer` leaves for curryer's own standard, or a domain plugin installed beside this one | plugin maintainer | before the public flip | planned |
+| Neutral examples in generic skills (#21) | `quickstart` still checks for the plugin this one replaced, and `using-curryer` still ships in the plugin, loaded only in curryer and the repositories that depend on it (#67). `scripts/coupling.json` allows the rest and does not scan the docs. `using-curryer` leaves for curryer's own standard, or a domain plugin installed beside this one | plugin maintainer | the repository is public | planned |
 | Forge, tracker and wiki as roles (#24) | Every skill speaks GitHub, Jira or Confluence directly, so a repository on GitLab or tracking work in GitHub Issues gets little of the workflow. One documented shape per role, the neutral thread JSON as the forge's, with the current skills as the first adapters; GitLab next, then GitHub Issues as a tracker | plugin maintainer | a team on GitLab or GitHub Issues adopts the plugin | idea |
 | The skills on the ticket shape (#58) | The shape, the format and the profile's `issue_tracker:` are tracker-neutral (`docs/contracts.md`, "The ticket shape"; `standards/ticket-format.md`), but `onboard` still writes `jira:` for a Jira tracker. No ticket is kept as a file in the repository: a ticket is drafted once, in the format, for whichever tracker files it | plugin maintainer | with #59 | planned |
 | GitHub Issues as a tracker (#59), what is left | GitHub Issues is the first tracker adapter after Jira; reading, routing, drafting and filing, the audit sweeps and onboard's detection have landed. Left: no Projects fields, estimates or sub-issues | plugin maintainer | a project that needs them | deferred |
@@ -114,4 +114,4 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 
 | Item | Why | Owner | Trigger | Status |
 | --- | --- | --- | --- | --- |
-| The public flip (#15) | What the tree still carries before the repository goes public: README wording, fixture banners, CI secret scan, the Libera scrub; and `usage-report`'s default destination, an issue here, which after the flip is public under the sender's login | plugin maintainer | release approval | planned |
+| `usage-report`'s public destination (#15) | Its default destination is an issue on this repository, which is public, so each report is public under the sender's login, and the skill does not say so | plugin maintainer | now | planned |
