@@ -109,9 +109,3 @@ merged pull request is its record. Owners are roles. Status is `planned`, `defer
 | GitHub Issues as a tracker (#59), what is left | GitHub Issues is the first tracker adapter after Jira; reading, routing, drafting and filing, the audit sweeps and onboard's detection have landed. Left: no Projects fields, estimates or sub-issues | plugin maintainer | a project that needs them | deferred |
 | A GitLab forge adapter (#61) | A repository on GitLab gets local-only reviews; the adapter writes the thread shape (#60) through a GitLab server or `glab` | plugin maintainer | step 5 of #24's order, after #60 | planned |
 | Bitbucket, other trackers, Markdown files as a wiki (#62) | No team has asked yet | plugin maintainer | a team asks | idea |
-
-## Publishing
-
-| Item | Why | Owner | Trigger | Status |
-| --- | --- | --- | --- | --- |
-| `usage-report`'s public destination (#15) | Its default destination is an issue on this repository, which is public, so each report is public under the sender's login, and the skill does not say so | plugin maintainer | now | planned |
